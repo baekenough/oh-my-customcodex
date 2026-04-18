@@ -1,0 +1,12 @@
+{
+  "name": "oh-my-customcodex",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Codex-native port of oh-my-customcode automation",
+  "scripts": {
+    "lint": "node --check scripts/sync-upstream-release-issues.js tests/sync-upstream-release-issues.test.js",
+    "test": "node --test",
+    "verify": "npm run lint && npm test"
+  }
+}
