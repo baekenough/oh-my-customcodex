@@ -12,9 +12,7 @@ export function extractReferencedIssueNumbers(text = '') {
   }
 
   const candidates = new Set();
-  const sanitized = text
-    .replace(/\bPR\s+#\d+\b/gi, '')
-    .replace(/\bpull request\s+#\d+\b/gi, '');
+  const sanitized = text.replace(/\bPR\s+#\d+\b/gi, '').replace(/\bpull request\s+#\d+\b/gi, '');
 
   for (const match of sanitized.matchAll(/#(\d+)\b/g)) {
     candidates.add(Number(match[1]));
@@ -63,9 +61,10 @@ export function buildTargetIssuePayload({ upstreamRepo, release, issue }) {
   const marker = buildUpstreamIssueMarker(upstreamRepo, issue.number);
   const releaseNotes = truncate(release.body || '(no release notes)', MAX_RELEASE_NOTES_LENGTH);
   const originalBody = truncate(issue.body || '(no issue body)', MAX_ISSUE_BODY_LENGTH);
-  const labels = Array.isArray(issue.labels) && issue.labels.length > 0
-    ? issue.labels.map((label) => `\`${label.name}\``).join(', ')
-    : '(none)';
+  const labels =
+    Array.isArray(issue.labels) && issue.labels.length > 0
+      ? issue.labels.map((label) => `\`${label.name}\``).join(', ')
+      : '(none)';
 
   return {
     title: `[${upstreamRepo}] Port #${issue.number}: ${issue.title}`,
@@ -105,7 +104,9 @@ async function githubRequest(path, { token, method = 'GET', body, apiBase = DEFA
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`GitHub API ${method} ${path} failed: ${response.status} ${response.statusText}\n${errorText}`);
+    throw new Error(
+      `GitHub API ${method} ${path} failed: ${response.status} ${response.statusText}\n${errorText}`
+    );
   }
 
   return response.status === 204 ? null : response.json();
@@ -126,7 +127,9 @@ async function githubTextRequest(path, { token, apiBase = DEFAULT_API_BASE }) {
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`GitHub API GET ${path} failed: ${response.status} ${response.statusText}\n${errorText}`);
+    throw new Error(
+      `GitHub API GET ${path} failed: ${response.status} ${response.statusText}\n${errorText}`
+    );
   }
 
   return response.text();
@@ -134,10 +137,13 @@ async function githubTextRequest(path, { token, apiBase = DEFAULT_API_BASE }) {
 
 async function listReleases({ upstreamRepo, token, releaseTag, apiBase }) {
   if (releaseTag) {
-    const release = await githubRequest(`/repos/${upstreamRepo}/releases/tags/${encodeURIComponent(releaseTag)}`, {
-      token,
-      apiBase,
-    });
+    const release = await githubRequest(
+      `/repos/${upstreamRepo}/releases/tags/${encodeURIComponent(releaseTag)}`,
+      {
+        token,
+        apiBase,
+      }
+    );
     return release.draft ? [] : [release];
   }
 
@@ -148,7 +154,11 @@ async function listReleases({ upstreamRepo, token, releaseTag, apiBase }) {
 
   return releases
     .filter((release) => !release.draft)
-    .sort((left, right) => new Date(left.published_at || left.created_at) - new Date(right.published_at || right.created_at));
+    .sort(
+      (left, right) =>
+        new Date(left.published_at || left.created_at) -
+        new Date(right.published_at || right.created_at)
+    );
 }
 
 async function listExistingMarkers({ targetRepo, token, apiBase }) {
@@ -156,10 +166,13 @@ async function listExistingMarkers({ targetRepo, token, apiBase }) {
   let page = 1;
 
   while (true) {
-    const items = await githubRequest(`/repos/${targetRepo}/issues?state=all&per_page=100&page=${page}`, {
-      token,
-      apiBase,
-    });
+    const items = await githubRequest(
+      `/repos/${targetRepo}/issues?state=all&per_page=100&page=${page}`,
+      {
+        token,
+        apiBase,
+      }
+    );
 
     for (const item of items) {
       if (item.pull_request) {
@@ -209,17 +222,23 @@ function toBoolean(value) {
   return String(value).toLowerCase() === 'true';
 }
 
-export async function run({
-  env = process.env,
-  logger = console,
-  apiBase = DEFAULT_API_BASE,
-} = {}) {
+function getRunConfig(env) {
   const token = env.GITHUB_TOKEN;
   const targetRepo = env.TARGET_REPO || env.GITHUB_REPOSITORY;
   const upstreamRepo = env.UPSTREAM_REPO || DEFAULT_UPSTREAM_REPO;
   const releaseTag = env.RELEASE_TAG || '';
   const dryRun = toBoolean(env.DRY_RUN || 'false');
 
+  return {
+    token,
+    targetRepo,
+    upstreamRepo,
+    releaseTag,
+    dryRun,
+  };
+}
+
+function validateRunConfig({ token, targetRepo }) {
   if (!token) {
     throw new Error('GITHUB_TOKEN is required.');
   }
@@ -227,8 +246,124 @@ export async function run({
   if (!targetRepo) {
     throw new Error('TARGET_REPO or GITHUB_REPOSITORY is required.');
   }
+}
 
-  logger.log(`Syncing upstream releases from ${upstreamRepo} into ${targetRepo}${releaseTag ? ` for ${releaseTag}` : ''}.`);
+function getCandidateIssueNumbersForRelease(release, changelogText) {
+  const changelogSection = extractChangelogSection(changelogText, release.tag_name);
+  return extractReferencedIssueNumbers(
+    [release.name || '', release.body || '', changelogSection].join('\n')
+  );
+}
+
+async function createOrPlanIssue({
+  dryRun,
+  targetRepo,
+  token,
+  upstreamRepo,
+  release,
+  issue,
+  existingMarkers,
+  apiBase,
+  logger,
+}) {
+  const marker = `${upstreamRepo}#${issue.number}`;
+  if (existingMarkers.has(marker)) {
+    logger.log(`Skipping #${issue.number}: already mirrored.`);
+    return { created: 0, planned: 0, skipped: 1 };
+  }
+
+  const payload = buildTargetIssuePayload({
+    upstreamRepo,
+    release,
+    issue,
+  });
+
+  if (dryRun) {
+    logger.log(`[dry-run] Would create issue: ${payload.title}`);
+    existingMarkers.add(marker);
+    return { created: 0, planned: 1, skipped: 0 };
+  }
+
+  const createdIssue = await createIssue({
+    targetRepo,
+    token,
+    payload,
+    apiBase,
+  });
+  logger.log(`Created target issue #${createdIssue.number}: ${createdIssue.html_url}`);
+  existingMarkers.add(marker);
+  return { created: 1, planned: 0, skipped: 0 };
+}
+
+async function processRelease({
+  release,
+  changelogText,
+  upstreamRepo,
+  targetRepo,
+  token,
+  dryRun,
+  existingMarkers,
+  apiBase,
+  logger,
+}) {
+  const candidateIssueNumbers = getCandidateIssueNumbersForRelease(release, changelogText);
+
+  if (candidateIssueNumbers.length === 0) {
+    logger.log(`Release ${release.tag_name} has no referenced issues.`);
+    return { created: 0, planned: 0, skipped: 0 };
+  }
+
+  logger.log(
+    `Release ${release.tag_name}: ${candidateIssueNumbers.length} referenced items detected.`
+  );
+
+  const totals = { created: 0, planned: 0, skipped: 0 };
+
+  for (const issueNumber of candidateIssueNumbers) {
+    const issue = await fetchIssue({
+      upstreamRepo,
+      issueNumber,
+      token,
+      apiBase,
+    });
+
+    if (issue.pull_request) {
+      totals.skipped += 1;
+      logger.log(`Skipping #${issueNumber}: upstream reference is a pull request.`);
+      continue;
+    }
+
+    const result = await createOrPlanIssue({
+      dryRun,
+      targetRepo,
+      token,
+      upstreamRepo,
+      release,
+      issue,
+      existingMarkers,
+      apiBase,
+      logger,
+    });
+    totals.created += result.created;
+    totals.planned += result.planned;
+    totals.skipped += result.skipped;
+  }
+
+  return totals;
+}
+
+export async function run({
+  env = process.env,
+  logger = console,
+  apiBase = DEFAULT_API_BASE,
+} = {}) {
+  const { token, targetRepo, upstreamRepo, releaseTag, dryRun } = getRunConfig(env);
+
+  validateRunConfig({ token, targetRepo });
+
+  logger.log(
+    `Syncing upstream releases from ${upstreamRepo} into ${targetRepo}${releaseTag ? ` for ${releaseTag}` : ''}.`
+  );
 
   const releases = await listReleases({
     upstreamRepo,
@@ -258,67 +393,24 @@ export async function run({
   let skipped = 0;
 
   for (const release of releases) {
-    const changelogSection = extractChangelogSection(changelogText, release.tag_name);
-    const candidateIssueNumbers = extractReferencedIssueNumbers([
-      release.name || '',
-      release.body || '',
-      changelogSection,
-    ].join('\n'));
-
-    if (candidateIssueNumbers.length === 0) {
-      logger.log(`Release ${release.tag_name} has no referenced issues.`);
-      continue;
-    }
-
-    logger.log(`Release ${release.tag_name}: ${candidateIssueNumbers.length} referenced items detected.`);
-
-    for (const issueNumber of candidateIssueNumbers) {
-      const issue = await fetchIssue({
-        upstreamRepo,
-        issueNumber,
-        token,
-        apiBase,
-      });
-
-      if (issue.pull_request) {
-        skipped += 1;
-        logger.log(`Skipping #${issueNumber}: upstream reference is a pull request.`);
-        continue;
-      }
-
-      const marker = `${upstreamRepo}#${issue.number}`;
-      if (existingMarkers.has(marker)) {
-        skipped += 1;
-        logger.log(`Skipping #${issue.number}: already mirrored.`);
-        continue;
-      }
-
-      const payload = buildTargetIssuePayload({
-        upstreamRepo,
-        release,
-        issue,
-      });
-
-      if (dryRun) {
-        logger.log(`[dry-run] Would create issue: ${payload.title}`);
-        planned += 1;
-      } else {
-        const createdIssue = await createIssue({
-          targetRepo,
-          token,
-          payload,
-          apiBase,
-        });
-        logger.log(`Created target issue #${createdIssue.number}: ${createdIssue.html_url}`);
-        created += 1;
-      }
-
-      existingMarkers.add(marker);
-    }
+    const totals = await processRelease({
+      release,
+      changelogText,
+      upstreamRepo,
+      targetRepo,
+      token,
+      dryRun,
+      existingMarkers,
+      apiBase,
+      logger,
+    });
+    created += totals.created;
+    planned += totals.planned;
+    skipped += totals.skipped;
   }
 
   logger.log(
-    `Done. ${dryRun ? `Planned ${planned}` : `Created ${created}`} issue(s), skipped ${skipped} item(s), scanned ${releases.length} release(s).`,
+    `Done. ${dryRun ? `Planned ${planned}` : `Created ${created}`} issue(s), skipped ${skipped} item(s), scanned ${releases.length} release(s).`
   );
   return {
     created,

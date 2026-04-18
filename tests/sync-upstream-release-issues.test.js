@@ -1,5 +1,5 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import test from 'node:test';
 
 import {
   buildTargetIssuePayload,
@@ -24,10 +24,7 @@ test('extractReferencedIssueNumbers deduplicates refs and ignores explicit PR re
 test('marker helpers round-trip marker values', () => {
   const marker = buildUpstreamIssueMarker('baekenough/oh-my-customcode', 264);
   assert.equal(marker, '<!-- upstream-release-issue: baekenough/oh-my-customcode#264 -->');
-  assert.equal(
-    extractUpstreamIssueMarker(`${marker}\n\nBody`),
-    'baekenough/oh-my-customcode#264',
-  );
+  assert.equal(extractUpstreamIssueMarker(`${marker}\n\nBody`), 'baekenough/oh-my-customcode#264');
 });
 
 test('extractChangelogSection returns only the requested release block', () => {
@@ -45,7 +42,7 @@ test('extractChangelogSection returns only the requested release block', () => {
 
   assert.equal(
     extractChangelogSection(changelog, 'v0.34.0'),
-    '- omcustom namespace prefix (Closes #264)\n- docs sync (#328, #329)',
+    '- omcustom namespace prefix (Closes #264)\n- docs sync (#328, #329)'
   );
 });
 
@@ -69,7 +66,7 @@ test('buildTargetIssuePayload embeds upstream marker and release context', () =>
 
   assert.equal(
     payload.title,
-    '[baekenough/oh-my-customcode] Port #264: omcustom namespace prefix convention',
+    '[baekenough/oh-my-customcode] Port #264: omcustom namespace prefix convention'
   );
   assert.match(payload.body, /upstream-release-issue: baekenough\/oh-my-customcode#264/);
   assert.match(payload.body, /Release: \[v0\.34\.0]/);

@@ -1,12 +1,89 @@
 {
   "name": "oh-my-customcodex",
-  "private": true,
-  "version": "0.0.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "version": "0.98.0",
+  "description": "Batteries-included agent harness on top of GPT Codex + OMX",
   "type": "module",
-  "description": "Codex-native port of oh-my-customcode automation",
+  "bin": {
+    "omcodex": "./dist/cli/index.js",
+    "omcustom": "./dist/cli/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
-    "lint": "node --check scripts/sync-upstream-release-issues.js tests/sync-upstream-release-issues.test.js",
-    "test": "node --test",
-    "verify": "npm run lint && npm test"
+    "dev": "bun run src/cli/index.ts",
+    "build": "bun build src/cli/index.ts --outdir dist/cli --target node && bun build src/index.ts --outdir dist --target node && bun run scripts/sync-source-lockfile.ts",
+    "test": "bun test tests/ packages/eval-core/",
+    "test:unit": "bun test tests/unit",
+    "test:integration": "bun test tests/integration",
+    "test:e2e": "bun test tests/e2e",
+    "test:coverage": "bun test --coverage",
+    "lint": "biome check src/ tests/ scripts/",
+    "lint:fix": "biome check --write src/ tests/ scripts/",
+    "format": "biome format --write src/ tests/ scripts/",
+    "typecheck": "tsc --noEmit",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "prepare": "sh scripts/setup-hooks.sh || true",
+    "setup:hooks": "sh scripts/setup-hooks.sh",
+    "prepublishOnly": "bun run build && bun run test"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.1.0",
+    "@inquirer/prompts": "^8.3.2",
+    "commander": "^14.0.2",
+    "i18next": "^26.0.2",
+    "yaml": "^2.8.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.12",
+    "@types/bun": "^1.3.6",
+    "@types/js-yaml": "^4.0.9",
+    "@types/nodemailer": "^8.0.0",
+    "js-yaml": "^4.1.0",
+    "nodemailer": "^8.0.1",
+    "typescript": "^6.0.2",
+    "vitepress": "^1.6.4"
+  },
+  "keywords": [
+    "codex",
+    "gpt-codex",
+    "openai",
+    "ai",
+    "agent",
+    "cli"
+  ],
+  "author": "baekenough",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baekenough/oh-my-customcodex.git"
+  },
+  "bugs": {
+    "url": "https://github.com/baekenough/oh-my-customcodex/issues"
+  },
+  "homepage": "https://github.com/baekenough/oh-my-customcodex#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "overrides": {
+    "rollup": "^4.59.0",
+    "esbuild": "^0.25.0"
   }
 }
