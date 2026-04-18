@@ -107,8 +107,8 @@ describe('updater', () => {
     it('should check each component individually', async () => {
       await createConfig('0.1.0', {
         rules: MANIFEST_VERSION, // Up to date
-        agents: '0.1.0', // Out of date
-        skills: '0.1.0', // Out of date
+        agents: '0.0.0', // Out of date
+        skills: '0.0.0', // Out of date
       });
 
       const result = await checkForUpdates(tempDir);
