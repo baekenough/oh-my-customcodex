@@ -675,6 +675,8 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 
 ## 12. Version History
 
+The table below preserves upstream lineage/history context from the parent harness. Child-package release numbering for `oh-my-customcodex` is independent and currently starts at `v0.1.0`.
+
 | Version | Key Changes |
 |---------|-------------|
 | v0.79.0 | CC v2.1.89-v2.1.96 compat; effort default change docs; defer PreToolUse; disableSkillShellExecution; cc-release-collector CronJob; rule-deletion-guard hook |

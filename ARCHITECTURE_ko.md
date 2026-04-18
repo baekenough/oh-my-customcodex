@@ -603,6 +603,8 @@ Claude Code v2.1.72 ~ v2.1.114+ 테스트 및 호환 확인.
 
 ## 13. 버전 히스토리
 
+아래 표는 parent 하네스의 upstream 계보/히스토리 맥락을 보존한 것입니다. `oh-my-customcodex` child package의 실제 배포 버전 체계는 별도이며 현재 `v0.1.0`부터 시작합니다.
+
 | 버전 | 주요 변경 사항 |
 |------|--------------|
 | v0.79.0 | CC v2.1.89-v2.1.96 호환성; effort 기본값 변경 문서화; defer PreToolUse; disableSkillShellExecution; cc-release-collector CronJob; rule-deletion-guard 훅 |
