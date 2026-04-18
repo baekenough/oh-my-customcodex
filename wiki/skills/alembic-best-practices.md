@@ -3,7 +3,7 @@ title: Alembic Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/alembic-best-practices/SKILL.md
+  - .codex/skills/alembic-best-practices/SKILL.md
 related:
   - [[db-alembic-expert]]
   - [[postgres-best-practices]]
@@ -32,4 +32,4 @@ Reference patterns for safe Alembic migrations: naming convention enforcement vi
 
 ## Sources
 
-- `.claude/skills/alembic-best-practices/SKILL.md` — skill definition
+- `.codex/skills/alembic-best-practices/SKILL.md` — skill definition

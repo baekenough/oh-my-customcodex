@@ -3,7 +3,7 @@ title: mgr-gitnerd
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/mgr-gitnerd.md
+  - .codex/agents/mgr-gitnerd.md
 related:
   - [[mgr-sauron]]
   - [[tool-npm-expert]]
@@ -55,4 +55,4 @@ Types: feat, fix, docs, style, refactor, test, chore
 
 ## Sources
 
-- `.claude/agents/mgr-gitnerd.md` — agent definition
+- `.codex/agents/mgr-gitnerd.md` — agent definition

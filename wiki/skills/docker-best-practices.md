@@ -3,7 +3,7 @@ title: Docker Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/docker-best-practices/SKILL.md
+  - .codex/skills/docker-best-practices/SKILL.md
 related:
   - [[infra-docker-expert]]
   - [[aws-best-practices]]
@@ -31,4 +31,4 @@ Reference patterns for Docker: multi-stage builds, minimal base images, layer ca
 
 ## Sources
 
-- `.claude/skills/docker-best-practices/SKILL.md` — skill definition
+- `.codex/skills/docker-best-practices/SKILL.md` — skill definition

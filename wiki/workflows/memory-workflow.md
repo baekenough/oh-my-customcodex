@@ -14,7 +14,7 @@ related:
 
 # Memory Workflow
 
-Memory in oh-my-customcode operates on two levels: native auto-memory (MEMORY.md files per agent) for persistent behavioral patterns, and claude-mem MCP for cross-session searchable storage. Session-end auto-save is triggered by user signals and coordinated between `sys-memory-keeper` and the orchestrator.
+Memory in oh-my-customcodex operates on two levels: native auto-memory (MEMORY.md files per agent) for persistent behavioral patterns, and claude-mem MCP for cross-session searchable storage. Session-end auto-save is triggered by user signals and coordinated between `sys-memory-keeper` and the orchestrator.
 
 ## Overview
 

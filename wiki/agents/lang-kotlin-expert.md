@@ -3,7 +3,7 @@ title: lang-kotlin-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/lang-kotlin-expert.md
+  - .codex/agents/lang-kotlin-expert.md
 related:
   - [[be-springboot-expert]]
   - [[lang-java21-expert]]
@@ -41,4 +41,4 @@ Uses `kotlin-best-practices` skill and `guides/kotlin/`.
 
 ## Sources
 
-- `.claude/agents/lang-kotlin-expert.md` — agent definition
+- `.codex/agents/lang-kotlin-expert.md` — agent definition

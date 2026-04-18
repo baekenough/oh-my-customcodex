@@ -3,7 +3,7 @@ title: TypeScript Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/typescript-best-practices/SKILL.md
+  - .codex/skills/typescript-best-practices/SKILL.md
 related:
   - [[lang-typescript-expert]]
   - [[react-best-practices]]
@@ -32,4 +32,4 @@ Reference patterns for TypeScript: strict mode configuration, discriminated unio
 
 ## Sources
 
-- `.claude/skills/typescript-best-practices/SKILL.md` — skill definition
+- `.codex/skills/typescript-best-practices/SKILL.md` — skill definition

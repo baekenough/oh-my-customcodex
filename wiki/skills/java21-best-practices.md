@@ -3,7 +3,7 @@ title: Java 21 Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/java21-best-practices/SKILL.md
+  - .codex/skills/java21-best-practices/SKILL.md
 related:
   - [[lang-java21-expert]]
   - [[springboot-best-practices]]
@@ -31,4 +31,4 @@ Reference patterns for Java 21: Virtual Threads (Project Loom) for high-concurre
 
 ## Sources
 
-- `.claude/skills/java21-best-practices/SKILL.md` — skill definition
+- `.codex/skills/java21-best-practices/SKILL.md` — skill definition

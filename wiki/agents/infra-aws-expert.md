@@ -3,7 +3,7 @@ title: infra-aws-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/infra-aws-expert.md
+  - .codex/agents/infra-aws-expert.md
 related:
   - [[infra-docker-expert]]
   - [[mgr-gitnerd]]
@@ -36,4 +36,4 @@ Uses `aws-best-practices` skill and `guides/aws/`. Memory is `user`-scoped for c
 
 ## Sources
 
-- `.claude/agents/infra-aws-expert.md` — agent definition
+- `.codex/agents/infra-aws-expert.md` — agent definition

@@ -17,7 +17,7 @@ related:
 
 # Rule Enforcement System
 
-oh-my-customcode uses an **advisory-first enforcement model**: most behavioral rules are enforced through prompt engineering and PostCompact context injection rather than hard-blocking hooks. This preserves agent flexibility while maintaining behavioral standards.
+oh-my-customcodex uses an **advisory-first enforcement model**: most behavioral rules are enforced through prompt engineering and PostCompact context injection rather than hard-blocking hooks. This preserves agent flexibility while maintaining behavioral standards.
 
 ## Overview
 

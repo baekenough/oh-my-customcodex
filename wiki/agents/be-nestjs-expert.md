@@ -3,7 +3,7 @@ title: be-nestjs-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/be-nestjs-expert.md
+  - .codex/agents/be-nestjs-expert.md
 related:
   - [[lang-typescript-expert]]
   - [[be-express-expert]]
@@ -34,4 +34,4 @@ Expert NestJS developer for opinionated, scalable Node.js applications with Type
 
 ## Sources
 
-- `.claude/agents/be-nestjs-expert.md` — agent definition
+- `.codex/agents/be-nestjs-expert.md` — agent definition

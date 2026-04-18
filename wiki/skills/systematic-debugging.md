@@ -3,7 +3,7 @@ title: Systematic Debugging
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/systematic-debugging/SKILL.md
+  - .codex/skills/systematic-debugging/SKILL.md
 related:
   - [[dev-review]]
   - [[adversarial-review]]
@@ -32,4 +32,4 @@ Provides a systematic 5-step debugging process: (1) Reproduce reliably, (2) Isol
 
 ## Sources
 
-- `.claude/skills/systematic-debugging/SKILL.md` — skill definition
+- `.codex/skills/systematic-debugging/SKILL.md` — skill definition

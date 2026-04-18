@@ -3,7 +3,7 @@ title: Wiki RAG
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/wiki-rag/SKILL.md
+  - .codex/skills/wiki-rag/SKILL.md
 related:
   - [[wiki]]
   - [[wiki-curator]]
@@ -22,7 +22,7 @@ When users ask about project architecture, agent roles, or rule behavior, wiki-r
 - **Scope**: core
 - **User-invocable**: yes
 - **Effort**: medium
-- **Command**: `/omcustom:wiki-rag`
+- **Command**: `/omcodex:wiki-rag`
 
 ## Relationships
 
@@ -32,4 +32,4 @@ When users ask about project architecture, agent roles, or rule behavior, wiki-r
 
 ## Sources
 
-- `.claude/skills/wiki-rag/SKILL.md` — skill definition
+- `.codex/skills/wiki-rag/SKILL.md` — skill definition

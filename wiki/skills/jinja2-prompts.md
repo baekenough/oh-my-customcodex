@@ -3,7 +3,7 @@ title: Jinja2 Prompts
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/jinja2-prompts/SKILL.md
+  - .codex/skills/jinja2-prompts/SKILL.md
 related:
   - [[reasoning-sandwich]]
   - [[evaluator-optimizer]]
@@ -31,4 +31,4 @@ Provides a Jinja2-based templating system for agent prompts. Templates support v
 
 ## Sources
 
-- `.claude/skills/jinja2-prompts/SKILL.md` — skill definition
+- `.codex/skills/jinja2-prompts/SKILL.md` — skill definition

@@ -3,7 +3,7 @@ title: sys-memory-keeper
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/sys-memory-keeper.md
+  - .codex/agents/sys-memory-keeper.md
 related:
   - [[sys-naggy]]
   - [[mgr-sauron]]
@@ -38,4 +38,4 @@ Important: MCP tools (claude-mem, episodic-memory) are orchestrator-scoped — `
 
 ## Sources
 
-- `.claude/agents/sys-memory-keeper.md` — agent definition
+- `.codex/agents/sys-memory-keeper.md` — agent definition

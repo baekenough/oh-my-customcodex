@@ -3,7 +3,7 @@ title: fe-design-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/fe-design-expert.md
+  - .codex/agents/fe-design-expert.md
 related:
   - [[fe-vercel-agent]]
   - [[fe-vuejs-agent]]
@@ -39,4 +39,4 @@ A critical feature is the **AI Slop Test** — a checklist of common AI-generate
 
 ## Sources
 
-- `.claude/agents/fe-design-expert.md` — agent definition
+- `.codex/agents/fe-design-expert.md` — agent definition

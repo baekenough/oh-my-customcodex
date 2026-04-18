@@ -3,7 +3,7 @@ title: Vercel Deploy
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/vercel-deploy/SKILL.md
+  - .codex/skills/vercel-deploy/SKILL.md
 related:
   - [[fe-vercel-agent]]
   - [[react-best-practices]]
@@ -33,4 +33,4 @@ Automates Vercel deployments: pre-deploy checks (build passes, tests pass), `ver
 
 ## Sources
 
-- `.claude/skills/vercel-deploy/SKILL.md` — skill definition
+- `.codex/skills/vercel-deploy/SKILL.md` — skill definition

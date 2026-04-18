@@ -3,7 +3,7 @@ title: be-fastapi-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/be-fastapi-expert.md
+  - .codex/agents/be-fastapi-expert.md
 related:
   - [[lang-python-expert]]
   - [[be-django-expert]]
@@ -38,4 +38,4 @@ Commonly paired with [[db-alembic-expert]] for async SQLAlchemy migrations and [
 
 ## Sources
 
-- `.claude/agents/be-fastapi-expert.md` — agent definition
+- `.codex/agents/be-fastapi-expert.md` — agent definition

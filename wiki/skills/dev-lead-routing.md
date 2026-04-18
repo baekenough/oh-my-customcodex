@@ -3,7 +3,7 @@ title: Dev Lead Routing
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/dev-lead-routing/SKILL.md
+  - .codex/skills/dev-lead-routing/SKILL.md
 related:
   - [[lang-golang-expert]]
   - [[lang-python-expert]]
@@ -36,4 +36,4 @@ Routing skill for software development tasks. Detects the appropriate language o
 
 ## Sources
 
-- `.claude/skills/dev-lead-routing/SKILL.md` — skill definition
+- `.codex/skills/dev-lead-routing/SKILL.md` — skill definition

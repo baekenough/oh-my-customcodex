@@ -17,7 +17,7 @@ Unified reference for executing prompts through external LLM providers via exec 
 
 ## Overview
 
-Three provider-backed exec skills extend oh-my-customcode beyond Claude: `codex-exec` (GPT-5.4, code generation), `gemini-exec` (Gemini 2.5 Pro, long context and multimodal), and `rtk-exec` (configurable proxy, token-optimized output). Each maps to a CLI dependency auto-detected at session start by `session-env-check.sh`.
+Three provider-backed exec skills extend oh-my-customcodex beyond Claude: `codex-exec` (GPT-5.4, code generation), `gemini-exec` (Gemini 2.5 Pro, long context and multimodal), and `rtk-exec` (configurable proxy, token-optimized output). Each maps to a CLI dependency auto-detected at session start by `session-env-check.sh`.
 
 ## Provider Matrix
 

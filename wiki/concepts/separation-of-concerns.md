@@ -16,7 +16,7 @@ related:
 
 # Separation of Concerns
 
-The most critical design principle in oh-my-customcode is that skills, agents, and guides serve different purposes and must not conflate them. This separation enables components to evolve independently and prevents knowledge decay.
+The most critical design principle in oh-my-customcodex is that skills, agents, and guides serve different purposes and must not conflate them. This separation enables components to evolve independently and prevents knowledge decay.
 
 ## Overview
 
@@ -24,8 +24,8 @@ The most critical design principle in oh-my-customcode is that skills, agents, a
 
 | Location | Purpose | Contains |
 |----------|---------|----------|
-| `.claude/agents/` | WHAT the agent does | Role declaration, capability overview, tool list, skill references |
-| `.claude/skills/` | HOW to do tasks | Step-by-step instructions, decision rules, workflow logic |
+| `.codex/agents/` | WHAT the agent does | Role declaration, capability overview, tool list, skill references |
+| `.codex/skills/` | HOW to do tasks | Step-by-step instructions, decision rules, workflow logic |
 | `guides/` | Reference documentation | Best practices, tutorials, authoritative external references |
 
 Violating this separation causes structural rot: knowledge embedded in agents becomes stale when the underlying library evolves; workflow logic embedded in guides is invisible to agents; reference docs embedded in skills inflate token usage unnecessarily.
@@ -47,7 +47,7 @@ What an agent body must NOT contain:
 
 ### Skills: Executable Knowledge
 
-A skill file at `.claude/skills/{name}/SKILL.md` is the system's knowledge unit. It is:
+A skill file at `.codex/skills/{name}/SKILL.md` is the system's knowledge unit. It is:
 - **Stateless**: no per-session state
 - **Composable**: multiple agents can reference the same skill
 - **Versioned**: skills can evolve independently; agents pick up changes immediately
@@ -74,9 +74,9 @@ Three mechanisms enforce this separation:
 
 **R006 (Agent Design)**: Defines what belongs where. mgr-sauron (R017) verifies compliance before every push.
 
-**R010 Protected Paths**: `.claude/agents/*.md`, `.claude/skills/*/SKILL.md`, and `guides/*/` (new directories) can only be created or structurally modified by `mgr-creator`. This prevents ad-hoc creation that bypasses frontmatter validation.
+**R010 Protected Paths**: `.codex/agents/*.md`, `.codex/skills/*/SKILL.md`, and `guides/*/` (new directories) can only be created or structurally modified by `mgr-creator`. This prevents ad-hoc creation that bypasses frontmatter validation.
 
-**mgr-creator auto-discovery**: When creating a new agent, mgr-creator automatically searches `.claude/skills/` and `guides/` for relevant materials. This enforces the pattern by making the "right" path the easy path.
+**mgr-creator auto-discovery**: When creating a new agent, mgr-creator automatically searches `.codex/skills/` and `guides/` for relevant materials. This enforces the pattern by making the "right" path the easy path.
 
 ## The Skill-Agent-Guide Triad
 
@@ -85,9 +85,9 @@ The canonical structure for a domain is the triad:
 ```
 guides/{domain}/           ← authoritative reference
     ↓ grounds
-.claude/skills/{domain}-best-practices/  ← executable instructions
+.codex/skills/{domain}-best-practices/  ← executable instructions
     ↓ referenced by
-.claude/agents/{domain}-expert.md        ← role definition
+.codex/agents/{domain}-expert.md        ← role definition
 ```
 
 When you add a new domain, you add all three. When you remove a domain, removing any one element without the others creates orphaned references (caught by mgr-sauron).

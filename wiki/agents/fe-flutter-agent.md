@@ -3,7 +3,7 @@ title: fe-flutter-agent
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/fe-flutter-agent.md
+  - .codex/agents/fe-flutter-agent.md
 related:
   - [[lang-kotlin-expert]]
   - [[fe-vercel-agent]]
@@ -44,4 +44,4 @@ Expert Flutter/Dart cross-platform app developer covering widget composition, st
 
 ## Sources
 
-- `.claude/agents/fe-flutter-agent.md` — agent definition
+- `.codex/agents/fe-flutter-agent.md` — agent definition

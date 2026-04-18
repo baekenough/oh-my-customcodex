@@ -3,7 +3,7 @@ title: fe-svelte-agent
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/fe-svelte-agent.md
+  - .codex/agents/fe-svelte-agent.md
 related:
   - [[fe-vercel-agent]]
   - [[fe-vuejs-agent]]
@@ -35,4 +35,4 @@ Expert Svelte developer for compiler-based reactivity, reactive statements, Svel
 
 ## Sources
 
-- `.claude/agents/fe-svelte-agent.md` — agent definition
+- `.codex/agents/fe-svelte-agent.md` — agent definition

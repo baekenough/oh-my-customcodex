@@ -3,7 +3,7 @@ title: Optimize Bundle
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/optimize-bundle/SKILL.md
+  - .codex/skills/optimize-bundle/SKILL.md
 related:
   - [[tool-optimizer]]
   - [[optimize-analyze]]
@@ -33,4 +33,4 @@ Applies bundle size optimizations based on analysis findings: dynamic imports fo
 
 ## Sources
 
-- `.claude/skills/optimize-bundle/SKILL.md` — skill definition
+- `.codex/skills/optimize-bundle/SKILL.md` — skill definition

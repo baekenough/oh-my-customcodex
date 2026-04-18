@@ -3,7 +3,7 @@ title: Redis Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/redis-best-practices/SKILL.md
+  - .codex/skills/redis-best-practices/SKILL.md
 related:
   - [[db-redis-expert]]
   - [[postgres-best-practices]]
@@ -31,4 +31,4 @@ Reference patterns for Redis: key naming conventions, TTL management, eviction p
 
 ## Sources
 
-- `.claude/skills/redis-best-practices/SKILL.md` — skill definition
+- `.codex/skills/redis-best-practices/SKILL.md` — skill definition

@@ -3,7 +3,7 @@ title: de-kafka-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/de-kafka-expert.md
+  - .codex/agents/de-kafka-expert.md
 related:
   - [[de-spark-expert]]
   - [[de-pipeline-expert]]
@@ -37,4 +37,4 @@ Uses `kafka-best-practices` skill and `guides/kafka/` for reference documentatio
 
 ## Sources
 
-- `.claude/agents/de-kafka-expert.md` — agent definition
+- `.codex/agents/de-kafka-expert.md` — agent definition

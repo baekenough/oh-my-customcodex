@@ -3,7 +3,7 @@ title: Omcustom Web
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/omcustom-web/SKILL.md
+  - .codex/skills/omcodex-web/SKILL.md
 related:
   - [[status]]
   - [[monitoring-setup]]
@@ -21,15 +21,15 @@ Controls and inspects Claude Code's built-in web interface. Supports enabling/di
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcustom-web`
+- **Command**: `/omcodex-web`
 - **Effort**: not specified
 
 ## Relationships
 
 - **Used by agents**: orchestrator
 - **Related skills**: [[status]], [[monitoring-setup]]
-- **See also**: `.claude/settings.local.json`
+- **See also**: `.codex/settings.local.json`
 
 ## Sources
 
-- `.claude/skills/omcustom-web/SKILL.md` — skill definition
+- `.codex/skills/omcodex-web/SKILL.md` — skill definition

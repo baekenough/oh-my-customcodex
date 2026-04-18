@@ -3,7 +3,7 @@ title: DE Lead Routing
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/de-lead-routing/SKILL.md
+  - .codex/skills/de-lead-routing/SKILL.md
 related:
   - [[de-airflow-expert]]
   - [[de-dbt-expert]]
@@ -35,4 +35,4 @@ Routing skill for data engineering tasks. Detects the appropriate DE expert base
 
 ## Sources
 
-- `.claude/skills/de-lead-routing/SKILL.md` — skill definition
+- `.codex/skills/de-lead-routing/SKILL.md` — skill definition

@@ -3,7 +3,7 @@ title: Adaptive Harness
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/adaptive-harness/SKILL.md
+  - .codex/skills/adaptive-harness/SKILL.md
 related:
   - [[analysis]]
   - [[r016]]
@@ -11,7 +11,7 @@ related:
 
 # Adaptive Harness
 
-Auto-detect project context and optimize the oh-my-customcode harness — deactivate unused agents/skills, suggest missing experts, generate project profile.
+Auto-detect project context and optimize the oh-my-customcodex harness — deactivate unused agents/skills, suggest missing experts, generate project profile.
 
 ## Overview
 
@@ -22,7 +22,7 @@ Scans project tech stack, maps detections to agents/skills, and generates a `.cl
 - **Scope**: harness
 - **User-invocable**: yes
 - **Effort**: high
-- **Command**: `/omcustom:adaptive-harness`
+- **Command**: `/omcodex:adaptive-harness`
 
 ## Relationships
 
@@ -32,4 +32,4 @@ Scans project tech stack, maps detections to agents/skills, and generates a `.cl
 
 ## Sources
 
-- `.claude/skills/adaptive-harness/SKILL.md` — skill definition
+- `.codex/skills/adaptive-harness/SKILL.md` — skill definition

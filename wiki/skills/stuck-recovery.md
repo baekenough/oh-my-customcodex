@@ -3,7 +3,7 @@ title: Stuck Recovery
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/stuck-recovery/SKILL.md
+  - .codex/skills/stuck-recovery/SKILL.md
 related:
   - [[model-escalation]]
   - [[pipeline-guards]]
@@ -32,4 +32,4 @@ Detects when agents are stuck in repetitive failure loops and advises recovery s
 
 ## Sources
 
-- `.claude/skills/stuck-recovery/SKILL.md` — skill definition
+- `.codex/skills/stuck-recovery/SKILL.md` — skill definition

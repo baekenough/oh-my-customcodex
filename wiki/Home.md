@@ -1,14 +1,14 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/baekenough/oh-my-customcode/develop/assets/banner.webp" alt="oh-my-customcode banner" width="800" />
+  <img src="https://raw.githubusercontent.com/baekenough/oh-my-customcodex/develop/assets/banner.webp" alt="oh-my-customcodex banner" width="800" />
 </div>
 
-# oh-my-customcode
+# oh-my-customcodex
 
 > **Your Claude Code, Your Way**
 
 **The easiest way to customize Claude Code with agents, skills, and rules.**
 
-Like oh-my-zsh transformed shell customization, oh-my-customcode makes personalizing your Claude Code experience simple, powerful, and fun.
+Like oh-my-zsh transformed shell customization, oh-my-customcodex makes personalizing your Claude Code experience simple, powerful, and fun.
 
 ## What Makes It Special
 

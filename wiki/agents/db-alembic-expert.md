@@ -3,7 +3,7 @@ title: db-alembic-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/db-alembic-expert.md
+  - .codex/agents/db-alembic-expert.md
 related:
   - [[db-postgres-expert]]
   - [[be-fastapi-expert]]
@@ -45,4 +45,4 @@ Escalates from sonnet to opus after 2 failures (escalation policy enabled).
 
 ## Sources
 
-- `.claude/agents/db-alembic-expert.md` — agent definition
+- `.codex/agents/db-alembic-expert.md` — agent definition

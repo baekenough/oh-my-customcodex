@@ -3,7 +3,7 @@ title: dbt Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/dbt-best-practices/SKILL.md
+  - .codex/skills/dbt-best-practices/SKILL.md
 related:
   - [[de-dbt-expert]]
   - [[snowflake-best-practices]]
@@ -32,4 +32,4 @@ Reference patterns for dbt projects: model layer structure (staging, intermediat
 
 ## Sources
 
-- `.claude/skills/dbt-best-practices/SKILL.md` — skill definition
+- `.codex/skills/dbt-best-practices/SKILL.md` — skill definition

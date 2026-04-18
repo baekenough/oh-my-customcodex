@@ -3,7 +3,7 @@ title: Research
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/research/SKILL.md
+  - .codex/skills/research/SKILL.md
 related:
   - [[deep-plan]]
   - [[agora]]
@@ -35,4 +35,4 @@ Spawns 10 parallel research agents (Agent Teams when available, R018) to analyze
 
 ## Sources
 
-- `.claude/skills/research/SKILL.md` — skill definition
+- `.codex/skills/research/SKILL.md` — skill definition

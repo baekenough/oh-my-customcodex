@@ -3,7 +3,7 @@ title: Dev Refactor
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/dev-refactor/SKILL.md
+  - .codex/skills/dev-refactor/SKILL.md
 related:
   - [[dev-review]]
   - [[structured-dev-cycle]]
@@ -31,9 +31,9 @@ Routes refactoring work to the language-specific expert agent. Runs pre-flight g
 ## Relationships
 
 - **Used by agents**: [[lang-golang-expert]], [[lang-python-expert]], [[lang-typescript-expert]], [[lang-rust-expert]], [[lang-kotlin-expert]]
-- **Related skills**: [[dev-review]], [[structured-dev-cycle]], [[omcustom-takeover]]
+- **Related skills**: [[dev-review]], [[structured-dev-cycle]], [[omcodex-takeover]]
 - **See also**: [[R010]]
 
 ## Sources
 
-- `.claude/skills/dev-refactor/SKILL.md` — skill definition
+- `.codex/skills/dev-refactor/SKILL.md` — skill definition

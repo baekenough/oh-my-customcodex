@@ -3,7 +3,7 @@ title: de-airflow-expert
 type: agent
 updated: 2026-04-18
 sources:
-  - .claude/agents/de-airflow-expert.md
+  - .codex/agents/de-airflow-expert.md
 related:
   - [[de-pipeline-expert]]
   - [[de-dbt-expert]]
@@ -37,4 +37,4 @@ Uses `airflow-best-practices` skill and `guides/airflow/` for reference document
 
 ## Sources
 
-- `.claude/agents/de-airflow-expert.md` — agent definition
+- `.codex/agents/de-airflow-expert.md` — agent definition

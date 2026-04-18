@@ -3,7 +3,7 @@ title: Deep Plan
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/deep-plan/SKILL.md
+  - .codex/skills/deep-plan/SKILL.md
 related:
   - [[research]]
   - [[structured-dev-cycle]]
@@ -34,4 +34,4 @@ Three-phase planning workflow: (1) Research phase using multi-team parallel anal
 
 ## Sources
 
-- `.claude/skills/deep-plan/SKILL.md` — skill definition
+- `.codex/skills/deep-plan/SKILL.md` — skill definition

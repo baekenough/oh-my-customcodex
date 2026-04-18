@@ -3,7 +3,7 @@ title: Sauron Watch
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/sauron-watch/SKILL.md
+  - .codex/skills/sauron-watch/SKILL.md
 related:
   - [[mgr-sauron]]
   - [[audit-agents]]
@@ -23,7 +23,7 @@ Runs the complete R017 verification: Phase 1 (5 rounds of manager verification v
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcustom:sauron-watch`
+- **Command**: `/omcodex:sauron-watch`
 - **Effort**: not specified
 
 ## Relationships
@@ -34,4 +34,4 @@ Runs the complete R017 verification: Phase 1 (5 rounds of manager verification v
 
 ## Sources
 
-- `.claude/skills/sauron-watch/SKILL.md` — skill definition
+- `.codex/skills/sauron-watch/SKILL.md` — skill definition

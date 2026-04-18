@@ -3,7 +3,7 @@ title: Optimize Report
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/optimize-report/SKILL.md
+  - .codex/skills/optimize-report/SKILL.md
 related:
   - [[tool-optimizer]]
   - [[optimize-analyze]]
@@ -33,4 +33,4 @@ Produces a structured optimization report comparing before/after metrics for bun
 
 ## Sources
 
-- `.claude/skills/optimize-report/SKILL.md` — skill definition
+- `.codex/skills/optimize-report/SKILL.md` — skill definition

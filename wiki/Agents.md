@@ -1,6 +1,6 @@
 # Agents
 
-oh-my-customcode includes **33 specialized agents** organized by category.
+oh-my-customcodex includes **33 specialized agents** organized by category.
 
 | Category | Count | Agents |
 |----------|-------|--------|

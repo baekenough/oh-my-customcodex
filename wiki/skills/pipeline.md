@@ -3,7 +3,7 @@ title: Pipeline
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/pipeline/SKILL.md
+  - .codex/skills/pipeline/SKILL.md
 related:
   - [[dag-orchestration]]
   - [[pipeline-guards]]
@@ -35,4 +35,4 @@ YAML-based pipeline executor. In list mode, scans `workflows/*.yaml` and display
 
 ## Sources
 
-- `.claude/skills/pipeline/SKILL.md` — skill definition
+- `.codex/skills/pipeline/SKILL.md` — skill definition

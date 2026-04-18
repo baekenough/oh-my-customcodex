@@ -3,7 +3,7 @@ title: Wiki Curator
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/wiki-curator.md
+  - .codex/agents/wiki-curator.md
 related:
   - [[wiki]]
   - [[wiki-rag]]
@@ -33,4 +33,4 @@ All wiki/ directory writes go through this agent per R010 delegation rules. The 
 
 ## Sources
 
-- `.claude/agents/wiki-curator.md` — agent definition
+- `.codex/agents/wiki-curator.md` — agent definition

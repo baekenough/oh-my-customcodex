@@ -3,7 +3,7 @@ title: Adversarial Review
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/adversarial-review/SKILL.md
+  - .codex/skills/adversarial-review/SKILL.md
 related:
   - [[dev-review]]
   - [[sec-codeql-expert]]
@@ -34,4 +34,4 @@ Reviews code from an attacker's perspective using STRIDE + OWASP frameworks acro
 
 ## Sources
 
-- `.claude/skills/adversarial-review/SKILL.md` — skill definition
+- `.codex/skills/adversarial-review/SKILL.md` — skill definition

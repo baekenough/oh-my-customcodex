@@ -3,7 +3,7 @@ title: qa-writer
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/qa-writer.md
+  - .codex/agents/qa-writer.md
 related:
   - [[qa-planner]]
   - [[qa-engineer]]
@@ -38,4 +38,4 @@ Results are passed to [[qa-engineer]] for execution and archived to [[arch-docum
 
 ## Sources
 
-- `.claude/agents/qa-writer.md` — agent definition
+- `.codex/agents/qa-writer.md` — agent definition

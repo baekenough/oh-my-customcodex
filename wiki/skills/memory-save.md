@@ -3,7 +3,7 @@ title: Memory Save
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/memory-save/SKILL.md
+  - .codex/skills/memory-save/SKILL.md
 related:
   - [[memory-recall]]
   - [[memory-management]]
@@ -35,4 +35,4 @@ Collects the current session's completed tasks, decisions, and open items, then 
 
 ## Sources
 
-- `.claude/skills/memory-save/SKILL.md` — skill definition
+- `.codex/skills/memory-save/SKILL.md` — skill definition

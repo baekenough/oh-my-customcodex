@@ -98,7 +98,7 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 **슬래시 커맨드 / 사용자 직접 호출 스킬**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev, harness-synthesizer
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcodex-release-notes, omcodex-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, pipeline, improve-report, omcodex-feedback, omcodex-web, omcodex-loop, sdd-dev, harness-synthesizer, idea
 
 **시스템 / 내부 스킬**
 
@@ -606,7 +606,7 @@ Claude Code v2.1.72 ~ v2.1.114+ 테스트 및 호환 확인.
 | 버전 | 주요 변경 사항 |
 |------|--------------|
 | v0.79.0 | CC v2.1.89-v2.1.96 호환성; effort 기본값 변경 문서화; defer PreToolUse; disableSkillShellExecution; cc-release-collector CronJob; rule-deletion-guard 훅 |
-| v0.80.0–v0.88.1 | 레지스트리 격리; omcustom update 자체 업데이트 + re-exec; 규칙 안전성 확장 (R020/R015/R011) |
+| v0.80.0–v0.88.1 | 레지스트리 격리; omcodex update 자체 업데이트 + re-exec; 규칙 안전성 확장 (R020/R015/R011) |
 | v0.89.0 | CC v2.1.97-v2.1.108 호환성; 프롬프트 캐싱 1h TTL 환경 변수; Skill 도구 내장 커맨드 검색; /recap 세션 컨텍스트; 호환성 테이블 확장 (v2.1.97-v2.1.108 14행) |
 | v0.90.0 | CC v2.1.110 호환성; PushNotification 도구 (R002); /tui 풀스크린; /focus 커맨드; autoScrollEnabled; TRACEPARENT/TRACESTATE; Bash 최대 타임아웃 강제; Write 도구 IDE diff 피드백; --resume 스케줄 작업 부활; 호환성 테이블 확장 (v2.1.110 8행) |
 | v0.94.0 | cc-release-monitor 워크플로우 및 infra/cc-release-collector 제거 (Airflow DAG 이관); geeknews-scout README 교차 참조 수정 |
@@ -626,16 +626,16 @@ Claude Code v2.1.72 ~ v2.1.114+ 테스트 및 호환 확인.
 | v0.58.2 | RL/WL 리뉴얼 카운트다운 statusline 표시 |
 | v0.58.1 | post-release-followup 스킬, auto-dev 워크플로우 7단계 |
 | v0.58.0 | Impeccable AI 디자인 언어 (fe-design-expert, 가이드 4개) |
-| v0.57.0 | `omcustom update --hard`, `/omcustom:auto-improve`, Epic #535 완결 |
+| v0.57.0 | `omcodex update --hard`, `/omcodex:auto-improve`, Epic #535 완결 |
 | v0.56.0 | PostCompact R000 enforcement, workflow --list |
 | v0.55.0 | Statusline WL 세그먼트, eraser 워크플로우 |
 | v0.54.0 | ARCHITECTURE.md 전면 동기화, Eraser 다이어그램 |
-| v0.53.1 | 자동 태깅 수정 (.npmrc git-tag-version=false); /omcustom:workflow 이름 변경; 커스텀 워크플로우 템플릿 |
+| v0.53.1 | 자동 태깅 수정 (.npmrc git-tag-version=false); /omcodex:workflow 이름 변경; 커스텀 워크플로우 템플릿 |
 | v0.53.0 | 대시보드 All Projects 제거; 프로젝트 상세 페이지; eval-core DB 연결; 사용자 피드백 통합 (#562) |
-| v0.52.0 | feedback-collector 훅; 라우팅 미스 분석; /omcustom:improve-report; R018 스코프 제약 |
+| v0.52.0 | feedback-collector 훅; 라우팅 미스 분석; /omcodex:improve-report; R018 스코프 제약 |
 | v0.51.0–v0.51.2 | /scout 스킬; Agent Teams 최초 사용; R018 어드바이저 배치 감지; 대시보드 정리 |
 | v0.50.0 | lockfile 기반 스마트 보호; systematic-debugging 스킬 |
-| v0.49.0 | 워크플로우 엔진 (/omcustom:workflow); workflow-runner; auto-dev.yaml |
+| v0.49.0 | 워크플로우 엔진 (/omcodex:workflow); workflow-runner; auto-dev.yaml |
 | v0.48.0–v0.48.5 | 20개 이슈 심층 수정 (Drizzle, group_concat, busy_timeout); /professor-triage; /release-plan; stale-todo-scanner; bypassPermissions 어드바이저리 |
 | v0.47.0–v0.47.2 | 내장 Web UI 개선; 고아 서버 수정; 다운그레이드 방지; 버전 표시 통일 |
 | v0.44.0–v0.46.1 | 사이드바/대시보드/평가; 자율 모드; 피드백 스킬; SDD; ambiguity-gate; CC v2.1.80 호환; 멀티 프로젝트 Web UI |
@@ -644,7 +644,7 @@ Claude Code v2.1.72 ~ v2.1.114+ 테스트 및 호환 확인.
 | v0.39.0–v0.41.0 | Adversarial review; Rust CLI 컴포넌트 |
 | v0.38.0 | PostCompact 훅; eval-core 패키지; init 위자드; context:fork 캡 상향; 훅 시스템 정리; 템플릿 완전 동기화; Claude Code v2.1.72–v2.1.76 호환성 |
 | v0.37.0–v0.37.3 | 구조 최적화: 규칙/스킬 압축, 에이전트-스킬 와이어링, 훅 최적화, 도메인 게이팅 |
-| v0.36.0–v0.36.1 | Harness Engineering (26개 이슈): R020, 보안 훅, 도구 축소, 프론트매터 확장, reasoning-sandwich, omcustom-takeover, 메모리 시간 감쇠, 에이전트 메트릭, 스킬 효과성; /omcustom-release-notes |
+| v0.36.0–v0.36.1 | Harness Engineering (26개 이슈): R020, 보안 훅, 도구 축소, 프론트매터 확장, reasoning-sandwich, omcodex-takeover, 메모리 시간 감쇠, 에이전트 메트릭, 스킬 효과성; /omcodex-release-notes |
 | v0.35.x | 비용 모니터링, pre-flight 가드, Agent Teams 호환성, episodic-memory 수정 |
 | v0.34.0 | Evaluator-optimizer, 워크플로우 패턴, stuck-detector 하드 블록, pre-flight 가드 |
 | v0.30.0–v0.33.x | deep-plan 스킬, structured-dev-cycle, 신뢰도 추적 메모리, 컨텍스트 예산, 드리프트 감지 |

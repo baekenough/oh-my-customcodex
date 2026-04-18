@@ -3,7 +3,7 @@ title: Rust Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/rust-best-practices/SKILL.md
+  - .codex/skills/rust-best-practices/SKILL.md
 related:
   - [[lang-rust-expert]]
 ---
@@ -30,4 +30,4 @@ Reference patterns for idiomatic Rust: ownership and borrowing patterns, error h
 
 ## Sources
 
-- `.claude/skills/rust-best-practices/SKILL.md` — skill definition
+- `.codex/skills/rust-best-practices/SKILL.md` — skill definition

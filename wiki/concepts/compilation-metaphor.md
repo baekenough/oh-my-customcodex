@@ -15,14 +15,14 @@ related:
 
 # The Compilation Metaphor
 
-oh-my-customcode's architecture is explicitly modeled on software compilation. This isn't a decorative analogy — it is the organizing principle that dictates where knowledge lives, how components evolve, and why the system scales cleanly.
+oh-my-customcodex's architecture is explicitly modeled on software compilation. This isn't a decorative analogy — it is the organizing principle that dictates where knowledge lives, how components evolve, and why the system scales cleanly.
 
 ## The Mapping
 
-| Compilation Concept | oh-my-customcode | Role |
+| Compilation Concept | oh-my-customcodex | Role |
 |---------------------|-----------------|------|
-| **Source code** | `.claude/skills/` | Reusable, composable knowledge definitions |
-| **Build artifacts** | `.claude/agents/` | Skills compiled into executable specialists |
+| **Source code** | `.codex/skills/` | Reusable, composable knowledge definitions |
+| **Build artifacts** | `.codex/agents/` | Skills compiled into executable specialists |
 | **Compiler** | `mgr-sauron` (R017) | Structural validation and consistency enforcement |
 | **Build spec / constraints** | `.claude/rules/` | Behavioral rules agents must obey |
 | **Linker** | Routing skills | Connects tasks to the right agent at runtime |
@@ -32,7 +32,7 @@ oh-my-customcode's architecture is explicitly modeled on software compilation. T
 
 ### Independent Evolution
 
-In software compilation, source code evolves independently of the runtime binary. You recompile to get updated artifacts. oh-my-customcode follows the same model:
+In software compilation, source code evolves independently of the runtime binary. You recompile to get updated artifacts. oh-my-customcodex follows the same model:
 
 - A `go-best-practices` skill can be updated with new Go idioms without touching `lang-golang-expert.md`
 - The next time the agent is invoked, it loads the updated skill — effectively "recompiled"

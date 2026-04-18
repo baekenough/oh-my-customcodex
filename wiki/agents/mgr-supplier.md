@@ -3,7 +3,7 @@ title: mgr-supplier
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/mgr-supplier.md
+  - .codex/agents/mgr-supplier.md
 related:
   - [[mgr-creator]]
   - [[mgr-updater]]
@@ -33,10 +33,10 @@ Operates in three modes: Audit (scan and report), Supply (suggest missing skills
 
 ## Relationships
 
-- **Depends on**: `audit-agents` skill, filesystem (`.claude/agents/`, `.claude/skills/`, `guides/`)
+- **Depends on**: `audit-agents` skill, filesystem (`.codex/agents/`, `.codex/skills/`, `guides/`)
 - **Used by**: [[mgr-sauron]] (Phase 1 audit), [[mgr-creator]] (post-creation validation), [[mgr-updater]] (post-update re-validation)
 - **See also**: [[mgr-creator]] (creates agents/skills), [[mgr-updater]] (updates external components), [[mgr-sauron]] (full verification)
 
 ## Sources
 
-- `.claude/agents/mgr-supplier.md` — agent definition
+- `.codex/agents/mgr-supplier.md` — agent definition

@@ -3,7 +3,7 @@ title: Action Validator
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/action-validator/SKILL.md
+  - .codex/skills/action-validator/SKILL.md
 related:
   - [[pipeline-guards]]
   - [[adversarial-review]]
@@ -35,4 +35,4 @@ Validation checks include: tool scope vs agent's `tools` frontmatter, file paths
 
 ## Sources
 
-- `.claude/skills/action-validator/SKILL.md` — skill definition
+- `.codex/skills/action-validator/SKILL.md` — skill definition

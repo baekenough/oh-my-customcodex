@@ -3,7 +3,7 @@ title: Supabase PostgreSQL Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/supabase-postgres-best-practices/SKILL.md
+  - .codex/skills/supabase-postgres-best-practices/SKILL.md
 related:
   - [[db-supabase-expert]]
   - [[postgres-best-practices]]
@@ -31,4 +31,4 @@ Reference patterns specific to Supabase's PostgreSQL deployment: Row-Level Secur
 
 ## Sources
 
-- `.claude/skills/supabase-postgres-best-practices/SKILL.md` — skill definition
+- `.codex/skills/supabase-postgres-best-practices/SKILL.md` — skill definition

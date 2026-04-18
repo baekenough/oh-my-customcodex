@@ -3,7 +3,7 @@ title: tool-optimizer
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/tool-optimizer.md
+  - .codex/agents/tool-optimizer.md
 related:
   - [[fe-vercel-agent]]
   - [[lang-typescript-expert]]
@@ -40,4 +40,4 @@ Uses three skills: `optimize-analyze`, `optimize-bundle`, and `optimize-report`.
 
 ## Sources
 
-- `.claude/agents/tool-optimizer.md` — agent definition
+- `.codex/agents/tool-optimizer.md` — agent definition

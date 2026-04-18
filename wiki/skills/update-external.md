@@ -3,7 +3,7 @@ title: Update External
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/update-external/SKILL.md
+  - .codex/skills/update-external/SKILL.md
 related:
   - [[mgr-updater]]
   - [[skills-sh-search]]
@@ -22,7 +22,7 @@ Checks all agents and skills with `source:` frontmatter fields against their ori
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcustom:update-external`
+- **Command**: `/omcodex:update-external`
 - **Effort**: not specified
 
 ## Relationships
@@ -33,4 +33,4 @@ Checks all agents and skills with `source:` frontmatter fields against their ori
 
 ## Sources
 
-- `.claude/skills/update-external/SKILL.md` — skill definition
+- `.codex/skills/update-external/SKILL.md` — skill definition

@@ -3,7 +3,7 @@ title: Multi-Model Verification
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/multi-model-verification/SKILL.md
+  - .codex/skills/multi-model-verification/SKILL.md
 related:
   - [[structured-dev-cycle]]
   - [[agora]]
@@ -33,4 +33,4 @@ Spawns multiple Claude instances with different models (haiku, sonnet, opus) to 
 
 ## Sources
 
-- `.claude/skills/multi-model-verification/SKILL.md` — skill definition
+- `.codex/skills/multi-model-verification/SKILL.md` — skill definition

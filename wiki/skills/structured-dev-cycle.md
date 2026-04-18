@@ -3,7 +3,7 @@ title: Structured Dev Cycle
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/structured-dev-cycle/SKILL.md
+  - .codex/skills/structured-dev-cycle/SKILL.md
 related:
   - [[deep-plan]]
   - [[multi-model-verification]]
@@ -34,4 +34,4 @@ Enforces a disciplined 6-stage cycle: Plan (Read-only) → Verify Plan → Imple
 
 ## Sources
 
-- `.claude/skills/structured-dev-cycle/SKILL.md` — skill definition
+- `.codex/skills/structured-dev-cycle/SKILL.md` — skill definition

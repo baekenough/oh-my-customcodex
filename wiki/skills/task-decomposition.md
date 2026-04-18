@@ -3,7 +3,7 @@ title: Task Decomposition
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/task-decomposition/SKILL.md
+  - .codex/skills/task-decomposition/SKILL.md
 related:
   - [[pipeline]]
   - [[dag-orchestration]]
@@ -33,4 +33,4 @@ Analyzes a large task, identifies parallelizable subtasks, and produces a DAG of
 
 ## Sources
 
-- `.claude/skills/task-decomposition/SKILL.md` — skill definition
+- `.codex/skills/task-decomposition/SKILL.md` — skill definition

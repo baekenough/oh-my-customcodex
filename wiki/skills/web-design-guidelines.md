@@ -3,7 +3,7 @@ title: Web Design Guidelines
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/web-design-guidelines/SKILL.md
+  - .codex/skills/web-design-guidelines/SKILL.md
 related:
   - [[fe-design-expert]]
   - [[react-best-practices]]
@@ -32,4 +32,4 @@ Comprehensive ruleset for web UI code review covering 100+ criteria: accessibili
 
 ## Sources
 
-- `.claude/skills/web-design-guidelines/SKILL.md` — skill definition
+- `.codex/skills/web-design-guidelines/SKILL.md` — skill definition

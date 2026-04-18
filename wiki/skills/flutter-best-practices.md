@@ -3,7 +3,7 @@ title: Flutter Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/flutter-best-practices/SKILL.md
+  - .codex/skills/flutter-best-practices/SKILL.md
 related:
   - [[fe-flutter-agent]]
   - [[typescript-best-practices]]
@@ -31,4 +31,4 @@ Reference patterns for Flutter applications: widget composition over inheritance
 
 ## Sources
 
-- `.claude/skills/flutter-best-practices/SKILL.md` — skill definition
+- `.codex/skills/flutter-best-practices/SKILL.md` — skill definition

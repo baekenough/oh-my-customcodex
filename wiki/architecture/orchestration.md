@@ -66,8 +66,8 @@ Certain paths require routing through `mgr-creator` exclusively:
 
 | Path | Reason |
 |------|--------|
-| `.claude/agents/*.md` | R006 frontmatter validation |
-| `.claude/skills/*/SKILL.md` | Skill scope classification |
+| `.codex/agents/*.md` | R006 frontmatter validation |
+| `.codex/skills/*/SKILL.md` | Skill scope classification |
 | `guides/*/` (new directories) | Cross-reference integrity |
 
 Other agents handle their own paths: `sys-memory-keeper` manages `.claude/agent-memory*/`, `mgr-gitnerd` handles git operations.

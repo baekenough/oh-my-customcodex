@@ -3,7 +3,7 @@ title: de-spark-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/de-spark-expert.md
+  - .codex/agents/de-spark-expert.md
 related:
   - [[de-kafka-expert]]
   - [[de-pipeline-expert]]
@@ -37,4 +37,4 @@ Uses `spark-best-practices` skill and `guides/spark/` for reference.
 
 ## Sources
 
-- `.claude/agents/de-spark-expert.md` — agent definition
+- `.codex/agents/de-spark-expert.md` — agent definition

@@ -3,7 +3,7 @@ title: arch-documenter
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/arch-documenter.md
+  - .codex/agents/arch-documenter.md
 related:
   - [[arch-speckit-agent]]
   - [[mgr-creator]]
@@ -46,4 +46,4 @@ The agent operates with `project`-scoped memory, meaning it retains knowledge ab
 
 ## Sources
 
-- `.claude/agents/arch-documenter.md` — agent definition
+- `.codex/agents/arch-documenter.md` — agent definition

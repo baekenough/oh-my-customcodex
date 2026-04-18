@@ -1,11 +1,11 @@
 # Project Structure
 
-After `omcustom init`:
+After `omcodex init`:
 
 ```
 your-project/
-├── CLAUDE.md              # Entry point for Claude
-├── .claude/
+├── AGENTS.md              # Entry point for Codex + OMX
+├── .codex/
 │   ├── rules/             # Behavior rules
 │   ├── hooks/             # Event hooks
 │   ├── contexts/          # Context files

@@ -3,7 +3,7 @@ title: NPM Audit
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/npm-audit/SKILL.md
+  - .codex/skills/npm-audit/SKILL.md
 related:
   - [[tool-npm-expert]]
   - [[cve-triage]]
@@ -22,7 +22,7 @@ Runs `npm audit` and `npm outdated`, analyzes results, and presents actionable r
 
 - **Scope**: package
 - **User-invocable**: yes
-- **Command**: `/omcustom:npm-audit`
+- **Command**: `/omcodex:npm-audit`
 - **Effort**: not specified
 
 ## Relationships
@@ -33,4 +33,4 @@ Runs `npm audit` and `npm outdated`, analyzes results, and presents actionable r
 
 ## Sources
 
-- `.claude/skills/npm-audit/SKILL.md` — skill definition
+- `.codex/skills/npm-audit/SKILL.md` — skill definition

@@ -3,7 +3,7 @@ title: sec-codeql-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/sec-codeql-expert.md
+  - .codex/agents/sec-codeql-expert.md
 related:
   - [[mgr-gitnerd]]
   - [[qa-engineer]]
@@ -46,4 +46,4 @@ Remediation: {concrete fix guidance}
 
 ## Sources
 
-- `.claude/agents/sec-codeql-expert.md` — agent definition
+- `.codex/agents/sec-codeql-expert.md` — agent definition

@@ -3,7 +3,7 @@ title: db-redis-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/db-redis-expert.md
+  - .codex/agents/db-redis-expert.md
 related:
   - [[db-postgres-expert]]
   - [[db-supabase-expert]]
@@ -37,4 +37,4 @@ Memory is `user`-scoped for cross-project Redis expertise retention.
 
 ## Sources
 
-- `.claude/agents/db-redis-expert.md` — agent definition
+- `.codex/agents/db-redis-expert.md` — agent definition

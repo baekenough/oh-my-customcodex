@@ -3,7 +3,7 @@ title: Impeccable Design
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/impeccable-design/SKILL.md
+  - .codex/skills/impeccable-design/SKILL.md
 related:
   - [[fe-design-expert]]
   - [[web-design-guidelines]]
@@ -16,7 +16,7 @@ AI design language for production-ready UI systems.
 
 ## Overview
 
-Defines the oh-my-customcode design language system: typography scale, color tokens, spacing system, component patterns, accessibility requirements, animation principles, and responsive layout guidelines. Used by `fe-design-expert` when creating or reviewing UI components. Ensures visual consistency across all frontend agents.
+Defines the oh-my-customcodex design language system: typography scale, color tokens, spacing system, component patterns, accessibility requirements, animation principles, and responsive layout guidelines. Used by `fe-design-expert` when creating or reviewing UI components. Ensures visual consistency across all frontend agents.
 
 ## Key Details
 
@@ -32,4 +32,4 @@ Defines the oh-my-customcode design language system: typography scale, color tok
 
 ## Sources
 
-- `.claude/skills/impeccable-design/SKILL.md` — skill definition
+- `.codex/skills/impeccable-design/SKILL.md` — skill definition

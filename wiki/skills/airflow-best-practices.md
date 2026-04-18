@@ -3,7 +3,7 @@ title: Airflow Best Practices
 type: skill
 updated: 2026-04-18
 sources:
-  - .claude/skills/airflow-best-practices/SKILL.md
+  - .codex/skills/airflow-best-practices/SKILL.md
 related:
   - [[de-airflow-expert]]
   - [[dag-orchestration]]
@@ -32,4 +32,4 @@ Reference patterns for writing, testing, and deploying Apache Airflow DAGs. Cove
 
 ## Sources
 
-- `.claude/skills/airflow-best-practices/SKILL.md` — skill definition
+- `.codex/skills/airflow-best-practices/SKILL.md` — skill definition

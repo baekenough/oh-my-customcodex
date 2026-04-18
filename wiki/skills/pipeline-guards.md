@@ -3,7 +3,7 @@ title: Pipeline Guards
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/pipeline-guards/SKILL.md
+  - .codex/skills/pipeline-guards/SKILL.md
 related:
   - [[pipeline]]
   - [[dag-orchestration]]
@@ -33,4 +33,4 @@ Defines system-wide safety limits for all pipeline execution: max iterations (3,
 
 ## Sources
 
-- `.claude/skills/pipeline-guards/SKILL.md` — skill definition
+- `.codex/skills/pipeline-guards/SKILL.md` — skill definition

@@ -3,7 +3,7 @@ title: Gemini Exec
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/gemini-exec/SKILL.md
+  - .codex/skills/gemini-exec/SKILL.md
 related:
   - [[codex-exec]]
   - [[agora]]
@@ -33,4 +33,4 @@ Wraps the Gemini CLI to execute prompts and return results to the orchestrator. 
 
 ## Sources
 
-- `.claude/skills/gemini-exec/SKILL.md` — skill definition
+- `.codex/skills/gemini-exec/SKILL.md` — skill definition

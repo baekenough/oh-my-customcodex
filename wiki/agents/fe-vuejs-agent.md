@@ -3,7 +3,7 @@ title: fe-vuejs-agent
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/fe-vuejs-agent.md
+  - .codex/agents/fe-vuejs-agent.md
 related:
   - [[fe-vercel-agent]]
   - [[fe-svelte-agent]]
@@ -36,4 +36,4 @@ Expert Vue.js (Vue 3) developer for Composition API, single-file components, Pin
 
 ## Sources
 
-- `.claude/agents/fe-vuejs-agent.md` — agent definition
+- `.codex/agents/fe-vuejs-agent.md` — agent definition

@@ -3,7 +3,7 @@ title: lang-typescript-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/lang-typescript-expert.md
+  - .codex/agents/lang-typescript-expert.md
 related:
   - [[fe-vercel-agent]]
   - [[be-nestjs-expert]]
@@ -43,4 +43,4 @@ Uses `typescript-best-practices` skill and `guides/typescript/`.
 
 ## Sources
 
-- `.claude/agents/lang-typescript-expert.md` — agent definition
+- `.codex/agents/lang-typescript-expert.md` — agent definition

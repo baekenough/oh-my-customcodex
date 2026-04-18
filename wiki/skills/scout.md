@@ -3,7 +3,7 @@ title: Scout
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/scout/SKILL.md
+  - .codex/skills/scout/SKILL.md
 related:
   - [[skills-sh-search]]
   - [[update-external]]
@@ -33,4 +33,4 @@ Fetches and analyzes an external URL (GitHub repo, npm package, article) to eval
 
 ## Sources
 
-- `.claude/skills/scout/SKILL.md` — skill definition
+- `.codex/skills/scout/SKILL.md` — skill definition

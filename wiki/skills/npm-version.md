@@ -3,11 +3,11 @@ title: NPM Version
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/npm-version/SKILL.md
+  - .codex/skills/npm-version/SKILL.md
 related:
   - [[tool-npm-expert]]
   - [[npm-publish]]
-  - [[omcustom-release-notes]]
+  - [[omcodex-release-notes]]
 ---
 
 # NPM Version
@@ -22,15 +22,15 @@ Manages semantic versioning for npm packages: bumps patch/minor/major versions i
 
 - **Scope**: package
 - **User-invocable**: yes
-- **Command**: `/omcustom:npm-version`
+- **Command**: `/omcodex:npm-version`
 - **Effort**: not specified
 
 ## Relationships
 
 - **Used by agents**: [[tool-npm-expert]]
-- **Related skills**: [[npm-publish]], [[omcustom-release-notes]]
+- **Related skills**: [[npm-publish]], [[omcodex-release-notes]]
 - **See also**: [[mgr-gitnerd]], [[R017]]
 
 ## Sources
 
-- `.claude/skills/npm-version/SKILL.md` — skill definition
+- `.codex/skills/npm-version/SKILL.md` — skill definition

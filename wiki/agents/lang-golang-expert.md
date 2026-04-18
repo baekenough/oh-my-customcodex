@@ -3,7 +3,7 @@ title: lang-golang-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/lang-golang-expert.md
+  - .codex/agents/lang-golang-expert.md
 related:
   - [[be-go-backend-expert]]
   - [[lang-python-expert]]
@@ -41,4 +41,4 @@ Pairs naturally with [[be-go-backend-expert]] for backend service concerns beyon
 
 ## Sources
 
-- `.claude/agents/lang-golang-expert.md` — agent definition
+- `.codex/agents/lang-golang-expert.md` — agent definition

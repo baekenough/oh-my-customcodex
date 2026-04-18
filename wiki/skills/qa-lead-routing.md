@@ -3,7 +3,7 @@ title: QA Lead Routing
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/qa-lead-routing/SKILL.md
+  - .codex/skills/qa-lead-routing/SKILL.md
 related:
   - [[qa-planner]]
   - [[qa-writer]]
@@ -32,4 +32,4 @@ Routes QA-related tasks to the appropriate QA agent: `qa-planner` for test strat
 
 ## Sources
 
-- `.claude/skills/qa-lead-routing/SKILL.md` — skill definition
+- `.codex/skills/qa-lead-routing/SKILL.md` — skill definition

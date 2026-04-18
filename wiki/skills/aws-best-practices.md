@@ -3,7 +3,7 @@ title: AWS Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/aws-best-practices/SKILL.md
+  - .codex/skills/aws-best-practices/SKILL.md
 related:
   - [[infra-aws-expert]]
   - [[docker-best-practices]]
@@ -31,4 +31,4 @@ Reference patterns for AWS infrastructure following the Well-Architected Framewo
 
 ## Sources
 
-- `.claude/skills/aws-best-practices/SKILL.md` — skill definition
+- `.codex/skills/aws-best-practices/SKILL.md` — skill definition

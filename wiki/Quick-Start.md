@@ -4,11 +4,11 @@
 
 ```bash
 # Install globally
-npm install -g oh-my-customcode
+npm install -g oh-my-customcodex
 
 # Initialize in your project
 cd your-project
-omcustom init
+omcodex init
 ```
 
 That's it. You now have a fully configured Claude Code environment.
@@ -17,10 +17,10 @@ That's it. You now have a fully configured Claude Code environment.
 
 ```bash
 # English (default)
-omcustom init
+omcodex init
 
 # Korean
-omcustom init --lang ko
+omcodex init --lang ko
 ```
 
 ---

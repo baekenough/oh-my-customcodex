@@ -3,7 +3,7 @@ title: be-go-backend-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/be-go-backend-expert.md
+  - .codex/agents/be-go-backend-expert.md
 related:
   - [[lang-golang-expert]]
   - [[infra-docker-expert]]
@@ -36,4 +36,4 @@ The agent uses the `go-backend-best-practices` skill and consults `guides/go-bac
 
 ## Sources
 
-- `.claude/agents/be-go-backend-expert.md` — agent definition
+- `.codex/agents/be-go-backend-expert.md` — agent definition

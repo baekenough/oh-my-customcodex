@@ -3,7 +3,7 @@ title: mgr-claude-code-bible
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/mgr-claude-code-bible.md
+  - .codex/agents/mgr-claude-code-bible.md
 related:
   - [[mgr-sauron]]
   - [[mgr-creator]]
@@ -16,7 +16,7 @@ Authoritative source of truth for Claude Code specifications — fetches latest 
 
 ## Overview
 
-`mgr-claude-code-bible` operates in two modes. In **Update mode**, it fetches and caches the latest Claude Code documentation (sub-agents.md, agent-teams.md, skills.md, hooks.md, plugins.md, settings.md, etc.) from `https://code.claude.com/docs/llms.txt`, skipping if updated within 24 hours. In **Verify mode**, it reads cached docs and scans all `.claude/agents/*.md` and `.claude/skills/*/SKILL.md` files, comparing frontmatter against official specs to generate ERROR/WARNING/INFO compliance reports.
+`mgr-claude-code-bible` operates in two modes. In **Update mode**, it fetches and caches the latest Claude Code documentation (sub-agents.md, agent-teams.md, skills.md, hooks.md, plugins.md, settings.md, etc.) from `https://code.claude.com/docs/llms.txt`, skipping if updated within 24 hours. In **Verify mode**, it reads cached docs and scans all `.codex/agents/*.md` and `.codex/skills/*/SKILL.md` files, comparing frontmatter against official specs to generate ERROR/WARNING/INFO compliance reports.
 
 This agent is invoked by [[mgr-sauron]] during Phase 1 verification (R017).
 
@@ -44,4 +44,4 @@ This agent is invoked by [[mgr-sauron]] during Phase 1 verification (R017).
 
 ## Sources
 
-- `.claude/agents/mgr-claude-code-bible.md` — agent definition
+- `.codex/agents/mgr-claude-code-bible.md` — agent definition

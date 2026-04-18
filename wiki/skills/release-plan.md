@@ -3,11 +3,11 @@ title: Release Plan
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/release-plan/SKILL.md
+  - .codex/skills/release-plan/SKILL.md
 related:
   - [[professor-triage]]
   - [[deep-verify]]
-  - [[omcustom-release-notes]]
+  - [[omcodex-release-notes]]
 ---
 
 # Release Plan
@@ -28,9 +28,9 @@ Reads GitHub issues labeled `verify-done`, groups them into cohesive release uni
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[professor-triage]], [[deep-verify]], [[post-release-followup]], [[omcustom-release-notes]]
+- **Related skills**: [[professor-triage]], [[deep-verify]], [[post-release-followup]], [[omcodex-release-notes]]
 - **See also**: [[R020]]
 
 ## Sources
 
-- `.claude/skills/release-plan/SKILL.md` — skill definition
+- `.codex/skills/release-plan/SKILL.md` — skill definition

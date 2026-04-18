@@ -3,7 +3,7 @@ title: de-pipeline-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/de-pipeline-expert.md
+  - .codex/agents/de-pipeline-expert.md
 related:
   - [[de-airflow-expert]]
   - [[de-dbt-expert]]
@@ -39,4 +39,4 @@ Draws on cross-tool expertise across `guides/airflow/`, `guides/dbt/`, `guides/s
 
 ## Sources
 
-- `.claude/agents/de-pipeline-expert.md` — agent definition
+- `.codex/agents/de-pipeline-expert.md` — agent definition

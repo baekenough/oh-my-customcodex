@@ -1,6 +1,6 @@
 # Customization
 
-This is what oh-my-customcode is all about. **Making Claude Code yours.**
+This is what oh-my-customcodex is all about. **Making Claude Code yours.**
 
 ## Just Tell Claude What You Need
 

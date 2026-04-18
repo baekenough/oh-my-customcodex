@@ -3,7 +3,7 @@ title: Update Docs
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/update-docs/SKILL.md
+  - .codex/skills/update-docs/SKILL.md
 related:
   - [[mgr-updater]]
   - [[sauron-watch]]
@@ -22,7 +22,7 @@ Syncs CLAUDE.md and related documentation with actual agent/skill/guide counts a
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcustom:update-docs`
+- **Command**: `/omcodex:update-docs`
 - **Effort**: not specified
 
 ## Relationships
@@ -33,4 +33,4 @@ Syncs CLAUDE.md and related documentation with actual agent/skill/guide counts a
 
 ## Sources
 
-- `.claude/skills/update-docs/SKILL.md` — skill definition
+- `.codex/skills/update-docs/SKILL.md` — skill definition

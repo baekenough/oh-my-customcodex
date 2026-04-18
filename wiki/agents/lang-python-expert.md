@@ -3,7 +3,7 @@ title: lang-python-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/lang-python-expert.md
+  - .codex/agents/lang-python-expert.md
 related:
   - [[be-fastapi-expert]]
   - [[be-django-expert]]
@@ -41,4 +41,4 @@ Uses `python-best-practices` skill and `guides/python/`.
 
 ## Sources
 
-- `.claude/agents/lang-python-expert.md` — agent definition
+- `.codex/agents/lang-python-expert.md` — agent definition

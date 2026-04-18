@@ -3,7 +3,7 @@ title: lang-java21-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/lang-java21-expert.md
+  - .codex/agents/lang-java21-expert.md
 related:
   - [[be-springboot-expert]]
   - [[lang-kotlin-expert]]
@@ -40,4 +40,4 @@ Uses `java21-best-practices` skill and `guides/java21/`. Complements [[be-spring
 
 ## Sources
 
-- `.claude/agents/lang-java21-expert.md` — agent definition
+- `.codex/agents/lang-java21-expert.md` — agent definition

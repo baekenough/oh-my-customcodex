@@ -3,7 +3,7 @@ title: infra-docker-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/infra-docker-expert.md
+  - .codex/agents/infra-docker-expert.md
 related:
   - [[infra-aws-expert]]
   - [[be-fastapi-expert]]
@@ -37,4 +37,4 @@ Uses `docker-best-practices` skill and `guides/docker/`. Memory is `user`-scoped
 
 ## Sources
 
-- `.claude/agents/infra-docker-expert.md` — agent definition
+- `.codex/agents/infra-docker-expert.md` — agent definition

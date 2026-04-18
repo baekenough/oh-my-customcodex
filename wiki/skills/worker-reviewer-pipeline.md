@@ -3,7 +3,7 @@ title: Worker Reviewer Pipeline
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/worker-reviewer-pipeline/SKILL.md
+  - .codex/skills/worker-reviewer-pipeline/SKILL.md
 related:
   - [[evaluator-optimizer]]
   - [[pipeline-guards]]
@@ -32,4 +32,4 @@ Implements a worker-reviewer loop where a worker agent generates/modifies code a
 
 ## Sources
 
-- `.claude/skills/worker-reviewer-pipeline/SKILL.md` — skill definition
+- `.codex/skills/worker-reviewer-pipeline/SKILL.md` — skill definition

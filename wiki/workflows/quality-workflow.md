@@ -16,7 +16,7 @@ related:
 
 # Quality Workflow
 
-Quality in oh-my-customcode is enforced at three levels: structural integrity (R017 sauron), completion verification (R020), and code quality (dev-review + adversarial-review). Each level has defined triggers, agents, and pass/fail criteria.
+Quality in oh-my-customcodex is enforced at three levels: structural integrity (R017 sauron), completion verification (R020), and code quality (dev-review + adversarial-review). Each level has defined triggers, agents, and pass/fail criteria.
 
 ## Overview
 
@@ -29,8 +29,8 @@ Quality is not a final gate — it is woven into every workflow. Structural veri
 ### Trigger Conditions
 
 Any change to:
-- Agent definitions (`.claude/agents/*.md`)
-- Skills (`.claude/skills/*/SKILL.md`)
+- Agent definitions (`.codex/agents/*.md`)
+- Skills (`.codex/skills/*/SKILL.md`)
 - Guides (`guides/*/`)
 - Routing patterns
 - Rule files
@@ -63,7 +63,7 @@ Also runs: `mgr-claude-code-bible:verify` (official spec compliance).
 
 ```bash
 # Agent count
-ls .claude/agents/*.md | wc -l
+ls .codex/agents/*.md | wc -l
 
 # Skill count
 find .claude/skills -name "SKILL.md" | wc -l

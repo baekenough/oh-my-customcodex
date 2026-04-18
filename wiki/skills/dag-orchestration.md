@@ -3,7 +3,7 @@ title: DAG Orchestration
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/dag-orchestration/SKILL.md
+  - .codex/skills/dag-orchestration/SKILL.md
 related:
   - [[pipeline]]
   - [[pipeline-guards]]
@@ -33,4 +33,4 @@ Defines a DAG-based workflow execution engine for multi-step agent pipelines. Pa
 
 ## Sources
 
-- `.claude/skills/dag-orchestration/SKILL.md` — skill definition
+- `.codex/skills/dag-orchestration/SKILL.md` — skill definition

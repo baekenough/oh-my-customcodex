@@ -3,7 +3,7 @@ title: Peer Messaging
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/peer-messaging/SKILL.md
+  - .codex/skills/peer-messaging/SKILL.md
 related:
   - [[R018]]
   - [[agora]]
@@ -32,4 +32,4 @@ Enables communication between separate Claude Code processes (cross-session) via
 
 ## Sources
 
-- `.claude/skills/peer-messaging/SKILL.md` — skill definition
+- `.codex/skills/peer-messaging/SKILL.md` — skill definition

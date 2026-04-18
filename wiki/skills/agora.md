@@ -3,7 +3,7 @@ title: Agora
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/agora/SKILL.md
+  - .codex/skills/agora/SKILL.md
 related:
   - [[codex-exec]]
   - [[gemini-exec]]
@@ -23,7 +23,7 @@ Spawns Claude (opus), Codex/GPT, and Gemini as competing reviewers who independe
 
 - **Scope**: core
 - **User-invocable**: yes
-- **Command**: `/omcustom:agora`
+- **Command**: `/omcodex:agora`
 - **Effort**: max
 - **Argument hint**: `<document-path> [--rounds N] [--severity-threshold HIGH]`
 - **Source**: external (github: baekenough/baekenough-skills v1.0.0)
@@ -36,4 +36,4 @@ Spawns Claude (opus), Codex/GPT, and Gemini as competing reviewers who independe
 
 ## Sources
 
-- `.claude/skills/agora/SKILL.md` — skill definition
+- `.codex/skills/agora/SKILL.md` — skill definition

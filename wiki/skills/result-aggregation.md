@@ -3,7 +3,7 @@ title: Result Aggregation
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/result-aggregation/SKILL.md
+  - .codex/skills/result-aggregation/SKILL.md
 related:
   - [[research]]
   - [[worker-reviewer-pipeline]]
@@ -32,4 +32,4 @@ Collects outputs from parallel agent runs, deduplicates overlapping findings, re
 
 ## Sources
 
-- `.claude/skills/result-aggregation/SKILL.md` — skill definition
+- `.codex/skills/result-aggregation/SKILL.md` — skill definition

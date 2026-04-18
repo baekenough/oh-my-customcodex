@@ -3,7 +3,7 @@ title: Kotlin Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/kotlin-best-practices/SKILL.md
+  - .codex/skills/kotlin-best-practices/SKILL.md
 related:
   - [[lang-kotlin-expert]]
   - [[springboot-best-practices]]
@@ -31,4 +31,4 @@ Reference patterns for idiomatic Kotlin: null safety (safe calls, elvis operator
 
 ## Sources
 
-- `.claude/skills/kotlin-best-practices/SKILL.md` — skill definition
+- `.codex/skills/kotlin-best-practices/SKILL.md` — skill definition

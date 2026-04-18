@@ -3,7 +3,7 @@ title: Secretary Routing
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/secretary-routing/SKILL.md
+  - .codex/skills/secretary-routing/SKILL.md
 related:
   - [[mgr-creator]]
   - [[mgr-updater]]
@@ -35,4 +35,4 @@ Routes management tasks to the appropriate manager: `mgr-creator` (create), `mgr
 
 ## Sources
 
-- `.claude/skills/secretary-routing/SKILL.md` — skill definition
+- `.codex/skills/secretary-routing/SKILL.md` — skill definition

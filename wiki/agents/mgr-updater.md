@@ -3,7 +3,7 @@ title: mgr-updater
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/mgr-updater.md
+  - .codex/agents/mgr-updater.md
 related:
   - [[mgr-creator]]
   - [[mgr-supplier]]
@@ -34,9 +34,9 @@ Also handles documentation sync (`update-docs` skill) for the R017 verification 
 ## Relationships
 
 - **Depends on**: `update-external` skill, `update-docs` skill, upstream source URLs in agent/skill frontmatter
-- **Used by**: [[mgr-sauron]] (Phase 1 docs sync check), `/omcustom:update-external` command, `/omcustom:update-docs` command
+- **Used by**: [[mgr-sauron]] (Phase 1 docs sync check), `/omcodex:update-external` command, `/omcodex:update-docs` command
 - **See also**: [[mgr-creator]] (creates new external agents), [[mgr-supplier]] (post-update validation), [[mgr-sauron]] (verification pipeline)
 
 ## Sources
 
-- `.claude/agents/mgr-updater.md` — agent definition
+- `.codex/agents/mgr-updater.md` — agent definition

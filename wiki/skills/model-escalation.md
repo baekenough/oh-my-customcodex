@@ -3,7 +3,7 @@ title: Model Escalation
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/model-escalation/SKILL.md
+  - .codex/skills/model-escalation/SKILL.md
 related:
   - [[stuck-recovery]]
   - [[pipeline-guards]]
@@ -32,4 +32,4 @@ Tracks task outcomes per agent type and advises model upgrades when failures acc
 
 ## Sources
 
-- `.claude/skills/model-escalation/SKILL.md` — skill definition
+- `.codex/skills/model-escalation/SKILL.md` — skill definition

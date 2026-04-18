@@ -3,7 +3,7 @@ title: Idea
 type: skill
 updated: 2026-04-19
 sources:
-  - .claude/skills/idea/SKILL.md
+  - .codex/skills/idea/SKILL.md
 related:
   - [[analysis]]
   - [[release-plan]]
@@ -31,4 +31,4 @@ The `idea` skill reads the current repository surface, estimates scope and risk,
 
 ## Sources
 
-- `.claude/skills/idea/SKILL.md` — skill definition
+- `.codex/skills/idea/SKILL.md` — skill definition

@@ -3,7 +3,7 @@ title: Dev Review
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/dev-review/SKILL.md
+  - .codex/skills/dev-review/SKILL.md
 related:
   - [[dev-refactor]]
   - [[adversarial-review]]
@@ -36,4 +36,4 @@ Routes code review to the language-specific expert agent. Runs pre-flight guards
 
 ## Sources
 
-- `.claude/skills/dev-review/SKILL.md` — skill definition
+- `.codex/skills/dev-review/SKILL.md` — skill definition

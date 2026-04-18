@@ -15,11 +15,11 @@ related:
 
 # Ecomode and Context Management
 
-Context management in oh-my-customcode operates on two axes: **output compression** (ecomode) and **input pruning** (context budget management). Together they maintain token efficiency across long sessions and large parallel operations without losing critical information.
+Context management in oh-my-customcodex operates on two axes: **output compression** (ecomode) and **input pruning** (context budget management). Together they maintain token efficiency across long sessions and large parallel operations without losing critical information.
 
 ## Overview
 
-Every Claude Code session has a finite context window. oh-my-customcode manages this through:
+Every Claude Code session has a finite context window. oh-my-customcodex manages this through:
 1. **Ecomode** — compressed output format for agents in batch/parallel operations
 2. **Input context pruning** — active removal of irrelevant retrieved content
 3. **Context budget management** — task-type-aware activation thresholds

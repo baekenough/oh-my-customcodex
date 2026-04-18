@@ -3,7 +3,7 @@ title: Pipeline Architecture Patterns
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/pipeline-architecture-patterns/SKILL.md
+  - .codex/skills/pipeline-architecture-patterns/SKILL.md
 related:
   - [[de-pipeline-expert]]
   - [[airflow-best-practices]]
@@ -33,4 +33,4 @@ Reference patterns for data pipeline design: ETL vs ELT, Lambda vs Kappa vs Meda
 
 ## Sources
 
-- `.claude/skills/pipeline-architecture-patterns/SKILL.md` — skill definition
+- `.codex/skills/pipeline-architecture-patterns/SKILL.md` — skill definition

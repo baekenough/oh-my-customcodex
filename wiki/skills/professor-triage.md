@@ -3,7 +3,7 @@ title: Professor Triage
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/professor-triage/SKILL.md
+  - .codex/skills/professor-triage/SKILL.md
 related:
   - [[release-plan]]
   - [[deep-verify]]
@@ -33,4 +33,4 @@ Reads GitHub issues labeled `professor`, cross-analyzes them against the current
 
 ## Sources
 
-- `.claude/skills/professor-triage/SKILL.md` — skill definition
+- `.codex/skills/professor-triage/SKILL.md` — skill definition

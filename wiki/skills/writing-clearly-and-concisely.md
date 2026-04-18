@@ -3,7 +3,7 @@ title: Writing Clearly and Concisely
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/writing-clearly-and-concisely/SKILL.md
+  - .codex/skills/writing-clearly-and-concisely/SKILL.md
 related:
   - [[arch-documenter]]
   - [[web-design-guidelines]]
@@ -32,4 +32,4 @@ Applies "The Elements of Style" principles to technical writing: omit needless w
 
 ## Sources
 
-- `.claude/skills/writing-clearly-and-concisely/SKILL.md` — skill definition
+- `.codex/skills/writing-clearly-and-concisely/SKILL.md` — skill definition

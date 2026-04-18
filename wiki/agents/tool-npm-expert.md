@@ -3,7 +3,7 @@ title: tool-npm-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/tool-npm-expert.md
+  - .codex/agents/tool-npm-expert.md
 related:
   - [[lang-typescript-expert]]
   - [[mgr-gitnerd]]
@@ -33,9 +33,9 @@ Uses three focused skills: `npm-audit`, `npm-publish`, and `npm-version`. Works 
 ## Relationships
 
 - **Depends on**: `npm-audit` skill, `npm-publish` skill, `npm-version` skill
-- **Used by**: `/omcustom:npm-publish`, `/omcustom:npm-version`, `/omcustom:npm-audit` commands, [[lang-typescript-expert]] integration
+- **Used by**: `/omcodex:npm-publish`, `/omcodex:npm-version`, `/omcodex:npm-audit` commands, [[lang-typescript-expert]] integration
 - **See also**: [[mgr-gitnerd]] (version commits/tags), [[lang-typescript-expert]] (TS builds before publish), [[tool-bun-expert]] (Bun alternative), [[tool-optimizer]] (bundle analysis)
 
 ## Sources
 
-- `.claude/agents/tool-npm-expert.md` — agent definition
+- `.codex/agents/tool-npm-expert.md` — agent definition

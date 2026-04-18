@@ -3,7 +3,7 @@ title: NPM Publish
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/npm-publish/SKILL.md
+  - .codex/skills/npm-publish/SKILL.md
 related:
   - [[tool-npm-expert]]
   - [[npm-version]]
@@ -22,7 +22,7 @@ Automates npm package publishing: pre-publish checks (audit, tests, build), vers
 
 - **Scope**: package
 - **User-invocable**: yes
-- **Command**: `/omcustom:npm-publish`
+- **Command**: `/omcodex:npm-publish`
 - **Effort**: not specified
 
 ## Relationships
@@ -33,4 +33,4 @@ Automates npm package publishing: pre-publish checks (audit, tests, build), vers
 
 ## Sources
 
-- `.claude/skills/npm-publish/SKILL.md` — skill definition
+- `.codex/skills/npm-publish/SKILL.md` — skill definition

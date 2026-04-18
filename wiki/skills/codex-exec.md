@@ -3,7 +3,7 @@ title: Codex Exec
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/codex-exec/SKILL.md
+  - .codex/skills/codex-exec/SKILL.md
 related:
   - [[gemini-exec]]
   - [[agora]]
@@ -33,4 +33,4 @@ Wraps the OpenAI Codex CLI to execute prompts and return results to the orchestr
 
 ## Sources
 
-- `.claude/skills/codex-exec/SKILL.md` — skill definition
+- `.codex/skills/codex-exec/SKILL.md` — skill definition

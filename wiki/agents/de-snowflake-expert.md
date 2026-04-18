@@ -3,7 +3,7 @@ title: de-snowflake-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/de-snowflake-expert.md
+  - .codex/agents/de-snowflake-expert.md
 related:
   - [[de-dbt-expert]]
   - [[de-pipeline-expert]]
@@ -37,4 +37,4 @@ Uses `snowflake-best-practices` skill and consults `guides/snowflake/` and `guid
 
 ## Sources
 
-- `.claude/agents/de-snowflake-expert.md` — agent definition
+- `.codex/agents/de-snowflake-expert.md` — agent definition

@@ -3,7 +3,7 @@ title: be-express-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/be-express-expert.md
+  - .codex/agents/be-express-expert.md
 related:
   - [[lang-typescript-expert]]
   - [[be-nestjs-expert]]
@@ -36,4 +36,4 @@ The agent references the official Express.js documentation and security guide di
 
 ## Sources
 
-- `.claude/agents/be-express-expert.md` — agent definition
+- `.codex/agents/be-express-expert.md` — agent definition

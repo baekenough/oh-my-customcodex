@@ -3,7 +3,7 @@ title: qa-planner
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/qa-planner.md
+  - .codex/agents/qa-planner.md
 related:
   - [[qa-writer]]
   - [[qa-engineer]]
@@ -38,4 +38,4 @@ Outputs a YAML-structured QA plan consumed by [[qa-writer]] for detailed test ca
 
 ## Sources
 
-- `.claude/agents/qa-planner.md` — agent definition
+- `.codex/agents/qa-planner.md` — agent definition

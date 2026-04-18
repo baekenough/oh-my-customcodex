@@ -87,7 +87,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 | Auxiliary | 2 | slack-cli-expert, wiki-curator |
 | **Total** | **48** | |
 
-Each agent is defined in the source tree (`.claude/agents/{name}.md`) and compiled into the installed Codex runtime surface. YAML frontmatter specifies model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
+Each agent is defined in the source tree (`.codex/agents/{name}.md`) and compiled into the installed Codex runtime surface. YAML frontmatter specifies model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
 
 ### 3.3 Skill Catalog (106 skills)
 
@@ -110,7 +110,7 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 **Slash command / user-invocable skills**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcodex:takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev, harness-synthesizer
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcodex-release-notes, omcodex:takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, pipeline, improve-report, omcodex-feedback, omcodex-web, omcodex-loop, sdd-dev, harness-synthesizer, idea
 
 **System / internal skills**
 
@@ -322,7 +322,7 @@ The stage-blocker hook enforces Write/Edit restrictions outside the implement st
 
 The reasoning-sandwich skill structures prompts with context-instruction-context layering to maximize model attention on critical information. It is an internal skill used by routing and orchestration workflows to improve prompt effectiveness.
 
-### 5.8 Workflow Engine (/omcustom:workflow)
+### 5.8 Workflow Engine (/pipeline)
 
 <p align="center">
   <img src="assets/diagrams/09-workflow-engine.png" alt="Workflow Engine" width="800" />
@@ -571,7 +571,7 @@ The `omcodex:takeover` skill enables reverse compilation: analyzing an existing 
 | `forceRemoteSettingsRefresh` | No | Yes (v2.1.92+) | Compatible — enterprise policy setting |
 | Effort default medium→high | No | Yes (v2.1.94+) | Yes (R006 documented) — agents use explicit effort field |
 | `keep-coding-instructions` | No | Yes (v2.1.94+) | Yes (R006 documented) — plugin output style field |
-| Plugin skill name from frontmatter | No | Yes (v2.1.94+) | Already compatible — omcustom uses `name:` frontmatter |
+| Plugin skill name from frontmatter | No | Yes (v2.1.94+) | Already compatible — omcodex uses `name:` frontmatter |
 | `refreshInterval` statusline setting | No | Yes (v2.1.97+) | Yes (R012 documented) — auto-refresh interval for status line command |
 | Bash tool permission hardening | No | Yes (v2.1.97+) | Compatible — security improvements, no action required |
 | Monitor tool for background scripts | No | Yes (v2.1.98+) | Yes (R006 documented) — streaming events from background processes |
@@ -659,7 +659,7 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | Takeover | Reverse compilation — analyzing existing code to generate structured agent/skill specs. |
 | Completion contract | An upfront declaration of verifiable criteria that must be satisfied before declaring a task done (R020). |
 | Temporal decay | Memory heuristic where entries lose relevance over time; fast-changing data (issues, versions) decays faster than structural knowledge. |
-| Soul identity | Optional per-agent personality layer sourced from `.claude/agents/souls/{name}.soul.md` and preserved in the installed runtime. |
+| Soul identity | Optional per-agent personality layer sourced from `.codex/agents/souls/{name}.soul.md` and preserved in the installed runtime. |
 | Harness Engineering | The three-pillar framework (Context Engineering, Architectural Constraints, Entropy Management) underlying the agent harness design. |
 | Advisory hook | A hook that warns or suggests but never blocks execution — the dominant hook pattern in oh-my-customcodex. |
 | Skill effectiveness | The correlation of skill combinations with task outcomes to identify high-success-rate patterns. |
@@ -678,7 +678,7 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | Version | Key Changes |
 |---------|-------------|
 | v0.79.0 | CC v2.1.89-v2.1.96 compat; effort default change docs; defer PreToolUse; disableSkillShellExecution; cc-release-collector CronJob; rule-deletion-guard hook |
-| v0.80.0–v0.88.1 | Registry isolation; omcustom update self-update + re-exec; Rule safety expansion (R020/R015/R011) |
+| v0.80.0–v0.88.1 | Registry isolation; omcodex update self-update + re-exec; Rule safety expansion (R020/R015/R011) |
 | v0.89.0 | CC v2.1.97-v2.1.108 compat; prompt caching 1h TTL env vars; Skill tool built-in command discovery; /recap session context; compat table expansion (v2.1.97-v2.1.108 14 rows) |
 | v0.90.0 | CC v2.1.110 compat; PushNotification tool (R002); /tui fullscreen; /focus command; autoScrollEnabled; TRACEPARENT/TRACESTATE; Bash max timeout enforcement; Write tool IDE diff feedback; --resume scheduled task resurrection; compat table expansion (v2.1.110 8 rows) |
 | v0.98.0 | OpenHarness patterns internalization (#922); PreCompact hook for task state serialization before compaction; PostCompact task state restoration; multi-provider-exec guide (38th guide); guides count 37→38 |
@@ -690,12 +690,12 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | v0.93.0 | Airflow 3.1.8 agent/skill/guide update (airflow.sdk imports, TaskFlow API, AIP-72/AIP-44, Asset replaces Dataset, dag.test()) |
 | v0.92.0 | cc-token-saver plugin integration guide (37th guide); harness-synthesizer skill (106th skill, AutoHarness-inspired verifier/filter/policy generation); R012 external plugin statusline conflict section; R013 Token Guardian coexistence section; action-validator Code Harness Integration section |
 | v0.91.0 | CC v2.1.111-v2.1.112 compat; xhigh effort level + Opus 4.7 model alias (R006); PowerShell tool (R002); /ultrareview built-in; /less-permission-prompts built-in; read-only bash glob permission skip; compat table expansion (v2.1.111-v2.1.112 12 rows) |
-| v0.74.0 | `omcustom sync` (drift detection + team snapshot export); `omcustom init --from-snapshot` (team reproducibility); `analysis --interview` mode; Release cleanup automation (auto-close issues + delete branches on merge) |
+| v0.74.0 | `omcodex sync` (drift detection + team snapshot export); `omcodex init --from-snapshot` (team reproducibility); `analysis --interview` mode; Release cleanup automation (auto-close issues + delete branches on merge) |
 | v0.73.0 | skill-extractor (100th skill — task trajectory analysis for SKILL.md candidates); User Model in R011 + sys-memory-keeper (correction patterns, skill preferences, expertise profile); agentskills.io source in skills-sh-search |
 | v0.72.1 | sync-server-repo.yml dead workflow removal (customclaw server decommissioned 2026-03-18) |
 | v0.72.0 | Korean template unification for 4 analysis skills (scout, professor-triage, release-plan, post-release-followup); professor-triage v2.2.0 |
-| v0.71.0 | workflow→pipeline migration (3 skills deleted + 1 pipeline installed); /omcustom:claude-native skill; pr-analysis.yml deleted (last Airflow workflow removed); Skills 100→99→100 |
-| v0.70.0 | codex-installer.ts; SessionStart auto-update hook; omcustom-feedback Airflow dead code removal; DI pattern refactor; coverage 98% |
+| v0.71.0 | workflow→pipeline migration (3 skills deleted + 1 pipeline installed); /omcodex:claude-native skill; pr-analysis.yml deleted (last Airflow workflow removed); Skills 100→99→100 |
+| v0.70.0 | codex-installer.ts; SessionStart auto-update hook; omcodex-feedback Airflow dead code removal; DI pattern refactor; coverage 98% |
 | v0.69.0 | professor-triage v2.1 multi-perspective analysis (Phase 4A-4F); Codex CLI v0.117.0; /scout skill integration |
 | v0.68.0–v0.68.2 | CC v2.1.88 compat; RTK PreToolUse auto-intercept; PermissionDenied hook event (20th); phantom version guard; RTK auto-install in init/update/doctor |
 | v0.67.0 | rtk-exec skill; RTK CLI proxy integration; 100 skills milestone |
@@ -716,16 +716,16 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | v0.58.2 | RL/WL renewal countdown in statusline |
 | v0.58.1 | post-release-followup skill, auto-dev workflow 7th step |
 | v0.58.0 | Impeccable AI design language (fe-design-expert, 4 guides) |
-| v0.57.0 | `omcustom update --hard`, `/omcustom:auto-improve`, Epic #535 completion |
+| v0.57.0 | `omcodex update --hard`, `/omcodex:auto-improve`, Epic #535 completion |
 | v0.56.0 | PostCompact R000 enforcement, workflow --list |
 | v0.55.0 | Statusline WL segment, eraser workflow |
 | v0.54.0 | ARCHITECTURE.md full synchronization, Eraser diagrams |
-| v0.53.1 | Auto-tagging fix (.npmrc git-tag-version=false); /omcustom:workflow rename; custom workflow templates |
+| v0.53.1 | Auto-tagging fix (.npmrc git-tag-version=false); /omcodex:workflow rename; custom workflow templates |
 | v0.53.0 | Dashboard All Projects removal; project detail view; eval-core DB connection for evaluations; user feedback integration (#562) |
-| v0.52.0 | Feedback collector hook; routing miss analysis; /omcustom:improve-report; R018 scope constraint |
+| v0.52.0 | Feedback collector hook; routing miss analysis; /omcodex:improve-report; R018 scope constraint |
 | v0.51.0–v0.51.2 | /scout skill; Agent Teams first usage; R018 advisor batch detection; dashboard cleanup |
-| v0.50.0 | Lockfile-based smart protection for omcustom update; systematic-debugging skill |
-| v0.49.0 | Workflow engine (/omcustom:workflow); workflow-runner; auto-dev.yaml |
+| v0.50.0 | Lockfile-based smart protection for omcodex update; systematic-debugging skill |
+| v0.49.0 | Workflow engine (/omcodex:workflow); workflow-runner; auto-dev.yaml |
 | v0.48.0–v0.48.5 | 20-issue deep fix (Drizzle, group_concat, busy_timeout); /professor-triage; /release-plan; stale-todo-scanner; bypassPermissions advisory |
 | v0.47.0–v0.47.2 | Built-in Web UI improvements; orphan server fix; downgrade prevention; version display unification |
 | v0.44.0–v0.46.1 | Sidebar/dashboard/evaluations; Autonomous Mode; feedback skill; SDD; ambiguity-gate; CC v2.1.80 compat; multi-project Web UI |
@@ -734,7 +734,7 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | v0.39.0–v0.41.0 | Adversarial review; Rust CLI components |
 | v0.38.0 | PostCompact hook (R007/R008/R009/R010/R018 reinforcement after compaction); eval-core package (`packages/eval-core/` SQLite session/turn/outcome collection); init wizard (`src/cli/wizard.ts`); context:fork cap raised 10→12 (11 active); hook system cleanup; template full sync; Claude Code v2.1.72–v2.1.76 compatibility |
 | v0.37.0–v0.37.3 | Structure Optimization: rule compression, skill compression, agent-skill wiring, hook optimization, routing compression, domain gating |
-| v0.36.0–v0.36.1 | Harness Engineering (26 issues): R020, security hooks, tool reduction, frontmatter extensions, reasoning-sandwich, omcustom-takeover, sauron structural linting, memory temporal decay, agent metrics, skill effectiveness; /omcustom:release-notes |
+| v0.36.0–v0.36.1 | Harness Engineering (26 issues): R020, security hooks, tool reduction, frontmatter extensions, reasoning-sandwich, omcodex-takeover, sauron structural linting, memory temporal decay, agent metrics, skill effectiveness; /omcodex:release-notes |
 | v0.35.x | Cost monitoring, pre-flight guards, Agent Teams compatibility (R010 Teams exception), episodic-memory session-end fix |
 | v0.34.0 | Evaluator-optimizer, workflow-patterns, stuck-detector hard-block, pre-flight guards |
 | v0.30.0–v0.33.x | deep-plan skill, structured-dev-cycle, confidence-tracked memory, context budget, drift detection |

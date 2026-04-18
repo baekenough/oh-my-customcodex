@@ -3,7 +3,7 @@ title: Wiki
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/wiki/SKILL.md
+  - .codex/skills/wiki/SKILL.md
 related:
   - [[arch-documenter]]
   - [[update-docs]]
@@ -32,4 +32,4 @@ Generates and maintains the `wiki/` directory by reading agent definitions, skil
 
 ## Sources
 
-- `.claude/skills/wiki/SKILL.md` — skill definition
+- `.codex/skills/wiki/SKILL.md` — skill definition

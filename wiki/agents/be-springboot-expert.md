@@ -3,7 +3,7 @@ title: be-springboot-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/be-springboot-expert.md
+  - .codex/agents/be-springboot-expert.md
 related:
   - [[lang-kotlin-expert]]
   - [[lang-java21-expert]]
@@ -37,4 +37,4 @@ Uses the `springboot-best-practices` skill and consults `guides/springboot/` for
 
 ## Sources
 
-- `.claude/agents/be-springboot-expert.md` — agent definition
+- `.codex/agents/be-springboot-expert.md` — agent definition

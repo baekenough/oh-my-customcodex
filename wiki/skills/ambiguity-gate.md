@@ -3,7 +3,7 @@ title: Ambiguity Gate
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/ambiguity-gate/SKILL.md
+  - .codex/skills/ambiguity-gate/SKILL.md
 related:
   - [[secretary-routing]]
   - [[dev-lead-routing]]
@@ -34,4 +34,4 @@ Analyzes a user request for ambiguity before routing to implementation, scoring 
 
 ## Sources
 
-- `.claude/skills/ambiguity-gate/SKILL.md` — skill definition
+- `.codex/skills/ambiguity-gate/SKILL.md` — skill definition

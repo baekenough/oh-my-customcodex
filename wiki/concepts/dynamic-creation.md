@@ -17,7 +17,7 @@ related:
 
 # Dynamic Agent Creation
 
-When no existing specialist matches a task, oh-my-customcode generates one on demand. This "no expert? create one" philosophy is the system's most distinctive capability — routing degradation never results in a hard failure.
+When no existing specialist matches a task, oh-my-customcodex generates one on demand. This "no expert? create one" philosophy is the system's most distinctive capability — routing degradation never results in a hard failure.
 
 ## Overview
 
@@ -33,16 +33,16 @@ Routing detects no match
       - Required capabilities inferred from task
 
   → mgr-creator:
-      1. Search .claude/skills/ for relevant skills
+      1. Search .codex/skills/ for relevant skills
       2. Search guides/ for relevant reference docs
       3. Research authoritative external references (if needed)
-      4. Create .claude/agents/{name}.md with valid R006 frontmatter
+      4. Create .codex/agents/{name}.md with valid R006 frontmatter
       5. Link discovered skills in frontmatter
 
   → Orchestrator uses new agent for original task
 ```
 
-The new agent is immediately available. No registry update, no restart — Claude Code discovers agents by scanning `.claude/agents/` at runtime.
+The new agent is immediately available. No registry update, no restart — Claude Code discovers agents by scanning `.codex/agents/` at runtime.
 
 ## R006 Frontmatter Validation
 
@@ -80,7 +80,7 @@ This auto-discovery implements the [[compilation-metaphor]] principle: `mgr-crea
 
 | Mode | Trigger | Confirmation | Thoroughness |
 |------|---------|-------------|-------------|
-| **Explicit** | `/omcustom:create-agent` | User-guided | Full 3-phase workflow, 25 turns |
+| **Explicit** | `/omcodex:create-agent` | User-guided | Full 3-phase workflow, 25 turns |
 | **Dynamic** | Routing no-match fallback | None (immediate) | Minimal viable agent, focused discovery |
 
 Dynamic mode creates a functional agent quickly. Explicit mode creates a fully researched, production-quality agent with external reference documentation.
@@ -97,7 +97,7 @@ Benefits:
 
 ## Protected Path Enforcement
 
-Dynamic creation always goes through `mgr-creator`. Direct writes to `.claude/agents/*.md` by the orchestrator or other agents violate [[wiki/rules/r010]] Protected Paths. This enforcement ensures:
+Dynamic creation always goes through `mgr-creator`. Direct writes to `.codex/agents/*.md` by the orchestrator or other agents violate [[wiki/rules/r010]] Protected Paths. This enforcement ensures:
 - All agents have valid frontmatter (mgr-sauron won't block pushes)
 - Skill references are valid (no orphaned skill pointers)
 - Routing tables stay synchronized (routing skills discover agents correctly)

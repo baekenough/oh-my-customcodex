@@ -3,7 +3,7 @@ title: Go Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/go-best-practices/SKILL.md
+  - .codex/skills/go-best-practices/SKILL.md
 related:
   - [[lang-golang-expert]]
   - [[go-backend-best-practices]]
@@ -31,4 +31,4 @@ Reference patterns for idiomatic Go: naming conventions (exported identifiers, a
 
 ## Sources
 
-- `.claude/skills/go-best-practices/SKILL.md` — skill definition
+- `.codex/skills/go-best-practices/SKILL.md` — skill definition

@@ -14,7 +14,7 @@ related:
 
 # Agent Definition Quality Standards Guide
 
-Quality criteria for `.claude/agents/*.md` files based on ETH Zurich research on LLM-generated agent configurations, adapted to oh-my-customcode's "create, connect, use" philosophy.
+Quality criteria for `.codex/agents/*.md` files based on ETH Zurich research on LLM-generated agent configurations, adapted to oh-my-customcodex's "create, connect, use" philosophy.
 
 ## Core Principle: LLM Generation + Mandatory Verification
 

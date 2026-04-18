@@ -1,2 +1,2 @@
 ---
-[oh-my-customcode](https://github.com/baekenough/oh-my-customcode) | [npm](https://www.npmjs.com/package/oh-my-customcode)
+[oh-my-customcodex](https://github.com/baekenough/oh-my-customcodex) | [npm](https://www.npmjs.com/package/oh-my-customcodex)

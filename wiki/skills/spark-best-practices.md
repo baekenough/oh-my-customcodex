@@ -3,7 +3,7 @@ title: Spark Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/spark-best-practices/SKILL.md
+  - .codex/skills/spark-best-practices/SKILL.md
 related:
   - [[de-spark-expert]]
   - [[kafka-best-practices]]
@@ -32,4 +32,4 @@ Reference patterns for Apache Spark: broadcast joins for small-large table joins
 
 ## Sources
 
-- `.claude/skills/spark-best-practices/SKILL.md` — skill definition
+- `.codex/skills/spark-best-practices/SKILL.md` — skill definition

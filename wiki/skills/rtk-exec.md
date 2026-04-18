@@ -3,7 +3,7 @@ title: RTK Exec
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/rtk-exec/SKILL.md
+  - .codex/skills/rtk-exec/SKILL.md
 related:
   - [[codex-exec]]
   - [[gemini-exec]]
@@ -32,4 +32,4 @@ Wraps CLI command execution through an RTK (Reduce Token Kit) proxy that compres
 
 ## Sources
 
-- `.claude/skills/rtk-exec/SKILL.md` — skill definition
+- `.codex/skills/rtk-exec/SKILL.md` — skill definition

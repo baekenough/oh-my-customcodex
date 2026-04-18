@@ -14,11 +14,11 @@ related:
 
 # cc-token-saver Integration Guide
 
-External plugin for token cost optimization and session continuity — resolves conflicts with oh-my-customcode's native statusline and delegation rules.
+External plugin for token cost optimization and session continuity — resolves conflicts with oh-my-customcodex's native statusline and delegation rules.
 
 ## Overview
 
-[cc-token-saver](https://github.com/ww-w-ai/cc-token-saver) (Apache-2.0) is an external Claude Code plugin providing cache TTL monitoring, cost dashboards, and zero-cost context restore. Because oh-my-customcode has its own statusline (R012) and delegation model (R009/R010/R018), some features overlap and require explicit priority rules.
+[cc-token-saver](https://github.com/ww-w-ai/cc-token-saver) (Apache-2.0) is an external Claude Code plugin providing cache TTL monitoring, cost dashboards, and zero-cost context restore. Because oh-my-customcodex has its own statusline (R012) and delegation model (R009/R010/R018), some features overlap and require explicit priority rules.
 
 ## Installation
 
@@ -42,11 +42,11 @@ claude plugin install cc-token-saver
 
 ### Live Status Line (R012 Priority)
 
-oh-my-customcode's `.claude/statusline.sh` (R012) already covers Cost, Rate Limit %, Weekly Limit %, and Context %. cc-token-saver's Live Status Line is redundant when R012 is active. R012 statusline takes priority — disable or ignore cc-token-saver's status bar.
+oh-my-customcodex's `.claude/statusline.sh` (R012) already covers Cost, Rate Limit %, Weekly Limit %, and Context %. cc-token-saver's Live Status Line is redundant when R012 is active. R012 statusline takes priority — disable or ignore cc-token-saver's status bar.
 
 ### SubTask Delegation (R009/R010/R018 Priority)
 
-cc-token-saver's Smart Session Architecture injects SubTask delegation patterns. Internal rules always override external skills (R010). When cc-token-saver suggests SubTask patterns, use the oh-my-customcode routing skill + Agent tool instead, with specialized agents per domain (R010) and parallel execution when independent (R009).
+cc-token-saver's Smart Session Architecture injects SubTask delegation patterns. Internal rules always override external skills (R010). When cc-token-saver suggests SubTask patterns, use the oh-my-customcodex routing skill + Agent tool instead, with specialized agents per domain (R010) and parallel execution when independent (R009).
 
 ### Token Guardian and R013 (Coexistence)
 

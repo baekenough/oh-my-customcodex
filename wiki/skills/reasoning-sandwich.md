@@ -3,7 +3,7 @@ title: Reasoning Sandwich
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/reasoning-sandwich/SKILL.md
+  - .codex/skills/reasoning-sandwich/SKILL.md
 related:
   - [[structured-dev-cycle]]
   - [[multi-model-verification]]
@@ -32,4 +32,4 @@ Implements the reasoning sandwich pattern: an opus-class model reasons about the
 
 ## Sources
 
-- `.claude/skills/reasoning-sandwich/SKILL.md` — skill definition
+- `.codex/skills/reasoning-sandwich/SKILL.md` — skill definition

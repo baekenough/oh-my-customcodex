@@ -3,7 +3,7 @@ title: db-supabase-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/db-supabase-expert.md
+  - .codex/agents/db-supabase-expert.md
 related:
   - [[db-postgres-expert]]
   - [[db-alembic-expert]]
@@ -37,4 +37,4 @@ Uses `supabase-postgres-best-practices` skill and consults `guides/supabase-post
 
 ## Sources
 
-- `.claude/agents/db-supabase-expert.md` — agent definition
+- `.codex/agents/db-supabase-expert.md` — agent definition

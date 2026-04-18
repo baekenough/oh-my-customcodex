@@ -3,7 +3,7 @@ title: SDD (Alias)
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/sdd/SKILL.md
+  - .codex/skills/sdd/SKILL.md
 related:
   - [[sdd-dev]]
   - [[sdd-development]]
@@ -32,4 +32,4 @@ This skill is an alias for `sdd-dev`. Invoking `/sdd [task description]` is equi
 
 ## Sources
 
-- `.claude/skills/sdd/SKILL.md` — skill definition
+- `.codex/skills/sdd/SKILL.md` — skill definition

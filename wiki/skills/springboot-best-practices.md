@@ -3,7 +3,7 @@ title: Spring Boot Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/springboot-best-practices/SKILL.md
+  - .codex/skills/springboot-best-practices/SKILL.md
 related:
   - [[be-springboot-expert]]
   - [[kotlin-best-practices]]
@@ -32,4 +32,4 @@ Reference patterns for Spring Boot: layered architecture (controller/service/rep
 
 ## Sources
 
-- `.claude/skills/springboot-best-practices/SKILL.md` — skill definition
+- `.codex/skills/springboot-best-practices/SKILL.md` — skill definition

@@ -3,7 +3,7 @@ title: lang-rust-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/lang-rust-expert.md
+  - .codex/agents/lang-rust-expert.md
 related:
   - [[lang-golang-expert]]
   - [[lang-typescript-expert]]
@@ -39,4 +39,4 @@ Uses `rust-best-practices` skill and `guides/rust/` for reference documentation.
 
 ## Sources
 
-- `.claude/agents/lang-rust-expert.md` — agent definition
+- `.codex/agents/lang-rust-expert.md` — agent definition

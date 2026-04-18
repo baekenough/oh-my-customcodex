@@ -3,7 +3,7 @@ title: Fix Refs
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/fix-refs/SKILL.md
+  - .codex/skills/fix-refs/SKILL.md
 related:
   - [[audit-agents]]
   - [[sauron-watch]]
@@ -16,13 +16,13 @@ Fix broken references in agent definitions, skills, and routing tables.
 
 ## Overview
 
-Repairs broken skill references, guide references, and routing table entries in `.claude/agents/`. Scans for dead skill paths, missing guide directories, and stale routing entries, then applies targeted fixes. Works alongside `audit-agents` (which detects) and `mgr-supplier` (which validates). Delegated from `mgr-supplier` or run directly as part of R017 verification.
+Repairs broken skill references, guide references, and routing table entries in `.codex/agents/`. Scans for dead skill paths, missing guide directories, and stale routing entries, then applies targeted fixes. Works alongside `audit-agents` (which detects) and `mgr-supplier` (which validates). Delegated from `mgr-supplier` or run directly as part of R017 verification.
 
 ## Key Details
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcustom:fix-refs`
+- **Command**: `/omcodex:fix-refs`
 - **Effort**: not specified
 
 ## Relationships
@@ -33,4 +33,4 @@ Repairs broken skill references, guide references, and routing table entries in 
 
 ## Sources
 
-- `.claude/skills/fix-refs/SKILL.md` — skill definition
+- `.codex/skills/fix-refs/SKILL.md` — skill definition

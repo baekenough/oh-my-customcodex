@@ -3,7 +3,7 @@ title: sys-naggy
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/sys-naggy.md
+  - .codex/agents/sys-naggy.md
 related:
   - [[sys-memory-keeper]]
   - [[mgr-sauron]]
@@ -44,4 +44,4 @@ Task management and proactive reminder specialist that monitors stale tasks, tra
 
 ## Sources
 
-- `.claude/agents/sys-naggy.md` — agent definition
+- `.codex/agents/sys-naggy.md` — agent definition

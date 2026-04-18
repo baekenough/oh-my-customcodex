@@ -3,7 +3,7 @@ title: FastAPI Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/fastapi-best-practices/SKILL.md
+  - .codex/skills/fastapi-best-practices/SKILL.md
 related:
   - [[be-fastapi-expert]]
   - [[python-best-practices]]
@@ -32,4 +32,4 @@ Reference patterns for FastAPI: project structure, async route handlers, depende
 
 ## Sources
 
-- `.claude/skills/fastapi-best-practices/SKILL.md` — skill definition
+- `.codex/skills/fastapi-best-practices/SKILL.md` — skill definition

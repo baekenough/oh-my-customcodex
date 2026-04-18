@@ -3,7 +3,7 @@ title: be-django-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/be-django-expert.md
+  - .codex/agents/be-django-expert.md
 related:
   - [[lang-python-expert]]
   - [[be-fastapi-expert]]
@@ -38,4 +38,4 @@ The agent uses the `django-best-practices` skill and consults `guides/django-bes
 
 ## Sources
 
-- `.claude/agents/be-django-expert.md` — agent definition
+- `.codex/agents/be-django-expert.md` — agent definition

@@ -3,7 +3,7 @@ title: Deep Verify
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/deep-verify/SKILL.md
+  - .codex/skills/deep-verify/SKILL.md
 related:
   - [[release-plan]]
   - [[deep-plan]]
@@ -33,4 +33,4 @@ Performs comprehensive multi-perspective verification of a release: code quality
 
 ## Sources
 
-- `.claude/skills/deep-verify/SKILL.md` — skill definition
+- `.codex/skills/deep-verify/SKILL.md` — skill definition

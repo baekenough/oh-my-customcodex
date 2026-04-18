@@ -3,7 +3,7 @@ title: Claude Code Bible
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/claude-code-bible/SKILL.md
+  - .codex/skills/claude-code-bible/SKILL.md
 related:
   - [[mgr-claude-code-bible]]
   - [[R006]]
@@ -31,4 +31,4 @@ Contains the canonical Claude Code specification knowledge used by `mgr-claude-c
 
 ## Sources
 
-- `.claude/skills/claude-code-bible/SKILL.md` — skill definition
+- `.codex/skills/claude-code-bible/SKILL.md` — skill definition

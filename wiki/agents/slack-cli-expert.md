@@ -3,7 +3,7 @@ title: slack-cli-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/slack-cli-expert.md
+  - .codex/agents/slack-cli-expert.md
 related:
   - [[infra-docker-expert]]
   - [[mgr-gitnerd]]
@@ -35,4 +35,4 @@ Uses `guides/slack-cli/` for detailed command reference. Always starts with `sla
 
 ## Sources
 
-- `.claude/agents/slack-cli-expert.md` — agent definition
+- `.codex/agents/slack-cli-expert.md` — agent definition

@@ -3,7 +3,7 @@ title: Django Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/django-best-practices/SKILL.md
+  - .codex/skills/django-best-practices/SKILL.md
 related:
   - [[be-django-expert]]
   - [[python-best-practices]]
@@ -32,4 +32,4 @@ Reference patterns for Django applications: project structure (settings split by
 
 ## Sources
 
-- `.claude/skills/django-best-practices/SKILL.md` — skill definition
+- `.codex/skills/django-best-practices/SKILL.md` — skill definition

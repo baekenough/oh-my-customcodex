@@ -3,7 +3,7 @@ title: Go Backend Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/go-backend-best-practices/SKILL.md
+  - .codex/skills/go-backend-best-practices/SKILL.md
 related:
   - [[be-go-backend-expert]]
   - [[go-best-practices]]
@@ -31,4 +31,4 @@ Reference patterns for Go backend services: HTTP handler structure, middleware p
 
 ## Sources
 
-- `.claude/skills/go-backend-best-practices/SKILL.md` — skill definition
+- `.codex/skills/go-backend-best-practices/SKILL.md` — skill definition

@@ -3,7 +3,7 @@ title: Skills.sh Search
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/skills-sh-search/SKILL.md
+  - .codex/skills/skills-sh-search/SKILL.md
 related:
   - [[skill-extractor]]
   - [[create-agent]]
@@ -34,4 +34,4 @@ Searches [skills.sh](https://skills.sh/) (and optionally [agentskills.io](https:
 
 ## Sources
 
-- `.claude/skills/skills-sh-search/SKILL.md` — skill definition
+- `.codex/skills/skills-sh-search/SKILL.md` — skill definition

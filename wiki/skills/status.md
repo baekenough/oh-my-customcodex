@@ -3,7 +3,7 @@ title: Status
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/status/SKILL.md
+  - .codex/skills/status/SKILL.md
 related:
   - [[lists]]
   - [[help]]
@@ -22,7 +22,7 @@ Displays a comprehensive system status: rules loaded, agent counts by category, 
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcustom:status`
+- **Command**: `/omcodex:status`
 - **Effort**: not specified
 - **Argument hint**: `[--verbose] [--health]`
 
@@ -34,4 +34,4 @@ Displays a comprehensive system status: rules loaded, agent counts by category, 
 
 ## Sources
 
-- `.claude/skills/status/SKILL.md` — skill definition
+- `.codex/skills/status/SKILL.md` — skill definition

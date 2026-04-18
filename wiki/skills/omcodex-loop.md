@@ -3,7 +3,7 @@ title: Omcustom Loop
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/omcustom-loop/SKILL.md
+  - .codex/skills/omcodex-loop/SKILL.md
 related:
   - [[pipeline]]
   - [[dag-orchestration]]
@@ -21,7 +21,7 @@ Keeps a Claude Code session alive during long-running background operations by e
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcustom:loop`
+- **Command**: `/omcodex:loop`
 - **Effort**: not specified
 
 ## Relationships
@@ -32,4 +32,4 @@ Keeps a Claude Code session alive during long-running background operations by e
 
 ## Sources
 
-- `.claude/skills/omcustom-loop/SKILL.md` — skill definition
+- `.codex/skills/omcodex-loop/SKILL.md` — skill definition

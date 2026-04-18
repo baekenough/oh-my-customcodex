@@ -3,7 +3,7 @@ title: Memory Management
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/memory-management/SKILL.md
+  - .codex/skills/memory-management/SKILL.md
 related:
   - [[memory-save]]
   - [[memory-recall]]
@@ -33,4 +33,4 @@ Provides save, recall, and get operations for claude-mem (Chroma-based vector st
 
 ## Sources
 
-- `.claude/skills/memory-management/SKILL.md` — skill definition
+- `.codex/skills/memory-management/SKILL.md` — skill definition

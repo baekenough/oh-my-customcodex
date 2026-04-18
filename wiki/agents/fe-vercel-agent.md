@@ -3,7 +3,7 @@ title: fe-vercel-agent
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/fe-vercel-agent.md
+  - .codex/agents/fe-vercel-agent.md
 related:
   - [[lang-typescript-expert]]
   - [[fe-design-expert]]
@@ -41,4 +41,4 @@ The agent combines three specialized skills: `react-best-practices`, `web-design
 
 ## Sources
 
-- `.claude/agents/fe-vercel-agent.md` — agent definition
+- `.codex/agents/fe-vercel-agent.md` — agent definition

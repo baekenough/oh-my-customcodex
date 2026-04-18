@@ -3,7 +3,7 @@ title: Post-Release Followup
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/post-release-followup/SKILL.md
+  - .codex/skills/post-release-followup/SKILL.md
 related:
   - [[release-plan]]
   - [[deep-verify]]
@@ -27,9 +27,9 @@ After PR creation in a release workflow, collects unaddressed findings from mult
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[release-plan]], [[deep-verify]], [[professor-triage]], [[omcustom-release-notes]]
+- **Related skills**: [[release-plan]], [[deep-verify]], [[professor-triage]], [[omcodex-release-notes]]
 - **See also**: [[R020]]
 
 ## Sources
 
-- `.claude/skills/post-release-followup/SKILL.md` — skill definition
+- `.codex/skills/post-release-followup/SKILL.md` — skill definition

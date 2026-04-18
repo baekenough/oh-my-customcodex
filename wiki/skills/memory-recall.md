@@ -3,7 +3,7 @@ title: Memory Recall
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/memory-recall/SKILL.md
+  - .codex/skills/memory-recall/SKILL.md
 related:
   - [[memory-save]]
   - [[memory-management]]
@@ -35,4 +35,4 @@ Searches claude-mem for relevant memories using semantic queries. Default bias f
 
 ## Sources
 
-- `.claude/skills/memory-recall/SKILL.md` — skill definition
+- `.codex/skills/memory-recall/SKILL.md` — skill definition

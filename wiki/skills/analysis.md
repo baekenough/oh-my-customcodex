@@ -3,7 +3,7 @@ title: Analysis
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/analysis/SKILL.md
+  - .codex/skills/analysis/SKILL.md
 related:
   - [[mgr-creator]]
   - [[create-agent]]
@@ -22,7 +22,7 @@ Scans a project's tech stack via indicator files and dependency manifests, compa
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcustom:analysis`
+- **Command**: `/omcodex:analysis`
 - **Effort**: not specified
 - **Argument hint**: `[target-dir] [--interview]`
 
@@ -34,4 +34,4 @@ Scans a project's tech stack via indicator files and dependency manifests, compa
 
 ## Sources
 
-- `.claude/skills/analysis/SKILL.md` — skill definition
+- `.codex/skills/analysis/SKILL.md` — skill definition

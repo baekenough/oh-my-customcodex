@@ -3,7 +3,7 @@ title: Snowflake Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/snowflake-best-practices/SKILL.md
+  - .codex/skills/snowflake-best-practices/SKILL.md
 related:
   - [[de-snowflake-expert]]
   - [[dbt-best-practices]]
@@ -31,4 +31,4 @@ Reference patterns for Snowflake: warehouse sizing and auto-suspend, multi-clust
 
 ## Sources
 
-- `.claude/skills/snowflake-best-practices/SKILL.md` — skill definition
+- `.codex/skills/snowflake-best-practices/SKILL.md` — skill definition

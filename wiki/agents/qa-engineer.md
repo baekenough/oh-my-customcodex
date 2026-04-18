@@ -3,7 +3,7 @@ title: qa-engineer
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/qa-engineer.md
+  - .codex/agents/qa-engineer.md
 related:
   - [[qa-planner]]
   - [[qa-writer]]
@@ -40,4 +40,4 @@ Jest, Vitest, pytest, go test, JUnit, Playwright, Cypress
 
 ## Sources
 
-- `.claude/agents/qa-engineer.md` — agent definition
+- `.codex/agents/qa-engineer.md` — agent definition

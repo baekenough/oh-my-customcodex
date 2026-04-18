@@ -3,7 +3,7 @@ title: Harness Eval
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/harness-eval/SKILL.md
+  - .codex/skills/harness-eval/SKILL.md
 related:
   - [[structured-dev-cycle]]
   - [[deep-verify]]
@@ -21,7 +21,7 @@ Runs a structured benchmark of 15 canonical software engineering tasks to evalua
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcustom:harness-eval`
+- **Command**: `/omcodex:harness-eval`
 - **Effort**: not specified
 
 ## Relationships
@@ -32,4 +32,4 @@ Runs a structured benchmark of 15 canonical software engineering tasks to evalua
 
 ## Sources
 
-- `.claude/skills/harness-eval/SKILL.md` — skill definition
+- `.codex/skills/harness-eval/SKILL.md` — skill definition

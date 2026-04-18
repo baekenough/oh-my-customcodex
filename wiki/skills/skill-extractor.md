@@ -3,7 +3,7 @@ title: Skill Extractor
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/skill-extractor/SKILL.md
+  - .codex/skills/skill-extractor/SKILL.md
 related:
   - [[mgr-creator]]
   - [[R016]]
@@ -33,4 +33,4 @@ Reads task outcome data (`/tmp/.claude-task-outcomes-$PPID`), groups by `(agent_
 
 ## Sources
 
-- `.claude/skills/skill-extractor/SKILL.md` — skill definition
+- `.codex/skills/skill-extractor/SKILL.md` — skill definition

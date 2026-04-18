@@ -3,7 +3,7 @@ title: Evaluator Optimizer
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/evaluator-optimizer/SKILL.md
+  - .codex/skills/evaluator-optimizer/SKILL.md
 related:
   - [[worker-reviewer-pipeline]]
   - [[pipeline-guards]]
@@ -32,4 +32,4 @@ Implements the evaluator-optimizer pattern: a worker agent generates output, an 
 
 ## Sources
 
-- `.claude/skills/evaluator-optimizer/SKILL.md` — skill definition
+- `.codex/skills/evaluator-optimizer/SKILL.md` — skill definition

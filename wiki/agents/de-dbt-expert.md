@@ -3,7 +3,7 @@ title: de-dbt-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/de-dbt-expert.md
+  - .codex/agents/de-dbt-expert.md
 related:
   - [[de-airflow-expert]]
   - [[de-snowflake-expert]]
@@ -38,4 +38,4 @@ Uses `dbt-best-practices` skill and `guides/dbt/` for reference.
 
 ## Sources
 
-- `.claude/agents/de-dbt-expert.md` — agent definition
+- `.codex/agents/de-dbt-expert.md` — agent definition

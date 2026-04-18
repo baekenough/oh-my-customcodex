@@ -3,7 +3,7 @@ title: Kafka Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/kafka-best-practices/SKILL.md
+  - .codex/skills/kafka-best-practices/SKILL.md
 related:
   - [[de-kafka-expert]]
   - [[spark-best-practices]]
@@ -32,4 +32,4 @@ Reference patterns for Apache Kafka: topic partitioning strategy, producer confi
 
 ## Sources
 
-- `.claude/skills/kafka-best-practices/SKILL.md` — skill definition
+- `.codex/skills/kafka-best-practices/SKILL.md` — skill definition

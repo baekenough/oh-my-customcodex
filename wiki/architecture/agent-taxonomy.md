@@ -18,7 +18,7 @@ related:
 
 ## Overview
 
-Agents live at `.claude/agents/{name}.md`. They declare their domain, model preference, allowed tools, skills they reference, and optional memory scope. The separation between agent definitions (WHAT the agent does) and skill files (HOW to do it) is enforced by [[wiki/rules/r006]].
+Agents live at `.codex/agents/{name}.md`. They declare their domain, model preference, allowed tools, skills they reference, and optional memory scope. The separation between agent definitions (WHAT the agent does) and skill files (HOW to do it) is enforced by [[wiki/rules/r006]].
 
 ## Category Breakdown
 

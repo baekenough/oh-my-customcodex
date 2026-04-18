@@ -3,7 +3,7 @@ title: arch-speckit-agent
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/arch-speckit-agent.md
+  - .codex/agents/arch-speckit-agent.md
 related:
   - [[arch-documenter]]
   - [[qa-planner]]
@@ -49,4 +49,4 @@ A key differentiator is support for EARS (Easy Approach to Requirements Syntax) 
 
 ## Sources
 
-- `.claude/agents/arch-speckit-agent.md` — agent definition
+- `.codex/agents/arch-speckit-agent.md` — agent definition

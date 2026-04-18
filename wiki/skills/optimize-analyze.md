@@ -3,7 +3,7 @@ title: Optimize Analyze
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/optimize-analyze/SKILL.md
+  - .codex/skills/optimize-analyze/SKILL.md
 related:
   - [[tool-optimizer]]
   - [[optimize-bundle]]
@@ -33,4 +33,4 @@ Analyzes application bundles and runtime performance to identify optimization op
 
 ## Sources
 
-- `.claude/skills/optimize-analyze/SKILL.md` — skill definition
+- `.codex/skills/optimize-analyze/SKILL.md` — skill definition

@@ -3,7 +3,7 @@ title: React Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/react-best-practices/SKILL.md
+  - .codex/skills/react-best-practices/SKILL.md
 related:
   - [[fe-vercel-agent]]
   - [[typescript-best-practices]]
@@ -32,4 +32,4 @@ Reference patterns for React and Next.js: component composition, hooks rules and
 
 ## Sources
 
-- `.claude/skills/react-best-practices/SKILL.md` — skill definition
+- `.codex/skills/react-best-practices/SKILL.md` — skill definition

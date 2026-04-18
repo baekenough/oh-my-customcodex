@@ -3,7 +3,7 @@ title: Harness Synthesizer
 type: skill
 updated: 2026-04-18
 sources:
-  - .claude/skills/harness-synthesizer/SKILL.md
+  - .codex/skills/harness-synthesizer/SKILL.md
 related:
   - [[action-validator]]
   - [[adaptive-harness]]
@@ -62,4 +62,4 @@ Default `verifier` mode never blocks tool execution. `filter` without `--hard-en
 
 ## Sources
 
-- `.claude/skills/harness-synthesizer/SKILL.md` — full skill definition with YAML examples
+- `.codex/skills/harness-synthesizer/SKILL.md` — full skill definition with YAML examples

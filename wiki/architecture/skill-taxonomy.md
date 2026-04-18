@@ -18,7 +18,7 @@ related:
 
 ## Overview
 
-Skills live at `.claude/skills/{name}/SKILL.md`. They define HOW to perform tasks, while agents define WHAT role performs them. The same skill can be referenced by multiple agents. Skills evolve independently of agents — changing a skill immediately updates all agents that reference it.
+Skills live at `.codex/skills/{name}/SKILL.md`. They define HOW to perform tasks, while agents define WHAT role performs them. The same skill can be referenced by multiple agents. Skills evolve independently of agents — changing a skill immediately updates all agents that reference it.
 
 ## Scope Classification
 
@@ -85,9 +85,9 @@ Each domain typically forms a triad:
 ```
 Guide (guides/{domain}/)        ← reference documentation
     ↓ referenced by
-Skill (.claude/skills/{domain}-best-practices/)  ← how-to instructions
+Skill (.codex/skills/{domain}-best-practices/)  ← how-to instructions
     ↓ referenced by
-Agent (.claude/agents/{domain}-expert.md)        ← executable specialist
+Agent (.codex/agents/{domain}-expert.md)        ← executable specialist
 ```
 
 This triad is the unit of "compilation." When `mgr-creator` builds a new agent, it auto-discovers the relevant skill and guide to form the complete triad.

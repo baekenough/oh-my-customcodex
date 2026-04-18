@@ -3,7 +3,7 @@ title: tool-bun-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/tool-bun-expert.md
+  - .codex/agents/tool-bun-expert.md
 related:
   - [[tool-npm-expert]]
   - [[lang-typescript-expert]]
@@ -34,4 +34,4 @@ Expert Bun runtime developer for high-performance JavaScript/TypeScript applicat
 
 ## Sources
 
-- `.claude/agents/tool-bun-expert.md` — agent definition
+- `.codex/agents/tool-bun-expert.md` — agent definition

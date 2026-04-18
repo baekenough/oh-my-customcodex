@@ -3,7 +3,7 @@ title: db-postgres-expert
 type: agent
 updated: 2026-04-12
 sources:
-  - .claude/agents/db-postgres-expert.md
+  - .codex/agents/db-postgres-expert.md
 related:
   - [[db-supabase-expert]]
   - [[db-alembic-expert]]
@@ -41,4 +41,4 @@ pg_trgm, PostGIS, pgvector, pg_cron, TimescaleDB
 
 ## Sources
 
-- `.claude/agents/db-postgres-expert.md` — agent definition
+- `.codex/agents/db-postgres-expert.md` — agent definition

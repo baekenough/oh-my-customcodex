@@ -3,7 +3,7 @@ title: Python Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/python-best-practices/SKILL.md
+  - .codex/skills/python-best-practices/SKILL.md
 related:
   - [[lang-python-expert]]
   - [[fastapi-best-practices]]
@@ -32,4 +32,4 @@ Reference patterns for idiomatic Python: PEP 8 style, type hints (PEP 484, 526, 
 
 ## Sources
 
-- `.claude/skills/python-best-practices/SKILL.md` — skill definition
+- `.codex/skills/python-best-practices/SKILL.md` — skill definition

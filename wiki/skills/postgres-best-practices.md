@@ -3,7 +3,7 @@ title: PostgreSQL Best Practices
 type: skill
 updated: 2026-04-12
 sources:
-  - .claude/skills/postgres-best-practices/SKILL.md
+  - .codex/skills/postgres-best-practices/SKILL.md
 related:
   - [[db-postgres-expert]]
   - [[supabase-postgres-best-practices]]
@@ -32,4 +32,4 @@ Reference patterns for PostgreSQL: EXPLAIN ANALYZE usage, index types (B-tree, G
 
 ## Sources
 
-- `.claude/skills/postgres-best-practices/SKILL.md` — skill definition
+- `.codex/skills/postgres-best-practices/SKILL.md` — skill definition
