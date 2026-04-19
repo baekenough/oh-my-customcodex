@@ -307,6 +307,30 @@ agents:
   # ---------------------------------------------------------------------------
   # Research / Information Gathering (skill-based, not agent)
   # ---------------------------------------------------------------------------
+  wiki-rag:
+    keywords:
+      korean:
+        - 아키텍처
+        - 워크플로우
+        - 어떤 에이전트
+        - 어떤 스킬
+        - 규칙
+      english:
+        - architecture
+        - workflow
+        - "which agent"
+        - "which skill"
+        - rule
+        - "how does this work"
+    file_patterns: []
+    supported_actions:
+      - explain
+      - search
+      - investigate
+      - research
+    base_confidence: 80
+    routing_rule: "Use wiki-rag for architecture, workflow, agent, skill, and rule questions before broader exploration"
+
   research-workflow:
     keywords:
       korean:
@@ -368,6 +392,90 @@ agents:
     base_confidence: 30
     action_weight: 25
     routing_rule: "Suggest codex-exec hybrid when codex available, or gemini-exec hybrid when gemini available, for new file creation tasks"
+
+  product-strategy:
+    keywords:
+      korean:
+        - 제품 전략
+        - 오피스 아워
+        - 창업자 질문
+        - CEO 리뷰
+        - 범위 축소
+      english:
+        - "product strategy"
+        - "office hours"
+        - "ceo review"
+        - "founder questions"
+        - "scope reduction"
+    file_patterns: []
+    supported_actions:
+      - analyze
+      - plan
+      - review
+      - reduce
+    base_confidence: 65
+    routing_rule: "Use the product-strategy skill to pressure-test product bets before implementation"
+
+  design-shotgun:
+    keywords:
+      korean:
+        - 디자인 샷건
+        - 시안 비교
+        - 테이스트 메모리
+        - 방향 비교
+      english:
+        - "design shotgun"
+        - "compare directions"
+        - "taste memory"
+        - "variation board"
+    file_patterns: []
+    supported_actions:
+      - create
+      - compare
+      - review
+      - polish
+    base_confidence: 65
+    routing_rule: "Use the design-shotgun skill for multi-direction UI exploration before converging on one implementation"
+
+  browser-automation-reference:
+    keywords:
+      korean:
+        - 브라우저 자동화
+        - 쿠키 임포트
+        - 안티봇
+        - 세션 재사용
+      english:
+        - "browser automation guide"
+        - "cookie import"
+        - anti-bot
+        - "session reuse"
+    file_patterns: ["playwright.config.ts", "*.pw.ts"]
+    supported_actions:
+      - explain
+      - review
+      - investigate
+    base_confidence: 55
+    routing_rule: "Consult guides/browser-automation/README.md and existing Playwright surfaces before implementing browser-session workflows"
+
+  playwright-compress:
+    keywords:
+      korean:
+        - 플레이라이트 압축
+        - 브라우저 출력 압축
+        - ref 보존
+        - MCP 압축
+      english:
+        - "playwright compress"
+        - "browser output compression"
+        - "preserve refs"
+        - "mcp compression"
+    file_patterns: ["playwright.config.ts", "*.pw.ts"]
+    supported_actions:
+      - optimize
+      - compress
+      - review
+    base_confidence: 60
+    routing_rule: "Use the playwright-compress skill when Playwright MCP output is verbose and refs must remain actionable"
 
   # Managers (continued)
   mgr-gitnerd:

@@ -34,6 +34,12 @@ guides:
       origin: github
       url: https://github.com/vercel-labs/agent-skills
 
+  - name: browser-automation
+    description: Browser automation patterns for authenticated sessions, cookie handling, and evidence capture
+    path: ./browser-automation/
+    source:
+      type: internal
+
   # Languages
   - name: golang
     description: Go language reference from Effective Go
