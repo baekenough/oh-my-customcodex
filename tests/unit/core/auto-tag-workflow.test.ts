@@ -227,7 +227,7 @@ describe('auto-tag.yml — CI gating', () => {
   it('should derive required workflows from the merged commit changed files', async () => {
     const content = await readWorkflow();
     // biome-ignore lint/suspicious/noTemplateCurlyInString: literal shell snippet assertion
-    expect(content).toContain('git show --pretty="" --name-only "${MERGE_SHA}"');
+    expect(content).toContain('git show -m --pretty="" --name-only "${MERGE_SHA}"');
     expect(content).toContain('required_workflows=("CI")');
     expect(content).toContain('required_workflows+=("Docs Sync")');
     expect(content).toContain('required_workflows+=("Wiki Sync")');

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-04-19
+
+### Fixed
+- Use merge-aware changed-file detection in release gates so `Wiki Sync` and similar path-filtered workflows are considered correctly for merged release commits.
+- Add the missing wiki page for `token-efficiency-audit` so wiki validation stays green when the skill ships.
+
 ## [0.1.7] - 2026-04-19
 
 ### Added
