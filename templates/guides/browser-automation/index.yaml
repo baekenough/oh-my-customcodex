@@ -1,0 +1,20 @@
+# Browser Automation Guide
+
+metadata:
+  name: browser-automation
+  description: Browser automation patterns for authenticated sessions, cookie handling, and evidence capture
+
+source:
+  type: internal
+
+topics:
+  - authenticated-sessions
+  - cookie-import
+  - anti-bot-caution
+  - evidence-capture
+  - session-isolation
+
+used_by:
+  - product-strategy
+  - design-shotgun
+  - playwright-compress

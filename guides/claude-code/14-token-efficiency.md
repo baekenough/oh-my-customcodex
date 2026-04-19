@@ -1,6 +1,6 @@
 # Token Efficiency Layers
 
-Token efficiency in oh-my-customcodex has three layers. They solve different problems and should not be mixed together blindly.
+Token efficiency in oh-my-customcodex has four layers. They solve different problems and should not be mixed together blindly.
 
 ## Layer 1: Plugin-Level Protection
 
@@ -22,7 +22,19 @@ Use R013 ecomode and existing runtime guards when you want to compress active-se
 
 This layer changes how the session behaves while work is running.
 
-## Layer 3: Settings-Level Optimization
+## Layer 3: Tool-Specific Compression
+
+Use `playwright-compress` when the problem is not the whole session, but one extremely verbose browser tool result.
+
+This layer is intentionally narrow:
+
+- compress verbose Playwright MCP output after the tool succeeds
+- preserve `ref=` tokens and URLs for follow-up interaction
+- keep browser evidence actionable without keeping the full raw payload in context
+
+This layer complements runtime compression instead of replacing it.
+
+## Layer 4: Settings-Level Optimization
 
 Use `/token-efficiency-audit` when you want configuration-level changes before the session burns tokens.
 
@@ -52,12 +64,14 @@ Typical settings-level levers:
 |------|------------|
 | Protect cache value across pauses | Layer 1 |
 | Compress runtime behavior in large sessions | Layer 2 |
-| Reduce baseline token spend from configuration | Layer 3 |
+| Compress one noisy browser interaction | Layer 3 |
+| Reduce baseline token spend from configuration | Layer 4 |
 
 Use layers together, but keep responsibilities separate:
 
 - plugin layer for cache and resume
 - runtime layer for in-session behavior
+- tool-specific layer for noisy browser interactions
 - settings layer for pre-session defaults
 
 ## Tradeoffs

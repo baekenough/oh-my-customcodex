@@ -337,6 +337,16 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "tool matches \"^mcp__playwright__\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/scripts/playwright-compress.sh"
+          }
+        ],
+        "description": "Compress verbose Playwright MCP output while preserving refs and URLs"
+      },
+      {
         "matcher": "tool == \"Bash\"",
         "hooks": [
           {
