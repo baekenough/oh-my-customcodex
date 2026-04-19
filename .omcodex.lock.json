@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.1.8",
-  "generatedAt": "2026-04-19T08:33:59.254Z",
-  "templateVersion": "0.1.8",
+  "generatorVersion": "0.1.9",
+  "generatedAt": "2026-04-19T08:53:03.217Z",
+  "templateVersion": "0.1.9",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -40,8 +40,8 @@
       "component": "rules"
     },
     ".codex/rules/SHOULD-ecomode.md": {
-      "templateHash": "eea1abea618f0081f310bd0fc57044e6462c3925ede35552f57d8cece2d95b61",
-      "size": 4656,
+      "templateHash": "718e983cc10af274ca83272620347e894d466c638809965712cf7d788a1afe15",
+      "size": 4839,
       "component": "rules"
     },
     ".codex/rules/MUST-language-policy.md": {
@@ -802,6 +802,11 @@
     ".codex/skills/skills-sh-search/SKILL.md": {
       "templateHash": "ff0c168d5962c0d51bc40ec8fb98e2db7e05c8e6bfa8d5651bb6615945ade8c7",
       "size": 6129,
+      "component": "skills"
+    },
+    ".codex/skills/pre-generation-arch-check/SKILL.md": {
+      "templateHash": "73f0302c824c1d241eefe65d5d56afe34fdaddcbb354c4222936a16d9effeb73",
+      "size": 2300,
       "component": "skills"
     },
     ".codex/skills/omcodex-takeover/SKILL.md": {

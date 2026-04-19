@@ -18,6 +18,8 @@ Auto-activates when: 4+ parallel tasks, batch operations, 80%+ context usage, or
 
 **Compression**: File lists -> count only (unless < 5), error traces -> first/last 3 lines, code -> path:line ref only.
 
+**Pruning Transparency**: When input pruning occurs, include a compact report line such as `[Pruned] {n} files, ~{tokens} tokens saved` so the user can see what was compressed away.
+
 ## Config
 
 ```yaml

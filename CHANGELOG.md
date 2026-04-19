@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-04-19
+
+### Added
+- Add `/pre-generation-arch-check` to catch architecture and responsibility violations before implementation begins.
+- Add wiki and packaged template coverage for the new skill.
+
+### Changed
+- Add pruning transparency guidance to R013 ecomode so compact output can report what was removed.
+
 ## [0.1.8] - 2026-04-19
 
 ### Fixed

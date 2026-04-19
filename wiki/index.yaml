@@ -3,7 +3,7 @@
 
 meta:
   updated: "2026-04-19"
-  total_pages: 242
+  total_pages: 243
   total_sources: 212
 
 pages:
@@ -315,6 +315,9 @@ pages:
     - file: skills/monitoring-setup.md
       title: "Monitoring Setup"
       summary: "Enable/disable OpenTelemetry console monitoring for Claude Code usage tracking."
+    - file: skills/pre-generation-arch-check.md
+      title: "Pre-Generation Architecture Check"
+      summary: "Check planned code changes for architecture and responsibility violations before implementation."
     - file: skills/token-efficiency-audit.md
       title: "Token Efficiency Audit"
       summary: "Audit and tune Claude/Codex settings for lower token usage without changing code."

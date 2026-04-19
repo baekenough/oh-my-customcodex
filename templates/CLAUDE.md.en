@@ -118,6 +118,7 @@ NO EXCEPTIONS. NO EXCUSES.
 | `/optimize-report` | Generate optimization report |
 | `/research` | 10-team parallel deep analysis and cross-verification |
 | `/deep-plan` | Research-validated planning (research → plan → verify) |
+| `/pre-generation-arch-check` | Check architecture risks before implementation |
 | `/omcodex:sauron-watch` | Full R017 verification |
 | `/structured-dev-cycle` | 6-stage structured development cycle (Plan → Verify → Implement → Verify → Compound → Done) |
 | `/omcodex:lists` | Show all available commands |
@@ -131,7 +132,7 @@ project/
 +-- AGENTS.md                    # Entry point
 +-- .codex/
 |   +-- agents/                  # Subagent definitions (48 files)
-|   +-- skills/                  # Skills (108 directories)
+|   +-- skills/                  # Skills (109 directories)
 |   +-- rules/                   # Global rules (22 files)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (4 files)
