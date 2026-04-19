@@ -1,4 +1,4 @@
-# /omcustom:workflow auto-dev — Full-auto release pipeline
+# /pipeline auto-dev — Full-auto release pipeline
 # Pre-triages open issues → triage verify-done → plan → implement → verify → PR → followup
 
 name: auto-dev

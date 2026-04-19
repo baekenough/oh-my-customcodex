@@ -97,7 +97,7 @@ Load YAML -> Validate -> Execute steps sequentially -> Track state -> Report com
 
 ### State File
 
-`/tmp/.claude-pipeline-{name}-{PPID}.json`:
+`/tmp/.codex-pipeline-{name}-{PPID}.json`:
 
 ```json
 {
@@ -123,7 +123,7 @@ Load YAML -> Validate -> Execute steps sequentially -> Track state -> Report com
 
 ```
 /pipeline resume
--> Scan /tmp/.claude-pipeline-*-$PPID.json
+-> Scan /tmp/.codex-pipeline-*-$PPID.json
 -> Show halted pipeline info
 -> Options: Retry | Skip | Abort
 ```
