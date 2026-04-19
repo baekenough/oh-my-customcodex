@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.1.6",
-  "generatedAt": "2026-04-19T07:21:12.277Z",
-  "templateVersion": "0.1.6",
+  "generatorVersion": "0.1.7",
+  "generatedAt": "2026-04-19T08:21:29.566Z",
+  "templateVersion": "0.1.7",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -437,6 +437,11 @@
     ".codex/skills/springboot-best-practices/SKILL.md": {
       "templateHash": "1b8642c9993b4f89aee7d6769288587274a3afc27a0cff06c9d92861232b171d",
       "size": 2539,
+      "component": "skills"
+    },
+    ".codex/skills/token-efficiency-audit/SKILL.md": {
+      "templateHash": "413eff441296cd913f2c8dedfe113df3f2f22c33efa77fa6e54fae9d71f54442",
+      "size": 3592,
       "component": "skills"
     },
     ".codex/skills/qa-lead-routing/SKILL.md": {
@@ -1280,13 +1285,18 @@
       "component": "guides"
     },
     "guides/claude-code/13-cli-flags.md": {
-      "templateHash": "da13ae95b0e5c58e5315390f9a1b1017e260187ed798826b256963b430d4d4dc",
-      "size": 4782,
+      "templateHash": "e752de67d30ffd435f046243ac5936322ba129e5c826b61c924dca04e685e077",
+      "size": 4881,
       "component": "guides"
     },
     "guides/claude-code/12-workflow-patterns.md": {
       "templateHash": "6381a632b7fc8793b5b29fc26ac02c45ceaf088a6087f430470173aec59cc5de",
       "size": 6348,
+      "component": "guides"
+    },
+    "guides/claude-code/14-token-efficiency.md": {
+      "templateHash": "4766988fcac011c78137d5b425458bd6c73ac2b6180f200979e3bbc9a0ed438b",
+      "size": 2320,
       "component": "guides"
     },
     "guides/claude-code/09-guardrails.md": {
@@ -1295,8 +1305,8 @@
       "component": "guides"
     },
     "guides/claude-code/index.yaml": {
-      "templateHash": "746e403f0b003b3e58512d290bc8786318633ef4174eaab88462ccec22334836",
-      "size": 1836,
+      "templateHash": "750a812b624c3e48a62c9272f91aa65e2c5096cab8d8f2e44cff30a78dad7f21",
+      "size": 2040,
       "component": "guides"
     },
     "guides/claude-code/05-agent-sdk.md": {
@@ -1380,8 +1390,8 @@
       "component": "guides"
     },
     "guides/cc-token-saver/README.md": {
-      "templateHash": "6f84b326ae73dbc9340b47e2dbf774b0ebc5c6ab82cd538971113ee5d3ccf6c7",
-      "size": 3634,
+      "templateHash": "136a71fcb2907a92d6541ca3ed79575e7d441ef7b6b353379f885974b9602f44",
+      "size": 3904,
       "component": "guides"
     },
     "guides/dbt/README.md": {

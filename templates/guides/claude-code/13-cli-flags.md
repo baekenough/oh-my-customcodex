@@ -149,3 +149,4 @@ claude auto-mode critique    # Review auto mode decisions
 - [Monitoring Guide](10-monitoring.md) — OTel metrics and events
 - [Sub-agents Guide](11-sub-agents.md) — Agent spawning and coordination
 - [Workflow Patterns](12-workflow-patterns.md) — Workflow automation
+- [Token Efficiency Layers](14-token-efficiency.md) — plugin/runtime/settings optimization stack

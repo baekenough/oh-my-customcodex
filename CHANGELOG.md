@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-04-19
+
+### Added
+- Add `/token-efficiency-audit` to audit and apply token-efficiency settings for Claude/Codex usage.
+- Add a new Claude Code guide covering plugin, runtime, and settings-level token-efficiency layers.
+
+### Changed
+- Link the new token-efficiency guidance from existing CLI flag and cc-token-saver documentation.
+
 ## [0.1.6] - 2026-04-19
 
 ### Fixed

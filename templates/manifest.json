@@ -1,6 +1,6 @@
 {
-  "version": "0.1.6",
-  "lastUpdated": "2026-04-19T07:21:00.000Z",
+  "version": "0.1.7",
+  "lastUpdated": "2026-04-19T08:21:30.000Z",
   "components": [
     {
       "name": "rules",
@@ -18,7 +18,7 @@
       "name": "skills",
       "path": ".codex/skills",
       "description": "Reusable skill modules (includes slash commands)",
-      "files": 107
+      "files": 108
     },
     {
       "name": "guides",
