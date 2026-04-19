@@ -59,3 +59,8 @@ documents:
     title: CLI 플래그 및 모드
     description: CLI 플래그, 헤드리스 모드, 스케줄링, 환경변수 레퍼런스
     path: ./13-cli-flags.md
+
+  - name: token-efficiency
+    title: 토큰 효율 레이어
+    description: 플러그인, 런타임, 설정 레이어를 분리한 토큰 효율 최적화 가이드
+    path: ./14-token-efficiency.md

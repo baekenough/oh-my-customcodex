@@ -13,9 +13,9 @@
 
 **[English Documentation](./README.md)**
 
-48개 에이전트. 107개 스킬. 22개 규칙. 명령어 하나.
+48개 에이전트. 108개 스킬. 22개 규칙. 명령어 하나.
 
-> **v0.74.0** — omcodex sync, init --from-snapshot, analysis --interview, skill-extractor (100번째 스킬), User Model, 릴리즈 정리 자동화
+> **v0.1.7** — token-efficiency-audit 스킬, 토큰 효율 3계층 가이드, cc-token-saver/CLI flags cross-reference 추가
 
 ```bash
 npm install -g oh-my-customcodex && cd your-project && omcodex init
@@ -25,16 +25,14 @@ npm install -g oh-my-customcodex && cd your-project && omcodex init
 
 ---
 
-## v0.74.0의 새로운 기능
+## v0.1.7의 새로운 기능
 
 | 기능 | 설명 |
 |------|------|
-| **`omcodex sync`** | `.codex/` 설정 드리프트 감지 — lockfile 비교, 팀 스냅샷 내보내기 |
-| **`omcodex init --from-snapshot`** | 팀 재현성 — 사전 구성된 스냅샷에서 설치 |
-| **`analysis --interview`** | 파일 기반 탐지 전 대화형 AI 아키텍처 인터뷰 |
-| **skill-extractor** | 100번째 스킬 — 성공한 작업 궤적에서 재사용 가능한 SKILL.md 후보 제안 |
-| **User Model** | 교정 패턴, 스킬 선호도, 전문 분야 구조적 추적 |
-| **릴리즈 정리 자동화** | PR 머지 시 연관 이슈 자동 close + 릴리즈 브랜치 자동 삭제 |
+| **`/token-efficiency-audit`** | Claude/Codex 설정을 점검하고 토큰 낭비를 줄이기 위한 감사/적용 워크플로우 |
+| **Token Efficiency Layers guide** | 플러그인, 런타임, 설정 레이어를 분리한 토큰 효율 최적화 가이드 |
+| **cc-token-saver cross-reference** | 기존 플러그인 가이드에서 Layer 3 설정 기반 최적화로 바로 이동 가능 |
+| **CLI flags cross-reference** | Claude Code CLI 플래그 문서에서 토큰 효율 가이드로 바로 이동 가능 |
 
 ---
 
@@ -149,7 +147,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (107개)
+## 스킬 (108개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
@@ -157,7 +155,7 @@ Agent(arch-documenter):haiku      ┘
 | 라우팅 | 4 | secretary, dev-lead, de-lead, qa-lead |
 | 워크플로우 | 13 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, pipeline 외 |
 | 개발 | 9 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcodex:takeover, skill-extractor, idea |
-| 운영 | 9 | update-docs, audit-agents, sauron-watch, monitoring-setup, fix-refs, release-notes 외 |
+| 운영 | 10 | update-docs, audit-agents, sauron-watch, monitoring-setup, token-efficiency-audit, fix-refs, release-notes 외 |
 | 메모리 | 3 | memory-save, memory-recall, memory-management |
 | 패키지 | 3 | npm-publish, npm-version, npm-audit |
 | 최적화 | 3 | optimize-analyze, optimize-bundle, optimize-report |
@@ -224,6 +222,7 @@ Agent(arch-documenter):haiku      ┘
 | `/memory-save` | 세션 컨텍스트 저장 |
 | `/memory-recall` | 메모리 검색 및 리콜 |
 | `/omcodex:monitoring-setup` | OTel 모니터링 토글 |
+| `/token-efficiency-audit` | 토큰 효율 설정 감사 및 조정 |
 | `/omcodex:lists` | 전체 커맨드 표시 |
 | `/omcodex:status` | 시스템 상태 확인 |
 
@@ -287,7 +286,7 @@ your-project/
 ├── AGENTS.md                   # 진입점
 ├── .codex/
 │   ├── agents/                 # 48개 에이전트 정의
-│   ├── skills/                 # 107개 스킬 모듈
+│   ├── skills/                 # 108개 스킬 모듈
 │   ├── rules/                  # 22개 거버넌스 규칙 (R000-R022)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마

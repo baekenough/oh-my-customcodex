@@ -107,6 +107,7 @@ NO EXCEPTIONS. NO EXCUSES.
 | `/memory-save` | Save session context to omx-memory |
 | `/memory-recall` | Search and recall memories |
 | `/omcodex:monitoring-setup` | Enable/disable OTel console monitoring |
+| `/token-efficiency-audit` | Audit and tune token-efficiency settings |
 | `/omcodex:npm-publish` | Publish package to npm registry |
 | `/omcodex:npm-version` | Manage semantic versions |
 | `/omcodex:npm-audit` | Audit dependencies |
@@ -130,7 +131,7 @@ project/
 +-- AGENTS.md                    # Entry point
 +-- .codex/
 |   +-- agents/                  # Subagent definitions (48 files)
-|   +-- skills/                  # Skills (106 directories)
+|   +-- skills/                  # Skills (108 directories)
 |   +-- rules/                   # Global rules (22 files)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (4 files)
@@ -174,7 +175,6 @@ This is the core oh-my-customcodex philosophy: **"No expert? CREATE one, connect
 | QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | System | 3 | sys-memory-keeper, sys-naggy, wiki-curator |
-| Auxiliary | 1 | slack-cli-expert |
 | **Total** | **48** | |
 
 ## Agent Teams (MUST when enabled)

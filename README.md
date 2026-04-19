@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-48 agents. 107 skills. 22 rules. One command.
+48 agents. 108 skills. 22 rules. One command.
 
 ```bash
 npm install -g oh-my-customcodex && cd your-project && omcodex init
@@ -132,7 +132,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (107)
+### Skills (108)
 
 | Category | Count | Includes |
 |----------|-------|----------|
@@ -140,7 +140,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 | Routing | 4 | secretary, dev-lead, de-lead, qa-lead |
 | Workflow | 13 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, pipeline, and more |
 | Development | 9 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcodex:takeover, skill-extractor, idea |
-| Operations | 9 | update-docs, audit-agents, sauron-watch, monitoring-setup, fix-refs, release-notes, and more |
+| Operations | 10 | update-docs, audit-agents, sauron-watch, monitoring-setup, token-efficiency-audit, fix-refs, release-notes, and more |
 | Memory | 3 | memory-save, memory-recall, memory-management |
 | Package | 3 | npm-publish, npm-version, npm-audit |
 | Optimization | 3 | optimize-analyze, optimize-bundle, optimize-report |
@@ -205,6 +205,7 @@ All commands are invoked inside the oh-my-customcodex GPT Codex + OMX session.
 | `/memory-save` | Save session context |
 | `/memory-recall` | Search and recall memories |
 | `/omcodex:monitoring-setup` | OTel monitoring toggle |
+| `/token-efficiency-audit` | Audit and tune token-efficiency settings |
 | `/omcodex:loop` | Auto-continue background agent workflows (3-continue safety limit) |
 | `/omcodex:lists` | Show all commands |
 | `/omcodex:status` | System health check |
@@ -273,7 +274,7 @@ your-project/
 ├── AGENTS.md                   # Entry point
 ├── .codex/
 │   ├── agents/                 # 48 agent definitions
-│   ├── skills/                 # 107 skill modules
+│   ├── skills/                 # 108 skill modules
 │   ├── rules/                  # 22 governance rules (R000-R021)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas

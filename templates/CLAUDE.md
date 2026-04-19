@@ -104,7 +104,7 @@ oh-my-customcodex로 구동됩니다.
 | 릴리즈 | `/pipeline auto-dev`, `/omcodex-release-notes`, `/release-plan` | 자동 개발, 릴리즈 노트 |
 | 리서치 | `/research`, `/scout`, `/deep-plan`, `/omcodex:agora` | 병렬 분석, URL 평가, 연구 계획 |
 | 메모리 | `/memory-save`, `/memory-recall` | 세션 메모리 관리 |
-| 시스템 | `/omcodex:lists`, `/omcodex:status`, `/omcodex:help` | 전체 목록, 상태, 도움말 |
+| 시스템 | `/token-efficiency-audit`, `/omcodex:lists`, `/omcodex:status`, `/omcodex:help` | 토큰 효율 감사, 전체 목록, 상태, 도움말 |
 
 > 전체 커맨드 목록 (60+ 커맨드): `/omcodex:lists` 실행
 
@@ -115,7 +115,7 @@ project/
 +-- AGENTS.md                    # 진입점
 +-- .codex/
 |   +-- agents/                  # 서브에이전트 정의 (48 파일)
-|   +-- skills/                  # 스킬 (106 디렉토리)
+|   +-- skills/                  # 스킬 (108 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R022)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)

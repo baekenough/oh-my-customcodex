@@ -61,6 +61,15 @@ These two components solve different problems and can run simultaneously:
 
 **No conflict** — Token Guardian fires on idle time, R013 fires on context percentage. Both warnings are useful.
 
+## Layer 3 Cross-Reference
+
+`cc-token-saver` is Layer 1 of the token-efficiency stack. For settings-level optimization before the session starts, use `/token-efficiency-audit`.
+
+See also:
+
+- `guides/claude-code/14-token-efficiency.md`
+- `/token-efficiency-audit audit`
+
 ## Usage Scenarios
 
 ### `/continue` — Zero-cost context restore

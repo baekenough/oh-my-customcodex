@@ -107,6 +107,7 @@ oh-my-customcodex로 구동됩니다.
 | `/memory-save` | 세션 컨텍스트를 omx-memory에 저장 |
 | `/memory-recall` | 메모리 검색 및 리콜 |
 | `/omcodex:monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
+| `/token-efficiency-audit` | 토큰 효율 설정 감사 및 조정 |
 | `/omcodex:npm-publish` | npm 레지스트리에 패키지 배포 |
 | `/omcodex:npm-version` | 시맨틱 버전 관리 |
 | `/omcodex:npm-audit` | 의존성 감사 |
@@ -130,7 +131,7 @@ project/
 +-- AGENTS.md                    # 진입점
 +-- .codex/
 |   +-- agents/                  # 서브에이전트 정의 (48 파일)
-|   +-- skills/                  # 스킬 (106 디렉토리)
+|   +-- skills/                  # 스킬 (108 디렉토리)
 |   +-- rules/                   # 전역 규칙 (22 파일)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (4 파일)
@@ -174,7 +175,6 @@ project/
 | QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | System | 3 | sys-memory-keeper, sys-naggy, wiki-curator |
-| 보조 | 1 | slack-cli-expert |
 | **총계** | **48** | |
 
 ## Agent Teams (MUST when enabled)
