@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.1.1",
-  "generatedAt": "2026-04-19T00:11:55.434Z",
-  "templateVersion": "0.1.1",
+  "generatorVersion": "0.1.5",
+  "generatedAt": "2026-04-19T06:53:30.796Z",
+  "templateVersion": "0.1.5",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -1030,8 +1030,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/skill-extractor-analyzer.sh": {
-      "templateHash": "70b9cffa3ef0d20116fe41fd5aed203733959a63a9fefe39a3c9b7c87e0f2627",
-      "size": 1578,
+      "templateHash": "0339a890c08b0d4208922e7f8542776cd7b8c28d73290e07a62edf28cbc339fc",
+      "size": 2455,
       "component": "hooks"
     },
     ".codex/hooks/scripts/user-prompt-preprocessor.sh": {

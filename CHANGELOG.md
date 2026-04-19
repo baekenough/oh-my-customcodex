@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-04-19
+
+### Fixed
+- Normalize pipeline command/state references for the Codex port so the `auto-dev` template, pipeline wiki entry, and pipeline design spec all point at `/pipeline` and `.codex-pipeline` state files.
+- Harden `skill-extractor-analyzer.sh` and its hook test to avoid flaky release-batch failures under Bun's multi-file runner.
+
 ## [0.35.0] - 2026-03-14
 
 ### Added

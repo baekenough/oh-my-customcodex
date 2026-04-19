@@ -79,6 +79,20 @@ function bashSyntaxCheck(scriptPath: string): Promise<{ exitCode: number; stderr
   });
 }
 
+async function waitForFile(path: string, timeoutMs = 250): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    if (existsSync(path)) {
+      return true;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+
+  return existsSync(path);
+}
+
 /** Build a minimal Claude Code hook JSON payload for Task tool calls. */
 function makeTaskInput(subagentType: string, prompt: string): string {
   return JSON.stringify({
@@ -878,8 +892,14 @@ describe('feedback-collector.sh', () => {
 // -------------------------------------------------------------------
 
 describe('skill-extractor-analyzer.sh', () => {
-  const outcomesFile = `/tmp/.codex-task-outcomes-${process.pid}`;
-  const proposalsFile = `/tmp/.codex-skill-proposals-${process.pid}`;
+  let outcomesFile: string;
+  let proposalsFile: string;
+
+  beforeEach(() => {
+    const suffix = `${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    outcomesFile = join(tmpdir(), `.codex-task-outcomes-${suffix}`);
+    proposalsFile = join(tmpdir(), `.codex-skill-proposals-${suffix}`);
+  });
 
   afterEach(async () => {
     await unlink(outcomesFile).catch(() => undefined);
@@ -888,7 +908,15 @@ describe('skill-extractor-analyzer.sh', () => {
 
   it('should always exit 0 and pass stdin through when no outcomes file exists', async () => {
     const input = makeStopInput({ session_id: 'skill-extractor-test' });
-    const result = await runHookScript(SKILL_EXTRACTOR_ANALYZER_SCRIPT, input, {}, tmpdir());
+    const result = await runHookScript(
+      SKILL_EXTRACTOR_ANALYZER_SCRIPT,
+      input,
+      {
+        CODEX_TASK_OUTCOMES_FILE: outcomesFile,
+        CODEX_SKILL_PROPOSALS_FILE: proposalsFile,
+      },
+      tmpdir()
+    );
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout.trim()).toBe(input);
@@ -917,12 +945,43 @@ describe('skill-extractor-analyzer.sh', () => {
     );
 
     const input = makeStopInput({ session_id: 'skill-extractor-proposal' });
-    const result = await runHookScript(SKILL_EXTRACTOR_ANALYZER_SCRIPT, input, {}, tmpdir());
+    const result = await runHookScript(
+      SKILL_EXTRACTOR_ANALYZER_SCRIPT,
+      input,
+      {
+        CODEX_TASK_OUTCOMES_FILE: outcomesFile,
+        CODEX_SKILL_PROPOSALS_FILE: proposalsFile,
+      },
+      tmpdir()
+    );
 
-    expect(result.exitCode).toBe(0);
-    expect(result.stdout.trim()).toBe(input);
-    expect(result.stderr).toContain('skill candidate');
-    expect(existsSync(proposalsFile)).toBe(true);
+    const proposalExists = await waitForFile(proposalsFile);
+
+    expect(
+      {
+        exitCode: result.exitCode,
+        stdout: result.stdout.trim(),
+        stderr: result.stderr,
+        proposalExists,
+      },
+      JSON.stringify(
+        {
+          exitCode: result.exitCode,
+          stdout: result.stdout.trim(),
+          stderr: result.stderr,
+          proposalExists,
+          outcomesFile,
+          proposalsFile,
+        },
+        null,
+        2
+      )
+    ).toEqual({
+      exitCode: 0,
+      stdout: input,
+      stderr: expect.stringContaining('skill candidate'),
+      proposalExists: true,
+    });
 
     const proposal = JSON.parse(await readFile(proposalsFile, 'utf-8'));
     expect(proposal.candidates).toBe(1);
