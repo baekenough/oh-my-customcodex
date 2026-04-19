@@ -1,11 +1,12 @@
 /**
- * Tests for installer.ts RTK/Codex installation paths.
+ * Tests for installer.ts RTK/Codex/OMX installation paths.
  * These paths require mock.module to intercept the static imports in installer.ts.
  * Tests cover:
  *   - installRtkIfNeeded when RTK is not installed and install succeeds (lines 379-382)
  *   - installRtkIfNeeded when RTK is not installed and install fails (lines 379-386)
  *   - installCodexIfNeeded when Codex is not installed and install succeeds (lines 398-402)
  *   - installCodexIfNeeded when Codex is not installed and install fails (lines 398-405)
+ *   - installOmxIfNeeded when OMX is not installed and install succeeds/fails
  *   - installAgents domain filtering (lines 608-613)
  *   - restoration failures during backup (lines 444-447)
  *   - lockfile warning path during install (lines 458-459)
@@ -16,7 +17,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-describe('installer RTK/Codex paths', () => {
+describe('installer RTK/Codex/OMX paths', () => {
   let tempDir: string;
   let consoleLogSpy: ReturnType<typeof spyOn>;
   let consoleInfoSpy: ReturnType<typeof spyOn>;
@@ -56,6 +57,11 @@ describe('installer RTK/Codex paths', () => {
       installCodex: () => true,
       getCodexVersion: () => '1.0.0',
     }));
+    mock.module('../../../src/core/omx-installer.js', () => ({
+      isOmxInstalled: () => true,
+      installOmx: () => true,
+      getOmxVersion: () => 'oh-my-codex v0.13.2',
+    }));
 
     const { install } = await import('../../../src/core/installer.js');
 
@@ -76,6 +82,11 @@ describe('installer RTK/Codex paths', () => {
       isCodexInstalled: () => true,
       installCodex: () => true,
       getCodexVersion: () => '1.0.0',
+    }));
+    mock.module('../../../src/core/omx-installer.js', () => ({
+      isOmxInstalled: () => true,
+      installOmx: () => true,
+      getOmxVersion: () => 'oh-my-codex v0.13.2',
     }));
 
     const { install } = await import('../../../src/core/installer.js');
@@ -100,6 +111,11 @@ describe('installer RTK/Codex paths', () => {
       installCodex: () => false,
       getCodexVersion: () => null,
     }));
+    mock.module('../../../src/core/omx-installer.js', () => ({
+      isOmxInstalled: () => true,
+      installOmx: () => true,
+      getOmxVersion: () => 'oh-my-codex v0.13.2',
+    }));
 
     const { install } = await import('../../../src/core/installer.js');
 
@@ -121,6 +137,11 @@ describe('installer RTK/Codex paths', () => {
       installCodex: () => true,
       getCodexVersion: () => null,
     }));
+    mock.module('../../../src/core/omx-installer.js', () => ({
+      isOmxInstalled: () => true,
+      installOmx: () => true,
+      getOmxVersion: () => 'oh-my-codex v0.13.2',
+    }));
 
     const { install } = await import('../../../src/core/installer.js');
 
@@ -141,6 +162,11 @@ describe('installer RTK/Codex paths', () => {
       isCodexInstalled: () => true,
       installCodex: () => true,
       getCodexVersion: () => '1.0.0',
+    }));
+    mock.module('../../../src/core/omx-installer.js', () => ({
+      isOmxInstalled: () => true,
+      installOmx: () => true,
+      getOmxVersion: () => 'oh-my-codex v0.13.2',
     }));
 
     const { install } = await import('../../../src/core/installer.js');
@@ -167,6 +193,11 @@ describe('installer RTK/Codex paths', () => {
       isCodexInstalled: () => true,
       installCodex: () => true,
       getCodexVersion: () => '1.0.0',
+    }));
+    mock.module('../../../src/core/omx-installer.js', () => ({
+      isOmxInstalled: () => true,
+      installOmx: () => true,
+      getOmxVersion: () => 'oh-my-codex v0.13.2',
     }));
     // Mock lockfile module to return a warning, simulating lockfile generation failure
     mock.module('../../../src/core/lockfile.js', () => ({
@@ -196,5 +227,53 @@ describe('installer RTK/Codex paths', () => {
 
     // The lockfile warning should be in result.warnings when generation fails
     expect(result.warnings.some((w) => w.includes('Lockfile generation failed'))).toBe(true);
+  });
+
+  it('should add warning when OMX not installed and installOmx fails', async () => {
+    mock.module('../../../src/core/rtk-installer.js', () => ({
+      isRtkInstalled: () => true,
+      installRtk: () => true,
+      getRtkVersion: () => '0.34.2',
+    }));
+    mock.module('../../../src/core/codex-installer.js', () => ({
+      isCodexInstalled: () => true,
+      installCodex: () => true,
+      getCodexVersion: () => '1.0.0',
+    }));
+    mock.module('../../../src/core/omx-installer.js', () => ({
+      isOmxInstalled: () => false,
+      installOmx: () => false,
+      getOmxVersion: () => null,
+    }));
+
+    const { install } = await import('../../../src/core/installer.js');
+    const result = await install({ targetDir: tempDir, skipConfirm: true });
+
+    expect(result.success).toBe(true);
+    expect(result.warnings.some((w) => w.includes('OMX installation failed'))).toBe(true);
+  });
+
+  it('should not warn when OMX installation succeeds', async () => {
+    mock.module('../../../src/core/rtk-installer.js', () => ({
+      isRtkInstalled: () => true,
+      installRtk: () => true,
+      getRtkVersion: () => '0.34.2',
+    }));
+    mock.module('../../../src/core/codex-installer.js', () => ({
+      isCodexInstalled: () => true,
+      installCodex: () => true,
+      getCodexVersion: () => '1.0.0',
+    }));
+    mock.module('../../../src/core/omx-installer.js', () => ({
+      isOmxInstalled: () => false,
+      installOmx: () => true,
+      getOmxVersion: () => null,
+    }));
+
+    const { install } = await import('../../../src/core/installer.js');
+    const result = await install({ targetDir: tempDir, skipConfirm: true });
+
+    expect(result.success).toBe(true);
+    expect(result.warnings.some((w) => w.includes('OMX installation failed'))).toBe(false);
   });
 });

@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.98.0",
-  "generatedAt": "2026-04-18T15:35:50.394Z",
-  "templateVersion": "0.98.0",
+  "generatorVersion": "0.1.1",
+  "generatedAt": "2026-04-19T00:11:55.434Z",
+  "templateVersion": "0.1.1",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -454,6 +454,11 @@
       "size": 4891,
       "component": "skills"
     },
+    ".codex/skills/omcodex-improve-report/SKILL.md": {
+      "templateHash": "2f6af1a925c203c66be0b0a400cd115c65eac83cb23a7abaf401431b7fec86eb",
+      "size": 2187,
+      "component": "skills"
+    },
     ".codex/skills/cve-triage/SKILL.md": {
       "templateHash": "2f2206b5eb8c1bffd7443c9c9546857b560a0356c29c7c8d988637030ca96e75",
       "size": 2450,
@@ -614,6 +619,11 @@
       "size": 7966,
       "component": "skills"
     },
+    ".codex/skills/omcodex-release-notes/SKILL.md": {
+      "templateHash": "aafc841d6a6768582f54d872c62036b239631bce7f50dd6ef9eeef9f6e633120",
+      "size": 3059,
+      "component": "skills"
+    },
     ".codex/skills/web-design-guidelines/SKILL.md": {
       "templateHash": "54a20ee8e140256c14fdc3071f369895107939c87c6b4c36dd3e6b7b98d2cfd9",
       "size": 1956,
@@ -664,6 +674,11 @@
       "size": 1778,
       "component": "skills"
     },
+    ".codex/skills/omcodex-feedback/SKILL.md": {
+      "templateHash": "5a335d36bb256ed0a5b970ef014c5099174579aa82f82b9acab101a953e3f989",
+      "size": 6417,
+      "component": "skills"
+    },
     ".codex/skills/rust-best-practices/SKILL.md": {
       "templateHash": "735a5f16e54ffacd4eb8116b21bde18c7afa397d2288397284a648029104a7f9",
       "size": 5708,
@@ -682,11 +697,6 @@
     ".codex/skills/deep-plan/SKILL.md": {
       "templateHash": "3d4b3013d13bf065c3bc9f108e546d4431733d5b68e69cd0d1eaf17ed404dbac",
       "size": 14561,
-      "component": "skills"
-    },
-    ".codex/skills/omcustom-feedback/SKILL.md": {
-      "templateHash": "5a335d36bb256ed0a5b970ef014c5099174579aa82f82b9acab101a953e3f989",
-      "size": 6417,
       "component": "skills"
     },
     ".codex/skills/wiki/SKILL.md": {
@@ -712,6 +722,11 @@
     ".codex/skills/pipeline-architecture-patterns/SKILL.md": {
       "templateHash": "d4fa946d6db65d9052b94d76bd1e1db487c9f34adf6be827b6bb7c8e87958bd1",
       "size": 2262,
+      "component": "skills"
+    },
+    ".codex/skills/omcodex-auto-improve/SKILL.md": {
+      "templateHash": "bf0ad59a50a3f1753f499ae731bcac47ed326e69dd5f86fa806cf48c84c461c2",
+      "size": 4604,
       "component": "skills"
     },
     ".codex/skills/professor-triage/SKILL.md": {
@@ -759,16 +774,6 @@
       "size": 5160,
       "component": "skills"
     },
-    ".codex/skills/omcustom-release-notes/SKILL.md": {
-      "templateHash": "aafc841d6a6768582f54d872c62036b239631bce7f50dd6ef9eeef9f6e633120",
-      "size": 3059,
-      "component": "skills"
-    },
-    ".codex/skills/omcustom-takeover/SKILL.md": {
-      "templateHash": "0cc5d942f179457a581e31a5f82c4ec28b9b584a874e822b2bc9ecb125b0dae7",
-      "size": 2906,
-      "component": "skills"
-    },
     ".codex/skills/idea/SKILL.md": {
       "templateHash": "bc4e3adbd7acb222613d5c4b13296b1335c8cdf7a8797d3c205f6f540cc92764",
       "size": 2622,
@@ -792,6 +797,11 @@
     ".codex/skills/skills-sh-search/SKILL.md": {
       "templateHash": "ff0c168d5962c0d51bc40ec8fb98e2db7e05c8e6bfa8d5651bb6615945ade8c7",
       "size": 6129,
+      "component": "skills"
+    },
+    ".codex/skills/omcodex-takeover/SKILL.md": {
+      "templateHash": "0cc5d942f179457a581e31a5f82c4ec28b9b584a874e822b2bc9ecb125b0dae7",
+      "size": 2906,
       "component": "skills"
     },
     ".codex/skills/typescript-best-practices/SKILL.md": {
@@ -849,6 +859,11 @@
       "size": 2124,
       "component": "skills"
     },
+    ".codex/skills/omcodex-loop/SKILL.md": {
+      "templateHash": "0c22ee762f5d49ee69895c3e8071ffe379103ab5edf34fa5d4b7697630810566",
+      "size": 1911,
+      "component": "skills"
+    },
     ".codex/skills/java21-best-practices/SKILL.md": {
       "templateHash": "15b57fe25d54db0ef79d25c7b2c96982b35dc9f1c64669fff13b136d0c7f3321",
       "size": 5232,
@@ -879,11 +894,6 @@
       "size": 6700,
       "component": "skills"
     },
-    ".codex/skills/omcustom-loop/SKILL.md": {
-      "templateHash": "0c22ee762f5d49ee69895c3e8071ffe379103ab5edf34fa5d4b7697630810566",
-      "size": 1911,
-      "component": "skills"
-    },
     ".codex/skills/aws-best-practices/SKILL.md": {
       "templateHash": "618f1f6d0dbcb1199b4b916103be548e57ab427113ef06b736aa2cd49ba60bec",
       "size": 5855,
@@ -892,11 +902,6 @@
     ".codex/skills/dev-review/SKILL.md": {
       "templateHash": "8e291a087b07302af860b66c8d640a22618ab8b10ef32b9bbb8050da593f1f54",
       "size": 5441,
-      "component": "skills"
-    },
-    ".codex/skills/omcustom-web/SKILL.md": {
-      "templateHash": "87cafb464d247f50d910a2ad4fc5887154a32bb41badfee78951c32bbbf2af64",
-      "size": 2389,
       "component": "skills"
     },
     ".codex/skills/ambiguity-gate/SKILL.md": {
@@ -949,11 +954,6 @@
       "size": 1415,
       "component": "skills"
     },
-    ".codex/skills/omcustom-improve-report/SKILL.md": {
-      "templateHash": "2f6af1a925c203c66be0b0a400cd115c65eac83cb23a7abaf401431b7fec86eb",
-      "size": 2187,
-      "component": "skills"
-    },
     ".codex/skills/impeccable-design/SKILL.md": {
       "templateHash": "7220165da588e52f1f5778207d523da49e4e25cfff7efcae7958b3aeea9d5b5c",
       "size": 8931,
@@ -984,11 +984,6 @@
       "size": 1001,
       "component": "skills"
     },
-    ".codex/skills/omcustom-auto-improve/SKILL.md": {
-      "templateHash": "bf0ad59a50a3f1753f499ae731bcac47ed326e69dd5f86fa806cf48c84c461c2",
-      "size": 4604,
-      "component": "skills"
-    },
     ".codex/skills/pipeline-guards/SKILL.md": {
       "templateHash": "dd7dd6b4841ec0c81b3eff22554f34af973974b7e945c8ce7443f3d654a7a704",
       "size": 6143,
@@ -997,6 +992,11 @@
     ".codex/skills/help/SKILL.md": {
       "templateHash": "91f5d7f386d55d204684e89af836eee53a0668d927d3d1725b38f0fe091dfa7c",
       "size": 3105,
+      "component": "skills"
+    },
+    ".codex/skills/omcodex-web/SKILL.md": {
+      "templateHash": "87cafb464d247f50d910a2ad4fc5887154a32bb41badfee78951c32bbbf2af64",
+      "size": 2389,
       "component": "skills"
     },
     ".codex/hooks/PARALLEL-GROUPS.md": {

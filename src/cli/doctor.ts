@@ -12,6 +12,7 @@ import { loadConfig } from '../core/config.js';
 import { checkFrameworkVersion } from '../core/doctor-framework.js';
 import { getProviderLayout } from '../core/layout.js';
 import { computeFileHash, readLockfile } from '../core/lockfile.js';
+import { getOmxVersion, installOmx, isOmxInstalled } from '../core/omx-installer.js';
 import { getRtkVersion, installRtk, isRtkInstalled } from '../core/rtk-installer.js';
 import { checkSelfUpdate } from '../core/self-update.js';
 import { i18n } from '../i18n/index.js';
@@ -562,6 +563,28 @@ export async function checkCodex(): Promise<CheckResult> {
 }
 
 /**
+ * Check if OMX CLI is installed for the parent harness dependency
+ */
+export async function checkOmx(): Promise<CheckResult> {
+  if (!isOmxInstalled()) {
+    return {
+      name: 'OMX',
+      status: 'warn',
+      message: 'OMX not installed — install manually: npm install -g oh-my-codex',
+      fixable: true,
+    };
+  }
+
+  const version = getOmxVersion();
+  return {
+    name: 'OMX',
+    status: 'pass',
+    message: `OMX OK (${version ?? 'unknown version'})`,
+    fixable: false,
+  };
+}
+
+/**
  * Check if contexts directory exists
  * @param targetDir - Target directory
  * @returns Check result
@@ -720,6 +743,7 @@ async function fixSingleIssue(
     },
     RTK: async () => Promise.resolve(installRtk()),
     Codex: async () => Promise.resolve(installCodex()),
+    OMX: async () => Promise.resolve(installOmx()),
   };
 
   const fixer = fixMap[check.name];
@@ -950,6 +974,7 @@ async function runAllChecks(
     checkCustomComponents(targetDir, layout.rootDir),
     checkRtk(),
     checkCodex(),
+    checkOmx(),
   ]);
 
   // Framework version drift check (always runs when the harness rc file exists)

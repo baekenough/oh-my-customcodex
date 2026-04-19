@@ -156,7 +156,9 @@
       "rtkMissing": "[RTK] RTK가 설치되지 않았습니다. 설치를 시도합니다...",
       "rtkInstalled": "[RTK] ✓ RTK 설치 완료 — 토큰 60-90% 절감 활성화",
       "codexMissing": "[Codex] Codex CLI가 설치되지 않았습니다. 설치를 시도합니다...",
-      "codexInstalled": "[Codex] ✓ Codex CLI 설치 완료"
+      "codexInstalled": "[Codex] ✓ Codex CLI 설치 완료",
+      "omxMissing": "[OMX] oh-my-codex가 설치되지 않았습니다. 설치를 시도합니다...",
+      "omxInstalled": "[OMX] ✓ oh-my-codex 설치 완료"
     },
     "list": {
       "description": "설치된 컴포넌트 목록 표시",
@@ -334,7 +336,11 @@
     "codex_installing": "Codex CLI 설치 중...",
     "codex_success": "Codex CLI 설치 완료",
     "codex_already": "Codex CLI 이미 설치됨",
-    "codex_install_failed": "Codex CLI 설치 실패"
+    "codex_install_failed": "Codex CLI 설치 실패",
+    "omx_installing": "oh-my-codex 설치 중...",
+    "omx_success": "oh-my-codex 설치 완료",
+    "omx_already": "oh-my-codex 이미 설치됨",
+    "omx_install_failed": "oh-my-codex 설치 실패"
   },
   "init": {
     "description": "현재 디렉토리에 oh-my-customcodex 초기화",

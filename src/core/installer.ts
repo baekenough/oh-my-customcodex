@@ -43,6 +43,7 @@ import {
   type InstallComponent,
 } from './layout.js';
 import { generateAndWriteLockfileForDir } from './lockfile.js';
+import { installOmx, isOmxInstalled } from './omx-installer.js';
 import { installRtk, isRtkInstalled } from './rtk-installer.js';
 import {
   getAgentDomain,
@@ -412,6 +413,25 @@ function installCodexIfNeeded(result: InstallResult): void {
 }
 
 /**
+ * Install OMX CLI if not already installed, adding warnings to result on failure
+ */
+function installOmxIfNeeded(result: InstallResult): void {
+  if (!isOmxInstalled()) {
+    info('install.omx_installing');
+    const omxInstalled = installOmx();
+    if (omxInstalled) {
+      info('install.omx_success');
+    } else {
+      result.warnings.push(
+        'OMX installation failed — install manually: npm install -g oh-my-codex'
+      );
+    }
+  } else {
+    info('install.omx_already');
+  }
+}
+
+/**
  * Install oh-my-customcodex templates to target directory
  */
 export async function install(options: InstallOptions): Promise<InstallResult> {
@@ -468,6 +488,9 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
 
     // Install Codex CLI for AI-assisted development
     installCodexIfNeeded(result);
+
+    // Install OMX CLI for parent harness dependency
+    installOmxIfNeeded(result);
 
     result.success = true;
     success('install.success');

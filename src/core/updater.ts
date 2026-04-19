@@ -28,6 +28,7 @@ import {
   type Lockfile,
   readLockfile,
 } from './lockfile.js';
+import { installOmx, isOmxInstalled } from './omx-installer.js';
 import { installRtk, isRtkInstalled } from './rtk-installer.js';
 
 /**
@@ -570,6 +571,20 @@ function checkAndInstallCodexAfterUpdate(): void {
 }
 
 /**
+ * Check if OMX CLI is installed after an update and install it if missing
+ */
+function checkAndInstallOmxAfterUpdate(): void {
+  if (!isOmxInstalled()) {
+    warn('update.omx_missing');
+    console.log(i18n.t('cli.update.omxMissing'));
+    const omxInstalled = installOmx();
+    if (omxInstalled) {
+      console.log(i18n.t('cli.update.omxInstalled'));
+    }
+  }
+}
+
+/**
  * Update the current installation
  */
 export async function update(options: UpdateOptions): Promise<UpdateResult> {
@@ -645,6 +660,9 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
 
     // Check Codex CLI after update
     checkAndInstallCodexAfterUpdate();
+
+    // Check OMX after update
+    checkAndInstallOmxAfterUpdate();
 
     // Update project registry with new version (non-blocking)
     if (result.success && !options.dryRun) {
