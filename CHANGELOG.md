@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-04-19
+
+### Fixed
+- Block auto-tag creation until required `develop` workflows complete successfully, and fail fast when any required workflow concludes non-success.
+- Add a release gate so manual or early tag pushes cannot publish while required commit CI is still running or has failed.
+
 ## [0.1.5] - 2026-04-19
 
 ### Fixed
