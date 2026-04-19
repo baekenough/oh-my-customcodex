@@ -231,6 +231,9 @@ pages:
     - file: skills/deep-verify.md
       title: "Deep Verify"
       summary: "Multi-angle release quality verification before merge or deployment."
+    - file: skills/design-shotgun.md
+      title: "Design Shotgun"
+      summary: "Generate and compare multiple deliberate UI directions before converging on one implementation path."
     - file: skills/dev-lead-routing.md
       title: "Dev Lead Routing"
       summary: "Routes development tasks to the correct language/framework expert agent."
@@ -375,6 +378,9 @@ pages:
     - file: skills/pipeline.md
       title: "Pipeline"
       summary: "Invoke and resume YAML-defined pipelines — /pipeline auto-dev runs the full release"
+    - file: skills/playwright-compress.md
+      title: "Playwright Compress"
+      summary: "Compress verbose Playwright MCP output while preserving actionable refs, URLs, and browser evidence."
     - file: skills/post-release-followup.md
       title: "Post-Release Followup"
       summary: "Analyze release workflow findings and recommend follow-up actions"
@@ -384,6 +390,9 @@ pages:
     - file: skills/pr-auto-improve.md
       title: "PR Auto-Improve"
       summary: "Opt-in post-PR analysis and improvement application based on review feedback."
+    - file: skills/product-strategy.md
+      title: "Product Strategy"
+      summary: "YC-style product pressure test and scope framing for ideas, features, and workflow bets."
     - file: skills/professor-triage.md
       title: "Professor Triage"
       summary: "Analyze GitHub issues against current codebase to generate prioritized triage reports"
@@ -574,6 +583,9 @@ pages:
     - file: guides/aws.md
       title: "AWS Guide"
       summary: "Reference documentation for AWS architecture patterns and Well-Architected best practices"
+    - file: guides/browser-automation.md
+      title: "Browser Automation Guide"
+      summary: "Reference documentation for authenticated browser sessions, cookie handling, evidence capture, and safe reuse of existing Playwright surfaces"
     - file: guides/cc-token-saver.md
       title: "cc-token-saver Integration Guide"
       summary: "External plugin for token cost optimization and session continuity — conflict resolution with R012/R013/R009/R010"
