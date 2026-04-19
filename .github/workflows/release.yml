@@ -34,7 +34,7 @@ jobs:
           tag_sha=$(git rev-list -n 1 "${TAG_NAME}")
           echo "Tag ${TAG_NAME} points to ${tag_sha}"
 
-          mapfile -t changed_files < <(git show --pretty="" --name-only "${tag_sha}" | sed '/^$/d' | sort -u)
+          mapfile -t changed_files < <(git show -m --pretty="" --name-only "${tag_sha}" | sed '/^$/d' | sort -u)
           required_workflows=("CI")
 
           for path in "${changed_files[@]}"; do

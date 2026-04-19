@@ -41,7 +41,7 @@ jobs:
             exit 1
           fi
 
-          mapfile -t changed_files < <(git show --pretty="" --name-only "${MERGE_SHA}" | sed '/^$/d' | sort -u)
+          mapfile -t changed_files < <(git show -m --pretty="" --name-only "${MERGE_SHA}" | sed '/^$/d' | sort -u)
           required_workflows=("CI")
 
           for path in "${changed_files[@]}"; do

@@ -33,7 +33,7 @@ describe('release.yml — CI gate', () => {
   it('should compute required workflows from the tagged commit changed files', async () => {
     const content = await readWorkflow();
     // biome-ignore lint/suspicious/noTemplateCurlyInString: literal shell snippet assertion
-    expect(content).toContain('git show --pretty="" --name-only "${tag_sha}"');
+    expect(content).toContain('git show -m --pretty="" --name-only "${tag_sha}"');
     expect(content).toContain('required_workflows=("CI")');
     expect(content).toContain('required_workflows+=("Docs Sync")');
     expect(content).toContain('required_workflows+=("Wiki Sync")');
