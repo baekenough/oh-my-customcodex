@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-48 agents. 108 skills. 22 rules. One command.
+48 agents. 109 skills. 22 rules. One command.
 
 ```bash
 npm install -g oh-my-customcodex && cd your-project && omcodex init
@@ -132,14 +132,14 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (108)
+### Skills (109)
 
 | Category | Count | Includes |
 |----------|-------|----------|
 | Best Practices | 24 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns, alembic, and more |
 | Routing | 4 | secretary, dev-lead, de-lead, qa-lead |
 | Workflow | 13 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, pipeline, and more |
-| Development | 9 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcodex:takeover, skill-extractor, idea |
+| Development | 10 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcodex:takeover, skill-extractor, pre-generation-arch-check, idea |
 | Operations | 10 | update-docs, audit-agents, sauron-watch, monitoring-setup, token-efficiency-audit, fix-refs, release-notes, and more |
 | Memory | 3 | memory-save, memory-recall, memory-management |
 | Package | 3 | npm-publish, npm-version, npm-audit |
@@ -166,6 +166,7 @@ All commands are invoked inside the oh-my-customcodex GPT Codex + OMX session.
 | `/research` | 10-team parallel analysis with cross-verification |
 | `/sdd-dev` | Spec-Driven Development workflow |
 | `/ambiguity-gate` | Pre-routing ambiguity analysis |
+| `/pre-generation-arch-check` | Check architecture risks before implementation |
 | `/adversarial-review` | Attacker-mindset security code review |
 | `/pipeline` | Execute YAML-defined pipelines |
 | `/pipeline resume` | Resume a halted pipeline from last failure point |

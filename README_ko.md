@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-48개 에이전트. 108개 스킬. 22개 규칙. 명령어 하나.
+48개 에이전트. 109개 스킬. 22개 규칙. 명령어 하나.
 
 > **v0.1.7** — token-efficiency-audit 스킬, 토큰 효율 3계층 가이드, cc-token-saver/CLI flags cross-reference 추가
 
@@ -147,14 +147,14 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (108개)
+## 스킬 (109개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
 | 베스트 프랙티스 | 24 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns, alembic 외 |
 | 라우팅 | 4 | secretary, dev-lead, de-lead, qa-lead |
 | 워크플로우 | 13 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, pipeline 외 |
-| 개발 | 9 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcodex:takeover, skill-extractor, idea |
+| 개발 | 10 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcodex:takeover, skill-extractor, pre-generation-arch-check, idea |
 | 운영 | 10 | update-docs, audit-agents, sauron-watch, monitoring-setup, token-efficiency-audit, fix-refs, release-notes 외 |
 | 메모리 | 3 | memory-save, memory-recall, memory-management |
 | 패키지 | 3 | npm-publish, npm-version, npm-audit |
@@ -183,6 +183,7 @@ Agent(arch-documenter):haiku      ┘
 | `/research` | 10-team 병렬 분석 및 교차 검증 |
 | `/sdd-dev` | Spec-Driven Development 워크플로우 |
 | `/ambiguity-gate` | 사전 라우팅 모호성 분석 |
+| `/pre-generation-arch-check` | 구현 전 아키텍처 위험 점검 |
 | `/adversarial-review` | 공격자 관점 보안 코드 리뷰 |
 | `/pipeline` | YAML 파이프라인 실행 |
 | `/pipeline resume` | 중단된 파이프라인 재개 |
