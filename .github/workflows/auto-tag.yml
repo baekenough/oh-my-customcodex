@@ -18,11 +18,98 @@ jobs:
     permissions:
       contents: write
       issues: write
+      actions: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
           token: ${{ secrets.RELEASE_PAT }}
+
+      - name: Wait for required develop workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          MAX_ATTEMPTS: "36"
+          SLEEP_SECONDS: "10"
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${MERGE_SHA}" ] || [ "${MERGE_SHA}" = "null" ]; then
+            echo "::error::Missing merge commit SHA for merged release PR"
+            exit 1
+          fi
+
+          mapfile -t changed_files < <(git show --pretty="" --name-only "${MERGE_SHA}" | sed '/^$/d' | sort -u)
+          required_workflows=("CI")
+
+          for path in "${changed_files[@]}"; do
+            if [[ "${path}" == "README.md" || "${path}" == "README_ko.md" || "${path}" == wiki/* || "${path}" == templates/* ]]; then
+              required_workflows+=("Docs Sync")
+              break
+            fi
+          done
+
+          for path in "${changed_files[@]}"; do
+            if [[ "${path}" == .codex/agents/* || "${path}" == .codex/skills/* || "${path}" == .codex/rules/* || "${path}" == guides/* || "${path}" == wiki/* ]]; then
+              required_workflows+=("Wiki Sync")
+              break
+            fi
+          done
+
+          echo "Required workflows: ${required_workflows[*]}"
+
+          for ((attempt=1; attempt<=MAX_ATTEMPTS; attempt++)); do
+            runs_json=$(gh run list \
+              --commit "${MERGE_SHA}" \
+              --limit 100 \
+              --json workflowName,status,conclusion,event,headSha)
+
+            pending=0
+            success_count=0
+
+            for workflow in "${required_workflows[@]}"; do
+              run_json=$(echo "${runs_json}" | jq -c --arg workflow "${workflow}" --arg sha "${MERGE_SHA}" '
+                map(select(.workflowName == $workflow and .event == "push" and .headSha == $sha))
+                | first
+              ')
+
+              if [ "${run_json}" = "null" ]; then
+                echo "::notice::Waiting for workflow '${workflow}' on ${MERGE_SHA} to appear"
+                pending=1
+                continue
+              fi
+
+              status=$(echo "${run_json}" | jq -r '.status')
+              conclusion=$(echo "${run_json}" | jq -r '.conclusion // ""')
+
+              if [ "${status}" != "completed" ]; then
+                echo "::notice::Workflow '${workflow}' is still ${status}"
+                pending=1
+                continue
+              fi
+
+              if [ "${conclusion}" != "success" ]; then
+                echo "::error::Workflow '${workflow}' finished with conclusion '${conclusion}' on ${MERGE_SHA}"
+                exit 1
+              fi
+
+              success_count=$((success_count + 1))
+            done
+
+            if [ "${pending}" -eq 0 ] && [ "${success_count}" -eq "${#required_workflows[@]}" ]; then
+              echo "All required workflows succeeded for ${MERGE_SHA}"
+              exit 0
+            fi
+
+            if [ "${attempt}" -lt "${MAX_ATTEMPTS}" ]; then
+              sleep "${SLEEP_SECONDS}"
+            fi
+          done
+
+          echo "::error::Timed out waiting for required workflows on ${MERGE_SHA}"
+          exit 1
 
       - name: Setup Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
@@ -53,10 +140,11 @@ jobs:
         if: steps.check.outputs.exists == 'false'
         env:
           TAG: ${{ steps.version.outputs.tag }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" -m "Release $TAG"
+          git tag -a "$TAG" "${MERGE_SHA}" -m "Release $TAG"
           git push origin "$TAG"
 
       - name: Close linked issues

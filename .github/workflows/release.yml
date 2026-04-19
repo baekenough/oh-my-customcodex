@@ -9,10 +9,104 @@ permissions:
   contents: write
   packages: write
   id-token: write
+  actions: read
 
 jobs:
+  gate:
+    name: Gate Release On CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: Wait for required commit workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+          MAX_ATTEMPTS: "36"
+          SLEEP_SECONDS: "10"
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag_sha=$(git rev-list -n 1 "${TAG_NAME}")
+          echo "Tag ${TAG_NAME} points to ${tag_sha}"
+
+          mapfile -t changed_files < <(git show --pretty="" --name-only "${tag_sha}" | sed '/^$/d' | sort -u)
+          required_workflows=("CI")
+
+          for path in "${changed_files[@]}"; do
+            if [[ "${path}" == "README.md" || "${path}" == "README_ko.md" || "${path}" == wiki/* || "${path}" == templates/* ]]; then
+              required_workflows+=("Docs Sync")
+              break
+            fi
+          done
+
+          for path in "${changed_files[@]}"; do
+            if [[ "${path}" == .codex/agents/* || "${path}" == .codex/skills/* || "${path}" == .codex/rules/* || "${path}" == guides/* || "${path}" == wiki/* ]]; then
+              required_workflows+=("Wiki Sync")
+              break
+            fi
+          done
+
+          echo "Required workflows: ${required_workflows[*]}"
+
+          for ((attempt=1; attempt<=MAX_ATTEMPTS; attempt++)); do
+            runs_json=$(gh run list \
+              --commit "${tag_sha}" \
+              --limit 100 \
+              --json workflowName,status,conclusion,event,headSha)
+
+            pending=0
+            success_count=0
+
+            for workflow in "${required_workflows[@]}"; do
+              run_json=$(echo "${runs_json}" | jq -c --arg workflow "${workflow}" --arg sha "${tag_sha}" '
+                map(select(.workflowName == $workflow and .event == "push" and .headSha == $sha))
+                | first
+              ')
+
+              if [ "${run_json}" = "null" ]; then
+                echo "::notice::Waiting for workflow '${workflow}' on ${tag_sha} to appear"
+                pending=1
+                continue
+              fi
+
+              status=$(echo "${run_json}" | jq -r '.status')
+              conclusion=$(echo "${run_json}" | jq -r '.conclusion // ""')
+
+              if [ "${status}" != "completed" ]; then
+                echo "::notice::Workflow '${workflow}' is still ${status}"
+                pending=1
+                continue
+              fi
+
+              if [ "${conclusion}" != "success" ]; then
+                echo "::error::Workflow '${workflow}' finished with conclusion '${conclusion}' on ${tag_sha}"
+                exit 1
+              fi
+
+              success_count=$((success_count + 1))
+            done
+
+            if [ "${pending}" -eq 0 ] && [ "${success_count}" -eq "${#required_workflows[@]}" ]; then
+              echo "All required workflows succeeded for ${tag_sha}"
+              exit 0
+            fi
+
+            if [ "${attempt}" -lt "${MAX_ATTEMPTS}" ]; then
+              sleep "${SLEEP_SECONDS}"
+            fi
+          done
+
+          echo "::error::Timed out waiting for required workflows on ${tag_sha}"
+          exit 1
+
   test:
     name: Test
+    needs: [gate]
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -143,6 +237,7 @@ jobs:
 
   docs-validate:
     name: Validate Documentation
+    needs: [gate]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

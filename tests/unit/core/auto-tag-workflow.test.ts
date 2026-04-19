@@ -213,6 +213,33 @@ describe('auto-tag.yml — version extraction', () => {
 });
 
 // ---------------------------------------------------------------------------
+// CI gating
+// ---------------------------------------------------------------------------
+
+describe('auto-tag.yml — CI gating', () => {
+  it('should wait for required develop workflows before creating a tag', async () => {
+    const content = await readWorkflow();
+    expect(content).toContain('Wait for required develop workflows');
+    expect(content).toContain('gh run list');
+    expect(content).toContain('merge_commit_sha');
+  });
+
+  it('should derive required workflows from the merged commit changed files', async () => {
+    const content = await readWorkflow();
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal shell snippet assertion
+    expect(content).toContain('git show --pretty="" --name-only "${MERGE_SHA}"');
+    expect(content).toContain('required_workflows=("CI")');
+    expect(content).toContain('required_workflows+=("Docs Sync")');
+    expect(content).toContain('required_workflows+=("Wiki Sync")');
+  });
+
+  it('should not hard-code Docs Sync and Wiki Sync as unconditional requirements', async () => {
+    const content = await readWorkflow();
+    expect(content).not.toContain('REQUIRED_WORKFLOWS: "CI,Docs Sync,Wiki Sync"');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Idempotency: existing tag check
 // ---------------------------------------------------------------------------
 
