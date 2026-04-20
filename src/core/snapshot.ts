@@ -10,7 +10,7 @@ import packageJson from '../../package.json';
 import { readLockFile, writeLockFile } from '../cli/projects.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists } from '../utils/fs.js';
-import { getProviderLayout } from './layout.js';
+import { getComponentPath, getProviderLayout } from './layout.js';
 import { registerProject } from './registry.js';
 
 /**
@@ -48,8 +48,18 @@ export interface InitResult {
  */
 async function checkExistingInstallation(targetDir: string): Promise<boolean> {
   const layout = getProviderLayout();
-  const rootDir = join(targetDir, layout.rootDir);
-  return fileExists(rootDir);
+  const markers = [layout.entryFile, layout.rootDir];
+  if (layout.provider === 'codex') {
+    markers.push('.agents');
+  }
+
+  for (const marker of markers) {
+    if (await fileExists(join(targetDir, marker))) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -71,11 +81,14 @@ export async function installFromSnapshot(
 
   const layout = getProviderLayout();
   const snapshotClaude = join(snapshotPath, layout.rootDir);
-  if (!existsSync(snapshotClaude)) {
+  const snapshotSkills = join(snapshotPath, getComponentPath('skills'));
+  if (!existsSync(snapshotClaude) && !existsSync(snapshotSkills)) {
     return {
       success: false,
       message: i18n.t('cli.init.failed'),
-      errors: [`Invalid snapshot: missing ${layout.rootDir}/ directory in ${snapshotPath}`],
+      errors: [
+        `Invalid snapshot: missing ${layout.rootDir}/ or ${getComponentPath('skills')} in ${snapshotPath}`,
+      ],
     };
   }
 
@@ -97,10 +110,19 @@ export async function installFromSnapshot(
     }
 
     // Copy .claude/ from snapshot
-    await cp(snapshotClaude, join(targetDir, layout.rootDir), {
-      recursive: true,
-      force: true,
-    });
+    if (existsSync(snapshotClaude)) {
+      await cp(snapshotClaude, join(targetDir, layout.rootDir), {
+        recursive: true,
+        force: true,
+      });
+    }
+
+    if (existsSync(snapshotSkills)) {
+      await cp(snapshotSkills, join(targetDir, getComponentPath('skills')), {
+        recursive: true,
+        force: true,
+      });
+    }
 
     // Copy guides/ from snapshot if present
     const snapshotGuides = join(snapshotPath, 'guides');

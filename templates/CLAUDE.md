@@ -149,7 +149,7 @@ oh-my-customcodex는 소프트웨어 컴파일과 동일한 구조를 따릅니�
 
 | 컴파일 개념 | oh-my-customcodex 매핑 | 역할 |
 |------------|----------------------|------|
-| Source code | `.codex/skills/` | 재사용 가능한 지식과 워크플로우 정의 |
+| Source code | `.agents/skills/` | 재사용 가능한 지식과 워크플로우 정의 |
 | Build artifacts | `.codex/agents/` | 스킬을 조합한 실행 가능한 전문가 |
 | Compiler | `mgr-sauron` (R017) | 구조 검증 및 정합성 보장 |
 | Spec | `.codex/rules/` | 빌드 규칙과 제약 조건 |

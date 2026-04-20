@@ -1303,6 +1303,9 @@ function getComponentPath(component: UpdateComponent): string {
   if (component === 'guides') {
     return 'guides';
   }
+  if (layout.provider === 'codex' && component === 'skills') {
+    return '.agents/skills';
+  }
   return `${layout.rootDir}/${component}`;
 }
 
@@ -1319,6 +1322,9 @@ async function backupInstallation(targetDir: string): Promise<string> {
   // Backup key directories
   const layout = getProviderLayout();
   const dirsToBackup = [layout.rootDir, 'guides'];
+  if (layout.provider === 'codex') {
+    dirsToBackup.push('.agents');
+  }
   for (const dir of dirsToBackup) {
     const srcPath = join(targetDir, dir);
     if (await fileExists(srcPath)) {

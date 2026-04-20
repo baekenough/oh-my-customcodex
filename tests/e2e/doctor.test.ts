@@ -194,7 +194,7 @@ describe('E2E: omcodex doctor', { timeout: 30000 }, () => {
       // Create partial structure without AGENTS.md (official Codex-native format paths)
       await mkdir(join(tempDir, '.codex', 'rules'), { recursive: true });
       await mkdir(join(tempDir, '.codex', 'agents'), { recursive: true });
-      await mkdir(join(tempDir, '.codex', 'skills'), { recursive: true });
+      await mkdir(join(tempDir, '.agents', 'skills'), { recursive: true });
 
       const result = await runCli('doctor');
 
@@ -212,7 +212,7 @@ describe('E2E: omcodex doctor', { timeout: 30000 }, () => {
       await mkdir(join(tempDir, '.codex'), { recursive: true });
       // No rules directory
       await mkdir(join(tempDir, '.codex', 'agents'), { recursive: true });
-      await mkdir(join(tempDir, '.codex', 'skills'), { recursive: true });
+      await mkdir(join(tempDir, '.agents', 'skills'), { recursive: true });
 
       const result = await runCli('doctor');
 
@@ -229,7 +229,7 @@ describe('E2E: omcodex doctor', { timeout: 30000 }, () => {
       await writeFile(join(tempDir, 'AGENTS.md'), '# Test');
       await mkdir(join(tempDir, '.codex', 'rules'), { recursive: true });
       await writeFile(join(tempDir, '.codex', 'rules', 'MUST-test.md'), '# Test Rule');
-      await mkdir(join(tempDir, '.codex', 'skills'), { recursive: true });
+      await mkdir(join(tempDir, '.agents', 'skills'), { recursive: true });
 
       const result = await runCli('doctor');
 
@@ -242,7 +242,7 @@ describe('E2E: omcodex doctor', { timeout: 30000 }, () => {
     });
 
     it('should detect missing skills directory', async () => {
-      // Create structure without skills (official Codex-native format: .codex/skills)
+      // Create structure without skills (official Codex-native format: .agents/skills)
       await writeFile(join(tempDir, 'AGENTS.md'), '# Test');
       await mkdir(join(tempDir, '.codex', 'rules'), { recursive: true });
       await writeFile(join(tempDir, '.codex', 'rules', 'MUST-test.md'), '# Test Rule');
@@ -262,7 +262,7 @@ describe('E2E: omcodex doctor', { timeout: 30000 }, () => {
       await initProject();
 
       // Create a broken symlink in skills (agents are now flat .md files in .codex/agents)
-      const skillDir = join(tempDir, '.codex', 'skills', 'development', 'test-skill');
+      const skillDir = join(tempDir, '.agents', 'skills', 'development', 'test-skill');
       const refsDir = join(skillDir, 'refs');
       await mkdir(refsDir, { recursive: true });
       await writeFile(join(skillDir, 'SKILL.md'), '# Test Skill');
@@ -350,7 +350,7 @@ invalid yaml content:
       // Create structure without agents (official Codex-native format: .codex/agents)
       await writeFile(join(tempDir, 'AGENTS.md'), '# Test');
       await mkdir(join(tempDir, '.codex', 'rules'), { recursive: true });
-      await mkdir(join(tempDir, '.codex', 'skills'), { recursive: true });
+      await mkdir(join(tempDir, '.agents', 'skills'), { recursive: true });
 
       // Verify agents directory doesn't exist
       expect(await pathExists(join(tempDir, '.codex', 'agents'))).toBe(false);
@@ -362,25 +362,25 @@ invalid yaml content:
     });
 
     it('should create missing skills directory with --fix', async () => {
-      // Create structure without skills (official Codex-native format: .codex/skills)
+      // Create structure without skills (official Codex-native format: .agents/skills)
       await writeFile(join(tempDir, 'AGENTS.md'), '# Test');
       await mkdir(join(tempDir, '.codex', 'rules'), { recursive: true });
       await mkdir(join(tempDir, '.codex', 'agents'), { recursive: true });
 
       // Verify skills directory doesn't exist
-      expect(await pathExists(join(tempDir, '.codex', 'skills'))).toBe(false);
+      expect(await pathExists(join(tempDir, '.agents', 'skills'))).toBe(false);
 
       const _result = await runCli('doctor', '--fix');
 
       // Skills directory should now exist
-      expect(await pathExists(join(tempDir, '.codex', 'skills'))).toBe(true);
+      expect(await pathExists(join(tempDir, '.agents', 'skills'))).toBe(true);
     });
 
     it('should remove broken symlinks with --fix', async () => {
       await initProject();
 
       // Create a broken symlink in skills (agents are now flat .md files, no refs)
-      const skillDir = join(tempDir, '.codex', 'skills', 'development', 'test-skill');
+      const skillDir = join(tempDir, '.agents', 'skills', 'development', 'test-skill');
       const refsDir = join(skillDir, 'refs');
       await mkdir(refsDir, { recursive: true });
       await writeFile(join(skillDir, 'SKILL.md'), '# Test Skill');
@@ -441,7 +441,7 @@ invalid yaml content:
 
       // After fixing, directories should exist (official Codex-native format)
       expect(await pathExists(join(tempDir, '.codex', 'agents'))).toBe(true);
-      expect(await pathExists(join(tempDir, '.codex', 'skills'))).toBe(true);
+      expect(await pathExists(join(tempDir, '.agents', 'skills'))).toBe(true);
     });
 
     it('should not try to fix non-fixable issues', async () => {

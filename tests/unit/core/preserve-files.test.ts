@@ -102,7 +102,7 @@ describe('preserveFiles feature', () => {
 
       const overrides: Partial<OmccConfig> = {
         customComponents: [
-          { type: 'skill', name: 'skill1', path: '.codex/skills/skill1/', managed: false },
+          { type: 'skill', name: 'skill1', path: '.agents/skills/skill1/', managed: false },
         ],
       };
 
@@ -127,7 +127,7 @@ describe('preserveFiles feature', () => {
             path: '.codex/agents/agent1.md',
             managed: false,
           },
-          { type: 'skill', name: 'skill1', path: '.codex/skills/skill1/', managed: false },
+          { type: 'skill', name: 'skill1', path: '.agents/skills/skill1/', managed: false },
         ],
       };
 
@@ -139,7 +139,7 @@ describe('preserveFiles feature', () => {
       expect(merged.customComponents?.find((c) => c.path === '.codex/agents/agent1.md')?.name).toBe(
         'agent1-updated'
       );
-      expect(merged.customComponents?.find((c) => c.path === '.codex/skills/skill1/')?.name).toBe(
+      expect(merged.customComponents?.find((c) => c.path === '.agents/skills/skill1/')?.name).toBe(
         'skill1'
       );
     });
@@ -312,7 +312,7 @@ describe('preserveFiles feature', () => {
         {
           type: 'skill',
           name: 'custom-skill',
-          path: '.codex/skills/custom-skill/',
+          path: '.agents/skills/custom-skill/',
           managed: false,
         },
       ];
@@ -321,8 +321,8 @@ describe('preserveFiles feature', () => {
 
       // Create custom skill directory
       await createDirStructure({
-        '.codex/skills/custom-skill/SKILL.md': 'Custom skill',
-        '.codex/skills/custom-skill/script.sh': 'Custom script',
+        '.agents/skills/custom-skill/SKILL.md': 'Custom skill',
+        '.agents/skills/custom-skill/script.sh': 'Custom script',
       });
 
       const layout = getProviderLayout();
@@ -337,8 +337,8 @@ describe('preserveFiles feature', () => {
       expect(result.success).toBe(true);
 
       // Verify custom skill directory was preserved
-      const skillPath = join(tempDir, '.codex/skills/custom-skill/SKILL.md');
-      const scriptPath = join(tempDir, '.codex/skills/custom-skill/script.sh');
+      const skillPath = join(tempDir, '.agents/skills/custom-skill/SKILL.md');
+      const scriptPath = join(tempDir, '.agents/skills/custom-skill/script.sh');
 
       expect(await fileExists(skillPath)).toBe(true);
       expect(await fileExists(scriptPath)).toBe(true);
@@ -411,7 +411,7 @@ describe('preserveFiles feature', () => {
     });
 
     it('should accept directory paths', () => {
-      const result = validatePreserveFilePath('.codex/skills/my-skill/', tempDir);
+      const result = validatePreserveFilePath('.agents/skills/my-skill/', tempDir);
 
       expect(result.valid).toBe(true);
       expect(result.reason).toBeUndefined();
@@ -448,7 +448,7 @@ describe('preserveFiles feature', () => {
 
     it('should accept deeply nested valid paths', () => {
       const result = validatePreserveFilePath(
-        '.codex/skills/my-skill/deeply/nested/file.md',
+        '.agents/skills/my-skill/deeply/nested/file.md',
         tempDir
       );
 

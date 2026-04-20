@@ -18,7 +18,7 @@ describe('provider layout', () => {
   });
 
   it('keeps template and target component paths separate for codex', () => {
-    expect(getComponentPath('skills')).toBe('.codex/skills');
+    expect(getComponentPath('skills')).toBe('.agents/skills');
     expect(getTemplateComponentPath('skills')).toBe('.claude/skills');
     expect(getComponentPath('entry-md')).toBe('AGENTS.md');
     expect(getEntryTemplateName('en')).toBe('AGENTS.md.en');

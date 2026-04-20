@@ -10,7 +10,7 @@ import { existsSync } from 'node:fs';
 import { cp, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getPackageRoot, readJsonFile } from '../utils/fs.js';
-import { getProviderLayout } from './layout.js';
+import { getComponentPath, getProviderLayout } from './layout.js';
 import {
   diffLockfiles,
   generateLockfile,
@@ -208,6 +208,7 @@ export async function exportSnapshot(
   const detection = await detectProvider({ targetDir });
   const layout = getProviderLayout(detection.provider);
   const runtimeDir = join(targetDir, layout.rootDir);
+  const skillsDir = join(targetDir, getComponentPath('skills', detection.provider));
   const guidesDir = join(targetDir, 'guides');
 
   if (!existsSync(runtimeDir)) {
@@ -222,6 +223,13 @@ export async function exportSnapshot(
     recursive: true,
     filter: isExportable,
   });
+
+  if (existsSync(skillsDir)) {
+    await cp(skillsDir, join(outputPath, getComponentPath('skills', detection.provider)), {
+      recursive: true,
+      filter: isExportable,
+    });
+  }
 
   // Copy guides/ when present
   if (existsSync(guidesDir)) {

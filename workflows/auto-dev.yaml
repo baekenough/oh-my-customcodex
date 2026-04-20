@@ -1,8 +1,8 @@
 # /pipeline auto-dev — Full-auto release pipeline
-# Pre-triages open issues → triage verify-done → plan → implement → verify → PR → followup
+# Pre-triages open issues → triage verify-done → plan → implement → verify → PR/release → publish → followup
 
 name: auto-dev
-description: "Full-auto release pipeline: pre-triage → triage → plan → implement → verify → PR → followup"
+description: "Full-auto release pipeline: pre-triage → triage → plan → implement → verify → PR → publish → followup"
 mode: auto
 error: halt-and-report
 
@@ -41,6 +41,27 @@ steps:
     prompt: "Create release branch and pull request"
     description: Create release branch and pull request
 
+  - name: publish
+    prompt: |
+      Publish the validated release artifact after the release PR/branch stage.
+
+      Project-specific behavior:
+      - npm package:
+        1. Confirm package name and current version from package.json
+        2. Check registry state (`npm view <pkg> version`)
+        3. If version is unchanged but release-worthy, bump semver intentionally
+        4. Run the publish path (`npm publish` or the repo's release workflow trigger)
+        5. Verify registry publication (`npm view <pkg> version`)
+      - GitHub-release artifact project:
+        1. Create/push tag if required
+        2. Trigger or create the release artifact
+        3. Verify the release exists and assets are available
+
+      Halt and report on auth, versioning, or publish verification failures.
+    description: Publish the release artifact and verify external availability
+    depends_on: release
+
   - name: followup
     skill: post-release-followup
     description: Recommend follow-up actions — user chooses to execute now or register as issues
+    depends_on: publish

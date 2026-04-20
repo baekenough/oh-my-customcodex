@@ -22,6 +22,7 @@ describe('cli command aliases', () => {
   it('detects omcustomx from the invoked binary path', () => {
     expect(detectCliCommandName(['node', '/usr/local/bin/omcustomx'])).toBe('omcustomx');
     expect(detectCliCommandName(['node', 'C:\\tools\\omcustomx.cmd'])).toBe('omcustomx');
+    expect(detectCliCommandName(['node', '/usr/local/bin/omcustomcodex'])).toBe('omcustomcodex');
   });
 
   it('rewrites standalone omcodex command references for alias output', () => {
@@ -44,11 +45,12 @@ describe('cli command aliases', () => {
     expect(help).toContain('omcustomx web start');
   });
 
-  it('publishes omcustomx as a binary alias', async () => {
+  it('publishes extended binary aliases', async () => {
     const packageJson = JSON.parse(await readFile(PACKAGE_JSON_PATH, 'utf-8')) as {
       bin?: Record<string, string>;
     };
 
     expect(packageJson.bin?.omcustomx).toBe('./dist/cli/index.js');
+    expect(packageJson.bin?.omcustomcodex).toBe('./dist/cli/index.js');
   });
 });

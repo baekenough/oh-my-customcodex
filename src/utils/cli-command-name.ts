@@ -2,7 +2,7 @@ import { basename } from 'node:path';
 
 export const DEFAULT_CLI_COMMAND = 'omcodex';
 
-const KNOWN_CLI_COMMANDS = new Set([DEFAULT_CLI_COMMAND, 'omcustom', 'omcustomx']);
+const KNOWN_CLI_COMMANDS = new Set([DEFAULT_CLI_COMMAND, 'omcustom', 'omcustomx', 'omcustomcodex']);
 const WINDOWS_SCRIPT_EXTENSIONS = /\.(cmd|exe|ps1|bat)$/i;
 
 let activeCliCommandName = DEFAULT_CLI_COMMAND;

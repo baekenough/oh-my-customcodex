@@ -5,7 +5,7 @@
 
 import { basename, dirname, join, relative } from 'node:path';
 import { loadConfig, type OmccConfig } from '../core/config.js';
-import { getProviderLayout } from '../core/layout.js';
+import { getComponentPath, getProviderLayout } from '../core/layout.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists, listFiles, readTextFile } from '../utils/fs.js';
 
@@ -146,11 +146,16 @@ function extractAgentTypeFromFilename(filename: string): string {
  * Official format: {root}/skills/{category}/{name}/
  */
 function extractSkillCategoryFromPath(skillPath: string, baseDir: string, rootDir: string): string {
-  const relativePath = relative(join(baseDir, rootDir, 'skills'), skillPath);
+  const provider = rootDir === '.claude' ? 'claude' : 'codex';
+  const relativePath = relative(join(baseDir, getComponentPath('skills', provider)), skillPath);
   const parts = relativePath.split('/').filter(Boolean);
 
-  // Return the first part as category
-  return parts[0] || 'unknown';
+  // Flat skill layout: .agents/skills/<name>/SKILL.md
+  if (parts.length <= 1) {
+    return 'general';
+  }
+
+  return parts[0];
 }
 
 /**
@@ -391,7 +396,8 @@ export async function getSkills(
   rootDir: string = '.codex',
   config?: OmccConfig
 ): Promise<ComponentInfo[]> {
-  const skillsDir = join(targetDir, rootDir, 'skills');
+  const provider = rootDir === '.claude' ? 'claude' : 'codex';
+  const skillsDir = join(targetDir, getComponentPath('skills', provider));
 
   if (!(await fileExists(skillsDir))) return [];
 
