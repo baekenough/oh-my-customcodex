@@ -1,6 +1,6 @@
 # dbt Guide
 
-Reference documentation for dbt SQL modeling and analytics engineering best practices.
+Reference documentation for dbt SQL modeling and analytics engineering best practices. Current reference version: **dbt-core 1.11.8**.
 
 ## Source
 

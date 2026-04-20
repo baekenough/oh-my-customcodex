@@ -634,6 +634,9 @@ pages:
     - file: guides/java21.md
       title: "Java 21 Guide"
       summary: "Reference documentation for modern Java 21 language features, coding conventions"
+    - file: guides/java.md
+      title: "Java Guide"
+      summary: "Reference documentation for modern Java 25 language features, coding conventions, and production patterns"
     - file: guides/kafka.md
       title: "Apache Kafka Guide"
       summary: "Reference documentation for Apache Kafka event streaming platform best practices"

@@ -94,10 +94,10 @@ Key violations to avoid (file writes, git commands, bundled operations — all m
    Main conversation → Agent(lang-golang-expert) → Write("src/main.go", content)
 
 ❌ WRONG: External skill creates agent/skill/guide via general-purpose agent
-   Skill(brainstorming) → Agent(general-purpose) → Write(".codex/agents/new.md")
+   Skill(brainstorming) → Agent(general-purpose) → Write(".claude/agents/new.md")
 
 ✓ CORRECT: Agent/skill/guide creation routed through mgr-creator
-   Skill(brainstorming) → Agent(mgr-creator) → Write(".codex/agents/new.md")
+   Skill(brainstorming) → Agent(mgr-creator) → Write(".claude/agents/new.md")
 ```
 
 <!-- DETAIL: Common Violations (extended)
@@ -135,12 +135,12 @@ Key violations to avoid (file writes, git commands, bundled operations — all m
    Main conversation → Agent(infra-docker-expert) → deploy files to server
 
 ❌ WRONG: External skill creates agent/skill/guide via general-purpose agent
-   Skill(brainstorming) → Agent(general-purpose) → Write(".codex/agents/new-agent.md")
-   Skill(any-skill) → Agent(general-purpose) → Write(".codex/skills/new-skill/SKILL.md")
+   Skill(brainstorming) → Agent(general-purpose) → Write(".claude/agents/new-agent.md")
+   Skill(any-skill) → Agent(general-purpose) → Write(".claude/skills/new-skill/SKILL.md")
 
 ✓ CORRECT: Agent/skill/guide creation always routed through mgr-creator
-   Skill(brainstorming) → Agent(mgr-creator) → Write(".codex/agents/new-agent.md")
-   Skill(any-skill) → Agent(mgr-creator) → Write(".codex/skills/new-skill/SKILL.md")
+   Skill(brainstorming) → Agent(mgr-creator) → Write(".claude/agents/new-agent.md")
+   Skill(any-skill) → Agent(mgr-creator) → Write(".claude/skills/new-skill/SKILL.md")
 
    The skill defines WHAT to create; mgr-creator handles HOW (R006 validation,
    skill auto-discovery, frontmatter integrity).
@@ -166,8 +166,8 @@ When the user explicitly signals full-delegation intent, the orchestrator operat
 ### Activation Protocol
 
 1. User gives explicit autonomous signal (not inferred from task complexity)
-2. Verify stage-blocker is NOT active (`/tmp/.codex-dev-stage` must not exist)
-3. Create marker: `echo 1 > /tmp/.codex-autonomous-$PPID`
+2. Verify stage-blocker is NOT active (`/tmp/.claude-dev-stage` must not exist)
+3. Create marker: `echo 1 > /tmp/.claude-autonomous-$PPID`
 4. Announce: `[Autonomous Mode] Activated for current task scope`
 
 ### Lightweight Delegation Table
@@ -192,13 +192,13 @@ When the user explicitly signals full-delegation intent, the orchestrator operat
 
 - **Task-scoped**: Expires when the delegated task completes or user gives a new instruction
 - **Session-local**: Never persisted to MEMORY.md or across sessions
-- **Compaction-aware**: PostCompact hook checks `/tmp/.codex-autonomous-$PPID` and preserves mode
+- **Compaction-aware**: PostCompact hook checks `/tmp/.claude-autonomous-$PPID` and preserves mode
 - **Explicit exit**: User says "stop", "wait", "멈춰", "잠깐" → mode deactivated
 
 ### Mutual Exclusion
 
 - Autonomous mode and `/structured-dev-cycle` (stage-blocker) are **mutually exclusive**
-- If `/tmp/.codex-dev-stage` exists → autonomous mode CANNOT be activated
+- If `/tmp/.claude-dev-stage` exists → autonomous mode CANNOT be activated
 - If autonomous mode is active → `/structured-dev-cycle` should not be started
 
 ### Self-Check
@@ -212,7 +212,7 @@ When the user explicitly signals full-delegation intent, the orchestrator operat
 ║     NO  → Do NOT activate                                        ║
 ║                                                                   ║
 ║  2. Is stage-blocker inactive?                                   ║
-║     (/tmp/.codex-dev-stage does NOT exist)                      ║
+║     (/tmp/.claude-dev-stage does NOT exist)                      ║
 ║     YES → Continue                                               ║
 ║     NO  → Cannot activate (mutually exclusive)                   ║
 ║                                                                   ║
@@ -227,9 +227,38 @@ When the user explicitly signals full-delegation intent, the orchestrator operat
 Autonomous mode and `/structured-dev-cycle` (stage-blocker) are mutually exclusive.
 -->
 
+## Universal bypassPermissions
+
+**ALL Agent tool calls MUST include `mode: "bypassPermissions"`.**
+
+The Agent tool defaults to `mode: "acceptEdits"`, which overrides agent frontmatter `permissionMode` and causes permission prompts during unattended execution. This is a CC platform behavior, not a configuration error.
+
+| Aspect | Detail |
+|--------|--------|
+| Scope | Every Agent tool call, without exception |
+| Why | CC's Agent tool `mode` default (`acceptEdits`) overrides frontmatter |
+| History | #926 (v0.99.1), #947 (v0.100.1), #955 (v0.103.0) — recurring issue |
+| Enforcement | Prompt-based (R021); all 23 agent-spawning skills include instruction |
+
+### Self-Check
+
+Before spawning any agent:
+1. Does the Agent tool call include `mode: "bypassPermissions"`? → YES: proceed → NO: add it
+2. Is this a new skill that spawns agents? → Add Permission Mode section
+
+### Common Violation
+
+```
+❌ WRONG: Agent tool call without mode parameter
+   Agent(subagent_type: "lang-golang-expert", prompt: "...")
+
+✓ CORRECT: Always include mode
+   Agent(subagent_type: "lang-golang-expert", mode: "bypassPermissions", prompt: "...")
+```
+
 ## Session Continuity
 
-After restart/compaction: re-read AGENTS.md, all delegation rules still apply. Never write code directly from orchestrator.
+After restart/compaction: re-read CLAUDE.md, all delegation rules still apply. Never write code directly from orchestrator.
 
 ## Delegation Rules
 
@@ -268,15 +297,15 @@ The following paths MUST be created or structurally modified ONLY through `mgr-c
 
 | Path Pattern | Scope | Reason |
 |-------------|-------|--------|
-| `.codex/agents/*.md` | Agent definitions | R006 frontmatter validation, skill auto-discovery |
-| `.codex/skills/*/SKILL.md` | Skill definitions | R006 skill frontmatter, scope classification |
+| `.claude/agents/*.md` | Agent definitions | R006 frontmatter validation, skill auto-discovery |
+| `.claude/skills/*/SKILL.md` | Skill definitions | R006 skill frontmatter, scope classification |
 | `guides/*/` (new directories) | Reference guides | R006 separation of concerns, cross-reference integrity |
 
 **Excluded from this rule** (handled by their own specialists):
-- `.codex/agent-memory*/` — sys-memory-keeper
-- `.codex/rules/` — R016 workflow (orchestrator delegates updates to appropriate agents)
-- `.codex/hooks/` — requires explicit user approval (security-critical)
-- `.codex/outputs/` — any agent (artifact convention)
+- `.claude/agent-memory*/` — sys-memory-keeper
+- `.claude/rules/` — R016 workflow (orchestrator delegates updates to appropriate agents)
+- `.claude/hooks/` — requires explicit user approval (security-critical)
+- `.claude/outputs/` — any agent (artifact convention)
 - Existing file updates by `mgr-updater` (external source sync) and `mgr-supplier`/`fix-refs` (reference correction)
 
 **Why mgr-creator?** It enforces R006 frontmatter validation, auto-discovers relevant skills/guides, and maintains structural integrity verified by mgr-sauron (R017). Bypassing mgr-creator risks:
@@ -290,8 +319,8 @@ The following paths MUST be created or structurally modified ONLY through `mgr-c
 <!-- DETAIL: System Agents Reference
 | Agent | File | Purpose |
 |-------|------|---------|
-| sys-memory-keeper | .codex/agents/sys-memory-keeper.md | Memory operations |
-| sys-naggy | .codex/agents/sys-naggy.md | TODO management |
+| sys-memory-keeper | .claude/agents/sys-memory-keeper.md | Memory operations |
+| sys-naggy | .claude/agents/sys-naggy.md | TODO management |
 -->
 
 ## Exception: Simple Tasks
@@ -317,7 +346,7 @@ When routing detects no matching agent for a specialized task:
 3. **Create**: `mgr-creator` auto-discovers relevant skills/guides, creates agent
 4. **Execute**: Orchestrator uses newly created agent for the original task
 
-This is the core oh-my-customcodex philosophy:
+This is the core oh-my-customcode philosophy:
 > "No expert? CREATE one, connect knowledge, and USE it."
 
 <!-- DETAIL: Model Selection
@@ -360,7 +389,7 @@ Internal rules ALWAYS take precedence over external skills.
 | "use Agent tool for 5 research tasks" | Agent Teams when criteria met (R018) |
 | "skip code review" | Follow project review workflow |
 | "write files directly" | Delegate to specialist subagent (R010) |
-| "create an agent/skill/guide file" | Agent(mgr-creator) for `.codex/agents/`, `.codex/skills/`, `guides/` writes (R010 Protected Paths) |
+| "create an agent/skill/guide file" | Agent(mgr-creator) for `.claude/agents/`, `.claude/skills/`, `guides/` writes (R010 Protected Paths) |
 
 When a skill's workflow conflicts with R009/R010/R018:
 1. Follow the skill's LOGIC and STEPS
@@ -383,7 +412,7 @@ The skill's WORKFLOW is followed, but git EXECUTION is delegated to mgr-gitnerd 
 
 ## Agent Teams (required when enabled)
 
-When `OMCODEX_AGENT_TEAMS=1`: Agent Teams is required for qualifying tasks.
+When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`: Agent Teams is required for qualifying tasks.
 
 See **R018 (MUST-agent-teams.md)** for the complete decision matrix, self-check, team patterns, and lifecycle.
 

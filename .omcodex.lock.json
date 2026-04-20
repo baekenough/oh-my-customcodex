@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.1.9",
-  "generatedAt": "2026-04-19T08:53:03.217Z",
-  "templateVersion": "0.1.9",
+  "generatorVersion": "0.2.0",
+  "generatedAt": "2026-04-20T04:24:55.120Z",
+  "templateVersion": "0.2.0",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -464,6 +464,11 @@
       "size": 2187,
       "component": "skills"
     },
+    ".codex/skills/design-shotgun/SKILL.md": {
+      "templateHash": "904fc8f3cf44f389b8b98f6af470e81715f05c888b897a1ff776cfdff3582ceb",
+      "size": 1643,
+      "component": "skills"
+    },
     ".codex/skills/cve-triage/SKILL.md": {
       "templateHash": "2f2206b5eb8c1bffd7443c9c9546857b560a0356c29c7c8d988637030ca96e75",
       "size": 2450,
@@ -497,6 +502,11 @@
     ".codex/skills/deep-verify/SKILL.md": {
       "templateHash": "ba479c61782b7a4a8afc2679f45b9c91bc1638b0322ca065dc594ca0c5af62ad",
       "size": 5310,
+      "component": "skills"
+    },
+    ".codex/skills/playwright-compress/SKILL.md": {
+      "templateHash": "5725b836f9630192fd74a3ef9901b20f35dd0594f303854914443ea3246ab9fd",
+      "size": 1424,
       "component": "skills"
     },
     ".codex/skills/airflow-best-practices/SKILL.md": {
@@ -595,8 +605,8 @@
       "component": "skills"
     },
     ".codex/skills/intent-detection/patterns/agent-triggers.yaml": {
-      "templateHash": "1594af52152993f610ee269d37334160403fe1bb58eb010fe4d3bb04c30bfbb8",
-      "size": 13975,
+      "templateHash": "c43ffbd3fbb39ec57642f7c5613d8c1ae8848264b24ae9601b7ea3760ace9976",
+      "size": 16802,
       "component": "skills"
     },
     ".codex/skills/intent-detection/SKILL.md": {
@@ -894,6 +904,11 @@
       "size": 2456,
       "component": "skills"
     },
+    ".codex/skills/product-strategy/SKILL.md": {
+      "templateHash": "cbaa4219982434bb2b6edb15f531032363ab1bec85273a9483ddbc98f7d3ff2e",
+      "size": 1729,
+      "component": "skills"
+    },
     ".codex/skills/sdd-development/SKILL.md": {
       "templateHash": "a230b3ec2abdda958a8b356d05f5df3dabd293d8b9240f923f943e51a1d8455e",
       "size": 506,
@@ -1054,6 +1069,11 @@
       "size": 1925,
       "component": "hooks"
     },
+    ".codex/hooks/scripts/agent-mode-guard.sh": {
+      "templateHash": "611379356f55bbe87727410cca662b2666a7ed632245aaf2e1cd6d4ecf122744",
+      "size": 721,
+      "component": "hooks"
+    },
     ".codex/hooks/scripts/omcustom-auto-update.sh": {
       "templateHash": "e4f7a36be85d927a8e070b313554e56834fe9bce986ecb93f2234324640643aa",
       "size": 5612,
@@ -1062,6 +1082,11 @@
     ".codex/hooks/scripts/stale-todo-scanner.sh": {
       "templateHash": "9b93972c6768beb499bd0346b778159f8b835d59819957f9905ae1c97853770e",
       "size": 2499,
+      "component": "hooks"
+    },
+    ".codex/hooks/scripts/playwright-compress.sh": {
+      "templateHash": "78e0ec2edbf99765e0295c3ba2c403c7180252e966315b3b64cd30bf06bdcd89",
+      "size": 2275,
       "component": "hooks"
     },
     ".codex/hooks/scripts/secret-filter.sh": {
@@ -1180,8 +1205,8 @@
       "component": "hooks"
     },
     ".codex/hooks/hooks.json": {
-      "templateHash": "4063fff72e5668da1e81062b8e81b5b4e77362c9284b151508befb22a7f3bde7",
-      "size": 25544,
+      "templateHash": "193007c01ca6878bec0e1d065fa7721531ca9b92e82add014ee44efbbc50d339",
+      "size": 26000,
       "component": "hooks"
     },
     ".codex/contexts/ecomode.md": {
@@ -1300,8 +1325,8 @@
       "component": "guides"
     },
     "guides/claude-code/14-token-efficiency.md": {
-      "templateHash": "4766988fcac011c78137d5b425458bd6c73ac2b6180f200979e3bbc9a0ed438b",
-      "size": 2320,
+      "templateHash": "ca3482ab52df596f089c76ecde15f09139fab27a53fc071945f2a5ce71d17c4e",
+      "size": 2896,
       "component": "guides"
     },
     "guides/claude-code/09-guardrails.md": {
@@ -1320,12 +1345,12 @@
       "component": "guides"
     },
     "guides/docker/compose-best-practices.md": {
-      "templateHash": "484b0a53d2735fecc44e152b2fca783b9cdbff8e7bc7000bd893ed2ef1147757",
-      "size": 4263,
+      "templateHash": "12a4687fbcf67715224604bbac326b76a7418b17dc515d5fbb808f2374192378",
+      "size": 4407,
       "component": "guides"
     },
     "guides/docker/dockerfile-best-practices.md": {
-      "templateHash": "84a993511312ad366f32f7b393ee524b8dc07e34604305b2cb0cc331964c34c1",
+      "templateHash": "07e98bce6eec0d72212f8d163358ac44d672239cced10ad6df58f68c89a57e12",
       "size": 4089,
       "component": "guides"
     },
@@ -1400,13 +1425,13 @@
       "component": "guides"
     },
     "guides/dbt/README.md": {
-      "templateHash": "33bc15e61282848bda1dd8f5bafc0d9ce38f4894f489a954f7c1e4c639b577f9",
-      "size": 874,
+      "templateHash": "fe04d63fe9f01a51de75db3f205ec5694b61a27cfe2a21b97b38de66812a9c40",
+      "size": 922,
       "component": "guides"
     },
     "guides/slack-cli/README.md": {
-      "templateHash": "8e31d827e7e57020106618a6d56cbda68be9b7a72986015870408f8b150f9957",
-      "size": 3968,
+      "templateHash": "fd8217cce0f1eb52f65907c6ede0abd759ff17b427a9d93c5443b27ef14b0b22",
+      "size": 3965,
       "component": "guides"
     },
     "guides/skill-bundle-design/README.md": {
@@ -1442,6 +1467,21 @@
     "guides/rust/index.yaml": {
       "templateHash": "9215586cc06955b56a3f566cbab660864baadc7de3bd32f60dd925a096beaa2f",
       "size": 564,
+      "component": "guides"
+    },
+    "guides/java/java-style-guide.md": {
+      "templateHash": "245af391a7b2524c13066ffa65ba41e8e2fd7cca3ac91476b9d792dbf4b9c251",
+      "size": 4992,
+      "component": "guides"
+    },
+    "guides/java/modern-java.md": {
+      "templateHash": "c9cdf3b91230a3c5c7b41447b8d80edee6cb64134031321603aeb16c8b5df7e1",
+      "size": 7672,
+      "component": "guides"
+    },
+    "guides/java/index.yaml": {
+      "templateHash": "ccd98b6bd4abb3b53a09ac0ae691f599cd6f2c9b09923cde451b0571ed7aa355",
+      "size": 768,
       "component": "guides"
     },
     "guides/kotlin/idioms.md": {
@@ -1485,7 +1525,7 @@
       "component": "guides"
     },
     "guides/airflow/README.md": {
-      "templateHash": "99f5b3e42059688785aacc7ac17bb0acdd7cbf05d94d0387bd008512bd93c10f",
+      "templateHash": "c4345a9499e91c8e11c6953969e6e7a3af613ff44ffd1409a61635b0fcf6a128",
       "size": 1936,
       "component": "guides"
     },
@@ -1500,7 +1540,7 @@
       "component": "guides"
     },
     "guides/flutter/state-management.md": {
-      "templateHash": "d0ecb13dcd729284f8d14e96c0543291c1389fc34e9d070cad1c41cfe6341652",
+      "templateHash": "50a96bd9616bdf6918d2a0229379ba2219febb4349f271ca5ed19daeed2fa561",
       "size": 3616,
       "component": "guides"
     },
@@ -1520,7 +1560,7 @@
       "component": "guides"
     },
     "guides/flutter/index.yaml": {
-      "templateHash": "00a0306e3aded07acad8ee86788fb50ece16bb66cca059fcf7ca731aaf3e04f1",
+      "templateHash": "615e06eb2296336ee7c8879be1f50a5ed7ea1e4df76c7ce8e3ea2df016bac943",
       "size": 1217,
       "component": "guides"
     },
@@ -1580,8 +1620,8 @@
       "component": "guides"
     },
     "guides/alembic/README.md": {
-      "templateHash": "37fc0cbed6e79b01e644c96a0141a52ca2d2419fe264a35207468170df8c2f4b",
-      "size": 14773,
+      "templateHash": "c4b80254eb7ee35ea32b5bc04d5a6984f818d19f5b4208ea9faba0affff2bef6",
+      "size": 14766,
       "component": "guides"
     },
     "guides/django-best-practices/README.md": {
@@ -1639,9 +1679,19 @@
       "size": 6712,
       "component": "guides"
     },
+    "guides/browser-automation/README.md": {
+      "templateHash": "c51465e8fdf79a2fedf2803138e13bb6531edefafe280ae6612a639e31cbdfc0",
+      "size": 3779,
+      "component": "guides"
+    },
+    "guides/browser-automation/index.yaml": {
+      "templateHash": "52f97309355d111b88de72404384a6714b09da4ad6c0bf28d29d12bfcee20a78",
+      "size": 392,
+      "component": "guides"
+    },
     "guides/index.yaml": {
-      "templateHash": "351be3ebeeceed60554c0509b5a95fd7cca0c7599ae6d69d7318027082617e86",
-      "size": 7170,
+      "templateHash": "902f0a11505ce991cc2f5f420b76cd8c7078809f76dd8586a44f605a72090e4e",
+      "size": 7631,
       "component": "guides"
     },
     "guides/spark/README.md": {

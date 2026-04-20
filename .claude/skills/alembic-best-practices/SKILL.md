@@ -1,6 +1,6 @@
 ---
 name: alembic-best-practices
-description: Alembic migration patterns for naming conventions, safety checks, expand-contract, env.py configuration, and CI integration
+description: Alembic 1.18.4 migration patterns for naming conventions, safety checks, expand-contract, env.py configuration, and CI integration
 scope: core
 version: 1.0.0
 user-invocable: false
@@ -8,7 +8,7 @@ user-invocable: false
 
 # Alembic Best Practices
 
-Reference patterns for safe, maintainable Alembic database migrations.
+Reference patterns for safe, maintainable Alembic 1.18.4 database migrations.
 
 ## 1. Naming Convention
 

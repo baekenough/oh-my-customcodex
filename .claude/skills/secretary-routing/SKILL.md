@@ -53,22 +53,36 @@ verify   → mgr-sauron
 spec     → mgr-claude-code-bible
 memory   → sys-memory-keeper
 todo            → sys-naggy
-improve-report  → omcodex:improve-report (skill invocation)
-auto-improve    → omcodex:auto-improve (skill invocation)
+improve-report  → omcustom-improve-report (skill invocation)
+auto-improve    → omcustom-auto-improve (skill invocation)
 batch           → multiple (parallel)
 ```
 
-**improve-report keywords**: "improve-report", "improvement", "개선", "개선 리포트", "improve" → invoke `omcodex:improve-report` skill (read-only, no agent delegation needed)
+**improve-report keywords**: "improve-report", "improvement", "개선", "개선 리포트", "improve" → invoke `omcustom-improve-report` skill (read-only, no agent delegation needed)
 
-**auto-improve keywords**: "auto-improve", "자동 개선", "개선 적용", "apply improvements", "improvement suggestions" → invoke `omcodex:auto-improve` skill (worktree isolation, sauron verification, PR creation)
+**auto-improve keywords**: "auto-improve", "자동 개선", "개선 적용", "apply improvements", "improvement suggestions" → invoke `omcustom-auto-improve` skill (worktree isolation, sauron verification, PR creation)
 
 ### Ontology-RAG Enrichment (R019)
 
 If `get_agent_for_task` MCP tool is available, call it with the original query and inject `suggested_skills` into the agent prompt. Skip silently on failure.
 
+### Step 4b: Wiki-RAG Enrichment
+
+If the user's request is ambiguous or confidence is below 90%, query the wiki for additional context:
+
+1. Search `wiki/index.yaml` for pages matching the detected domain keywords
+2. Extract relevant agent/skill/guide recommendations from wiki pages
+3. Inject findings into the routing decision as supplementary signals
+
+```
+wiki-rag query: "{user_request}" → wiki pages → agent/skill/guide suggestions
+```
+
+Wiki-RAG enrichment is advisory — it supplements but does not override keyword matching. Skip silently if wiki/index.yaml doesn't exist.
+
 ### Step 5: Soul Injection (R006)
 
-If the selected agent has `soul: true` in frontmatter, read and prepend `.codex/agents/souls/{agent-name}.soul.md` content to the prompt. Skip silently if file doesn't exist.
+If the selected agent has `soul: true` in frontmatter, read and prepend `.claude/agents/souls/{agent-name}.soul.md` content to the prompt. Skip silently if file doesn't exist.
 
 ## Routing Rules
 
@@ -82,7 +96,7 @@ If the selected agent has `soul: true` in frontmatter, read and prepend `.codex/
 5. Report result to user
 ```
 
-> **Permission Mode**: When spawning agents, pass `mode: "bypassPermissions"` in the Agent tool call if the session uses bypassPermissions. Without explicit mode, CC defaults to `acceptEdits`.
+> **Permission Mode**: When spawning agents via Agent tool, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
 
 ### 2. Batch/Parallel Task Routing
 
@@ -120,7 +134,7 @@ Evaluate: Is this a specialized management/tooling task?
   YES → Delegate to mgr-creator with context:
         domain: detected tool/technology
         type: manager
-        skills: auto-discover from .codex/skills/
+        skills: auto-discover from .claude/skills/
   NO  → Ask user for clarification
 ```
 
