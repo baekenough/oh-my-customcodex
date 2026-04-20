@@ -234,14 +234,18 @@ jobs:
       - name: Verify .codex/ and templates/.claude/ are in sync
         run: |
           errors=0
+          SRC_SKILLS_DIR=".codex/skills"
+          if [ -d ".agents/skills" ]; then
+            SRC_SKILLS_DIR=".agents/skills"
+          fi
 
           # Skill count sync
-          src_skills=$(find .codex/skills -name "SKILL.md" 2>/dev/null | wc -l | tr -d ' ')
+          src_skills=$(find "$SRC_SKILLS_DIR" -name "SKILL.md" 2>/dev/null | wc -l | tr -d ' ')
           tpl_skills=$(find templates/.claude/skills -name "SKILL.md" 2>/dev/null | wc -l | tr -d ' ')
           if [ "$src_skills" != "$tpl_skills" ]; then
-            echo "::error::Skill count mismatch: .codex/skills=$src_skills, templates/.claude/skills=$tpl_skills"
+            echo "::error::Skill count mismatch: $SRC_SKILLS_DIR=$src_skills, templates/.claude/skills=$tpl_skills"
             # List missing skills
-            diff <(find .codex/skills -name "SKILL.md" -exec dirname {} \; | xargs -I{} basename {} | sort) \
+            diff <(find "$SRC_SKILLS_DIR" -name "SKILL.md" -exec dirname {} \; | xargs -I{} basename {} | sort) \
                  <(find templates/.claude/skills -name "SKILL.md" -exec dirname {} \; | xargs -I{} basename {} | sort) \
                  | grep "^[<>]" | head -10
             errors=$((errors + 1))
@@ -275,7 +279,7 @@ jobs:
 
           # Skill script files sync
           SCRIPT_ERRORS=0
-          for script_dir in .codex/skills/*/scripts; do
+          for script_dir in "$SRC_SKILLS_DIR"/*/scripts; do
             if [ -d "$script_dir" ]; then
               skill_name=$(basename $(dirname "$script_dir"))
               template_dir="templates/.claude/skills/$skill_name/scripts"
@@ -301,7 +305,7 @@ jobs:
           if [ "$errors" -gt 0 ]; then
             echo ""
             echo "Fix: sync missing files from .codex/ to templates/.claude/ according to the port mapping"
-            echo "Example: cp .codex/skills/NEW_SKILL/SKILL.md templates/.claude/skills/NEW_SKILL/SKILL.md"
+            echo "Example: cp $SRC_SKILLS_DIR/NEW_SKILL/SKILL.md templates/.claude/skills/NEW_SKILL/SKILL.md"
             exit 1
           fi
 
@@ -349,7 +353,11 @@ jobs:
           fi
 
           ACTUAL_AGENTS=$(ls .codex/agents/*.md 2>/dev/null | wc -l | tr -d ' ')
-          ACTUAL_SKILLS=$(find .codex/skills -name 'SKILL.md' 2>/dev/null | wc -l | tr -d ' ')
+          SKILLS_ROOT=".codex/skills"
+          if [ -d ".agents/skills" ]; then
+            SKILLS_ROOT=".agents/skills"
+          fi
+          ACTUAL_SKILLS=$(find "$SKILLS_ROOT" -name 'SKILL.md' 2>/dev/null | wc -l | tr -d ' ')
           ACTUAL_RULES=$(ls .codex/rules/*.md 2>/dev/null | wc -l | tr -d ' ')
           ACTUAL_GUIDES=$(find guides -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
 

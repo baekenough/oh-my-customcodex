@@ -106,8 +106,8 @@ That keeps visual comparisons honest and makes "taste memory" reusable.
 
 ## Related Surfaces
 
-- `.codex/skills/product-strategy/SKILL.md`
-- `.codex/skills/design-shotgun/SKILL.md`
-- `.codex/skills/playwright-compress/SKILL.md`
+- `.agents/skills/product-strategy/SKILL.md`
+- `.agents/skills/design-shotgun/SKILL.md`
+- `.agents/skills/playwright-compress/SKILL.md`
 - `guides/web-scraping/README.md`
 - `packages/serve/playwright.config.ts`
