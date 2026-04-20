@@ -282,7 +282,11 @@ your-project/
 │   ├── specs/                  # Extracted canonical specs
 │   ├── contexts/               # 4 shared context files
 │   └── ontology/               # Knowledge graph for RAG
+<<<<<<< HEAD
 └── guides/                     # 40 reference documents
+=======
+└── guides/                     # 40 reference documents
+>>>>>>> origin/develop
 ```
 
 ---
