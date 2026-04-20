@@ -1,5 +1,5 @@
 ---
-name: omcodex:analysis
+name: omcustom:analysis
 description: Analyze project and auto-configure agents, skills, rules, and guides
 scope: harness
 argument-hint: "[target-dir] [--interview]"
@@ -76,7 +76,7 @@ Detect tech stack by checking indicator files and dependency manifests.
 | Go Backend | go.mod + cmd/ or internal/ dirs | be-go-backend-expert | go-backend-best-practices |
 | Rust | Cargo.toml, *.rs | lang-rust-expert | rust-best-practices |
 | Kotlin | *.kt, build.gradle.kts | lang-kotlin-expert | kotlin-best-practices |
-| Java | *.java, pom.xml | lang-java21-expert | - |
+| Java | *.java, pom.xml | lang-java-expert | - |
 | Spring Boot | spring-boot in deps | be-springboot-expert | springboot-best-practices |
 | Express.js | "express" in deps | be-express-expert | - |
 | NestJS | "@nestjs" in deps | be-nestjs-expert | - |
@@ -105,8 +105,8 @@ Detect tech stack by checking indicator files and dependency manifests.
 Compare detected stack against what is already installed.
 
 ```
-1. List existing agents:  ls .codex/agents/*.md
-2. List existing skills:  find .codex/skills -name "SKILL.md"
+1. List existing agents:  ls .claude/agents/*.md
+2. List existing skills:  find .claude/skills -name "SKILL.md"
 3. For each detected indicator:
    a. Check if required agent file exists → mark MISSING or PRESENT
    b. Check if required skill directory exists → mark MISSING or PRESENT
@@ -123,11 +123,11 @@ Apply changes for all missing items (skip in --dry-run mode).
 
 ```
 For each missing agent:
-  - If agent exists in templates/.codex/agents/ → copy to .codex/agents/
+  - If agent exists in templates/.claude/agents/ → copy to .claude/agents/
   - Else → delegate to mgr-creator with detected domain context
 
 For each missing skill:
-  - If skill exists in templates/.codex/skills/ → copy to .codex/skills/
+  - If skill exists in templates/.claude/skills/ → copy to .claude/skills/
   - Else → log as "skill not available in templates, manual setup needed"
 
 Rules:
@@ -193,8 +193,8 @@ After analysis completes, offer adaptive-harness optimization:
 
 ```
 [Analysis Complete] Tech stack detected. Optimize harness for this project?
-├── Yes → Run /omcodex:adaptive-harness --optimize (deactivate unused, suggest missing)
-├── Dry-run → Run /omcodex:adaptive-harness --optimize --dry-run (show changes only)
+├── Yes → Run /omcustom:adaptive-harness --optimize (deactivate unused, suggest missing)
+├── Dry-run → Run /omcustom:adaptive-harness --optimize --dry-run (show changes only)
 └── Skip → Keep current harness configuration
 ```
 

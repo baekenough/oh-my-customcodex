@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/stage-blocker.sh"
+            "command": "bash .claude/hooks/scripts/stage-blocker.sh"
           }
         ],
         "description": "Block Write/Edit tools during plan/verify/compound stages — only allow in implement stage"
@@ -57,7 +57,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\nCOUNTER_FILE=\"/tmp/.codex-tool-count-$PPID\"\nTHRESHOLD=${COMPACT_THRESHOLD:-50}\nif [ -f \"$COUNTER_FILE\" ]; then COUNT=$(cat \"$COUNTER_FILE\"); COUNT=$((COUNT + 1)); else COUNT=1; fi\necho \"$COUNT\" > \"$COUNTER_FILE\"\nif [ \"$COUNT\" -eq \"$THRESHOLD\" ]; then echo '[StrategicCompact] Reached '$THRESHOLD' tool calls' >&2; echo '[StrategicCompact] Consider /compact if at a logical breakpoint' >&2; fi\nif [ \"$COUNT\" -gt \"$THRESHOLD\" ] && [ $(((COUNT - THRESHOLD) % 25)) -eq 0 ]; then echo \"[StrategicCompact] $COUNT tool calls - /compact reminder\" >&2; fi\ncat"
+            "command": "#!/bin/bash\nCOUNTER_FILE=\"/tmp/claude-tool-count-$PPID\"\nTHRESHOLD=${COMPACT_THRESHOLD:-50}\nif [ -f \"$COUNTER_FILE\" ]; then COUNT=$(cat \"$COUNTER_FILE\"); COUNT=$((COUNT + 1)); else COUNT=1; fi\necho \"$COUNT\" > \"$COUNTER_FILE\"\nif [ \"$COUNT\" -eq \"$THRESHOLD\" ]; then echo '[StrategicCompact] Reached '$THRESHOLD' tool calls' >&2; echo '[StrategicCompact] Consider /compact if at a logical breakpoint' >&2; fi\nif [ \"$COUNT\" -gt \"$THRESHOLD\" ] && [ $(((COUNT - THRESHOLD) % 25)) -eq 0 ]; then echo \"[StrategicCompact] $COUNT tool calls - /compact reminder\" >&2; fi\ncat"
           }
         ],
         "description": "Suggest manual compaction at logical intervals"
@@ -67,7 +67,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/content-hash-validator.sh"
+            "command": "bash .claude/hooks/scripts/content-hash-validator.sh"
           }
         ],
         "description": "Validate file content hash before Edit — advisory staleness warning"
@@ -77,7 +77,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/schema-validator.sh"
+            "command": "bash .claude/hooks/scripts/schema-validator.sh"
           }
         ],
         "description": "Schema-based tool input validation — Phase 1 advisory only"
@@ -87,17 +87,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/rtk-intercept.sh"
+            "command": "bash .claude/hooks/scripts/rtk-intercept.sh"
           }
         ],
         "description": "RTK auto-intercept — transparently rewrites CLI commands through RTK proxy when available (R015 advisory)"
       },
       {
-        "matcher": "tool == \"Bash\" && tool_input.command matches \"(rm|git rm|mv|unlink|codex/rules)\"",
+        "matcher": "tool == \"Bash\" && tool_input.command matches \"(rm|git rm|mv|unlink|claude/rules)\"",
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/rule-deletion-guard.sh"
+            "command": "bash .claude/hooks/scripts/rule-deletion-guard.sh"
           }
         ],
         "description": "Block rule file deletion — requires individual user confirmation per rule (R001 safety)"
@@ -107,19 +107,23 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash .claude/hooks/scripts/agent-mode-guard.sh"
+          },
+          {
+            "type": "command",
             "command": "#!/bin/bash\ninput=$(cat)\nagent_type=$(echo \"$input\" | jq -r '.tool_input.subagent_type // \"unknown\"')\nmodel=$(echo \"$input\" | jq -r '.tool_input.model // \"inherit\"')\ndesc=$(echo \"$input\" | jq -r '.tool_input.description // \"\"' | head -c 40)\nresume=$(echo \"$input\" | jq -r '.tool_input.resume // empty')\nif [ -n \"$resume\" ]; then\n  echo \"─── [Resume] ${agent_type}:${model} | ${desc} ───\" >&2\nelse\n  echo \"─── [Spawn] ${agent_type}:${model} | ${desc} ───\" >&2\nfi\necho \"$input\""
           },
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/git-delegation-guard.sh"
+            "command": "bash .claude/hooks/scripts/git-delegation-guard.sh"
           },
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/agent-teams-advisor.sh"
+            "command": "bash .claude/hooks/scripts/agent-teams-advisor.sh"
           },
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/model-escalation-advisor.sh"
+            "command": "bash .claude/hooks/scripts/model-escalation-advisor.sh"
           }
         ],
         "description": "HUD statusline + R010 git delegation guard + R018 Agent Teams advisor on Agent/Task spawn"
@@ -131,17 +135,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".codex/hooks/scripts/omcodex-auto-update.sh"
+            "command": ".claude/hooks/scripts/omcustom-auto-update.sh"
           }
         ],
-        "description": "Interactive oh-my-customcodex update check at session start (#752)"
+        "description": "Interactive oh-my-customcode update check at session start (#752)"
       },
       {
         "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/session-env-check.sh"
+            "command": "bash .claude/hooks/scripts/session-env-check.sh"
           }
         ],
         "description": "Check codex CLI and Agent Teams availability at session start"
@@ -151,7 +155,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/stale-todo-scanner.sh"
+            "command": "bash .claude/hooks/scripts/stale-todo-scanner.sh"
           }
         ],
         "description": "Scan TODO.md files for stale items at session start"
@@ -161,7 +165,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/adaptive-harness-scan.sh"
+            "command": "bash .claude/hooks/scripts/adaptive-harness-scan.sh"
           }
         ],
         "description": "Lightweight project profile staleness check for adaptive harness (#831)"
@@ -171,7 +175,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/session-autofix.sh"
+            "command": "bash .claude/hooks/scripts/session-autofix.sh"
           }
         ],
         "description": "Auto-detect and fix previous session issues at start (#838)"
@@ -183,7 +187,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/user-prompt-preprocessor.sh"
+            "command": "bash .claude/hooks/scripts/user-prompt-preprocessor.sh"
           }
         ],
         "description": "Advisory pre-processing of user input — skill matching hints and intent analysis"
@@ -193,7 +197,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "command": "bash .codex/hooks/scripts/session-autofix-prompt.sh"
+            "command": "bash .claude/hooks/scripts/session-autofix-prompt.sh"
           }
         ],
         "description": "Inject session auto-fix findings into first user prompt (#838)"
@@ -209,7 +213,7 @@
           },
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/agent-start-recorder.sh"
+            "command": "bash .claude/hooks/scripts/agent-start-recorder.sh"
           }
         ],
         "description": "HUD display + agent start time recording for stall detection (R009)"
@@ -221,19 +225,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/task-outcome-recorder.sh"
+            "command": "bash .claude/hooks/scripts/task-outcome-recorder.sh"
           },
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/stall-detection-advisor.sh"
+            "command": "bash .claude/hooks/scripts/stall-detection-advisor.sh"
           },
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/auto-continue-guard.sh"
+            "command": "bash .claude/hooks/scripts/auto-continue-guard.sh"
           },
           {
             "type": "prompt",
-            "prompt": "A background subagent just completed. Check if there are pending workflow steps that depend on this result. If the previous subagent FAILED, do NOT auto-continue — report the failure and wait for user input. If the previous step succeeded and there are pending steps, proceed automatically. If no pending steps, report results and wait. Safety: The file /tmp/.codex-loop-count-$PPID tracks auto-continue count. After 3 consecutive auto-continues without user interaction, pause and ask the user before proceeding."
+            "prompt": "A background subagent just completed. Check if there are pending workflow steps that depend on this result. If the previous subagent FAILED, do NOT auto-continue — report the failure and wait for user input. If the previous step succeeded and there are pending steps, proceed automatically. If no pending steps, report results and wait. Safety: The file /tmp/.claude-loop-count-$PPID tracks auto-continue count. After 3 consecutive auto-continues without user interaction, pause and ask the user before proceeding."
           }
         ],
         "description": "Record agent outcomes + auto-continue workflow on subagent completion"
@@ -245,7 +249,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/cwd-change-detector.sh"
+            "command": "bash .claude/hooks/scripts/cwd-change-detector.sh"
           }
         ],
         "description": "Auto-detect project type on working directory change (v2.1.83+)"
@@ -257,7 +261,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/file-change-validator.sh"
+            "command": "bash .claude/hooks/scripts/file-change-validator.sh"
           }
         ],
         "description": "Validate externally modified files — advisory staleness warning (v2.1.83+)"
@@ -317,7 +321,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/task-state-precompact.sh"
+            "command": "bash .claude/hooks/scripts/task-state-precompact.sh"
           }
         ],
         "description": "Serialize active task state before compaction — pairs with PostCompact restore (#922)"
@@ -329,7 +333,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Context compacted. RULES ACTIVE.\n\nR007: next response MUST start with ┌─ Agent: codex (default) / └─ Task: {task}\nR008: before EVERY tool call → [claude][model] → Tool: Name / Target: path\nR010: write→delegate to subagent; orchestrator read-only (Read/Glob/Grep); git→mgr-gitnerd\nR009: 2+ independent tasks → parallel agents, same message\nR018: 3+ agents OR review cycle → Agent Teams\nR000: user communication in Korean (한국어); code/files in English — NON-NEGOTIABLE\nR001: prohibited actions (no secrets, no system files, no rm -rf); stop on violation → preserve state → report → wait\nR002: tool tiers (Read/Grep=free, Write/Edit=notify, Bash=approval); no writes outside project; no .env/.git/config\n\nAutonomous mode: if /tmp/.codex-autonomous-$PPID exists → simple git (add/commit/push) may run directly; Write/Edit still delegates.\nbypassPermissions does NOT persist across compaction — re-enable if tasks seem blocked.\n\nTask state restore: if /tmp/.codex-task-state-$PPID.json exists, read it to recover active pipeline, dev stage, and autonomous mode state. This was saved by PreCompact hook.\n\nRe-read AGENTS.md NOW."
+            "prompt": "Context compacted. RULES ACTIVE.\n\nR007: next response MUST start with ┌─ Agent: claude (default) / └─ Task: {task}\nR008: before EVERY tool call → [claude][model] → Tool: Name / Target: path\nR010: write→delegate to subagent; orchestrator read-only (Read/Glob/Grep); git→mgr-gitnerd\nR009: 2+ independent tasks → parallel agents, same message\nR018: 3+ agents OR review cycle → Agent Teams\nR000: user communication in Korean (한국어); code/files in English — NON-NEGOTIABLE\nR001: prohibited actions (no secrets, no system files, no rm -rf); stop on violation → preserve state → report → wait\nR002: tool tiers (Read/Grep=free, Write/Edit=notify, Bash=approval); no writes outside project; no .env/.git/config\n\nAutonomous mode: if /tmp/.claude-autonomous-$PPID exists → simple git (add/commit/push) may run directly; Write/Edit still delegates.\nbypassPermissions does NOT persist across compaction — re-enable if tasks seem blocked.\n\nTask state restore: if /tmp/.claude-task-state-$PPID.json exists, read it to recover active pipeline, dev stage, and autonomous mode state. This was saved by PreCompact hook.\n\nRe-read CLAUDE.md NOW."
           }
         ],
         "description": "Reinforce enforced rules after context compaction — prevents rule amnesia (v2.1.76+)"
@@ -411,7 +415,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/context-budget-advisor.sh"
+            "command": "bash .claude/hooks/scripts/context-budget-advisor.sh"
           }
         ],
         "description": "Context budget advisor — track tool usage patterns and advise ecomode activation"
@@ -421,7 +425,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/stuck-detector.sh"
+            "command": "bash .claude/hooks/scripts/stuck-detector.sh"
           }
         ],
         "description": "Detect repetitive failure loops and advise recovery strategies"
@@ -431,7 +435,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/cost-cap-advisor.sh"
+            "command": "bash .claude/hooks/scripts/cost-cap-advisor.sh"
           }
         ],
         "description": "Advisory cost cap monitoring — warn when session cost approaches configurable limit"
@@ -441,7 +445,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/content-hash-validator.sh"
+            "command": "bash .claude/hooks/scripts/content-hash-validator.sh"
           }
         ],
         "description": "Store content hashes for Read operations — enables Edit staleness detection"
@@ -451,7 +455,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/secret-filter.sh"
+            "command": "bash .claude/hooks/scripts/secret-filter.sh"
           }
         ],
         "description": "Detect potential secrets in Bash/Read/Grep output — advisory warning only"
@@ -461,7 +465,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/audit-log.sh"
+            "command": "bash .claude/hooks/scripts/audit-log.sh"
           }
         ],
         "description": "Append-only audit log for state-changing tool operations"
@@ -471,10 +475,20 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/skill-count-reminder.sh"
+            "command": "bash .claude/hooks/skill-count-reminder.sh"
           }
         ],
         "description": "Advisory reminder to sync skill counts in 6 locations when a SKILL.md is created/modified (R021)"
+      },
+      {
+        "matcher": "mcp_tool_name matches \"mcp__playwright__.*\" || mcp_tool_name matches \"mcp__claude-in-chrome__.*\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/playwright-compress.sh"
+          }
+        ],
+        "description": "Layer 4: Compress Playwright/Chrome MCP output via Haiku summarization"
       }
     ],
     "Stop": [
@@ -483,7 +497,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/stop-console-audit.sh"
+            "command": "bash .claude/hooks/scripts/stop-console-audit.sh"
           }
         ],
         "description": "Final console.log audit and session diagnostics before session ends"
@@ -493,7 +507,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/eval-core-batch-save.sh"
+            "command": "bash .claude/hooks/scripts/eval-core-batch-save.sh"
           }
         ],
         "description": "Batch-save agent outcomes to eval-core DB on session end (advisory, exit 0)"
@@ -503,7 +517,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/feedback-collector.sh"
+            "command": "bash .claude/hooks/scripts/feedback-collector.sh"
           }
         ],
         "description": "Auto-extract failure patterns from session outcomes (advisory, exit 0)"
@@ -513,7 +527,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .codex/hooks/scripts/skill-extractor-analyzer.sh"
+            "command": "bash .claude/hooks/scripts/skill-extractor-analyzer.sh"
           }
         ],
         "description": "Detect reusable skill candidates from session task outcomes (advisory, exit 0)"
@@ -523,7 +537,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Session-end memory checkpoint (R011 enforcement). Check if the session-end memory save workflow was completed: 1) sys-memory-keeper was delegated to update MEMORY.md 2) omx-memory save was attempted via ToolSearch + mcp__plugin_omx-memory_mcp-search__save_memory. Note: episodic-memory auto-indexes after session — no manual action needed. Decision rules (evaluate in order): 1. If session had no explicit session-end signal (quick question, no memory work): APPROVE immediately. 2. If BOTH steps were already attempted (success or failure both count): APPROVE. 3. If MCP tools unavailable after ToolSearch attempt: APPROVE with note. 4. If steps were NOT yet performed: PERFORM THEM NOW (maximum 1 attempt each): a. Delegate to sys-memory-keeper to update MEMORY.md — call Agent tool with sys-memory-keeper. b. Attempt omx-memory save — ToolSearch for save_memory tool, then call it. c. After completion (success or failure), APPROVE stop. IMPORTANT: Do NOT block indefinitely. After 1 attempt per step, always APPROVE. IMPORTANT: Do NOT loop — if you already performed these steps in this same stop hook evaluation, APPROVE."
+            "prompt": "Session-end memory checkpoint (R011 enforcement). Check if the session-end memory save workflow was completed: 1) sys-memory-keeper was delegated to update MEMORY.md 2) claude-mem save was attempted via ToolSearch + mcp__plugin_claude-mem_mcp-search__save_memory. Note: episodic-memory auto-indexes after session — no manual action needed. Decision rules (evaluate in order): 1. If session had no explicit session-end signal (quick question, no memory work): APPROVE immediately. 2. If BOTH steps were already attempted (success or failure both count): APPROVE. 3. If MCP tools unavailable after ToolSearch attempt: APPROVE with note. 4. If steps were NOT yet performed: PERFORM THEM NOW (maximum 1 attempt each): a. Delegate to sys-memory-keeper to update MEMORY.md — call Agent tool with sys-memory-keeper. b. Attempt claude-mem save — ToolSearch for save_memory tool, then call it. c. After completion (success or failure), APPROVE stop. IMPORTANT: Do NOT block indefinitely. After 1 attempt per step, always APPROVE. IMPORTANT: Do NOT loop — if you already performed these steps in this same stop hook evaluation, APPROVE."
           }
         ],
         "description": "Enforce R011 session-end memory saves — auto-perform if not yet done (episodic-memory auto-indexes)"

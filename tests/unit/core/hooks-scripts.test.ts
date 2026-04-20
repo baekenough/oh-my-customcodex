@@ -9,6 +9,7 @@ const SCRIPTS_DIR = resolve(import.meta.dir, '../../../templates/.claude/hooks/s
 const HOOKS_JSON_PATH = resolve(import.meta.dir, '../../../templates/.claude/hooks/hooks.json');
 
 const STAGE_BLOCKER_SCRIPT = join(SCRIPTS_DIR, 'stage-blocker.sh');
+const AGENT_MODE_GUARD_SCRIPT = join(SCRIPTS_DIR, 'agent-mode-guard.sh');
 const GIT_DELEGATION_GUARD_SCRIPT = join(SCRIPTS_DIR, 'git-delegation-guard.sh');
 const STOP_CONSOLE_AUDIT_SCRIPT = join(SCRIPTS_DIR, 'stop-console-audit.sh');
 const AGENT_TEAMS_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'agent-teams-advisor.sh');
@@ -100,6 +101,17 @@ function makeTaskInput(subagentType: string, prompt: string): string {
     tool_input: {
       subagent_type: subagentType,
       prompt,
+    },
+  });
+}
+
+function makeTaskInputWithMode(subagentType: string, prompt: string, mode?: string): string {
+  return JSON.stringify({
+    tool: 'Task',
+    tool_input: {
+      subagent_type: subagentType,
+      prompt,
+      ...(mode ? { mode } : {}),
     },
   });
 }
@@ -574,6 +586,43 @@ describe('git-delegation-guard.sh', () => {
     // jq will produce errors on empty input but the script should still exit 0
     const result = await runHookScript(GIT_DELEGATION_GUARD_SCRIPT, '');
     expect(result.exitCode).toBe(0);
+  });
+});
+
+// -------------------------------------------------------------------
+// agent-mode-guard.sh
+// -------------------------------------------------------------------
+
+describe('agent-mode-guard.sh', () => {
+  it('should pass through Agent/Task input when mode is bypassPermissions', async () => {
+    const input = makeTaskInputWithMode(
+      'lang-typescript-expert',
+      'Implement feature X',
+      'bypassPermissions'
+    );
+    const result = await runHookScript(AGENT_MODE_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.stderr).not.toContain('BLOCKED');
+  });
+
+  it('should block Agent/Task input when mode is missing', async () => {
+    const input = makeTaskInput('lang-typescript-expert', 'Implement feature X');
+    const result = await runHookScript(AGENT_MODE_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('BLOCKED');
+    expect(result.stderr).toContain('bypassPermissions');
+  });
+
+  it('should block Agent/Task input when mode is acceptEdits', async () => {
+    const input = makeTaskInputWithMode(
+      'lang-typescript-expert',
+      'Implement feature X',
+      'acceptEdits'
+    );
+    const result = await runHookScript(AGENT_MODE_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('acceptEdits');
   });
 });
 
