@@ -8,7 +8,8 @@
   "type": "module",
   "bin": {
     "omcodex": "./dist/cli/index.js",
-    "omcustom": "./dist/cli/index.js"
+    "omcustom": "./dist/cli/index.js",
+    "omcustomx": "./dist/cli/index.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

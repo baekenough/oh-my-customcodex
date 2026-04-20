@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.2.0",
-  "generatedAt": "2026-04-20T04:24:55.120Z",
-  "templateVersion": "0.2.0",
+  "generatorVersion": "0.2.1",
+  "generatedAt": "2026-04-20T05:40:22.214Z",
+  "templateVersion": "0.2.1",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
