@@ -4,12 +4,20 @@
  * Main CLI application using Commander.js
  */
 
+import { realpathSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import { formatPreflightWarnings, runPreflightCheck } from '../core/preflight.js';
 import { unregisterProject } from '../core/registry.js';
 import { maybeHandleSelfUpdateForInit } from '../core/self-update.js';
 import { detectLanguage, i18n, initI18n } from '../i18n/index.js';
+import {
+  detectCliCommandName,
+  getActiveCliCommandName,
+  setActiveCliCommandName,
+} from '../utils/cli-command-name.js';
 import { doctorCommand } from './doctor.js';
 import { initCommand } from './init.js';
 import { listCommand } from './list.js';
@@ -32,11 +40,11 @@ const packageJson = require('../../package.json');
 /**
  * Creates and configures the CLI program
  */
-export function createProgram(): Command {
+export function createProgram(commandName = getActiveCliCommandName()): Command {
   const program = new Command();
 
   program
-    .name('omcodex')
+    .name(commandName)
     .description(i18n.t('cli.description'))
     .version(packageJson.version, '-v, --version', i18n.t('cli.versionOption'))
     .option('--skip-version-check', 'Skip CLI version pre-flight check');
@@ -160,7 +168,7 @@ export function createProgram(): Command {
   // omcodex serve — deprecated alias for `omcodex web start`
   program
     .command('serve')
-    .description('(Deprecated) Start the Web UI server — use `omcodex web start` instead')
+    .description(`(Deprecated) Start the Web UI server — use \`${commandName} web start\` instead`)
     .option('-p, --port <port>', i18n.t('cli.web.start.portOption'), '4321')
     .option('--foreground', i18n.t('cli.web.start.foregroundOption'))
     .action(async (options) => {
@@ -171,7 +179,7 @@ export function createProgram(): Command {
   // omcodex serve-stop — deprecated alias for `omcodex web stop`
   program
     .command('serve-stop')
-    .description('(Deprecated) Stop the Web UI server — use `omcodex web stop` instead')
+    .description(`(Deprecated) Stop the Web UI server — use \`${commandName} web stop\` instead`)
     .action(async () => {
       console.warn(i18n.t('cli.web.deprecated.serveStop'));
       await serveStopCommand();
@@ -256,6 +264,8 @@ export function createProgram(): Command {
  * Main entry point
  */
 async function main(): Promise<void> {
+  setActiveCliCommandName(detectCliCommandName());
+
   // Initialize i18n with detected language
   const lang = detectLanguage();
   await initI18n(lang);
@@ -265,10 +275,25 @@ async function main(): Promise<void> {
   await program.parseAsync(process.argv);
 }
 
-// Run main if this is the entry point
-main().catch((error) => {
-  console.error(i18n.t('cli.error.unexpected'), error);
-  process.exit(1);
-});
+function isDirectExecution(): boolean {
+  const argvPath = process.argv[1];
+  if (!argvPath) {
+    return false;
+  }
+
+  try {
+    return realpathSync(argvPath) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return resolve(argvPath) === resolve(fileURLToPath(import.meta.url));
+  }
+}
+
+// Run main only when this module is the CLI entry point.
+if (isDirectExecution()) {
+  main().catch((error) => {
+    console.error(i18n.t('cli.error.unexpected'), error);
+    process.exit(1);
+  });
+}
 
 export { main };

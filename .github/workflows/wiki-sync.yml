@@ -7,6 +7,7 @@ on:
     paths:
       - '.codex/agents/**'
       - '.codex/skills/**'
+      - '.agents/skills/**'
       - '.codex/rules/**'
       - 'guides/**'
       - 'wiki/**'
@@ -16,6 +17,7 @@ on:
     paths:
       - '.codex/agents/**'
       - '.codex/skills/**'
+      - '.agents/skills/**'
       - '.codex/rules/**'
       - 'guides/**'
       - 'wiki/**'
@@ -51,6 +53,10 @@ jobs:
           ERRORS=0
           STALE=0
           MISSING=0
+          SKILLS_ROOT=".codex/skills"
+          if [ -d ".agents/skills" ]; then
+            SKILLS_ROOT=".agents/skills"
+          fi
 
           # Check agents
           for src in .codex/agents/*.md; do
@@ -64,7 +70,7 @@ jobs:
           done
 
           # Check skills
-          for src in $(find .codex/skills -name "SKILL.md"); do
+          for src in $(find "$SKILLS_ROOT" -name "SKILL.md"); do
             name=$(basename $(dirname "$src"))
             wiki_page="wiki/skills/${name}.md"
             if [ ! -f "$wiki_page" ]; then
@@ -121,8 +127,12 @@ jobs:
       - name: Report results
         if: success()
         run: |
+          SKILLS_ROOT=".codex/skills"
+          if [ -d ".agents/skills" ]; then
+            SKILLS_ROOT=".agents/skills"
+          fi
           TOTAL_AGENTS=$(ls .codex/agents/*.md 2>/dev/null | wc -l | tr -d ' ')
-          TOTAL_SKILLS=$(find .codex/skills -name "SKILL.md" 2>/dev/null | wc -l | tr -d ' ')
+          TOTAL_SKILLS=$(find "$SKILLS_ROOT" -name "SKILL.md" 2>/dev/null | wc -l | tr -d ' ')
           TOTAL_RULES=$(ls .codex/rules/*.md 2>/dev/null | wc -l | tr -d ' ')
           TOTAL_GUIDES=$(find guides -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
           TOTAL_WIKI=$(find wiki -name "*.md" ! -name "index.md" ! -name "log.md" 2>/dev/null | wc -l | tr -d ' ')

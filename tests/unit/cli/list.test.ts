@@ -146,13 +146,13 @@ This agent specializes in Rust programming.
     });
 
     it('should return empty array when skills directory is empty', async () => {
-      await mkdir(join(tempDir, '.codex', 'skills'), { recursive: true });
+      await mkdir(join(tempDir, '.agents', 'skills'), { recursive: true });
       const skills = await getSkills(tempDir);
       expect(skills).toEqual([]);
     });
 
     it('should find skill with SKILL.md file', async () => {
-      const skillDir = join(tempDir, '.codex', 'skills', 'development', 'go-best-practices');
+      const skillDir = join(tempDir, '.agents', 'skills', 'development', 'go-best-practices');
       await mkdir(skillDir, { recursive: true });
       await writeFile(join(skillDir, 'SKILL.md'), '# Go Best Practices');
 
@@ -162,11 +162,11 @@ This agent specializes in Rust programming.
       expect(skills[0].name).toBe('go-best-practices');
       expect(skills[0].type).toBe('skill');
       expect(skills[0].category).toBe('development');
-      expect(skills[0].path).toBe('.codex/skills/development/go-best-practices');
+      expect(skills[0].path).toBe('.agents/skills/development/go-best-practices');
     });
 
     it('should extract metadata from index.yaml', async () => {
-      const skillDir = join(tempDir, '.codex', 'skills', 'backend', 'api-design');
+      const skillDir = join(tempDir, '.agents', 'skills', 'backend', 'api-design');
       await mkdir(skillDir, { recursive: true });
       await writeFile(join(skillDir, 'SKILL.md'), '# API Design Skill');
       await writeFile(
@@ -186,9 +186,9 @@ This agent specializes in Rust programming.
     });
 
     it('should find multiple skills and sort by name', async () => {
-      const skill1Dir = join(tempDir, '.codex', 'skills', 'development', 'python-style');
-      const skill2Dir = join(tempDir, '.codex', 'skills', 'backend', 'database-design');
-      const skill3Dir = join(tempDir, '.codex', 'skills', 'infra', 'docker-best-practices');
+      const skill1Dir = join(tempDir, '.agents', 'skills', 'development', 'python-style');
+      const skill2Dir = join(tempDir, '.agents', 'skills', 'backend', 'database-design');
+      const skill3Dir = join(tempDir, '.agents', 'skills', 'infra', 'docker-best-practices');
 
       await mkdir(skill1Dir, { recursive: true });
       await mkdir(skill2Dir, { recursive: true });
@@ -468,7 +468,7 @@ This is the description of the unit testing guide that provides best practices.`
             name: 'go-best-practices',
             type: 'skill',
             category: 'development',
-            path: '.codex/skills/development/go-best-practices',
+            path: '.agents/skills/development/go-best-practices',
           },
         ];
 
@@ -497,7 +497,7 @@ This is the description of the unit testing guide that provides best practices.`
             name: 'go-best-practices',
             type: 'skill',
             category: 'development',
-            path: '.codex/skills/development/go-best-practices',
+            path: '.agents/skills/development/go-best-practices',
           },
         ];
 
@@ -531,7 +531,7 @@ This is the description of the unit testing guide that provides best practices.`
     it('should handle complete project structure', async () => {
       // Create a complete project structure
       const agentsDir = join(tempDir, '.codex', 'agents');
-      const skillDir = join(tempDir, '.codex', 'skills', 'development', 'go-best-practices');
+      const skillDir = join(tempDir, '.agents', 'skills', 'development', 'go-best-practices');
       const guideDir = join(tempDir, 'guides', 'architecture');
       const rulesDir = join(tempDir, '.codex', 'rules');
 
@@ -595,7 +595,7 @@ This is the description of the unit testing guide that provides best practices.`
     it('should handle directories without expected files', async () => {
       // Create directories without the expected marker files
       await mkdir(join(tempDir, '.codex', 'agents'), { recursive: true });
-      await mkdir(join(tempDir, '.codex', 'skills', 'development', 'empty-skill'), {
+      await mkdir(join(tempDir, '.agents', 'skills', 'development', 'empty-skill'), {
         recursive: true,
       });
 
@@ -630,7 +630,7 @@ This is the description of the unit testing guide that provides best practices.`
 
       // Setup complete structure
       const agentsDir = join(tempDir, '.codex', 'agents');
-      const skillDir = join(tempDir, '.codex', 'skills', 'development', 'test-skill');
+      const skillDir = join(tempDir, '.agents', 'skills', 'development', 'test-skill');
       const guideDir = join(tempDir, 'guides', 'architecture');
       const rulesDir = join(tempDir, '.codex', 'rules');
 
@@ -682,7 +682,7 @@ This is the description of the unit testing guide that provides best practices.`
     it('should list specific type (skills)', async () => {
       process.cwd = () => tempDir;
 
-      const skillDir = join(tempDir, '.codex', 'skills', 'development', 'test-skill');
+      const skillDir = join(tempDir, '.agents', 'skills', 'development', 'test-skill');
       await mkdir(skillDir, { recursive: true });
       await writeFile(join(skillDir, 'SKILL.md'), '# Test Skill');
 
@@ -1031,7 +1031,7 @@ Description after code block.`
       });
 
       try {
-        await mkdir(join(tempDir, '.codex', 'skills'), { recursive: true });
+        await mkdir(join(tempDir, '.agents', 'skills'), { recursive: true });
         const skills = await getSkills(tempDir);
 
         // Should return empty array on error
@@ -1339,7 +1339,7 @@ This is regular text after frontmatter.`
 
   describe('parseYamlMetadata top-level keys', () => {
     it('should parse top-level key-value pairs for backward compatibility', async () => {
-      const skillDir = join(tempDir, '.codex', 'skills', 'testing', 'legacy-skill');
+      const skillDir = join(tempDir, '.agents', 'skills', 'testing', 'legacy-skill');
       await mkdir(skillDir, { recursive: true });
       await writeFile(join(skillDir, 'SKILL.md'), '# Legacy Skill');
       await writeFile(
@@ -1358,7 +1358,7 @@ version: 1.2.3
     });
 
     it('should prefer metadata block over top-level keys', async () => {
-      const skillDir = join(tempDir, '.codex', 'skills', 'backend', 'mixed-skill');
+      const skillDir = join(tempDir, '.agents', 'skills', 'backend', 'mixed-skill');
       await mkdir(skillDir, { recursive: true });
       await writeFile(join(skillDir, 'SKILL.md'), '# Mixed Skill');
       await writeFile(
@@ -1381,7 +1381,7 @@ metadata:
     });
 
     it('should handle isNewTopLevelSection detection', async () => {
-      const skillDir = join(tempDir, '.codex', 'skills', 'development', 'section-skill');
+      const skillDir = join(tempDir, '.agents', 'skills', 'development', 'section-skill');
       await mkdir(skillDir, { recursive: true });
       await writeFile(join(skillDir, 'SKILL.md'), '# Section Skill');
       await writeFile(
@@ -1404,7 +1404,7 @@ scripts:
 
   describe('error handling for tryReadIndexYamlMetadata', () => {
     it('should handle readTextFile error when reading index.yaml', async () => {
-      const skillDir = join(tempDir, '.codex', 'skills', 'testing', 'error-skill');
+      const skillDir = join(tempDir, '.agents', 'skills', 'testing', 'error-skill');
       await mkdir(skillDir, { recursive: true });
       await writeFile(join(skillDir, 'SKILL.md'), '# Error Skill');
       await writeFile(join(skillDir, 'index.yaml'), 'description: Test');

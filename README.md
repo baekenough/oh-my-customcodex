@@ -29,7 +29,7 @@ oh-my-customcodex is built on two ideas:
 
 | Compile Concept | oh-my-customcodex |
 |----------------|-----------------|
-| Source code | `.codex/skills/` — reusable knowledge and workflows |
+| Source code | `.agents/skills/` — reusable knowledge and workflows |
 | Build artifacts | `.codex/agents/` — executable specialists assembled from skills |
 | Compiler | `mgr-sauron` (R017) — structural verification and integrity |
 | Spec | `.codex/rules/` — constraints and build rules |

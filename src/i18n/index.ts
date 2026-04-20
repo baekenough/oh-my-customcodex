@@ -3,6 +3,7 @@
  */
 
 import i18next from 'i18next';
+import { rewriteCliCommandReferences } from '../utils/cli-command-name.js';
 import en from './locales/en.json';
 import ko from './locales/ko.json';
 import type { SupportedLanguage, TranslationKey } from './types.js';
@@ -68,7 +69,7 @@ export const i18n = {
    * ```
    */
   t(key: TranslationKey | string, options?: Record<string, string | number>): string {
-    return i18next.t(key, options);
+    return rewriteCliCommandReferences(i18next.t(key, options));
   },
 
   /**
@@ -102,7 +103,7 @@ export const i18n = {
  * ```
  */
 export function t(key: TranslationKey | string, options?: Record<string, string | number>): string {
-  return i18next.t(key, options);
+  return rewriteCliCommandReferences(i18next.t(key, options));
 }
 
 /**

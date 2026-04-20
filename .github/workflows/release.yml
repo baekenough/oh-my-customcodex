@@ -45,7 +45,7 @@ jobs:
           done
 
           for path in "${changed_files[@]}"; do
-            if [[ "${path}" == .codex/agents/* || "${path}" == .codex/skills/* || "${path}" == .codex/rules/* || "${path}" == guides/* || "${path}" == wiki/* ]]; then
+            if [[ "${path}" == .codex/agents/* || "${path}" == .codex/skills/* || "${path}" == .agents/skills/* || "${path}" == .codex/rules/* || "${path}" == guides/* || "${path}" == wiki/* ]]; then
               required_workflows+=("Wiki Sync")
               break
             fi

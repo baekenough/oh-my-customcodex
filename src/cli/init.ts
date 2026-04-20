@@ -6,7 +6,7 @@
 import { join } from 'node:path';
 import packageJson from '../../package.json';
 import { type InstallResult as InstallerResult, install } from '../core/installer.js';
-import { getProviderLayout } from '../core/layout.js';
+import { getComponentPath, getProviderLayout, type InstallComponent } from '../core/layout.js';
 import { checkUvAvailable, generateMCPConfig } from '../core/mcp-config.js';
 import { registerProject } from '../core/registry.js';
 import { type InitOptions, type InitResult, installFromSnapshot } from '../core/snapshot.js';
@@ -24,8 +24,18 @@ export type { InitOptions, InitResult };
  */
 export async function checkExistingInstallation(targetDir: string): Promise<boolean> {
   const layout = getProviderLayout();
-  const rootDir = join(targetDir, layout.rootDir);
-  return fileExists(rootDir);
+  const markers = [layout.entryFile, layout.rootDir];
+  if (layout.provider === 'codex') {
+    markers.push('.agents');
+  }
+
+  for (const marker of markers) {
+    if (await fileExists(join(targetDir, marker))) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /** Components that live under provider root directory */
@@ -42,13 +52,8 @@ const PROVIDER_SUBDIR_COMPONENTS = new Set([
  * Convert component name to its full path
  */
 function componentToPath(targetDir: string, component: string): string {
-  if (component === 'entry-md') {
-    const layout = getProviderLayout();
-    return join(targetDir, layout.entryFile);
-  }
-  if (PROVIDER_SUBDIR_COMPONENTS.has(component)) {
-    const layout = getProviderLayout();
-    return join(targetDir, layout.rootDir, component);
+  if (component === 'entry-md' || PROVIDER_SUBDIR_COMPONENTS.has(component)) {
+    return join(targetDir, getComponentPath(component as InstallComponent));
   }
   return join(targetDir, component);
 }

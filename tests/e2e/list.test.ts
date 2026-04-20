@@ -160,14 +160,14 @@ This is a test agent for end-to-end testing.
 
   /**
    * Helper to create a test skill
-   * Official Claude Code format: .codex/skills/{category}/{name}/SKILL.md
+   * Official Claude Code format: .agents/skills/{category}/{name}/SKILL.md
    */
   async function createTestSkill(
     category: string,
     name: string,
     options?: { description?: string; version?: string }
   ): Promise<void> {
-    const skillDir = join(tempDir, '.codex', 'skills', category, name);
+    const skillDir = join(tempDir, '.agents', 'skills', category, name);
     await mkdir(skillDir, { recursive: true });
 
     const skillMd = `# ${name.charAt(0).toUpperCase() + name.slice(1)} Skill

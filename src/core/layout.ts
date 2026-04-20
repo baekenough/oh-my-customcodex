@@ -42,8 +42,9 @@ const CODEX_LAYOUT: ProviderLayout = {
     '.codex/hooks',
     '.codex/contexts',
     '.codex/agents',
-    '.codex/skills',
     '.codex/ontology',
+    '.agents',
+    '.agents/skills',
     'guides',
   ],
 };
@@ -89,6 +90,10 @@ export function getComponentPath(
 
   if (component === 'guides') {
     return 'guides';
+  }
+
+  if (provider === 'codex' && component === 'skills') {
+    return '.agents/skills';
   }
 
   return `${layout.rootDir}/${component}`;

@@ -10,7 +10,7 @@ import { parse as parseYaml } from 'yaml';
 import { getCodexVersion, installCodex, isCodexInstalled } from '../core/codex-installer.js';
 import { loadConfig } from '../core/config.js';
 import { checkFrameworkVersion } from '../core/doctor-framework.js';
-import { getProviderLayout } from '../core/layout.js';
+import { getComponentPath, getProviderLayout } from '../core/layout.js';
 import { computeFileHash, readLockfile } from '../core/lockfile.js';
 import { getOmxVersion, installOmx, isOmxInstalled } from '../core/omx-installer.js';
 import { getRtkVersion, installRtk, isRtkInstalled } from '../core/rtk-installer.js';
@@ -320,9 +320,9 @@ export async function checkAgents(
  */
 export async function checkSymlinks(
   targetDir: string,
-  rootDir: string = '.codex'
+  _rootDir: string = '.codex'
 ): Promise<CheckResult> {
-  const skillsDir = path.join(targetDir, rootDir, 'skills');
+  const skillsDir = path.join(targetDir, getComponentPath('skills'));
 
   const brokenSymlinks: string[] = [];
 
@@ -407,9 +407,9 @@ export async function checkIndexFiles(targetDir: string): Promise<CheckResult> {
  */
 export async function checkSkills(
   targetDir: string,
-  rootDir: string = '.codex'
+  _rootDir: string = '.codex'
 ): Promise<CheckResult> {
-  const skillsDir = path.join(targetDir, rootDir, 'skills');
+  const skillsDir = path.join(targetDir, getComponentPath('skills'));
   const exists = await isDirectory(skillsDir);
 
   if (!exists) {
@@ -731,7 +731,7 @@ async function fixSingleIssue(
   const fixMap: Record<string, () => Promise<boolean>> = {
     Rules: () => createMissingDirectory(path.join(targetDir, rootDir, 'rules')),
     Agents: () => createMissingDirectory(path.join(targetDir, rootDir, 'agents')),
-    Skills: () => createMissingDirectory(path.join(targetDir, rootDir, 'skills')),
+    Skills: () => createMissingDirectory(path.join(targetDir, getComponentPath('skills'))),
     Guides: () => createMissingDirectory(path.join(targetDir, 'guides')),
     Hooks: () => createMissingDirectory(path.join(targetDir, rootDir, 'hooks')),
     Contexts: () => createMissingDirectory(path.join(targetDir, rootDir, 'contexts')),

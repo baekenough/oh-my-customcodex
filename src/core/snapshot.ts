@@ -10,7 +10,7 @@ import packageJson from '../../package.json';
 import { readLockFile, writeLockFile } from '../cli/projects.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists } from '../utils/fs.js';
-import { getProviderLayout } from './layout.js';
+import { getComponentPath, getProviderLayout } from './layout.js';
 import { registerProject } from './registry.js';
 
 /**
@@ -48,8 +48,108 @@ export interface InitResult {
  */
 async function checkExistingInstallation(targetDir: string): Promise<boolean> {
   const layout = getProviderLayout();
-  const rootDir = join(targetDir, layout.rootDir);
-  return fileExists(rootDir);
+  const markers = [layout.entryFile, layout.rootDir];
+  if (layout.provider === 'codex') {
+    markers.push('.agents');
+  }
+
+  for (const marker of markers) {
+    if (await fileExists(join(targetDir, marker))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function getSnapshotPaths(snapshotPath: string) {
+  const layout = getProviderLayout();
+  return {
+    layout,
+    snapshotRuntime: join(snapshotPath, layout.rootDir),
+    snapshotSkills: join(snapshotPath, getComponentPath('skills')),
+    snapshotGuides: join(snapshotPath, 'guides'),
+    snapshotEntry: join(snapshotPath, layout.entryFile),
+  };
+}
+
+function validateSnapshot(snapshotPath: string): { valid: true } | { valid: false; error: string } {
+  if (!existsSync(snapshotPath)) {
+    return { valid: false, error: `Snapshot path not found: ${snapshotPath}` };
+  }
+
+  const { layout, snapshotRuntime, snapshotSkills } = getSnapshotPaths(snapshotPath);
+  if (!existsSync(snapshotRuntime) && !existsSync(snapshotSkills)) {
+    return {
+      valid: false,
+      error: `Invalid snapshot: missing ${layout.rootDir}/ or ${getComponentPath('skills')} in ${snapshotPath}`,
+    };
+  }
+
+  return { valid: true };
+}
+
+async function backupExistingInstallationForSnapshot(
+  targetDir: string,
+  snapshotPath: string
+): Promise<void> {
+  const { layout } = getSnapshotPaths(snapshotPath);
+
+  const exists = await checkExistingInstallation(targetDir);
+  if (!exists) return;
+
+  console.log(i18n.t('cli.init.exists', { rootDir: layout.rootDir }));
+  console.log(i18n.t('cli.init.backing_up'));
+
+  const backupDir = join(
+    targetDir,
+    `${layout.backupDirPrefix}${new Date().toISOString().replace(/[:.]/g, '-').slice(0, -1)}`
+  );
+
+  if (existsSync(join(targetDir, layout.rootDir))) {
+    await cp(join(targetDir, layout.rootDir), join(backupDir, layout.rootDir), { recursive: true });
+  }
+  if (existsSync(join(targetDir, '.agents'))) {
+    await cp(join(targetDir, '.agents'), join(backupDir, '.agents'), { recursive: true });
+  }
+  if (existsSync(join(targetDir, layout.entryFile))) {
+    await copyFile(join(targetDir, layout.entryFile), join(backupDir, layout.entryFile));
+  }
+  if (existsSync(join(targetDir, 'guides'))) {
+    await cp(join(targetDir, 'guides'), join(backupDir, 'guides'), { recursive: true });
+  }
+
+  console.log(`  Backed up to: ${backupDir}`);
+}
+
+async function copySnapshotIntoTarget(targetDir: string, snapshotPath: string): Promise<void> {
+  const { layout, snapshotRuntime, snapshotSkills, snapshotGuides, snapshotEntry } =
+    getSnapshotPaths(snapshotPath);
+
+  if (existsSync(snapshotRuntime)) {
+    await cp(snapshotRuntime, join(targetDir, layout.rootDir), {
+      recursive: true,
+      force: true,
+    });
+  }
+
+  if (existsSync(snapshotSkills)) {
+    await cp(snapshotSkills, join(targetDir, getComponentPath('skills')), {
+      recursive: true,
+      force: true,
+    });
+  }
+
+  if (existsSync(snapshotGuides)) {
+    await cp(snapshotGuides, join(targetDir, 'guides'), {
+      recursive: true,
+      force: true,
+    });
+  }
+
+  if (existsSync(snapshotEntry)) {
+    await copyFile(snapshotEntry, join(targetDir, layout.entryFile));
+  }
 }
 
 /**
@@ -60,62 +160,23 @@ export async function installFromSnapshot(
   snapshotPath: string,
   options: InitOptions
 ): Promise<InitResult> {
-  // Validate snapshot path
-  if (!existsSync(snapshotPath)) {
+  const snapshotValidation = validateSnapshot(snapshotPath);
+  if (!snapshotValidation.valid) {
     return {
       success: false,
       message: i18n.t('cli.init.failed'),
-      errors: [`Snapshot path not found: ${snapshotPath}`],
-    };
-  }
-
-  const layout = getProviderLayout();
-  const snapshotClaude = join(snapshotPath, layout.rootDir);
-  if (!existsSync(snapshotClaude)) {
-    return {
-      success: false,
-      message: i18n.t('cli.init.failed'),
-      errors: [`Invalid snapshot: missing ${layout.rootDir}/ directory in ${snapshotPath}`],
+      errors: [snapshotValidation.error],
     };
   }
 
   console.log(`Installing from snapshot: ${snapshotPath}`);
 
   try {
-    // Backup existing installation if present
-    const exists = await checkExistingInstallation(targetDir);
-    if (exists && !options.force) {
-      console.log(i18n.t('cli.init.exists', { rootDir: layout.rootDir }));
-      console.log(i18n.t('cli.init.backing_up'));
-
-      const backupDir = join(
-        targetDir,
-        `${layout.backupDirPrefix}${new Date().toISOString().replace(/[:.]/g, '-').slice(0, -1)}`
-      );
-      await cp(join(targetDir, layout.rootDir), backupDir, { recursive: true });
-      console.log(`  Backed up to: ${backupDir}`);
+    if (!options.force) {
+      await backupExistingInstallationForSnapshot(targetDir, snapshotPath);
     }
 
-    // Copy .claude/ from snapshot
-    await cp(snapshotClaude, join(targetDir, layout.rootDir), {
-      recursive: true,
-      force: true,
-    });
-
-    // Copy guides/ from snapshot if present
-    const snapshotGuides = join(snapshotPath, 'guides');
-    if (existsSync(snapshotGuides)) {
-      await cp(snapshotGuides, join(targetDir, 'guides'), {
-        recursive: true,
-        force: true,
-      });
-    }
-
-    // Copy entry file (CLAUDE.md) from snapshot if present
-    const snapshotEntry = join(snapshotPath, layout.entryFile);
-    if (existsSync(snapshotEntry)) {
-      await copyFile(snapshotEntry, join(targetDir, layout.entryFile));
-    }
+    await copySnapshotIntoTarget(targetDir, snapshotPath);
 
     // Update lock file
     try {

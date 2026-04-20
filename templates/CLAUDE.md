@@ -115,10 +115,11 @@ project/
 +-- AGENTS.md                    # 진입점
 +-- .codex/
 |   +-- agents/                  # 서브에이전트 정의 (48 파일)
-|   +-- skills/                  # 스킬 (109 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R022)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
++-- .agents/
+|   +-- skills/                  # 스킬 (109 디렉토리)
 +-- guides/                      # 레퍼런스 문서 (39 토픽)
 ```
 
@@ -149,7 +150,7 @@ oh-my-customcodex는 소프트웨어 컴파일과 동일한 구조를 따릅니�
 
 | 컴파일 개념 | oh-my-customcodex 매핑 | 역할 |
 |------------|----------------------|------|
-| Source code | `.codex/skills/` | 재사용 가능한 지식과 워크플로우 정의 |
+| Source code | `.agents/skills/` | 재사용 가능한 지식과 워크플로우 정의 |
 | Build artifacts | `.codex/agents/` | 스킬을 조합한 실행 가능한 전문가 |
 | Compiler | `mgr-sauron` (R017) | 구조 검증 및 정합성 보장 |
 | Spec | `.codex/rules/` | 빌드 규칙과 제약 조건 |

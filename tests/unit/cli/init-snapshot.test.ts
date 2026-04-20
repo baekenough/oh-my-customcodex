@@ -150,7 +150,13 @@ describe('installFromSnapshot', () => {
       expect(backupEntry).toBeDefined();
 
       // The backup should contain the original old-agent.md
-      const backupAgentPath = join(targetDir, backupEntry ?? '', 'agents', 'old-agent.md');
+      const backupAgentPath = join(
+        targetDir,
+        backupEntry ?? '',
+        '.codex',
+        'agents',
+        'old-agent.md'
+      );
       const backupStat = await stat(backupAgentPath);
       expect(backupStat.isFile()).toBe(true);
     });

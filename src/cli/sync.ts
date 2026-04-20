@@ -12,6 +12,7 @@ import type { Command } from 'commander';
 import { getProviderLayout } from '../core/layout.js';
 import { exportSnapshot, type SyncCheckResult, syncCheck } from '../core/sync.js';
 import { i18n } from '../i18n/index.js';
+import { rewriteCliCommandReferences } from '../utils/cli-command-name.js';
 
 interface SyncOptions {
   check?: boolean;
@@ -33,7 +34,11 @@ async function runExport(targetDir: string, outputPath: string): Promise<void> {
   }
 
   console.log(`\nSnapshot exported: ${result.exportPath} (${result.fileCount} files)`);
-  console.log(`Team members can install with: omcodex init --from-snapshot ${result.exportPath}`);
+  console.log(
+    rewriteCliCommandReferences(
+      `Team members can install with: omcodex init --from-snapshot ${result.exportPath}`
+    )
+  );
 }
 
 /**
@@ -74,7 +79,7 @@ async function runCheck(targetDir: string, options: SyncOptions): Promise<void> 
   const result = await syncCheck(targetDir, { reference: options.reference });
 
   if (!result.referenceVersion) {
-    console.error('\nNo lockfile found. Run omcodex init first.');
+    console.error(rewriteCliCommandReferences('\nNo lockfile found. Run omcodex init first.'));
     process.exit(1);
   }
 

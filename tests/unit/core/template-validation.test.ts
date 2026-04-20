@@ -133,6 +133,8 @@ async function countActualFiles(componentPath: string, componentName: string): P
   } catch {
     if (componentPath.startsWith('.codex/')) {
       fullPath = join(TEMPLATES_DIR, componentPath.replace('.codex/', '.claude/'));
+    } else if (componentName === 'skills' && componentPath.startsWith('.agents/')) {
+      fullPath = join(TEMPLATES_DIR, componentPath.replace('.agents/', '.claude/'));
     }
   }
 

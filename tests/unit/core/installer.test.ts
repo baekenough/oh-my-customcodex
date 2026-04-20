@@ -55,7 +55,7 @@ describe('installer', () => {
       expect(await fileExists(join(tempDir, '.codex'))).toBe(true);
       expect(await fileExists(join(tempDir, '.codex', 'rules'))).toBe(true);
       expect(await fileExists(join(tempDir, '.codex', 'agents'))).toBe(true);
-      expect(await fileExists(join(tempDir, '.codex', 'skills'))).toBe(true);
+      expect(await fileExists(join(tempDir, '.agents', 'skills'))).toBe(true);
       expect(await fileExists(join(tempDir, 'guides'))).toBe(true);
       // commands/ removed in official Claude Code format (absorbed into skills)
     });
@@ -65,7 +65,7 @@ describe('installer', () => {
 
       // .codex/agents is flat (no subdirectories)
       expect(await fileExists(join(tempDir, '.codex', 'agents'))).toBe(true);
-      expect(await fileExists(join(tempDir, '.codex', 'skills'))).toBe(true);
+      expect(await fileExists(join(tempDir, '.agents', 'skills'))).toBe(true);
       expect(await fileExists(join(tempDir, '.codex', 'hooks'))).toBe(true);
       expect(await fileExists(join(tempDir, '.codex', 'contexts'))).toBe(true);
     });
@@ -75,7 +75,7 @@ describe('installer', () => {
 
       // Verify flat structure: .codex/agents (not .codex/agents/*)
       expect(await fileExists(join(tempDir, '.codex', 'agents'))).toBe(true);
-      expect(await fileExists(join(tempDir, '.codex', 'skills'))).toBe(true);
+      expect(await fileExists(join(tempDir, '.agents', 'skills'))).toBe(true);
 
       // OLD structure (should NOT exist): agents/orchestrator/, agents/manager/, etc.
       expect(await fileExists(join(tempDir, 'agents'))).toBe(false);
@@ -310,7 +310,7 @@ describe('installer', () => {
       // Create multiple existing structures (official Claude Code format)
       await mkdir(join(tempDir, '.codex', 'rules'), { recursive: true });
       await mkdir(join(tempDir, '.codex', 'agents'), { recursive: true });
-      await mkdir(join(tempDir, '.codex', 'skills'), { recursive: true });
+      await mkdir(join(tempDir, '.agents', 'skills'), { recursive: true });
       await mkdir(join(tempDir, 'guides'), { recursive: true });
       await writeFile(join(tempDir, 'AGENTS.md'), '# Existing');
 

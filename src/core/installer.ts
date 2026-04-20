@@ -756,6 +756,9 @@ async function backupExisting(sourcePath: string, backupDir: string): Promise<st
 async function checkExistingPaths(targetDir: string): Promise<string[]> {
   const layout = getProviderLayout();
   const pathsToCheck = [layout.entryFile, layout.rootDir, 'guides'];
+  if (layout.provider === 'codex') {
+    pathsToCheck.push('.agents');
+  }
 
   const existingPaths: string[] = [];
 

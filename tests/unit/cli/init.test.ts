@@ -88,8 +88,8 @@ describe('init command', () => {
 
       expect(result.success).toBe(true);
 
-      // Verify skills directory exists (official Codex-native format: .codex/skills)
-      const skillsDir = join(tempDir, '.codex', 'skills');
+      // Verify skills directory exists (official Codex-native format: .agents/skills)
+      const skillsDir = join(tempDir, '.agents', 'skills');
       const skillsDirStats = await stat(skillsDir);
       expect(skillsDirStats.isDirectory()).toBe(true);
     });
@@ -103,7 +103,7 @@ describe('init command', () => {
       expect(result.success).toBe(true);
 
       // Verify skills-sh-search skill is installed with valid SKILL.md
-      const skillMdPath = join(tempDir, '.codex', 'skills', 'skills-sh-search', 'SKILL.md');
+      const skillMdPath = join(tempDir, '.agents', 'skills', 'skills-sh-search', 'SKILL.md');
       const skillMdStats = await stat(skillMdPath);
       expect(skillMdStats.isFile()).toBe(true);
 

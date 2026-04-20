@@ -296,7 +296,7 @@ describe('lockfile', () => {
       const componentMap: Record<string, string> = {
         '.codex/rules': 'rules',
         '.codex/agents': 'agents',
-        '.codex/skills': 'skills',
+        '.agents/skills': 'skills',
         '.codex/hooks': 'hooks',
         '.codex/contexts': 'contexts',
         '.codex/ontology': 'ontology',
@@ -343,13 +343,13 @@ describe('lockfile', () => {
     });
 
     it('walks subdirectories recursively', async () => {
-      const skillsDir = join(tempDir, '.codex', 'skills', 'dev-review');
+      const skillsDir = join(tempDir, '.agents', 'skills', 'dev-review');
       await mkdir(skillsDir, { recursive: true });
       await writeFile(join(skillsDir, 'SKILL.md'), '# skill', 'utf-8');
 
       const lockfile = await generateLockfile(tempDir, '0.31.0', '0.31.0');
 
-      const key = '.codex/skills/dev-review/SKILL.md';
+      const key = '.agents/skills/dev-review/SKILL.md';
       expect(lockfile.files[key]).toBeDefined();
       expect(lockfile.files[key].component).toBe('skills');
     });

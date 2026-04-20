@@ -8,6 +8,7 @@ import { homedir } from 'node:os';
 import { basename, join, sep } from 'node:path';
 import packageJson from '../../package.json';
 import { readRegistry } from '../core/registry.js';
+import { rewriteCliCommandReferences } from '../utils/cli-command-name.js';
 import { fileExists, readJsonFile, resolveTemplatePath } from '../utils/fs.js';
 
 /**
@@ -184,7 +185,9 @@ export async function findProjects(options: ProjectsOptions = {}): Promise<Proje
     if (fallbackResults.length === 0 && !options.paths) {
       // Print migration hint to stderr so it doesn't pollute json output
       process.stderr.write(
-        '  No projects in registry. Run `omcodex projects --migrate` to import existing projects.\n'
+        rewriteCliCommandReferences(
+          '  No projects in registry. Run `omcodex projects --migrate` to import existing projects.\n'
+        )
       );
     }
     return fallbackResults;
@@ -342,7 +345,9 @@ function formatProjectsTable(projects: ProjectInfo[], currentVersion: string): v
   if (projects.length === 0) {
     console.log('\n  oh-my-customcodex가 적용된 프로젝트를 찾을 수 없습니다.');
     console.log(
-      '  레지스트리가 비어 있습니다. `omcodex projects --migrate`를 실행하여 기존 프로젝트를 가져오세요.\n'
+      rewriteCliCommandReferences(
+        '  레지스트리가 비어 있습니다. `omcodex projects --migrate`를 실행하여 기존 프로젝트를 가져오세요.\n'
+      )
     );
     return;
   }
