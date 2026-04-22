@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.3.4",
-  "generatedAt": "2026-04-22T04:42:54.659Z",
-  "templateVersion": "0.3.4",
+  "generatorVersion": "0.3.5",
+  "generatedAt": "2026-04-22T05:00:38.602Z",
+  "templateVersion": "0.3.5",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -464,6 +464,11 @@
       "size": 7491,
       "component": "hooks"
     },
+    ".codex/hooks/scripts/claude-sensitive-path-guard.sh": {
+      "templateHash": "e7151640fbfd63243907422f07e5155d02ac79cec965943b103a68e20b44f974",
+      "size": 1128,
+      "component": "hooks"
+    },
     ".codex/hooks/scripts/agent-start-recorder.sh": {
       "templateHash": "c295f845f304bd9442a33171bbede5cfef498339deca9bb0aa9bb9e62f666a3a",
       "size": 1124,
@@ -545,8 +550,8 @@
       "component": "hooks"
     },
     ".codex/hooks/hooks.json": {
-      "templateHash": "193007c01ca6878bec0e1d065fa7721531ca9b92e82add014ee44efbbc50d339",
-      "size": 26000,
+      "templateHash": "8f47d84b03b39d67c65cfe9b110280a93281351589465ac336edb8d89d1efd9b",
+      "size": 26386,
       "component": "hooks"
     },
     ".codex/contexts/ecomode.md": {

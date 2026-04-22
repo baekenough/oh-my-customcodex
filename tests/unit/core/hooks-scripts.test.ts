@@ -13,6 +13,7 @@ const AGENT_MODE_GUARD_SCRIPT = join(SCRIPTS_DIR, 'agent-mode-guard.sh');
 const GIT_DELEGATION_GUARD_SCRIPT = join(SCRIPTS_DIR, 'git-delegation-guard.sh');
 const STOP_CONSOLE_AUDIT_SCRIPT = join(SCRIPTS_DIR, 'stop-console-audit.sh');
 const AGENT_TEAMS_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'agent-teams-advisor.sh');
+const CLAUDE_SENSITIVE_PATH_GUARD_SCRIPT = join(SCRIPTS_DIR, 'claude-sensitive-path-guard.sh');
 const SESSION_ENV_CHECK_SCRIPT = join(SCRIPTS_DIR, 'session-env-check.sh');
 const STALE_TODO_SCANNER_SCRIPT = join(SCRIPTS_DIR, 'stale-todo-scanner.sh');
 const FEEDBACK_COLLECTOR_SCRIPT = join(SCRIPTS_DIR, 'feedback-collector.sh');
@@ -623,6 +624,61 @@ describe('agent-mode-guard.sh', () => {
     const result = await runHookScript(AGENT_MODE_GUARD_SCRIPT, input);
     expect(result.exitCode).toBe(2);
     expect(result.stderr).toContain('acceptEdits');
+  });
+});
+
+// -------------------------------------------------------------------
+// claude-sensitive-path-guard.sh
+// -------------------------------------------------------------------
+
+describe('claude-sensitive-path-guard.sh', () => {
+  function makeBashInput(command: string): string {
+    return JSON.stringify({
+      tool: 'Bash',
+      tool_input: {
+        command,
+      },
+    });
+  }
+
+  it('should pass through when command does not touch .claude/', async () => {
+    const input = makeBashInput('cp src/file.md docs/file.md');
+    const result = await runHookScript(CLAUDE_SENSITIVE_PATH_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.stderr).not.toContain('BLOCKED');
+  });
+
+  it('should allow read-only access to .claude/ paths', async () => {
+    const input = makeBashInput('cat .claude/rules/MUST-agent-design.md');
+    const result = await runHookScript(CLAUDE_SENSITIVE_PATH_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.stderr).not.toContain('BLOCKED');
+  });
+
+  it('should block cp writes into .claude/', async () => {
+    const input = makeBashInput(
+      'cp .claude/rules/MUST-agent-design.md templates/.claude/rules/MUST-agent-design.md'
+    );
+    const result = await runHookScript(CLAUDE_SENSITIVE_PATH_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('BLOCKED');
+    expect(result.stderr).toContain('.claude/');
+  });
+
+  it('should block tee writes into .claude/', async () => {
+    const input = makeBashInput('echo test | tee .claude/outputs/report.md');
+    const result = await runHookScript(CLAUDE_SENSITIVE_PATH_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('BLOCKED');
+  });
+
+  it('should block mkdir writes into .claude/', async () => {
+    const input = makeBashInput('mkdir -p .claude/outputs/sessions');
+    const result = await runHookScript(CLAUDE_SENSITIVE_PATH_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('managed sync/update path');
   });
 });
 
@@ -1274,6 +1330,7 @@ describe('file-change-validator.sh', () => {
 describe('Script file validation', () => {
   const EXPECTED_SCRIPTS = [
     'stage-blocker.sh',
+    'claude-sensitive-path-guard.sh',
     'git-delegation-guard.sh',
     'stop-console-audit.sh',
     'agent-teams-advisor.sh',

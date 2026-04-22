@@ -442,6 +442,27 @@ describe('Hooks Validation', () => {
     });
   });
 
+  describe('Sensitive .claude path guard', () => {
+    it('should have a Bash hook that references the claude-sensitive-path-guard script', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+      const entries = data.hooks.PreToolUse ?? [];
+
+      const guardHook = entries.find((entry) =>
+        entry.hooks.some(
+          (hook) =>
+            hook.type === 'command' && hook.command.includes('claude-sensitive-path-guard.sh')
+        )
+      );
+
+      expect(guardHook).toBeDefined();
+      expect(guardHook?.matcher).toBe(
+        'tool == "Bash" && tool_input.command matches "\\\\.claude/"'
+      );
+      expect(guardHook?.description).toContain('.claude');
+    });
+  });
+
   describe('Stop hook', () => {
     it('should reference stop-console-audit.sh script', async () => {
       const { parsed } = await loadHooksJson();

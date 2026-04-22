@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-04-22
+
+### Fixed
+- Add a `.claude` sensitive-path Bash guard hook so write-like Bash commands fail before Claude Code's sensitive-file permission prompt path is triggered.
+- Cover the new guard in hook validation and hook script tests to keep the workaround release-safe.
+
 ## [0.3.4] - 2026-04-22
 
 ### Fixed

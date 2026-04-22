@@ -83,6 +83,16 @@
         "description": "Schema-based tool input validation — Phase 1 advisory only"
       },
       {
+        "matcher": "tool == \"Bash\" && tool_input.command matches \"\\\\.claude/\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/scripts/claude-sensitive-path-guard.sh"
+          }
+        ],
+        "description": "Block Bash writes into .claude/ sensitive paths before Claude Code permission prompts fire"
+      },
+      {
         "matcher": "tool == \"Bash\"",
         "hooks": [
           {
