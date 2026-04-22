@@ -275,18 +275,14 @@ your-project/
 ├── AGENTS.md                   # Entry point
 ├── .codex/
 │   ├── agents/                 # 48 agent definitions
-│   ├── skills/                 # 108 skill modules
+│   ├── skills/                 # 112 skill modules
 │   ├── rules/                  # 22 governance rules (R000-R021)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas
 │   ├── specs/                  # Extracted canonical specs
 │   ├── contexts/               # 4 shared context files
 │   └── ontology/               # Knowledge graph for RAG
-<<<<<<< HEAD
 └── guides/                     # 40 reference documents
-=======
-└── guides/                     # 40 reference documents
->>>>>>> origin/develop
 ```
 
 ---

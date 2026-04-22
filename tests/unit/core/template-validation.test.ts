@@ -526,54 +526,43 @@ describe('Template Validation', () => {
     });
   });
 
-  describe('CLAUDE.md count validation', () => {
+  describe('repo root provider layout validation', () => {
     const PROJECT_ROOT = resolve(import.meta.dir, '../../..');
 
-    it('agent count in CLAUDE.md matches actual files', async () => {
-      const claudeMd = await readFile(join(PROJECT_ROOT, 'CLAUDE.md'), 'utf-8');
+    async function countSkillMdFiles(dir: string): Promise<number> {
+      const entries = await readdir(dir, { withFileTypes: true });
+      let count = 0;
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          count += await countSkillMdFiles(join(dir, entry.name));
+        } else if (entry.isFile() && entry.name === 'SKILL.md') {
+          count++;
+        }
+      }
+      return count;
+    }
+
+    it('uses AGENTS.md as the repo entry file and documents the visible status block', async () => {
+      const agentsMd = await readFile(join(PROJECT_ROOT, 'AGENTS.md'), 'utf-8');
+      expect(agentsMd).toContain('Agent: Codex');
+      expect(agentsMd).toContain('Skill:');
+      expect(agentsMd).toContain('Status:');
+    });
+
+    it('repo root agent, skill, and rule surfaces are present and non-empty', async () => {
       const agentFiles = (
-        await readdir(join(PROJECT_ROOT, '.claude', 'agents'), { withFileTypes: true })
+        await readdir(join(PROJECT_ROOT, '.codex', 'agents'), { withFileTypes: true })
       )
         .filter((e) => e.isFile() && e.name.endsWith('.md'))
         .map((e) => e.name);
 
-      // CLAUDE.md contains "에이전트 정의 (N 파일)" pattern
-      const match = claudeMd.match(/에이전트 정의 \((\d+) 파일\)/);
-      if (match) {
-        expect(parseInt(match[1], 10)).toBe(agentFiles.length);
-      }
-    });
-
-    it('skill count in CLAUDE.md matches actual directories', async () => {
-      const claudeMd = await readFile(join(PROJECT_ROOT, 'CLAUDE.md'), 'utf-8');
-
-      // Count SKILL.md files recursively under .claude/skills
-      async function countSkillMdFiles(dir: string): Promise<number> {
-        const entries = await readdir(dir, { withFileTypes: true });
-        let count = 0;
-        for (const entry of entries) {
-          if (entry.isDirectory()) {
-            count += await countSkillMdFiles(join(dir, entry.name));
-          } else if (entry.isFile() && entry.name === 'SKILL.md') {
-            count++;
-          }
-        }
-        return count;
-      }
-
-      const skillCount = await countSkillMdFiles(join(PROJECT_ROOT, '.claude', 'skills'));
-
-      const match = claudeMd.match(/스킬 \((\d+) 디렉토리\)/);
-      if (match) {
-        expect(parseInt(match[1], 10)).toBe(skillCount);
-      }
-    });
-
-    it('rule count in CLAUDE.md reflects actual rule files', async () => {
+      const skillCount = await countSkillMdFiles(join(PROJECT_ROOT, '.codex', 'skills'));
       const ruleFiles = (
-        await readdir(join(PROJECT_ROOT, '.claude', 'rules'), { withFileTypes: true })
+        await readdir(join(PROJECT_ROOT, '.codex', 'rules'), { withFileTypes: true })
       ).filter((e) => e.isFile() && e.name.endsWith('.md'));
 
+      expect(agentFiles.length).toBeGreaterThan(0);
+      expect(skillCount).toBeGreaterThan(0);
       expect(ruleFiles.length).toBeGreaterThan(0);
     });
   });
@@ -591,7 +580,7 @@ describe('Template Validation', () => {
     }
 
     it('all agents referenced in dev-lead-routing exist', async () => {
-      const routingPath = join(PROJECT_ROOT, '.claude', 'skills', 'dev-lead-routing', 'SKILL.md');
+      const routingPath = join(PROJECT_ROOT, '.codex', 'skills', 'dev-lead-routing', 'SKILL.md');
       if (!(await fileExists(routingPath))) return;
 
       const routing = await readFile(routingPath, 'utf-8');
@@ -600,7 +589,7 @@ describe('Template Validation', () => {
 
       const errors: string[] = [];
       for (const agent of uniqueAgents) {
-        const agentPath = join(PROJECT_ROOT, '.claude', 'agents', `${agent}.md`);
+        const agentPath = join(PROJECT_ROOT, '.codex', 'agents', `${agent}.md`);
         if (!(await fileExists(agentPath))) {
           errors.push(`${agent}.md not found`);
         }
@@ -610,7 +599,7 @@ describe('Template Validation', () => {
     });
 
     it('all agents referenced in secretary-routing exist', async () => {
-      const routingPath = join(PROJECT_ROOT, '.claude', 'skills', 'secretary-routing', 'SKILL.md');
+      const routingPath = join(PROJECT_ROOT, '.codex', 'skills', 'secretary-routing', 'SKILL.md');
       if (!(await fileExists(routingPath))) return;
 
       const routing = await readFile(routingPath, 'utf-8');
@@ -619,7 +608,7 @@ describe('Template Validation', () => {
 
       const errors: string[] = [];
       for (const agent of uniqueAgents) {
-        const agentPath = join(PROJECT_ROOT, '.claude', 'agents', `${agent}.md`);
+        const agentPath = join(PROJECT_ROOT, '.codex', 'agents', `${agent}.md`);
         if (!(await fileExists(agentPath))) {
           errors.push(`${agent}.md not found`);
         }
@@ -671,8 +660,8 @@ describe('Template Validation', () => {
     }
 
     it('all skill references in agent frontmatter exist', async () => {
-      const agentsDir = join(PROJECT_ROOT, '.claude', 'agents');
-      const skillsBaseDir = join(PROJECT_ROOT, '.claude', 'skills');
+      const agentsDir = join(PROJECT_ROOT, '.codex', 'agents');
+      const skillsBaseDir = join(PROJECT_ROOT, '.codex', 'skills');
       const agentFiles = (await readdir(agentsDir, { withFileTypes: true }))
         .filter((e) => e.isFile() && e.name.endsWith('.md'))
         .map((e) => e.name);

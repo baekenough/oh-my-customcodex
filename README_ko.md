@@ -287,7 +287,7 @@ your-project/
 ├── AGENTS.md                   # 진입점
 ├── .codex/
 │   ├── agents/                 # 48개 에이전트 정의
-│   ├── skills/                 # 108개 스킬 모듈
+│   ├── skills/                 # 112개 스킬 모듈
 │   ├── rules/                  # 22개 거버넌스 규칙 (R000-R022)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마
@@ -296,11 +296,7 @@ your-project/
 │   └── ontology/               # RAG용 지식 그래프
 ├── packages/
 │   └── eval-core/              # LLM 평가 엔진 (세션/턴/결과 수집, SQLite)
-<<<<<<< HEAD
 └── guides/                     # 40개 레퍼런스 문서
-=======
-└── guides/                     # 40개 레퍼런스 문서
->>>>>>> origin/develop
 ```
 
 ---

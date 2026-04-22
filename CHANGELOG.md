@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.7] - 2026-04-22
+
+### Fixed
+- Update repo-root validation coverage so CI checks the actual Codex package surfaces (`AGENTS.md`, `.codex/agents`, `.codex/skills`, `.codex/rules`) instead of the intentionally removed legacy Claude root tree.
+- Remove accidental merge markers from `README.md` and `README_ko.md` and refresh the documented root skill-module count to 112.
+- Replace the stale pre-commit full-coverage and `CLAUDE.md` root checks with the same stable test-batch strategy used in CI, so codex-only repo commits follow the current layout contract.
+
 ## [0.3.6] - 2026-04-22
 
 ### Changed
