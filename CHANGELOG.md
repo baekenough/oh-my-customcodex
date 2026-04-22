@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-04-22
+
+### Fixed
+- Teach the built-in Web UI to detect the active Codex/OMX runtime layout so it reads and writes `.codex/*`, `.agents/skills`, and the `~/.oh-my-customcodex` project registry instead of assuming legacy Claude-root paths.
+- Move ontology MCP bootstrap from legacy `.mcp.json` generation to project-scoped `.codex/config.toml`, and update tests and package docs to match the active configuration surface.
+- Clarify the runtime contract in the main docs and templates by separating installed project paths from this source repository's internal authoring and compatibility surfaces.
+
 ## [0.3.7] - 2026-04-22
 
 ### Fixed
