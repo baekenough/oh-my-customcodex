@@ -8,7 +8,7 @@ npm install -g oh-my-customcodex
 
 # Initialize in your project
 cd your-project
-omcodex init
+omcustomcodex init
 ```
 
 That's it. You now have a fully configured Claude Code environment.
@@ -17,10 +17,10 @@ That's it. You now have a fully configured Claude Code environment.
 
 ```bash
 # English (default)
-omcodex init
+omcustomcodex init
 
 # Korean
-omcodex init --lang ko
+omcustomcodex init --lang ko
 ```
 
 ---

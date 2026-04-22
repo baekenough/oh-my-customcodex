@@ -21,7 +21,7 @@ Displays contextual help for the oh-my-customcodex system. Shows available slash
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex:help`
+- **Command**: `/omcustomcodex:help`
 - **Effort**: not specified
 
 ## Relationships

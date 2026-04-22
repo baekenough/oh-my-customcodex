@@ -22,7 +22,7 @@ Checks all agents and skills with `source:` frontmatter fields against their ori
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex:update-external`
+- **Command**: `/omcustomcodex:update-external`
 - **Effort**: not specified
 
 ## Relationships

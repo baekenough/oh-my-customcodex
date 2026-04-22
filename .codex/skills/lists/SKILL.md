@@ -1,5 +1,5 @@
 ---
-name: omcodex:lists
+name: omcustomcodex:lists
 description: Show all available commands
 scope: harness
 argument-hint: "[--category <category>] [--verbose]"

@@ -22,7 +22,7 @@ Repairs broken skill references, guide references, and routing table entries in 
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex:fix-refs`
+- **Command**: `/omcustomcodex:fix-refs`
 - **Effort**: not specified
 
 ## Relationships

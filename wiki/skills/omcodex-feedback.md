@@ -3,7 +3,7 @@ title: Omcustom Feedback
 type: skill
 updated: 2026-04-12
 sources:
-  - .codex/skills/omcodex-feedback/SKILL.md
+  - .codex/skills/omcustomcodex-feedback/SKILL.md
 related:
   - [[mgr-gitnerd]]
   - [[R016]]
@@ -21,7 +21,7 @@ Collects user feedback (bug reports, feature requests, improvement suggestions) 
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex-feedback`
+- **Command**: `/omcustomcodex-feedback`
 - **Effort**: not specified
 
 ## Relationships
@@ -32,4 +32,4 @@ Collects user feedback (bug reports, feature requests, improvement suggestions) 
 
 ## Sources
 
-- `.codex/skills/omcodex-feedback/SKILL.md` — skill definition
+- `.codex/skills/omcustomcodex-feedback/SKILL.md` — skill definition

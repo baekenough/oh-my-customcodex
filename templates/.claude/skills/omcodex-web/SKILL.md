@@ -1,5 +1,5 @@
 ---
-name: omcodex:web
+name: omcustomcodex:web
 description: Control and inspect the built-in Web UI (packages/serve) — start, stop, status, open
 scope: harness
 argument-hint: "[start|stop|status|open]"
@@ -89,7 +89,7 @@ If occupied by a non-serve process, warn the user and suggest `--port` option.
 
 ## No Argument Behavior
 
-When called without arguments (`/omcodex:web`):
+When called without arguments (`/omcustomcodex:web`):
 1. Show status
-2. If stopped, suggest: "Run `/omcodex:web start` to start the server"
-3. If running, suggest: "Run `/omcodex:web open` to open in browser"
+2. If stopped, suggest: "Run `/omcustomcodex:web start` to start the server"
+3. If running, suggest: "Run `/omcustomcodex:web open` to open in browser"

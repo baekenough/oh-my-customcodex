@@ -43,7 +43,7 @@ jobs:
             echo "::error::wiki/ directory does not exist"
             echo ""
             echo "The wiki/ directory is required for this project."
-            echo "Fix: run '/omcodex:wiki' to generate the initial wiki"
+            echo "Fix: run '/omcustomcodex:wiki' to generate the initial wiki"
             exit 1
           fi
 
@@ -118,7 +118,7 @@ jobs:
 
           if [ "$ERRORS" -gt 0 ]; then
             echo ""
-            echo "Fix: run '/omcodex:wiki' to regenerate wiki pages"
+            echo "Fix: run '/omcustomcodex:wiki' to regenerate wiki pages"
             exit 1
           fi
 

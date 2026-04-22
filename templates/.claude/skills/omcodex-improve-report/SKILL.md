@@ -1,5 +1,5 @@
 ---
-name: omcodex:improve-report
+name: omcustomcodex:improve-report
 description: Read-only report of improvement suggestions from eval-core analysis engine
 scope: harness
 user-invocable: true
@@ -16,7 +16,7 @@ Surface actionable improvement suggestions gathered by the eval-core analysis en
 ## Usage
 
 ```
-/omcodex:improve-report
+/omcustomcodex:improve-report
 ```
 
 ## Workflow

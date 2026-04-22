@@ -1,5 +1,5 @@
 ---
-name: omcodex:analysis
+name: omcustomcodex:analysis
 description: Analyze project and auto-configure agents, skills, rules, and guides
 scope: harness
 argument-hint: "[target-dir] [--interview]"
@@ -193,8 +193,8 @@ After analysis completes, offer adaptive-harness optimization:
 
 ```
 [Analysis Complete] Tech stack detected. Optimize harness for this project?
-├── Yes → Run /omcodex:adaptive-harness --optimize (deactivate unused, suggest missing)
-├── Dry-run → Run /omcodex:adaptive-harness --optimize --dry-run (show changes only)
+├── Yes → Run /omcustomcodex:adaptive-harness --optimize (deactivate unused, suggest missing)
+├── Dry-run → Run /omcustomcodex:adaptive-harness --optimize --dry-run (show changes only)
 └── Skip → Keep current harness configuration
 ```
 

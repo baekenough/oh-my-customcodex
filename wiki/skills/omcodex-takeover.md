@@ -3,7 +3,7 @@ title: Omcustom Takeover
 type: skill
 updated: 2026-04-12
 sources:
-  - .codex/skills/omcodex-takeover/SKILL.md
+  - .codex/skills/omcustomcodex-takeover/SKILL.md
 related:
   - [[dev-refactor]]
   - [[mgr-creator]]
@@ -22,7 +22,7 @@ Analyzes an existing agent or skill and extracts a canonical specification docum
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex-takeover`
+- **Command**: `/omcustomcodex-takeover`
 - **Effort**: not specified
 
 ## Relationships
@@ -33,4 +33,4 @@ Analyzes an existing agent or skill and extracts a canonical specification docum
 
 ## Sources
 
-- `.codex/skills/omcodex-takeover/SKILL.md` — skill definition
+- `.codex/skills/omcustomcodex-takeover/SKILL.md` — skill definition

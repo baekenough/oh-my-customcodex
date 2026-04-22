@@ -1,5 +1,5 @@
 ---
-name: omcodex:wiki-rag
+name: omcustomcodex:wiki-rag
 description: Use the project wiki as RAG knowledge source — search wiki pages to answer codebase questions before exploring raw files
 scope: core
 version: 1.0.0
@@ -15,9 +15,9 @@ Query the project wiki to answer questions about the codebase. The wiki is a pre
 ## Usage
 
 ```
-/omcodex:wiki-rag "how does orchestration work?"
-/omcodex:wiki-rag "what agents handle database tasks?"
-/omcodex:wiki-rag "explain the compilation metaphor"
+/omcustomcodex:wiki-rag "how does orchestration work?"
+/omcustomcodex:wiki-rag "what agents handle database tasks?"
+/omcustomcodex:wiki-rag "explain the compilation metaphor"
 ```
 
 Also triggered automatically by intent-detection when a user asks about project architecture, agent roles, skill purposes, or rule behavior.
@@ -29,7 +29,7 @@ Also triggered automatically by intent-detection when a user asks about project 
 Read and parse `wiki/index.yaml` to get the full page catalog. If `wiki/index.yaml` does not exist, report:
 
 ```
-[wiki-rag] Wiki not initialized. Run /omcodex:wiki first to create wiki/index.yaml.
+[wiki-rag] Wiki not initialized. Run /omcustomcodex:wiki first to create wiki/index.yaml.
 ```
 
 Then abort.
@@ -132,7 +132,7 @@ For partial and miss cases: always acknowledge what the wiki covered before pivo
 - **Acknowledges gaps honestly** — never hallucinate content not found in the wiki
 - **Offers to improve wiki coverage** when gaps are found — compounding the knowledge base over time
 
-## Integration with /omcodex:wiki
+## Integration with /omcustomcodex:wiki
 
 | Skill | Role |
 |-------|------|

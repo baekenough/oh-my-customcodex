@@ -22,7 +22,7 @@ Manages semantic versioning for npm packages: bumps patch/minor/major versions i
 
 - **Scope**: package
 - **User-invocable**: yes
-- **Command**: `/omcodex:npm-version`
+- **Command**: `/omcustomcodex:npm-version`
 - **Effort**: not specified
 
 ## Relationships

@@ -42,7 +42,7 @@ It can auto-fix count mismatches, missing memory fields, and outdated doc refere
 ## Relationships
 
 - **Depends on**: [[mgr-supplier]] (dependency audit), [[mgr-updater]] (docs sync), [[mgr-claude-code-bible]] (spec compliance)
-- **Used by**: [[mgr-gitnerd]] (push prerequisite), R017 rule enforcement, `/omcodex:sauron-watch` command
+- **Used by**: [[mgr-gitnerd]] (push prerequisite), R017 rule enforcement, `/omcustomcodex:sauron-watch` command
 - **See also**: [[mgr-creator]] (creation of verified agents), [[mgr-supplier]], [[mgr-updater]]
 
 ## Sources

@@ -3,7 +3,7 @@ title: Omcustom Improve Report
 type: skill
 updated: 2026-04-12
 sources:
-  - .codex/skills/omcodex-improve-report/SKILL.md
+  - .codex/skills/omcustomcodex-improve-report/SKILL.md
 related:
   - [[omcodex-auto-improve]]
   - [[sauron-watch]]
@@ -22,7 +22,7 @@ Generates a read-only improvement status report by reading eval-core outputs, ha
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex:improve-report`
+- **Command**: `/omcustomcodex:improve-report`
 - **Effort**: not specified
 
 ## Relationships
@@ -33,4 +33,4 @@ Generates a read-only improvement status report by reading eval-core outputs, ha
 
 ## Sources
 
-- `.codex/skills/omcodex-improve-report/SKILL.md` — skill definition
+- `.codex/skills/omcustomcodex-improve-report/SKILL.md` — skill definition

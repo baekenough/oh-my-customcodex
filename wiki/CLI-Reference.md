@@ -4,8 +4,8 @@
 
 | Command | Description |
 |---------|-------------|
-| `omcodex init` | Initialize in current project |
-| `omcodex init --lang ko` | Initialize with Korean language |
+| `omcustomcodex init` | Initialize in current project |
+| `omcustomcodex init --lang ko` | Initialize with Korean language |
 | `omcodex update` | Update to latest version |
 | `omcodex list` | List all installed components |
 | `omcodex list agents` | List agents only |

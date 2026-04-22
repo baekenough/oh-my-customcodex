@@ -1,5 +1,5 @@
 ---
-name: omcodex:audit-agents
+name: omcustomcodex:audit-agents
 description: Audit agent dependencies and references
 scope: harness
 argument-hint: "[agent-name] [--all] [--fix]"

@@ -192,29 +192,29 @@ Agent(arch-documenter):haiku      ┘
 
 | 커맨드 | 기능 |
 |--------|------|
-| `/omcodex:analysis` | 프로젝트 분석, 에이전트·스킬 자동 구성 |
-| `/omcodex:create-agent` | 새 에이전트 생성 |
-| `/omcodex:takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
+| `/omcustomcodex:analysis` | 프로젝트 분석, 에이전트·스킬 자동 구성 |
+| `/omcustomcodex:create-agent` | 새 에이전트 생성 |
+| `/omcustomcodex:takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
 | `/idea` | 자연어 아이디어를 구조화된 이슈 스펙으로 변환 |
-| `/omcodex:audit-agents` | 에이전트 의존성 감사 |
-| `/omcodex:update-docs` | 프로젝트 구조와 문서 동기화 |
-| `/omcodex:sauron-watch` | 전체 구조 검증 (5+3 라운드) |
-| `/omcodex:feedback` | 피드백을 GitHub 이슈로 등록 |
+| `/omcustomcodex:audit-agents` | 에이전트 의존성 감사 |
+| `/omcustomcodex:update-docs` | 프로젝트 구조와 문서 동기화 |
+| `/omcustomcodex:sauron-watch` | 전체 구조 검증 (5+3 라운드) |
+| `/omcustomcodex:feedback` | 피드백을 GitHub 이슈로 등록 |
 
 ### Web UI
 
 | 커맨드 | 기능 |
 |--------|------|
-| `/omcodex:web` | 내장 Web UI 제어 (start, stop, status, open) |
+| `/omcustomcodex:web` | 내장 Web UI 제어 (start, stop, status, open) |
 
 ### 패키지 & 릴리즈
 
 | 커맨드 | 기능 |
 |--------|------|
-| `/omcodex:npm-publish` | npm 배포 |
-| `/omcodex:npm-version` | 시맨틱 버전 관리 |
-| `/omcodex:npm-audit` | 의존성 보안 감사 |
-| `/omcodex-release-notes` | git 히스토리 기반 릴리즈 노트 생성 |
+| `/omcustomcodex:npm-publish` | npm 배포 |
+| `/omcustomcodex:npm-version` | 시맨틱 버전 관리 |
+| `/omcustomcodex:npm-audit` | 의존성 보안 감사 |
+| `/omcustomcodex-release-notes` | git 히스토리 기반 릴리즈 노트 생성 |
 
 ### 메모리 & 시스템
 
@@ -222,10 +222,10 @@ Agent(arch-documenter):haiku      ┘
 |--------|------|
 | `/memory-save` | 세션 컨텍스트 저장 |
 | `/memory-recall` | 메모리 검색 및 리콜 |
-| `/omcodex:monitoring-setup` | OTel 모니터링 토글 |
+| `/omcustomcodex:monitoring-setup` | OTel 모니터링 토글 |
 | `/token-efficiency-audit` | 토큰 효율 설정 감사 및 조정 |
-| `/omcodex:lists` | 전체 커맨드 표시 |
-| `/omcodex:status` | 시스템 상태 확인 |
+| `/omcustomcodex:lists` | 전체 커맨드 표시 |
+| `/omcustomcodex:status` | 시스템 상태 확인 |
 
 ---
 

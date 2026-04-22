@@ -22,7 +22,7 @@ Runs `npm audit` and `npm outdated`, analyzes results, and presents actionable r
 
 - **Scope**: package
 - **User-invocable**: yes
-- **Command**: `/omcodex:npm-audit`
+- **Command**: `/omcustomcodex:npm-audit`
 - **Effort**: not specified
 
 ## Relationships

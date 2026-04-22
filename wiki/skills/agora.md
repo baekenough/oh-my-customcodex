@@ -23,7 +23,7 @@ Spawns Claude (opus), Codex/GPT, and Gemini as competing reviewers who independe
 
 - **Scope**: core
 - **User-invocable**: yes
-- **Command**: `/omcodex:agora`
+- **Command**: `/omcustomcodex:agora`
 - **Effort**: max
 - **Argument hint**: `<document-path> [--rounds N] [--severity-threshold HIGH]`
 - **Source**: external (github: baekenough/baekenough-skills v1.0.0)

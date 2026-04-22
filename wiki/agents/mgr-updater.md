@@ -34,7 +34,7 @@ Also handles documentation sync (`update-docs` skill) for the R017 verification 
 ## Relationships
 
 - **Depends on**: `update-external` skill, `update-docs` skill, upstream source URLs in agent/skill frontmatter
-- **Used by**: [[mgr-sauron]] (Phase 1 docs sync check), `/omcodex:update-external` command, `/omcodex:update-docs` command
+- **Used by**: [[mgr-sauron]] (Phase 1 docs sync check), `/omcustomcodex:update-external` command, `/omcustomcodex:update-docs` command
 - **See also**: [[mgr-creator]] (creates new external agents), [[mgr-supplier]] (post-update validation), [[mgr-sauron]] (verification pipeline)
 
 ## Sources

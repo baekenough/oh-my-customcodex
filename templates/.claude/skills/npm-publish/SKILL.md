@@ -1,5 +1,5 @@
 ---
-name: omcodex:npm-publish
+name: omcustomcodex:npm-publish
 description: Publish package to npm registry with pre-checks
 scope: package
 argument-hint: "[--tag <tag>] [--dry-run]"

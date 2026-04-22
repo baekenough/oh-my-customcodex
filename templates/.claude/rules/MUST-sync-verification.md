@@ -32,9 +32,9 @@ Also run: mgr-claude-code-bible:verify (official spec compliance)
 
 | Check | Action |
 |-------|--------|
-| Missing pages | Source entities without wiki pages → run `/omcodex:wiki` |
-| Stale pages | Source modification date newer than wiki `updated` field → run `/omcodex:wiki ingest <path>` |
-| Broken cross-refs | Wiki links pointing to non-existent pages → run `/omcodex:wiki lint` |
+| Missing pages | Source entities without wiki pages → run `/omcustomcodex:wiki` |
+| Stale pages | Source modification date newer than wiki `updated` field → run `/omcustomcodex:wiki ingest <path>` |
+| Broken cross-refs | Wiki links pointing to non-existent pages → run `/omcustomcodex:wiki lint` |
 | index.md accuracy | Wiki index page count matches actual page count |
 
 Wiki verification is also enforced by CI (`.github/workflows/wiki-sync.yml`).

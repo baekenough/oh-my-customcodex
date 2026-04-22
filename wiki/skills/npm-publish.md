@@ -22,7 +22,7 @@ Automates npm package publishing: pre-publish checks (audit, tests, build), vers
 
 - **Scope**: package
 - **User-invocable**: yes
-- **Command**: `/omcodex:npm-publish`
+- **Command**: `/omcustomcodex:npm-publish`
 - **Effort**: not specified
 
 ## Relationships

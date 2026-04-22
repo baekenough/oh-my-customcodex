@@ -17,15 +17,15 @@ When agents, skills, rules, or guides are created or modified, corresponding wik
 | Rule created/modified | Update wiki/rules/r{nnn}.md |
 | Guide created/modified | Update wiki/guides/{name}.md |
 | Architecture change | Update wiki/architecture/ pages |
-| Multiple changes | Run `/omcodex:wiki` for full update |
+| Multiple changes | Run `/omcustomcodex:wiki` for full update |
 
 ## How to Sync
 
 | Method | When |
 |--------|------|
-| `/omcodex:wiki ingest <path>` | Single file/directory changed |
-| `/omcodex:wiki` | Multiple files changed or periodic refresh |
-| `/omcodex:wiki lint` | After major structural changes |
+| `/omcustomcodex:wiki ingest <path>` | Single file/directory changed |
+| `/omcustomcodex:wiki` | Multiple files changed or periodic refresh |
+| `/omcustomcodex:wiki lint` | After major structural changes |
 | Automatic (CI) | `.github/workflows/wiki-sync.yml` checks on PR |
 
 ## Delegation — All wiki writes via wiki-curator agent (R010). See workflow via Read tool.
@@ -59,7 +59,7 @@ Orchestrator
 
 ## CI Enforcement
 
-`.github/workflows/wiki-sync.yml` checks for missing wiki pages on every PR. Missing pages cause CI failure with guidance to run `/omcodex:wiki`.
+`.github/workflows/wiki-sync.yml` checks for missing wiki pages on every PR. Missing pages cause CI failure with guidance to run `/omcustomcodex:wiki`.
 
 ## Self-Check — 3 checks: wiki pages updated, index refreshed, lint passed. See details via Read tool.
 
@@ -69,5 +69,5 @@ Before completing a session that modified agents/skills/rules/guides:
 2. Was index.md refreshed?
 3. Did wiki lint pass?
 
-If any NO → run `/omcodex:wiki ingest` for affected paths.
+If any NO → run `/omcustomcodex:wiki ingest` for affected paths.
 -->

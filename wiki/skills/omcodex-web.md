@@ -3,7 +3,7 @@ title: Omcustom Web
 type: skill
 updated: 2026-04-12
 sources:
-  - .codex/skills/omcodex-web/SKILL.md
+  - .codex/skills/omcustomcodex-web/SKILL.md
 related:
   - [[status]]
   - [[monitoring-setup]]
@@ -21,7 +21,7 @@ Controls and inspects Claude Code's built-in web interface. Supports enabling/di
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex-web`
+- **Command**: `/omcustomcodex-web`
 - **Effort**: not specified
 
 ## Relationships
@@ -32,4 +32,4 @@ Controls and inspects Claude Code's built-in web interface. Supports enabling/di
 
 ## Sources
 
-- `.codex/skills/omcodex-web/SKILL.md` — skill definition
+- `.codex/skills/omcustomcodex-web/SKILL.md` — skill definition

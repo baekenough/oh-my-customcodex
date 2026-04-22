@@ -33,7 +33,7 @@ Uses three focused skills: `npm-audit`, `npm-publish`, and `npm-version`. Works 
 ## Relationships
 
 - **Depends on**: `npm-audit` skill, `npm-publish` skill, `npm-version` skill
-- **Used by**: `/omcodex:npm-publish`, `/omcodex:npm-version`, `/omcodex:npm-audit` commands, [[lang-typescript-expert]] integration
+- **Used by**: `/omcustomcodex:npm-publish`, `/omcustomcodex:npm-version`, `/omcustomcodex:npm-audit` commands, [[lang-typescript-expert]] integration
 - **See also**: [[mgr-gitnerd]] (version commits/tags), [[lang-typescript-expert]] (TS builds before publish), [[tool-bun-expert]] (Bun alternative), [[tool-optimizer]] (bundle analysis)
 
 ## Sources

@@ -1,5 +1,5 @@
 ---
-name: omcodex:wiki
+name: omcustomcodex:wiki
 description: Generate and maintain a persistent codebase wiki — LLM-built interlinked markdown knowledge base (Karpathy LLM Wiki pattern)
 scope: core
 version: 1.0.0
@@ -20,11 +20,11 @@ Builds and maintains a persistent, interlinked markdown wiki for the project cod
 ## Usage
 
 ```
-/omcodex:wiki                          # Full wiki generation / incremental update
-/omcodex:wiki ingest <path>            # Ingest a specific file or directory
-/omcodex:wiki ingest .codex/agents/  # Ingest all agent definitions
-/omcodex:wiki query <question>         # Query the wiki with natural language
-/omcodex:wiki lint                     # Health check — orphans, broken refs, stale pages
+/omcustomcodex:wiki                          # Full wiki generation / incremental update
+/omcustomcodex:wiki ingest <path>            # Ingest a specific file or directory
+/omcustomcodex:wiki ingest .codex/agents/  # Ingest all agent definitions
+/omcustomcodex:wiki query <question>         # Query the wiki with natural language
+/omcustomcodex:wiki lint                     # Health check — orphans, broken refs, stale pages
 ```
 
 ## Wiki Directory Structure
@@ -48,7 +48,7 @@ wiki/
 
 ### Default — Full Wiki Generation / Incremental Update
 
-Invoked with `/omcodex:wiki` (no arguments).
+Invoked with `/omcustomcodex:wiki` (no arguments).
 
 **Step 1 — Scan codebase structure**
 
@@ -188,7 +188,7 @@ If yes, delegate to the subagent to create the page in `wiki/concepts/`.
 
 **Step 4 — Suggest fixes**
 
-For each category: suggest the command to fix (e.g., `/omcodex:wiki ingest .codex/agents/new-agent.md`).
+For each category: suggest the command to fix (e.g., `/omcustomcodex:wiki ingest .codex/agents/new-agent.md`).
 
 **Step 5 — Insert into log.duckdb**
 
@@ -255,7 +255,7 @@ Example: `[[mgr-creator]]` and `[mgr-creator](../agents/mgr-creator.md)`
 
 ```yaml
 # wiki/index.yaml — Machine-parseable wiki page index
-# Updated by /omcodex:wiki after every operation
+# Updated by /omcustomcodex:wiki after every operation
 
 meta:
   updated: "2026-04-12"

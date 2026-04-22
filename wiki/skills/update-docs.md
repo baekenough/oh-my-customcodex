@@ -22,7 +22,7 @@ Syncs CLAUDE.md and related documentation with actual agent/skill/guide counts a
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex:update-docs`
+- **Command**: `/omcustomcodex:update-docs`
 - **Effort**: not specified
 
 ## Relationships

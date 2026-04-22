@@ -80,7 +80,7 @@ This auto-discovery implements the [[compilation-metaphor]] principle: `mgr-crea
 
 | Mode | Trigger | Confirmation | Thoroughness |
 |------|---------|-------------|-------------|
-| **Explicit** | `/omcodex:create-agent` | User-guided | Full 3-phase workflow, 25 turns |
+| **Explicit** | `/omcustomcodex:create-agent` | User-guided | Full 3-phase workflow, 25 turns |
 | **Dynamic** | Routing no-match fallback | None (immediate) | Minimal viable agent, focused discovery |
 
 Dynamic mode creates a functional agent quickly. Explicit mode creates a fully researched, production-quality agent with external reference documentation.

@@ -1,5 +1,5 @@
 ---
-name: omcodex:adaptive-harness
+name: omcustomcodex:adaptive-harness
 description: Auto-detect project context and optimize harness — deactivate unused agents/skills, suggest missing experts, generate project profile
 scope: harness
 version: 1.0.0
@@ -15,13 +15,13 @@ Automatically detects project context and optimizes the oh-my-customcodex harnes
 ## Usage
 
 ```
-/omcodex:adaptive-harness              # Full scan + optimize
-/omcodex:adaptive-harness --scan       # Scan only (generate/update project profile)
-/omcodex:adaptive-harness --optimize   # Deactivate unused, suggest missing
-/omcodex:adaptive-harness --learn      # Analyze failure patterns, update profile
-/omcodex:adaptive-harness --export     # Export profile as portable bundle
-/omcodex:adaptive-harness --import <path>  # Import profile from another project
-/omcodex:adaptive-harness --dry-run    # Show what would change without modifying
+/omcustomcodex:adaptive-harness              # Full scan + optimize
+/omcustomcodex:adaptive-harness --scan       # Scan only (generate/update project profile)
+/omcustomcodex:adaptive-harness --optimize   # Deactivate unused, suggest missing
+/omcustomcodex:adaptive-harness --learn      # Analyze failure patterns, update profile
+/omcustomcodex:adaptive-harness --export     # Export profile as portable bundle
+/omcustomcodex:adaptive-harness --import <path>  # Import profile from another project
+/omcustomcodex:adaptive-harness --dry-run    # Show what would change without modifying
 ```
 
 Default (no flag): runs `--scan` then `--optimize` in sequence.
@@ -234,7 +234,7 @@ Analyzes session history and eval-core data to populate `usage_stats` and `failu
 
 - `.codex/outputs/` — session artifacts and eval results
 - `.codex/agent-memory/` — agent memory files with usage patterns
-- Any harness eval output from `/omcodex:harness-eval`
+- Any harness eval output from `/omcustomcodex:harness-eval`
 
 ### Step 2: Extract Patterns
 
@@ -301,7 +301,7 @@ Output: `.codex/outputs/harness-bundle-YYYY-MM-DD.json`
 ### Import
 
 ```
-/omcodex:adaptive-harness --import .codex/outputs/harness-bundle-2026-04-12.json
+/omcustomcodex:adaptive-harness --import .codex/outputs/harness-bundle-2026-04-12.json
 ```
 
 Reads the bundle and applies the `active_agents` list to the current project by running `--optimize` with the imported profile. Does not overwrite `usage_stats` or `failure_patterns` from the current project.
@@ -319,7 +319,7 @@ Reads the bundle and applies the `active_agents` list to the current project by 
 
 | Component | Interaction |
 |-----------|-------------|
-| `/omcodex:analysis` | Calls adaptive-harness `--scan` after initial tech stack detection to persist the profile |
+| `/omcustomcodex:analysis` | Calls adaptive-harness `--scan` after initial tech stack detection to persist the profile |
 | `SessionStart` hook | Lightweight profile existence check only — no full scan at startup |
 | `mgr-creator` | Invoked when gaps are detected during `--optimize` to create missing agent files |
 | `R016` (Continuous Improvement) | Failure patterns from `--learn` may trigger rule updates |

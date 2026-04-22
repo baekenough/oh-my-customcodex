@@ -1,5 +1,5 @@
 ---
-name: omcodex:monitoring-setup
+name: omcustomcodex:monitoring-setup
 description: Enable/disable OpenTelemetry console monitoring for GPT Codex + OMX usage tracking
 scope: package
 argument-hint: "[enable|disable|status]"

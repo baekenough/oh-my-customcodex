@@ -22,7 +22,7 @@ Scans project tech stack, maps detections to agents/skills, and generates a `.cl
 - **Scope**: harness
 - **User-invocable**: yes
 - **Effort**: high
-- **Command**: `/omcodex:adaptive-harness`
+- **Command**: `/omcustomcodex:adaptive-harness`
 
 ## Relationships
 

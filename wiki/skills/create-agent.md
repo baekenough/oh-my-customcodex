@@ -22,7 +22,7 @@ Guides the creation of a new agent file in `.codex/agents/`. Validates required 
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex:create-agent`
+- **Command**: `/omcustomcodex:create-agent`
 - **Effort**: not specified
 
 ## Relationships

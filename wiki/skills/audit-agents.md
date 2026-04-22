@@ -22,7 +22,7 @@ Validates all agent definitions in `.codex/agents/` for frontmatter completeness
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex:audit-agents`
+- **Command**: `/omcustomcodex:audit-agents`
 - **Effort**: not specified
 
 ## Relationships

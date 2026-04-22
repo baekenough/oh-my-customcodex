@@ -43,7 +43,7 @@ When CI failure, process gap, or repeatable system defect is found:
 
 When repeating agent failures or suboptimal routing is detected:
 1. Record as feedback memory (immediate session defense)
-2. Run `/omcodex:adaptive-harness --learn` to update project profile with failure patterns
+2. Run `/omcustomcodex:adaptive-harness --learn` to update project profile with failure patterns
 3. Profile updates improve future agent selection and harness optimization
 
 This connects R016's continuous improvement loop with the adaptive-harness skill's learning capability.

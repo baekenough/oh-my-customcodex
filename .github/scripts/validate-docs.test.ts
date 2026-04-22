@@ -282,12 +282,12 @@ describe('validateSlashCommands', () => {
     const base = mkdtempSync(join(tmpdir(), 'validate-docs-slash-'));
     const skillDir = join(base, 'omcustom-feedback');
     mkdirSync(skillDir, { recursive: true });
-    writeFileSync(join(skillDir, 'SKILL.md'), '---\nname: omcodex:feedback\n---\n');
+    writeFileSync(join(skillDir, 'SKILL.md'), '---\nname: omcustomcodex:feedback\n---\n');
 
-    const readme = '| `/omcodex-feedback` | Submit feedback |';
+    const readme = '| `/omcustomcodex-feedback` | Submit feedback |';
     const result = validateSlashCommands(readme, base);
 
-    expect(result.valid).toEqual(['omcodex-feedback']);
+    expect(result.valid).toEqual(['omcustomcodex-feedback']);
     expect(result.phantom).toEqual([]);
 
     rmSync(base, { recursive: true, force: true });
@@ -297,12 +297,12 @@ describe('validateSlashCommands', () => {
     const base = mkdtempSync(join(tmpdir(), 'validate-docs-slash-'));
     const skillDir = join(base, 'omcustom-release-notes');
     mkdirSync(skillDir, { recursive: true });
-    writeFileSync(join(skillDir, 'SKILL.md'), '---\nname: omcodex-release-notes\n---\n');
+    writeFileSync(join(skillDir, 'SKILL.md'), '---\nname: omcustomcodex-release-notes\n---\n');
 
-    const readme = '| `/omcodex-release-notes` | Release notes |';
+    const readme = '| `/omcustomcodex-release-notes` | Release notes |';
     const result = validateSlashCommands(readme, base);
 
-    expect(result.valid).toEqual(['omcodex-release-notes']);
+    expect(result.valid).toEqual(['omcustomcodex-release-notes']);
     expect(result.phantom).toEqual([]);
 
     rmSync(base, { recursive: true, force: true });

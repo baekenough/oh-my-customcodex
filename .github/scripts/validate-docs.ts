@@ -173,7 +173,7 @@ function toSlashAliases(skillDirName: string, frontmatterName: string | null): s
  * Compatibility rule:
  * - accept direct directory matches
  * - accept matches against skill frontmatter `name:`
- * - accept slash-form aliases for namespaced skills (`omcodex:feedback` -> `omcodex-feedback`)
+ * - accept slash-form aliases for namespaced skills (`omcustomcodex:feedback` -> `omcustomcodex-feedback`)
  */
 export function validateSlashCommands(readmeContent: string, skillsDir: string): SlashCommandValidation {
   const commands = extractSlashCommandsFromReadme(readmeContent);

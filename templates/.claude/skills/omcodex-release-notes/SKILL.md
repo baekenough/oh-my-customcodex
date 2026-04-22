@@ -1,5 +1,5 @@
 ---
-name: omcodex-release-notes
+name: omcustomcodex-release-notes
 description: Generate structured release notes from git history and closed issues within the GPT Codex + OMX session
 scope: harness
 user-invocable: true
@@ -17,8 +17,8 @@ Replaces the CI-based `release-notes.yml` workflow that previously used Claude A
 ## Usage
 
 ```
-/omcodex-release-notes 0.36.0
-/omcodex-release-notes 0.36.0 --previous-tag v0.35.3
+/omcustomcodex-release-notes 0.36.0
+/omcustomcodex-release-notes 0.36.0 --previous-tag v0.35.3
 ```
 
 ## Workflow
@@ -104,8 +104,8 @@ The generated notes can be:
 This skill is designed to be used during the release process:
 
 ```
-/omcodex:npm-version patch|minor|major  ->  version bump
-/omcodex-release-notes {version}         ->  generate notes
+/omcustomcodex:npm-version patch|minor|major  ->  version bump
+/omcustomcodex-release-notes {version}         ->  generate notes
 mgr-gitnerd: gh release create           ->  create release with notes
 ```
 

@@ -22,7 +22,7 @@ Scans a project's tech stack via indicator files and dependency manifests, compa
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex:analysis`
+- **Command**: `/omcustomcodex:analysis`
 - **Effort**: not specified
 - **Argument hint**: `[target-dir] [--interview]`
 

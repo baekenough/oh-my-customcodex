@@ -94,24 +94,24 @@ NO EXCEPTIONS. NO EXCUSES.
 
 | Command | Description |
 |---------|-------------|
-| `/omcodex:analysis` | Analyze project and auto-configure customizations |
+| `/omcustomcodex:analysis` | Analyze project and auto-configure customizations |
 | `/idea` | Turn a natural-language idea into structured issue specs |
-| `/omcodex:create-agent` | Create a new agent |
-| `/omcodex:update-docs` | Sync documentation with project structure |
-| `/omcodex:update-external` | Update agents from external sources |
-| `/omcodex:audit-agents` | Audit agent dependencies |
-| `/omcodex:fix-refs` | Fix broken references |
-| `/omcodex:takeover` | Extract canonical spec from existing agent/skill |
+| `/omcustomcodex:create-agent` | Create a new agent |
+| `/omcustomcodex:update-docs` | Sync documentation with project structure |
+| `/omcustomcodex:update-external` | Update agents from external sources |
+| `/omcustomcodex:audit-agents` | Audit agent dependencies |
+| `/omcustomcodex:fix-refs` | Fix broken references |
+| `/omcustomcodex:takeover` | Extract canonical spec from existing agent/skill |
 | `/dev-review` | Review code for best practices |
 | `/dev-refactor` | Refactor code |
 | `/memory-save` | Save session context to omx-memory |
 | `/memory-recall` | Search and recall memories |
-| `/omcodex:monitoring-setup` | Enable/disable OTel console monitoring |
+| `/omcustomcodex:monitoring-setup` | Enable/disable OTel console monitoring |
 | `/token-efficiency-audit` | Audit and tune token-efficiency settings |
-| `/omcodex:npm-publish` | Publish package to npm registry |
-| `/omcodex:npm-version` | Manage semantic versions |
-| `/omcodex:npm-audit` | Audit dependencies |
-| `/omcodex-release-notes` | Generate release notes from git history |
+| `/omcustomcodex:npm-publish` | Publish package to npm registry |
+| `/omcustomcodex:npm-version` | Manage semantic versions |
+| `/omcustomcodex:npm-audit` | Audit dependencies |
+| `/omcustomcodex-release-notes` | Generate release notes from git history |
 | `/codex-exec` | Execute Codex CLI prompts |
 | `/optimize-analyze` | Analyze bundle and performance |
 | `/optimize-bundle` | Optimize bundle size |
@@ -119,11 +119,11 @@ NO EXCEPTIONS. NO EXCUSES.
 | `/research` | 10-team parallel deep analysis and cross-verification |
 | `/deep-plan` | Research-validated planning (research → plan → verify) |
 | `/pre-generation-arch-check` | Check architecture risks before implementation |
-| `/omcodex:sauron-watch` | Full R017 verification |
+| `/omcustomcodex:sauron-watch` | Full R017 verification |
 | `/structured-dev-cycle` | 6-stage structured development cycle (Plan → Verify → Implement → Verify → Compound → Done) |
-| `/omcodex:lists` | Show all available commands |
-| `/omcodex:status` | Show system status |
-| `/omcodex:help` | Show help information |
+| `/omcustomcodex:lists` | Show all available commands |
+| `/omcustomcodex:status` | Show system status |
+| `/omcustomcodex:help` | Show help information |
 
 ## Project Structure
 
@@ -198,15 +198,15 @@ Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 
 ```bash
 # Project analysis
-/omcodex:analysis
+/omcustomcodex:analysis
 
 # Show all commands
-/omcodex:lists
+/omcustomcodex:lists
 
 # Agent management
-/omcodex:create-agent my-agent
-/omcodex:update-docs
-/omcodex:audit-agents
+/omcustomcodex:create-agent my-agent
+/omcustomcodex:update-docs
+/omcustomcodex:audit-agents
 
 # Code review
 /dev-review src/main.go
@@ -216,7 +216,7 @@ Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 /memory-recall authentication
 
 # Verification
-/omcodex:sauron-watch
+/omcustomcodex:sauron-watch
 ```
 
 ## External Dependencies

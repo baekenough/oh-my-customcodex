@@ -1,6 +1,6 @@
 # Project Structure
 
-After `omcodex init`:
+After `omcustomcodex init`:
 
 ```
 your-project/

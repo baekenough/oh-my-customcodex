@@ -94,33 +94,33 @@ oh-my-customcodex로 구동됩니다.
 
 | 커맨드 | 설명 |
 |--------|------|
-| `/omcodex:analysis` | 프로젝트 분석 및 자동 커스터마이징 |
-| `/omcodex:create-agent` | 새 에이전트 생성 |
-| `/omcodex:update-docs` | 프로젝트 구조와 문서 동기화 |
-| `/omcodex:update-external` | 외부 소스에서 에이전트 업데이트 |
-| `/omcodex:audit-agents` | 에이전트 의존성 감사 |
-| `/omcodex:fix-refs` | 깨진 참조 수정 |
-| `/omcodex-takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
+| `/omcustomcodex:analysis` | 프로젝트 분석 및 자동 커스터마이징 |
+| `/omcustomcodex:create-agent` | 새 에이전트 생성 |
+| `/omcustomcodex:update-docs` | 프로젝트 구조와 문서 동기화 |
+| `/omcustomcodex:update-external` | 외부 소스에서 에이전트 업데이트 |
+| `/omcustomcodex:audit-agents` | 에이전트 의존성 감사 |
+| `/omcustomcodex:fix-refs` | 깨진 참조 수정 |
+| `/omcustomcodex-takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
 | `/dev-review` | 코드 베스트 프랙티스 리뷰 |
 | `/dev-refactor` | 코드 리팩토링 |
 | `/memory-save` | 세션 컨텍스트를 omx-memory에 저장 |
 | `/memory-recall` | 메모리 검색 및 리콜 |
-| `/omcodex:monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
-| `/omcodex:npm-publish` | npm 레지스트리에 패키지 배포 |
-| `/omcodex:npm-version` | 시맨틱 버전 관리 |
-| `/omcodex:npm-audit` | 의존성 감사 |
-| `/omcodex-release-notes` | 릴리즈 노트 생성 (git 히스토리 기반) |
+| `/omcustomcodex:monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
+| `/omcustomcodex:npm-publish` | npm 레지스트리에 패키지 배포 |
+| `/omcustomcodex:npm-version` | 시맨틱 버전 관리 |
+| `/omcustomcodex:npm-audit` | 의존성 감사 |
+| `/omcustomcodex-release-notes` | 릴리즈 노트 생성 (git 히스토리 기반) |
 | `/codex-exec` | Codex CLI 프롬프트 실행 |
 | `/optimize-analyze` | 번들 및 성능 분석 |
 | `/optimize-bundle` | 번들 크기 최적화 |
 | `/optimize-report` | 최적화 리포트 생성 |
 | `/research` | 10-team 병렬 딥 분석 및 교차 검증 |
 | `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
-| `/omcodex:sauron-watch` | 전체 R017 검증 |
+| `/omcustomcodex:sauron-watch` | 전체 R017 검증 |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
-| `/omcodex:lists` | 모든 사용 가능한 커맨드 표시 |
-| `/omcodex:status` | 시스템 상태 표시 |
-| `/omcodex:help` | 도움말 표시 |
+| `/omcustomcodex:lists` | 모든 사용 가능한 커맨드 표시 |
+| `/omcustomcodex:status` | 시스템 상태 표시 |
+| `/omcustomcodex:help` | 도움말 표시 |
 
 ## 프로젝트 구조
 
@@ -195,15 +195,15 @@ Codex CLI의 Agent Teams 기능이 활성화되어 있으면 (`OMCODEX_AGENT_TEA
 
 ```bash
 # 프로젝트 분석
-/omcodex:analysis
+/omcustomcodex:analysis
 
 # 모든 커맨드 표시
-/omcodex:lists
+/omcustomcodex:lists
 
 # 에이전트 관리
-/omcodex:create-agent my-agent
-/omcodex:update-docs
-/omcodex:audit-agents
+/omcustomcodex:create-agent my-agent
+/omcustomcodex:update-docs
+/omcustomcodex:audit-agents
 
 # 코드 리뷰
 /dev-review src/main.go
@@ -213,7 +213,7 @@ Codex CLI의 Agent Teams 기능이 활성화되어 있으면 (`OMCODEX_AGENT_TEA
 /memory-recall authentication
 
 # 검증
-/omcodex:sauron-watch
+/omcustomcodex:sauron-watch
 ```
 
 ## 외부 의존성

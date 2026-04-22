@@ -1,12 +1,12 @@
 ---
-name: omcodex:auto-improve
+name: omcustomcodex:auto-improve
 description: Apply verified improvement suggestions from eval-core analysis to omcodex configuration
 scope: harness
 user-invocable: true
 effort: high
 ---
 
-# /omcodex:auto-improve — Automated Improvement Workflow
+# /omcustomcodex:auto-improve — Automated Improvement Workflow
 
 ## Purpose
 
@@ -15,12 +15,12 @@ Reads improvement suggestions from eval-core analysis, lets the user select whic
 ## Usage
 
 ```
-/omcodex:auto-improve              # Interactive selection from pending suggestions
+/omcustomcodex:auto-improve              # Interactive selection from pending suggestions
 ```
 
 ## Prerequisites
 
-- eval-core analysis data exists (run `/omcodex:improve-report` first if empty)
+- eval-core analysis data exists (run `/omcustomcodex:improve-report` first if empty)
 - Pending improvement suggestions in `proposed` status
 
 ## Workflow

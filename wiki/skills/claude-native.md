@@ -21,7 +21,7 @@ Monitors Claude Code GitHub releases, compares against current installed version
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex:claude-native`
+- **Command**: `/omcustomcodex:claude-native`
 - **Effort**: not specified
 
 ## Relationships

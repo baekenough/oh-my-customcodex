@@ -1,5 +1,5 @@
 ---
-name: omcodex:feedback
+name: omcustomcodex:feedback
 description: Submit feedback about oh-my-customcodex (supports anonymous submission)
 scope: harness
 user-invocable: true
@@ -19,13 +19,13 @@ Lowers the barrier for submitting feedback by allowing users to create GitHub is
 
 ```
 # Inline feedback
-/omcodex:feedback HUD display is missing during parallel agent spawn
+/omcustomcodex:feedback HUD display is missing during parallel agent spawn
 
 # Anonymous submission
-/omcodex:feedback --anonymous Something feels off with the routing
+/omcustomcodex:feedback --anonymous Something feels off with the routing
 
 # Interactive (no arguments)
-/omcodex:feedback
+/omcustomcodex:feedback
 ```
 
 ## Workflow
@@ -109,7 +109,7 @@ For anonymous submissions, do NOT include the project name. Offer to include pro
 
 4. Ensure labels exist (defensive):
    ```bash
-   gh label create feedback --description "User feedback via /omcodex:feedback" --color 0E8A16 --repo baekenough/oh-my-customcodex 2>/dev/null || true
+   gh label create feedback --description "User feedback via /omcustomcodex:feedback" --color 0E8A16 --repo baekenough/oh-my-customcodex 2>/dev/null || true
    # If anonymous, ensure the anonymous label exists
    if [ "$ANONYMOUS" = "true" ]; then
      gh label create anonymous --description "Anonymous feedback submission" --color C5DEF5 --repo baekenough/oh-my-customcodex 2>/dev/null || true
@@ -119,7 +119,7 @@ For anonymous submissions, do NOT include the project name. Offer to include pro
 5. Create the issue using `--body-file` for safe markdown handling:
    ```bash
    # Write body to temp file to avoid shell escaping issues
-   cat > /tmp/omcodex-feedback-body.md << 'FEEDBACK_EOF'
+   cat > /tmp/omcustomcodex-feedback-body.md << 'FEEDBACK_EOF'
    ## Feedback
 
    **Category**: {category}
@@ -135,7 +135,7 @@ For anonymous submissions, do NOT include the project name. Offer to include pro
    - Project: {project_name}
 
    ---
-   *Submitted via `/omcodex:feedback`*
+   *Submitted via `/omcustomcodex:feedback`*
    FEEDBACK_EOF
 
    # Build label string
@@ -149,10 +149,10 @@ For anonymous submissions, do NOT include the project name. Offer to include pro
      --repo baekenough/oh-my-customcodex \
      --title "{title}" \
      --label "$LABELS" \
-     --body-file /tmp/omcodex-feedback-body.md
+     --body-file /tmp/omcustomcodex-feedback-body.md
 
    # Clean up
-   rm -f /tmp/omcodex-feedback-body.md
+   rm -f /tmp/omcustomcodex-feedback-body.md
    ```
 
 6. If label creation fails AND issue creation fails due to labels, retry without labels as fallback
@@ -183,7 +183,7 @@ Inform the user:
 [Saved] Feedback saved locally to ~/.omcodex/feedback/{timestamp}.json
 Submit manually when connectivity is available:
   - GitHub Issues: https://github.com/baekenough/oh-my-customcodex/issues/new
-  - Or run /omcodex:feedback again when gh is available
+  - Or run /omcustomcodex:feedback again when gh is available
 ```
 
 ### Category-to-Label Mapping

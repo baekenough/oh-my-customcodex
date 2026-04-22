@@ -1,12 +1,12 @@
 ---
-name: omcodex:loop
+name: omcustomcodex:loop
 description: Prevent session idle during background agent work via SubagentStop prompt hook auto-continuation
 scope: core
 version: 1.0.0
 user-invocable: true
 ---
 
-# /omcodex:loop — Session Auto-Continuation
+# /omcustomcodex:loop — Session Auto-Continuation
 
 ## Overview
 
@@ -38,8 +38,8 @@ The hook is configured in `.codex/hooks/hooks.json` under `SubagentStop`. It wor
 ## Usage
 
 ```bash
-/omcodex:loop          # Show current auto-continuation status
-/omcodex:loop status   # Same as above
+/omcustomcodex:loop          # Show current auto-continuation status
+/omcustomcodex:loop status   # Same as above
 ```
 
 The feature is active by default via hooks.json. No explicit activation needed.

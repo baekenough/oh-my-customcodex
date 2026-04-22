@@ -175,29 +175,29 @@ All commands are invoked inside the oh-my-customcodex GPT Codex + OMX session.
 
 | Command | What it does |
 |---------|-------------|
-| `/omcodex:analysis` | Analyze project, auto-configure agents and skills |
-| `/omcodex:create-agent` | Create a new agent |
-| `/omcodex:takeover` | Extract canonical spec from existing agent or skill |
+| `/omcustomcodex:analysis` | Analyze project, auto-configure agents and skills |
+| `/omcustomcodex:create-agent` | Create a new agent |
+| `/omcustomcodex:takeover` | Extract canonical spec from existing agent or skill |
 | `/idea` | Turn a natural-language idea into structured issue specs |
-| `/omcodex:audit-agents` | Audit agent dependencies |
-| `/omcodex:update-docs` | Sync project structure and documentation |
-| `/omcodex:sauron-watch` | Full structural verification (5+3 rounds) |
-| `/omcodex:feedback` | Submit feedback as GitHub issue |
+| `/omcustomcodex:audit-agents` | Audit agent dependencies |
+| `/omcustomcodex:update-docs` | Sync project structure and documentation |
+| `/omcustomcodex:sauron-watch` | Full structural verification (5+3 rounds) |
+| `/omcustomcodex:feedback` | Submit feedback as GitHub issue |
 
 ### Web UI
 
 | Command | What it does |
 |---------|-------------|
-| `/omcodex:web` | Control built-in Web UI (start, stop, status, open) |
+| `/omcustomcodex:web` | Control built-in Web UI (start, stop, status, open) |
 
 ### Package & Release
 
 | Command | What it does |
 |---------|-------------|
-| `/omcodex:npm-publish` | Publish to npm |
-| `/omcodex:npm-version` | Semantic versioning |
-| `/omcodex:npm-audit` | Dependency security audit |
-| `/omcodex-release-notes` | Generate release notes from git history |
+| `/omcustomcodex:npm-publish` | Publish to npm |
+| `/omcustomcodex:npm-version` | Semantic versioning |
+| `/omcustomcodex:npm-audit` | Dependency security audit |
+| `/omcustomcodex-release-notes` | Generate release notes from git history |
 
 ### Memory & System
 
@@ -205,11 +205,11 @@ All commands are invoked inside the oh-my-customcodex GPT Codex + OMX session.
 |---------|-------------|
 | `/memory-save` | Save session context |
 | `/memory-recall` | Search and recall memories |
-| `/omcodex:monitoring-setup` | OTel monitoring toggle |
+| `/omcustomcodex:monitoring-setup` | OTel monitoring toggle |
 | `/token-efficiency-audit` | Audit and tune token-efficiency settings |
-| `/omcodex:loop` | Auto-continue background agent workflows (3-continue safety limit) |
-| `/omcodex:lists` | Show all commands |
-| `/omcodex:status` | System health check |
+| `/omcustomcodex:loop` | Auto-continue background agent workflows (3-continue safety limit) |
+| `/omcustomcodex:lists` | Show all commands |
+| `/omcustomcodex:status` | System health check |
 
 ---
 

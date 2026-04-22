@@ -15,13 +15,13 @@ Show all available commands and slash commands in the system.
 
 ## Overview
 
-Displays a formatted table of all available slash commands with their descriptions and argument hints. Reads from agent and skill frontmatter to produce a current listing. Equivalent to `/omcodex:lists`. Useful for discovering available capabilities without reading individual skill files.
+Displays a formatted table of all available slash commands with their descriptions and argument hints. Reads from agent and skill frontmatter to produce a current listing. Equivalent to `/omcustomcodex:lists`. Useful for discovering available capabilities without reading individual skill files.
 
 ## Key Details
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex:lists`
+- **Command**: `/omcustomcodex:lists`
 - **Effort**: not specified
 
 ## Relationships

@@ -234,7 +234,7 @@ When verdict is `INTERNALIZE` and integration effort is M or L:
 | Scenario | Better Alternative |
 |----------|--------------------|
 | Deep multi-source research | `/research <url>` |
-| Internal project analysis | `/omcodex:analysis` |
+| Internal project analysis | `/omcustomcodex:analysis` |
 | Known tool evaluation | Direct agent conversation |
 | Bulk URL analysis (5+) | `/research` with URL list |
 

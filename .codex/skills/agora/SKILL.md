@@ -1,5 +1,5 @@
 ---
-name: omcodex:agora
+name: omcustomcodex:agora
 description: "Multi-LLM adversarial consensus loop — 3+ LLMs compete to find flaws in designs/specs until unanimous agreement is reached"
 user-invocable: true
 argument-hint: "<document-path> [--rounds N] [--severity-threshold HIGH]"
@@ -26,10 +26,10 @@ source:
 ## Usage
 
 ```
-/omcodex:agora docs/design.md                           # Default: 3 LLMs, unlimited rounds
-/omcodex:agora docs/design.md --rounds 10               # Max 10 rounds
-/omcodex:agora docs/design.md --severity-threshold HIGH # Exit when no HIGH+ findings
-/omcodex:agora docs/design.md --models claude,codex     # 2 LLMs only
+/omcustomcodex:agora docs/design.md                           # Default: 3 LLMs, unlimited rounds
+/omcustomcodex:agora docs/design.md --rounds 10               # Max 10 rounds
+/omcustomcodex:agora docs/design.md --severity-threshold HIGH # Exit when no HIGH+ findings
+/omcustomcodex:agora docs/design.md --models claude,codex     # 2 LLMs only
 ```
 
 ## Workflow

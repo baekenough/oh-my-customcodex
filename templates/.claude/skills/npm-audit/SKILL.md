@@ -1,5 +1,5 @@
 ---
-name: omcodex:npm-audit
+name: omcustomcodex:npm-audit
 description: Audit npm dependencies for security and updates
 scope: package
 argument-hint: "[--fix] [--production]"

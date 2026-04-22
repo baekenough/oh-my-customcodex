@@ -22,7 +22,7 @@ Displays a comprehensive system status: rules loaded, agent counts by category, 
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex:status`
+- **Command**: `/omcustomcodex:status`
 - **Effort**: not specified
 - **Argument hint**: `[--verbose] [--health]`
 

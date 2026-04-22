@@ -97,16 +97,16 @@ oh-my-customcodex로 구동됩니다.
 
 | 카테고리 | 대표 커맨드 | 설명 |
 |----------|------------|------|
-| 프로젝트 관리 | `/omcodex:analysis`, `/omcodex:create-agent`, `/omcodex:audit-agents` | 분석, 에이전트/스킬 생성, 감사 |
+| 프로젝트 관리 | `/omcustomcodex:analysis`, `/omcustomcodex:create-agent`, `/omcustomcodex:audit-agents` | 분석, 에이전트/스킬 생성, 감사 |
 | 아이디어 | `/idea` | 자연어 아이디어를 구조화된 이슈 스펙으로 변환 |
 | 개발 | `/dev-review`, `/dev-refactor`, `/sdd-dev`, `/structured-dev-cycle` | 코드 리뷰, 리팩토링, SDD |
-| 검증 | `/omcodex:sauron-watch`, `/deep-verify`, `/adversarial-review` | R017 검증, 릴리즈 품질, 보안 리뷰 |
-| 릴리즈 | `/pipeline auto-dev`, `/omcodex-release-notes`, `/release-plan` | 자동 개발, 릴리즈 노트 |
-| 리서치 | `/research`, `/scout`, `/deep-plan`, `/omcodex:agora` | 병렬 분석, URL 평가, 연구 계획 |
+| 검증 | `/omcustomcodex:sauron-watch`, `/deep-verify`, `/adversarial-review` | R017 검증, 릴리즈 품질, 보안 리뷰 |
+| 릴리즈 | `/pipeline auto-dev`, `/omcustomcodex-release-notes`, `/release-plan` | 자동 개발, 릴리즈 노트 |
+| 리서치 | `/research`, `/scout`, `/deep-plan`, `/omcustomcodex:agora` | 병렬 분석, URL 평가, 연구 계획 |
 | 메모리 | `/memory-save`, `/memory-recall` | 세션 메모리 관리 |
-| 시스템 | `/token-efficiency-audit`, `/pre-generation-arch-check`, `/omcodex:lists`, `/omcodex:status`, `/omcodex:help` | 토큰 효율/아키텍처 감사, 전체 목록, 상태, 도움말 |
+| 시스템 | `/token-efficiency-audit`, `/pre-generation-arch-check`, `/omcustomcodex:lists`, `/omcustomcodex:status`, `/omcustomcodex:help` | 토큰 효율/아키텍처 감사, 전체 목록, 상태, 도움말 |
 
-> 전체 커맨드 목록 (60+ 커맨드): `/omcodex:lists` 실행
+> 전체 커맨드 목록 (60+ 커맨드): `/omcustomcodex:lists` 실행
 
 ## 프로젝트 구조
 
@@ -197,15 +197,15 @@ Codex CLI의 Agent Teams 기능이 활성화되어 있으면 (`OMCODEX_AGENT_TEA
 
 ```bash
 # 프로젝트 분석
-/omcodex:analysis
+/omcustomcodex:analysis
 
 # 모든 커맨드 표시
-/omcodex:lists
+/omcustomcodex:lists
 
 # 에이전트 관리
-/omcodex:create-agent my-agent
-/omcodex:update-docs
-/omcodex:audit-agents
+/omcustomcodex:create-agent my-agent
+/omcustomcodex:update-docs
+/omcustomcodex:audit-agents
 
 # 코드 리뷰
 /dev-review src/main.go
@@ -215,7 +215,7 @@ Codex CLI의 Agent Teams 기능이 활성화되어 있으면 (`OMCODEX_AGENT_TEA
 /memory-recall authentication
 
 # 검증
-/omcodex:sauron-watch
+/omcustomcodex:sauron-watch
 ```
 
 ## 외부 의존성

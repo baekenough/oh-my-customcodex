@@ -1,5 +1,5 @@
 ---
-name: omcodex:takeover
+name: omcustomcodex:takeover
 description: Extract canonical spec from existing agent or skill files
 scope: harness
 user-invocable: true
@@ -17,8 +17,8 @@ When an agent or skill has evolved organically without a formal spec, `omcodex:t
 ## Usage
 
 ```
-/omcodex:takeover <agent-name>
-/omcodex:takeover <skill-name>
+/omcustomcodex:takeover <agent-name>
+/omcustomcodex:takeover <skill-name>
 ```
 
 ## Workflow
@@ -110,6 +110,6 @@ generated: <ISO-8601 timestamp>
 ## Notes
 
 - Specs are git-untracked (under `.codex/`)
-- Regenerate anytime with `/omcodex:takeover <name>`
+- Regenerate anytime with `/omcustomcodex:takeover <name>`
 - Used by `/dev-refactor --spec` for invariant-preserving refactoring
 - Advisory output — human review recommended before using as contract

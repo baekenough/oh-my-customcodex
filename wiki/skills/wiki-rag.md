@@ -22,7 +22,7 @@ When users ask about project architecture, agent roles, or rule behavior, wiki-r
 - **Scope**: core
 - **User-invocable**: yes
 - **Effort**: medium
-- **Command**: `/omcodex:wiki-rag`
+- **Command**: `/omcustomcodex:wiki-rag`
 
 ## Relationships
 

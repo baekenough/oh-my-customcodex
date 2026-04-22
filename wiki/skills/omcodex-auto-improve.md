@@ -3,7 +3,7 @@ title: Omcustom Auto-Improve
 type: skill
 updated: 2026-04-12
 sources:
-  - .codex/skills/omcodex-auto-improve/SKILL.md
+  - .codex/skills/omcustomcodex-auto-improve/SKILL.md
 related:
   - [[omcodex-improve-report]]
   - [[sauron-watch]]
@@ -22,7 +22,7 @@ Reads improvement suggestions from the `omcodex-improve-report` output, applies 
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex:auto-improve`
+- **Command**: `/omcustomcodex:auto-improve`
 - **Effort**: not specified
 
 ## Relationships
@@ -33,4 +33,4 @@ Reads improvement suggestions from the `omcodex-improve-report` output, applies 
 
 ## Sources
 
-- `.codex/skills/omcodex-auto-improve/SKILL.md` — skill definition
+- `.codex/skills/omcustomcodex-auto-improve/SKILL.md` — skill definition

@@ -105,7 +105,7 @@ Issue body format (matching the pattern established by issue #683):
 
 ---
 
-_This issue was created by the `/omcodex:claude-native` skill._
+_This issue was created by the `/omcustomcodex:claude-native` skill._
 ```
 
 **Notes:**
@@ -171,9 +171,9 @@ Semver comparison: major → minor → patch (all numeric). Pre-release suffixes
 ### Manual
 
 ```
-/omcodex:claude-native
-/omcodex:claude-native --backfill
-/omcodex:claude-native --dry-run
+/omcustomcodex:claude-native
+/omcustomcodex:claude-native --backfill
+/omcustomcodex:claude-native --dry-run
 ```
 
 ### Automatic (SessionStart Hook)
@@ -197,7 +197,7 @@ A lightweight wrapper script can run a `--dry-run` check and notify if new relea
 Can be set up as a scheduled remote agent using `/schedule`:
 
 ```
-/schedule "daily at 9am: /omcodex:claude-native"
+/schedule "daily at 9am: /omcustomcodex:claude-native"
 ```
 
 Or via CronCreate MCP tool for programmatic scheduling.

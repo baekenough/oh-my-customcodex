@@ -17,9 +17,9 @@ Evaluate agent quality using 15 structured software engineering task definitions
 ## Usage
 
 ```
-/omcodex:harness-eval                    # Run all 15 benchmarks
-/omcodex:harness-eval --preset quick     # Run top 5 high-impact benchmarks
-/omcodex:harness-eval --task api-design  # Run specific task benchmark
+/omcustomcodex:harness-eval                    # Run all 15 benchmarks
+/omcustomcodex:harness-eval --preset quick     # Run top 5 high-impact benchmarks
+/omcustomcodex:harness-eval --task api-design  # Run specific task benchmark
 ```
 
 ## Quality Dimensions
@@ -81,7 +81,7 @@ Run top 5 high-impact tasks (1, 3, 4, 5, 12). Quick evaluation ~15 minutes.
 This skill provides preset rubrics for the evaluator-optimizer pipeline:
 
 ```
-/omcodex:harness-eval → loads rubric → evaluator-optimizer executes → scoring → report
+/omcustomcodex:harness-eval → loads rubric → evaluator-optimizer executes → scoring → report
 ```
 
 The evaluator-optimizer skill's `pre_negotiation` phase accepts harness-eval rubric dimensions as sprint contract criteria.

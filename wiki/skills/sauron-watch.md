@@ -23,7 +23,7 @@ Runs the complete R017 verification: Phase 1 (5 rounds of manager verification v
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex:sauron-watch`
+- **Command**: `/omcustomcodex:sauron-watch`
 - **Effort**: not specified
 
 ## Relationships

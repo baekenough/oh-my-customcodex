@@ -3,7 +3,7 @@ title: Omcustom Release Notes
 type: skill
 updated: 2026-04-12
 sources:
-  - .codex/skills/omcodex-release-notes/SKILL.md
+  - .codex/skills/omcustomcodex-release-notes/SKILL.md
 related:
   - [[mgr-gitnerd]]
   - [[release-plan]]
@@ -22,7 +22,7 @@ Generates release notes by reading git log between two refs and fetching closed 
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex-release-notes`
+- **Command**: `/omcustomcodex-release-notes`
 - **Effort**: not specified
 
 ## Relationships
@@ -33,4 +33,4 @@ Generates release notes by reading git log between two refs and fetching closed 
 
 ## Sources
 
-- `.codex/skills/omcodex-release-notes/SKILL.md` — skill definition
+- `.codex/skills/omcustomcodex-release-notes/SKILL.md` — skill definition

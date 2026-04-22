@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-04-22
+
+### Changed
+- Finish aligning the repo-local development surface with the `omcustomcodex` command by adding an explicit Agent/Skill/Status response contract to the root `AGENTS.md`.
+- Update the local project wiki and generated documentation surfaces so stale `omcodex init` references now point at `omcustomcodex init`.
+- Rename remaining user-facing slash-command references from `/omcodex:*` and `/omcodex-*` to `/omcustomcodex:*` and `/omcustomcodex-*` across templates, wiki content, and skill frontmatter.
+
+### Fixed
+- Update validate-docs coverage so namespaced slash-command aliases resolve against the new `omcustomcodex` namespace.
+
 ## [0.3.2] - 2026-04-22
 
 ### Changed

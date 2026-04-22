@@ -21,7 +21,7 @@ Runs a structured benchmark of 15 canonical software engineering tasks to evalua
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcodex:harness-eval`
+- **Command**: `/omcustomcodex:harness-eval`
 - **Effort**: not specified
 
 ## Relationships

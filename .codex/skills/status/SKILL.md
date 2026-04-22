@@ -1,5 +1,5 @@
 ---
-name: omcodex:status
+name: omcustomcodex:status
 description: Show system status and health checks
 scope: harness
 argument-hint: "[--verbose] [--health]"

@@ -20,7 +20,7 @@ Configures `.codex/settings.local.json` to enable or disable OpenTelemetry conso
 
 - **Scope**: package
 - **User-invocable**: yes
-- **Command**: `/omcodex:monitoring-setup`
+- **Command**: `/omcustomcodex:monitoring-setup`
 - **Effort**: not specified
 - **Argument hint**: `[enable|disable|status]`
 
