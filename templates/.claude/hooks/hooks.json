@@ -135,7 +135,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".codex/hooks/scripts/omcustomcodex-auto-update.sh"
+            "command": ".codex/hooks/scripts/omcodex-auto-update.sh"
           }
         ],
         "description": "Interactive oh-my-customcodex update check at session start (#752)"

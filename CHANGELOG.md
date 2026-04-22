@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-04-22
+
+### Fixed
+- Restore the internal `omcodex-auto-update.sh` hook script path in the template hook registry so CI hook validation passes while the public command surface remains `omcustomcodex`.
+
 ## [0.3.3] - 2026-04-22
 
 ### Changed
