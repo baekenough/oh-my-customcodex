@@ -2,7 +2,7 @@
 
 ## Overview
 
-Quality criteria for `.claude/agents/*.md` files. Adapted from ETH Zurich research on LLM-generated agent configurations, modified to fit oh-my-customcodex's "create, connect, use" philosophy.
+Quality criteria for managed agent markdown files (the `omcustomcodex` runtime contract uses `.codex/agents/*.md`). Adapted from ETH Zurich research on LLM-generated agent configurations, modified to fit oh-my-customcodex's "create, connect, use" philosophy.
 
 ## Core Principle: LLM Generation + Human Verification
 

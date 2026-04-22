@@ -44,7 +44,8 @@ oh-my-customcodex는 두 가지 아이디어 위에 세워졌습니다.
 
 | 컴파일 개념 | oh-my-customcodex |
 |------------|-----------------|
-| 소스코드 | `.agents/skills/` — 재사용 가능한 지식과 워크플로우 |
+| 소스 리포 authoring | `.codex/skills/` — 이 패키지 자체가 유지하는 스킬 정의 |
+| 설치 런타임 스킬 | `.agents/skills/` — 관리 대상 프로젝트에 배포되는 재사용 가능한 지식과 워크플로우 |
 | 빌드 결과물 | `.codex/agents/` — 스킬을 조합한 실행 가능한 전문가 |
 | 컴파일러 | `mgr-sauron` (R017) — 구조 검증과 정합성 보장 |
 | 스펙 | `.codex/rules/` — 제약 조건과 빌드 규칙 |
@@ -282,22 +283,32 @@ omcustomcodex serve-stop            # Web UI 중지
 
 ## 프로젝트 구조
 
+### 관리 대상 프로젝트 런타임
+
 ```
 your-project/
 ├── AGENTS.md                   # 진입점
 ├── .codex/
 │   ├── agents/                 # 48개 에이전트 정의
-│   ├── skills/                 # 112개 스킬 모듈
 │   ├── rules/                  # 22개 거버넌스 규칙 (R000-R022)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마
 │   ├── specs/                  # 추출된 canonical spec
 │   ├── contexts/               # 4개 공유 컨텍스트 파일
 │   └── ontology/               # RAG용 지식 그래프
-├── packages/
-│   └── eval-core/              # LLM 평가 엔진 (세션/턴/결과 수집, SQLite)
+├── .agents/
+│   └── skills/                 # 112개 설치 스킬 모듈
 └── guides/                     # 40개 레퍼런스 문서
 ```
+
+### 소스 리포와 호환성 표면
+
+- 이 저장소 자체는 패키지 authoring용 스킬을 `.codex/skills/`에 유지합니다. 이것은 설치된 프로젝트의 런타임 스킬 경로와 다릅니다.
+- 설치된 프로젝트는 관리 대상 스킬을 `.agents/skills/`, 관리 대상 에이전트를 `.codex/agents/*.md`에 둡니다.
+- `templates/.claude/` 와 `templates/CLAUDE.md*` 는 upstream 호환 템플릿 입력면으로 남아 있으며, 설치 후 활성 런타임 표면은 아닙니다.
+- `.codex/hooks/` 는 이 패키지가 쓰는 OMX 관리 훅 스크립트 레이어입니다. Codex native `hooks.json` discovery는 별도 계약이며, `omcustomcodex`가 현재 직접 생성하는 표면은 아닙니다.
+- Codex native custom subagent인 `.codex/agents/*.toml` 은 공존할 수 있지만, `omcustomcodex`가 현재 관리하는 에이전트 계약은 `.codex/agents/*.md` 입니다.
+- 프로젝트 단위 MCP 설정은 `.codex/config.toml`, 관리 프로젝트 레지스트리는 `~/.oh-my-customcodex/projects.json`을 사용합니다.
 
 ---
 

@@ -64,10 +64,10 @@
 		<a href="/skills" class="text-zinc-500 hover:text-zinc-300 text-sm mb-3 inline-block">← Skills</a>
 		<div class="flex items-center gap-3">
 			<h1 class="text-2xl font-bold text-zinc-50">New Skill</h1>
-			<!-- Claude availability badge -->
+			<!-- Optional Claude CLI compatibility helper badge -->
 			{#if data.claudeAvailable}
 				<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-900/50 text-emerald-400 border border-emerald-700/50">
-					Claude Code ✓
+					Claude CLI helper
 				</span>
 			{:else}
 				<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-800 text-zinc-500 border border-zinc-700">
@@ -114,7 +114,7 @@
 					{#if analyzing}
 						<span class="flex items-center gap-2">
 							<span class="inline-block animate-spin">⟳</span>
-							{data.claudeAvailable ? 'Claude Code로 분석 중...' : 'Analyzing...'}
+							{data.claudeAvailable ? 'Claude CLI helper로 생성 중...' : 'Analyzing...'}
 						</span>
 					{:else}
 						Analyze
@@ -123,9 +123,9 @@
 
 				<!-- Mode badge shown after analysis -->
 				{#if analysisMode === 'claude'}
-					<span class="text-xs text-emerald-400">🤖 Claude Code로 생성</span>
+					<span class="text-xs text-emerald-400">🤖 Claude CLI helper로 생성</span>
 				{:else if analysisMode === 'keyword-fallback'}
-					<span class="text-xs text-amber-400">⚠ Claude Code를 사용할 수 없습니다. 키워드 기반으로 전환합니다.</span>
+					<span class="text-xs text-amber-400">⚠ Claude CLI helper를 사용할 수 없습니다. 키워드 기반으로 전환합니다.</span>
 				{:else if analysisMode === 'keyword'}
 					<span class="text-xs text-zinc-500">📝 키워드 기반 생성</span>
 				{/if}
@@ -185,7 +185,7 @@
 				<!-- Context Fork toggle -->
 				<div>
 					<p class="text-xs text-zinc-500 mb-2">Context Fork</p>
-					<label class="flex items-center gap-3 cursor-pointer">
+					<div class="flex items-center gap-3">
 						<div
 							role="checkbox"
 							aria-checked={skillContextFork}
@@ -199,7 +199,7 @@
 						<span class="text-xs {skillContextFork ? 'text-emerald-400' : 'text-zinc-500'}">
 							{skillContextFork ? 'Enabled — for routing / orchestration skills' : 'Disabled — standard skill'}
 						</span>
-					</label>
+					</div>
 					<p class="text-xs text-zinc-700 mt-1">Enable only for skills that spawn multiple agents (cap: 12)</p>
 				</div>
 
@@ -224,7 +224,7 @@
 				<div class="mt-4 p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg">
 					<p class="text-xs text-zinc-500 font-medium mb-1">Save location</p>
 					<code class="text-xs text-zinc-400 font-mono">
-						.claude/skills/{skillName || '{name}'}/SKILL.md
+						{data.skillSaveDir}/{skillName || '{name}'}/SKILL.md
 					</code>
 				</div>
 			</div>

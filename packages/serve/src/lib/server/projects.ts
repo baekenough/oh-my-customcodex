@@ -75,26 +75,33 @@ function computeStatus(
  * Avoids cross-package imports by reading the JSON file via fs.
  */
 async function readLocalRegistry(): Promise<Registry> {
-	const registryPath = join(homedir(), '.oh-my-customcode', 'projects.json');
-	try {
-		const content = await readFile(registryPath, 'utf-8');
-		const parsed = JSON.parse(content) as unknown;
-		if (
-			typeof parsed === 'object' &&
-			parsed !== null &&
-			'projects' in parsed &&
-			typeof (parsed as Registry).projects === 'object'
-		) {
-			return parsed as Registry;
+	const registryPaths = [
+		join(homedir(), '.oh-my-customcodex', 'projects.json'),
+		join(homedir(), '.oh-my-customcode', 'projects.json'),
+	];
+
+	for (const registryPath of registryPaths) {
+		try {
+			const content = await readFile(registryPath, 'utf-8');
+			const parsed = JSON.parse(content) as unknown;
+			if (
+				typeof parsed === 'object' &&
+				parsed !== null &&
+				'projects' in parsed &&
+				typeof (parsed as Registry).projects === 'object'
+			) {
+				return parsed as Registry;
+			}
+		} catch {
+			// Try the next compatibility path.
 		}
-		return { projects: {} };
-	} catch {
-		return { projects: {} };
 	}
+
+	return { projects: {} };
 }
 
 /**
- * Find all omcustom projects on the machine via the local registry.
+ * Find all omcustomcodex projects on the machine via the local registry.
  * Falls back gracefully to an empty list if the registry cannot be read.
  * Results are cached for 30 seconds.
  *

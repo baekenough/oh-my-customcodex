@@ -11,13 +11,13 @@ export interface ValidationResult {
 }
 
 function buildValidationPrompt(type: 'agent' | 'skill' | 'guide', name: string): string {
-	return `You are a validator for oh-my-customcode ${type} files.
+	return `You are a validator for oh-my-customcodex ${type} files.
 
 Validate the ${type} "${name}" that was just created.
 
 Check:
 1. Frontmatter fields are valid (name, description format)
-2. Referenced skills exist in .claude/skills/
+2. Referenced skills exist in the active runtime skills directory
 3. File follows naming conventions
 4. Body has required sections
 5. No obvious issues
@@ -128,7 +128,7 @@ export async function generateGuideWithClaude(
 }
 
 function buildGuidePrompt(input: string): string {
-	return `You are a guide document generator for oh-my-customcode.
+	return `You are a guide document generator for oh-my-customcodex.
 
 Generate a complete guide README.md file based on this description:
 "${input}"
@@ -184,7 +184,7 @@ export async function generateSkillWithClaude(
 }
 
 function buildSkillPrompt(input: string): string {
-	return `You are a skill file generator for oh-my-customcode.
+	return `You are a skill file generator for oh-my-customcodex.
 
 Generate a complete skill SKILL.md file based on this description:
 "${input}"
@@ -221,7 +221,7 @@ Output ONLY the markdown file content. No explanations, no code blocks.`;
 }
 
 function buildPrompt(input: string): string {
-	return `You are an agent file generator for oh-my-customcode.
+	return `You are an agent file generator for oh-my-customcodex.
 
 Generate a complete agent markdown file based on this description:
 "${input}"

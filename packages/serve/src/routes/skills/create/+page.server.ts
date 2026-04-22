@@ -6,14 +6,19 @@ import { getProjectRoot, getSkills } from '$lib/server/data';
 import { parseSkillNaturalLanguage, buildSkillMarkdown, sanitizeSkillName } from '$lib/server/skill-generator';
 import { parseFrontmatter } from '$lib/server/frontmatter';
 import { isClaudeAvailable, generateSkillWithClaude } from '$lib/server/claude-cli';
+import { detectServeProjectLayout } from '$lib/server/runtime-layout';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { root } = await parent();
+	const layout = await detectServeProjectLayout(root);
+	const skillSaveDir =
+		layout.surface === 'codex-installed' ? `${layout.skillsDir}/general` : layout.skillsDir;
 	const skills = await getSkills(root);
 	const claudeAvailable = await isClaudeAvailable();
 	return {
 		skillNames: skills.map((s) => s.name),
-		claudeAvailable
+		claudeAvailable,
+		skillSaveDir
 	};
 };
 
@@ -99,7 +104,12 @@ export const actions: Actions = {
 		}
 
 		const root = await getProjectRoot();
-		const allowedDir = resolve(root, '.claude', 'skills');
+		const layout = await detectServeProjectLayout(root);
+		const saveDir =
+			layout.surface === 'codex-installed'
+				? join(layout.skillsDir, 'general')
+				: layout.skillsDir;
+		const allowedDir = resolve(root, saveDir);
 		const skillDir = join(allowedDir, name);
 		const skillPath = join(skillDir, 'SKILL.md');
 

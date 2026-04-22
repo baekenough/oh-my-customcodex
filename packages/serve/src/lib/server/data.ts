@@ -1,27 +1,11 @@
 import { readdir, readFile, stat } from 'fs/promises';
-import { join, basename } from 'path';
+import { join, basename, dirname } from 'path';
 import { parseFrontmatter } from './frontmatter.js';
+import { detectServeProjectLayout, findServeProjectRoot } from './runtime-layout.js';
 
 // ---------------------------------------------------------------------------
 // Project root resolution
 // ---------------------------------------------------------------------------
-
-async function findProjectRoot(startDir: string): Promise<string> {
-	let dir = startDir;
-	for (let i = 0; i < 20; i++) {
-		try {
-			await stat(join(dir, 'CLAUDE.md'));
-			return dir;
-		} catch {
-			const parent = join(dir, '..');
-			if (parent === dir) break;
-			dir = parent;
-		}
-	}
-
-	// fallback — use cwd
-	return startDir;
-}
 
 let _rootPromise: Promise<string> | null = null;
 
@@ -32,7 +16,7 @@ export async function getProjectRoot(): Promise<string> {
 	}
 	// Cache the filesystem traversal result for the process lifetime
 	if (!_rootPromise) {
-		_rootPromise = findProjectRoot(process.cwd());
+		_rootPromise = findServeProjectRoot(process.cwd());
 	}
 	return _rootPromise;
 }
@@ -81,12 +65,36 @@ export interface RuleInfo {
 	body: string;
 }
 
+async function collectSkillFiles(dir: string): Promise<string[]> {
+	let entries: Array<{ name: string; isDirectory: () => boolean; isFile: () => boolean }>;
+	try {
+		entries = await readdir(dir, { withFileTypes: true });
+	} catch {
+		return [];
+	}
+
+	const skillFiles: string[] = [];
+	for (const entry of entries) {
+		const fullPath = join(dir, entry.name);
+		if (entry.isFile() && entry.name === 'SKILL.md') {
+			skillFiles.push(fullPath);
+			continue;
+		}
+		if (entry.isDirectory()) {
+			skillFiles.push(...(await collectSkillFiles(fullPath)));
+		}
+	}
+
+	return skillFiles;
+}
+
 // ---------------------------------------------------------------------------
 // Agents
 // ---------------------------------------------------------------------------
 
 export async function getAgents(root: string): Promise<AgentInfo[]> {
-	const dir = join(root, '.claude', 'agents');
+	const layout = await detectServeProjectLayout(root);
+	const dir = join(root, layout.agentsDir);
 	let files: string[];
 	try {
 		files = await readdir(dir);
@@ -117,7 +125,8 @@ export async function getAgents(root: string): Promise<AgentInfo[]> {
 }
 
 export async function getAgent(root: string, name: string): Promise<AgentInfo | null> {
-	const filePath = join(root, '.claude', 'agents', `${name}.md`);
+	const layout = await detectServeProjectLayout(root);
+	const filePath = join(root, layout.agentsDir, `${name}.md`);
 	let content: string;
 	try {
 		content = await readFile(filePath, 'utf-8');
@@ -142,17 +151,12 @@ export async function getAgent(root: string, name: string): Promise<AgentInfo | 
 // ---------------------------------------------------------------------------
 
 export async function getSkills(root: string): Promise<SkillInfo[]> {
-	const dir = join(root, '.claude', 'skills');
-	let entries: string[];
-	try {
-		entries = await readdir(dir);
-	} catch {
-		return [];
-	}
+	const layout = await detectServeProjectLayout(root);
+	const dir = join(root, layout.skillsDir);
+	const skillFiles = await collectSkillFiles(dir);
 
 	const skills: SkillInfo[] = [];
-	for (const entry of entries) {
-		const skillFile = join(dir, entry, 'SKILL.md');
+	for (const skillFile of skillFiles) {
 		let content: string;
 		try {
 			content = await readFile(skillFile, 'utf-8');
@@ -160,6 +164,7 @@ export async function getSkills(root: string): Promise<SkillInfo[]> {
 			continue;
 		}
 		const { frontmatter, body } = parseFrontmatter(content);
+		const entry = basename(dirname(skillFile));
 		skills.push({
 			name: String(frontmatter.name ?? entry),
 			description: String(frontmatter.description ?? ''),
@@ -174,22 +179,32 @@ export async function getSkills(root: string): Promise<SkillInfo[]> {
 }
 
 export async function getSkill(root: string, name: string): Promise<SkillInfo | null> {
-	const skillFile = join(root, '.claude', 'skills', name, 'SKILL.md');
-	let content: string;
-	try {
-		content = await readFile(skillFile, 'utf-8');
-	} catch {
-		return null;
+	const layout = await detectServeProjectLayout(root);
+	const skillFiles = await collectSkillFiles(join(root, layout.skillsDir));
+
+	for (const skillFile of skillFiles) {
+		let content: string;
+		try {
+			content = await readFile(skillFile, 'utf-8');
+		} catch {
+			continue;
+		}
+		const { frontmatter, body } = parseFrontmatter(content);
+		const fileName = basename(dirname(skillFile));
+		const resolvedName = String(frontmatter.name ?? fileName);
+		if (resolvedName !== name) continue;
+
+		return {
+			name: resolvedName,
+			description: String(frontmatter.description ?? ''),
+			scope: String(frontmatter.scope ?? 'core'),
+			contextFork: frontmatter.context === 'fork',
+			frontmatter,
+			body,
+		};
 	}
-	const { frontmatter, body } = parseFrontmatter(content);
-	return {
-		name: String(frontmatter.name ?? name),
-		description: String(frontmatter.description ?? ''),
-		scope: String(frontmatter.scope ?? 'core'),
-		contextFork: frontmatter.context === 'fork',
-		frontmatter,
-		body
-	};
+
+	return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -242,7 +257,8 @@ export async function getGuide(root: string, name: string): Promise<GuideDetail 
 // ---------------------------------------------------------------------------
 
 export async function getRules(root: string): Promise<RuleInfo[]> {
-	const dir = join(root, '.claude', 'rules');
+	const layout = await detectServeProjectLayout(root);
+	const dir = join(root, layout.rulesDir);
 	let files: string[];
 	try {
 		files = await readdir(dir);
@@ -286,7 +302,8 @@ export async function getRules(root: string): Promise<RuleInfo[]> {
 
 export async function getRule(root: string, name: string): Promise<RuleInfo | null> {
 	// name is the slug — try to find the file by checking all files
-	const dir = join(root, '.claude', 'rules');
+	const layout = await detectServeProjectLayout(root);
+	const dir = join(root, layout.rulesDir);
 	let files: string[];
 	try {
 		files = await readdir(dir);

@@ -1,5 +1,6 @@
 import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
+import { detectServeProjectLayout } from './runtime-layout.js';
 
 // ---------------------------------------------------------------------------
 // Public interfaces
@@ -53,14 +54,15 @@ interface AgentAccumulator {
 }
 
 // ---------------------------------------------------------------------------
-// JSONL file discovery — /tmp/.claude-task-outcomes-<PPID>
+// JSONL file discovery — support both the active Codex prefix and the legacy Claude prefix.
 // ---------------------------------------------------------------------------
 
 async function findOutcomeFiles(): Promise<string[]> {
 	try {
 		const entries = await readdir('/tmp');
+		const prefixes = ['.codex-task-outcomes-', '.claude-task-outcomes-'];
 		return entries
-			.filter((e) => e.startsWith('.claude-task-outcomes-'))
+			.filter((e) => prefixes.some((prefix) => e.startsWith(prefix)))
 			.map((e) => join('/tmp', e));
 	} catch {
 		return [];
@@ -170,7 +172,8 @@ function parseMetricsTable(content: string): MemoryMetricRow[] {
 }
 
 async function readMemoryMetrics(root: string): Promise<MemoryMetricRow[]> {
-	const memoryBaseDir = join(root, '.claude', 'agent-memory');
+	const layout = await detectServeProjectLayout(root);
+	const memoryBaseDir = join(root, layout.memoryDir);
 	let agentDirs: string[];
 	try {
 		agentDirs = await readdir(memoryBaseDir);

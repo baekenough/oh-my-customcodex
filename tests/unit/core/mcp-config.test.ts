@@ -3,22 +3,23 @@ import * as childProcess from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { checkUvAvailable, generateMCPConfig } from '../../../src/core/mcp-config.js';
-import * as fsUtils from '../../../src/utils/fs.js';
-
-const { fileExists } = fsUtils;
+import {
+  checkUvAvailable,
+  generateMCPConfig,
+  getProjectMCPConfigPath,
+} from '../../../src/core/mcp-config.js';
 
 describe('mcp-config', () => {
   let tempDir: string;
   let execSyncSpy: ReturnType<typeof spyOn>;
-  let consoleLogSpy: ReturnType<typeof spyOn>;
   let consoleInfoSpy: ReturnType<typeof spyOn>;
   let consoleWarnSpy: ReturnType<typeof spyOn>;
   let consoleErrorSpy: ReturnType<typeof spyOn>;
   let consoleDebugSpy: ReturnType<typeof spyOn>;
+  let consoleLogSpy: ReturnType<typeof spyOn>;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'omcodex-mcp-test-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'omcodex-mcp-config-test-'));
     consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
     consoleInfoSpy = spyOn(console, 'info').mockImplementation(() => {});
     consoleWarnSpy = spyOn(console, 'warn').mockImplementation(() => {});
@@ -27,17 +28,17 @@ describe('mcp-config', () => {
   });
 
   afterEach(async () => {
-    await rm(tempDir, { recursive: true, force: true });
     execSyncSpy?.mockRestore();
     consoleLogSpy.mockRestore();
     consoleInfoSpy.mockRestore();
     consoleWarnSpy.mockRestore();
     consoleErrorSpy.mockRestore();
     consoleDebugSpy.mockRestore();
+    await rm(tempDir, { recursive: true, force: true });
   });
 
   describe('checkUvAvailable', () => {
-    it('should return true when uv is available', async () => {
+    it('returns true when uv is available', async () => {
       execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
 
       const result = await checkUvAvailable();
@@ -46,9 +47,9 @@ describe('mcp-config', () => {
       expect(execSyncSpy).toHaveBeenCalledWith('uv --version', { stdio: 'pipe' });
     });
 
-    it('should return false when uv is not available', async () => {
+    it('returns false when uv is unavailable', async () => {
       execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => {
-        throw new Error('uv: command not found');
+        throw new Error('uv not found');
       });
 
       const result = await checkUvAvailable();
@@ -56,9 +57,9 @@ describe('mcp-config', () => {
       expect(result).toBe(false);
     });
 
-    it('should return false when execSync throws non-Error', async () => {
+    it('returns false when execSync throws a non-Error value', async () => {
       execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => {
-        throw 'Command failed';
+        throw 'uv failed';
       });
 
       const result = await checkUvAvailable();
@@ -68,305 +69,125 @@ describe('mcp-config', () => {
   });
 
   describe('generateMCPConfig', () => {
-    it('should skip generation when ontology directory does not exist', async () => {
-      // No ontology directory created
-
+    it('does not create config when ontology directory is absent', async () => {
       await generateMCPConfig(tempDir);
 
-      // .mcp.json should not be created
-      const mcpConfigPath = join(tempDir, '.mcp.json');
-      expect(await fileExists(mcpConfigPath)).toBe(false);
+      const configPath = getProjectMCPConfigPath(tempDir);
+      expect(await Bun.file(configPath).exists()).toBe(false);
     });
 
-    it('should generate .mcp.json when ontology directory exists', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.codex', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      // Mock execSync to avoid actual system calls
+    it('creates .codex/config.toml when ontology directory exists', async () => {
+      await mkdir(join(tempDir, '.codex', 'ontology'), { recursive: true });
       execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
 
       await generateMCPConfig(tempDir);
 
-      // Verify .mcp.json was created
-      const mcpConfigPath = join(tempDir, '.mcp.json');
-      expect(await fileExists(mcpConfigPath)).toBe(true);
+      const configPath = getProjectMCPConfigPath(tempDir);
+      const content = await readFile(configPath, 'utf-8');
 
-      // Verify content
-      const content = await readFile(mcpConfigPath, 'utf-8');
-      const config = JSON.parse(content);
-
-      expect(config.mcpServers).toBeDefined();
-      expect(config.mcpServers['ontology-rag']).toBeDefined();
-      expect(config.mcpServers['ontology-rag'].type).toBe('stdio');
-      expect(config.mcpServers['ontology-rag'].command).toBe('.venv/bin/python');
-      expect(config.mcpServers['ontology-rag'].args).toEqual(['-m', 'ontology_rag.mcp_server']);
-      expect(config.mcpServers['ontology-rag'].env).toBeDefined();
-      expect(config.mcpServers['ontology-rag'].env?.ONTOLOGY_DIR).toBe('.codex/ontology');
+      expect(content).toContain('[mcp_servers.ontology-rag]');
+      expect(content).toContain('command = ".venv/bin/python"');
+      expect(content).toContain('args = ["-m", "ontology_rag.mcp_server"]');
+      expect(content).toContain('[mcp_servers.ontology-rag.env]');
+      expect(content).toContain('ONTOLOGY_DIR = ".codex/ontology"');
     });
 
-    it('should call execSync to create venv and install ontology-rag', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.codex', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
+    it('creates config.toml inside the .codex directory when needed', async () => {
+      await mkdir(join(tempDir, '.codex', 'ontology'), { recursive: true });
+      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
 
-      const execCalls: string[] = [];
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((cmd) => {
-        execCalls.push(String(cmd));
+      await generateMCPConfig(tempDir);
+
+      expect(await Bun.file(getProjectMCPConfigPath(tempDir)).exists()).toBe(true);
+    });
+
+    it('checks uv and installs ontology-rag via execSync', async () => {
+      await mkdir(join(tempDir, '.codex', 'ontology'), { recursive: true });
+      const seenCommands: string[] = [];
+      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((command) => {
+        seenCommands.push(String(command));
         return Buffer.from('');
       });
 
       await generateMCPConfig(tempDir);
 
-      expect(execCalls).toContain('uv --version');
-      expect(execCalls).toContain('uv venv .venv');
-      expect(execCalls).toContain(
-        'uv pip install "ontology-rag @ git+https://github.com/baekenough/oh-my-customcodex.git#subdirectory=packages/ontology-rag"'
+      expect(seenCommands).toEqual([
+        'uv --version',
+        'uv venv .venv',
+        'uv pip install "ontology-rag @ git+https://github.com/baekenough/oh-my-customcodex.git#subdirectory=packages/ontology-rag"',
+      ]);
+    });
+
+    it('warns and skips config creation when uv is unavailable', async () => {
+      await mkdir(join(tempDir, '.codex', 'ontology'), { recursive: true });
+      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => {
+        throw new Error('uv not found');
+      });
+
+      await generateMCPConfig(tempDir);
+
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      expect(await Bun.file(getProjectMCPConfigPath(tempDir)).exists()).toBe(false);
+    });
+
+    it('warns and skips config creation when ontology-rag installation fails', async () => {
+      await mkdir(join(tempDir, '.codex', 'ontology'), { recursive: true });
+      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((command) => {
+        if (String(command) === 'uv --version') return Buffer.from('');
+        throw new Error('install failed');
+      });
+
+      await generateMCPConfig(tempDir);
+
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      expect(await Bun.file(getProjectMCPConfigPath(tempDir)).exists()).toBe(false);
+    });
+
+    it('appends ontology-rag config to an existing .codex/config.toml', async () => {
+      await mkdir(join(tempDir, '.codex', 'ontology'), { recursive: true });
+      const configPath = getProjectMCPConfigPath(tempDir);
+      await writeFile(
+        configPath,
+        'model = "gpt-5.4"\n\n[mcp_servers.context7]\ncommand = "npx"\nargs = ["-y", "@upstash/context7-mcp"]\n',
+        'utf-8'
       );
-    });
-
-    it('should warn and return if uv is not available', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.codex', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((cmd) => {
-        if (String(cmd).includes('--version')) {
-          throw new Error('uv: command not found');
-        }
-        return Buffer.from('');
-      });
-
-      await generateMCPConfig(tempDir);
-
-      // .mcp.json should not be created
-      const mcpConfigPath = join(tempDir, '.mcp.json');
-      expect(await fileExists(mcpConfigPath)).toBe(false);
-      expect(consoleWarnSpy).toHaveBeenCalled();
-    });
-
-    it('should warn and return if venv creation fails', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.codex', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((cmd) => {
-        if (String(cmd).includes('venv')) {
-          throw new Error('Failed to create venv');
-        }
-        return Buffer.from('');
-      });
-
-      await generateMCPConfig(tempDir);
-
-      // .mcp.json should not be created
-      const mcpConfigPath = join(tempDir, '.mcp.json');
-      expect(await fileExists(mcpConfigPath)).toBe(false);
-      expect(consoleWarnSpy).toHaveBeenCalled();
-    });
-
-    it('should warn and return if ontology-rag installation fails', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.codex', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((cmd) => {
-        if (String(cmd).includes('pip install')) {
-          throw new Error('Failed to install package');
-        }
-        return Buffer.from('');
-      });
-
-      await generateMCPConfig(tempDir);
-
-      // .mcp.json should not be created
-      const mcpConfigPath = join(tempDir, '.mcp.json');
-      expect(await fileExists(mcpConfigPath)).toBe(false);
-      expect(consoleWarnSpy).toHaveBeenCalled();
-    });
-
-    it('should warn and return on non-Error exceptions during setup', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.codex', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((cmd) => {
-        if (String(cmd).includes('--version')) {
-          throw 'Setup failed';
-        }
-        return Buffer.from('');
-      });
-
-      await generateMCPConfig(tempDir);
-
-      // .mcp.json should not be created
-      const mcpConfigPath = join(tempDir, '.mcp.json');
-      expect(await fileExists(mcpConfigPath)).toBe(false);
-      expect(consoleWarnSpy).toHaveBeenCalled();
-    });
-
-    it('should merge with existing .mcp.json', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.codex', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      // Create existing .mcp.json with other servers
-      const mcpConfigPath = join(tempDir, '.mcp.json');
-      const existingConfig = {
-        mcpServers: {
-          'other-server': {
-            type: 'stdio',
-            command: 'other-command',
-            args: ['--arg'],
-          },
-        },
-      };
-      await writeFile(mcpConfigPath, JSON.stringify(existingConfig, null, 2));
-
       execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
 
       await generateMCPConfig(tempDir);
 
-      // Verify merged content
-      const content = await readFile(mcpConfigPath, 'utf-8');
-      const config = JSON.parse(content);
-
-      expect(config.mcpServers['other-server']).toBeDefined();
-      expect(config.mcpServers['ontology-rag']).toBeDefined();
+      const content = await readFile(configPath, 'utf-8');
+      expect(content).toContain('model = "gpt-5.4"');
+      expect(content).toContain('[mcp_servers.context7]');
+      expect(content).toContain('[mcp_servers.ontology-rag]');
     });
 
-    it('should not overwrite existing ontology-rag configuration', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.codex', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      // Create existing .mcp.json with ontology-rag already configured
-      const mcpConfigPath = join(tempDir, '.mcp.json');
-      const existingConfig = {
-        mcpServers: {
-          'ontology-rag': {
-            type: 'stdio',
-            command: 'custom-python',
-            args: ['--custom'],
-          },
-        },
-      };
-      await writeFile(mcpConfigPath, JSON.stringify(existingConfig, null, 2));
-
+    it('does not overwrite an existing ontology-rag config block', async () => {
+      await mkdir(join(tempDir, '.codex', 'ontology'), { recursive: true });
+      const configPath = getProjectMCPConfigPath(tempDir);
+      await writeFile(
+        configPath,
+        '[mcp_servers.ontology-rag]\ncommand = "custom-python"\nargs = ["--custom"]\n',
+        'utf-8'
+      );
       execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
 
       await generateMCPConfig(tempDir);
 
-      // Verify existing config was preserved
-      const content = await readFile(mcpConfigPath, 'utf-8');
-      const config = JSON.parse(content);
-
-      expect(config.mcpServers['ontology-rag'].command).toBe('custom-python');
-      expect(config.mcpServers['ontology-rag'].args).toEqual(['--custom']);
+      const content = await readFile(configPath, 'utf-8');
+      expect(content).toContain('command = "custom-python"');
+      expect(content).toContain('args = ["--custom"]');
+      expect(content.match(/\[mcp_servers\.ontology-rag\]/g)?.length).toBe(1);
     });
 
-    it('should handle invalid existing .mcp.json', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.codex', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      // Create invalid .mcp.json
-      const mcpConfigPath = join(tempDir, '.mcp.json');
-      await writeFile(mcpConfigPath, '{ invalid json }');
-
+    it('writes a clean block when config.toml does not yet exist', async () => {
+      await mkdir(join(tempDir, '.codex', 'ontology'), { recursive: true });
       execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
 
       await generateMCPConfig(tempDir);
 
-      // Should write new config
-      const content = await readFile(mcpConfigPath, 'utf-8');
-      const config = JSON.parse(content);
-
-      expect(config.mcpServers['ontology-rag']).toBeDefined();
-    });
-
-    it('should format .mcp.json with proper indentation', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.codex', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
-
-      await generateMCPConfig(tempDir);
-
-      // Verify formatting
-      const content = await readFile(join(tempDir, '.mcp.json'), 'utf-8');
-
-      // Should be properly formatted with 2 spaces
-      expect(content).toContain('  "mcpServers"');
-      expect(content).toContain('    "ontology-rag"');
-      // Should end with newline
-      expect(content.endsWith('\n')).toBe(true);
-    });
-
-    it('should use correct ontology directory path in env', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.codex', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
-
-      await generateMCPConfig(tempDir);
-
-      const content = await readFile(join(tempDir, '.mcp.json'), 'utf-8');
-      const config = JSON.parse(content);
-
-      // ONTOLOGY_DIR should be relative to project root
-      expect(config.mcpServers['ontology-rag'].env.ONTOLOGY_DIR).toBe('.codex/ontology');
-    });
-  });
-
-  describe('edge cases', () => {
-    it('should handle empty existing mcpServers object', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.codex', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      // Create existing .mcp.json with empty mcpServers
-      const mcpConfigPath = join(tempDir, '.mcp.json');
-      const existingConfig = {
-        mcpServers: {},
-      };
-      await writeFile(mcpConfigPath, JSON.stringify(existingConfig, null, 2));
-
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
-
-      await generateMCPConfig(tempDir);
-
-      // Should add ontology-rag
-      const content = await readFile(mcpConfigPath, 'utf-8');
-      const config = JSON.parse(content);
-
-      expect(config.mcpServers['ontology-rag']).toBeDefined();
-    });
-
-    it('should handle existing .mcp.json without mcpServers property', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.codex', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      // Create existing .mcp.json without mcpServers
-      const mcpConfigPath = join(tempDir, '.mcp.json');
-      const existingConfig = {
-        otherProperty: 'value',
-      };
-      await writeFile(mcpConfigPath, JSON.stringify(existingConfig, null, 2));
-
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
-
-      await generateMCPConfig(tempDir);
-
-      // Should add mcpServers with ontology-rag
-      const content = await readFile(mcpConfigPath, 'utf-8');
-      const config = JSON.parse(content);
-
-      expect(config.mcpServers).toBeDefined();
-      expect(config.mcpServers['ontology-rag']).toBeDefined();
+      const content = await readFile(getProjectMCPConfigPath(tempDir), 'utf-8');
+      expect(content.startsWith('[mcp_servers.ontology-rag]')).toBe(true);
+      expect(content.endsWith('"\n')).toBe(true);
     });
   });
 });

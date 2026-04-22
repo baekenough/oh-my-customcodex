@@ -2,6 +2,7 @@ import type { PageServerLoad } from './$types';
 import { getAnalytics, type AnalyticsData } from '$lib/server/analytics';
 import { readdir } from 'fs/promises';
 import { join } from 'path';
+import { detectServeProjectLayout } from '$lib/server/runtime-layout';
 
 interface ProjectDetail {
 	agentCount: number;
@@ -10,7 +11,32 @@ interface ProjectDetail {
 	ruleCount: number;
 }
 
+async function countSkillDirectories(dir: string): Promise<number> {
+	try {
+		const entries = await readdir(dir, { withFileTypes: true });
+		let count = 0;
+
+		for (const entry of entries) {
+			const child = join(dir, entry.name);
+			if (entry.isDirectory()) {
+				const childEntries = await readdir(child, { withFileTypes: true });
+				if (childEntries.some((nested) => nested.isFile() && nested.name === 'SKILL.md')) {
+					count++;
+				} else {
+					count += await countSkillDirectories(child);
+				}
+			}
+		}
+
+		return count;
+	} catch {
+		return 0;
+	}
+}
+
 async function getProjectDetail(root: string): Promise<ProjectDetail> {
+	const layout = await detectServeProjectLayout(root);
+
 	const count = async (dir: string, pattern?: string) => {
 		try {
 			const entries = await readdir(dir);
@@ -20,27 +46,13 @@ async function getProjectDetail(root: string): Promise<ProjectDetail> {
 		}
 	};
 
-	// For skills, count directories containing SKILL.md
-	let skillCount = 0;
-	try {
-		const skillDirs = await readdir(join(root, '.claude', 'skills'));
-		for (const d of skillDirs) {
-			try {
-				await readdir(join(root, '.claude', 'skills', d)); // check it's a dir
-				skillCount++;
-			} catch {
-				/* skip files */
-			}
-		}
-	} catch {
-		/* no skills dir */
-	}
+	const skillCount = await countSkillDirectories(join(root, layout.skillsDir));
 
 	return {
-		agentCount: await count(join(root, '.claude', 'agents'), '.md'),
+		agentCount: await count(join(root, layout.agentsDir), '.md'),
 		skillCount,
 		guideCount: await count(join(root, 'guides')),
-		ruleCount: await count(join(root, '.claude', 'rules'), '.md')
+		ruleCount: await count(join(root, layout.rulesDir), '.md')
 	};
 }
 

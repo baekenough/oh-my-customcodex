@@ -1,6 +1,6 @@
 # ontology-rag
 
-Ontology+RAG context engine for oh-my-customcode agent systems.
+Ontology+RAG context engine for oh-my-customcodex / Codex + OMX agent systems.
 
 ## Features
 
@@ -121,7 +121,7 @@ pytest tests/ -v
 
 ## MCP Server
 
-The package includes an MCP server for direct integration with Claude Code.
+The package includes an MCP server for direct integration with Codex + OMX clients.
 
 ### Running the Server
 
@@ -154,23 +154,17 @@ ONTOLOGY_DIR=/path/to/ontology python -m ontology_rag.mcp_server
 | `ontology://agent/{name}` | Agent detail with skills and rules |
 | `ontology://rule/{id}` | Rule summary or full markdown text |
 
-### Claude Code Configuration
+### Codex / OMX Configuration
 
-Add to your `.mcp.json`:
+Add this block to your project-scoped `.codex/config.toml`:
 
-```json
-{
-  "mcpServers": {
-    "ontology-rag": {
-      "type": "stdio",
-      "command": "python",
-      "args": ["-m", "ontology_rag.mcp_server"],
-      "env": {
-        "ONTOLOGY_DIR": ".claude/ontology"
-      }
-    }
-  }
-}
+```toml
+[mcp_servers.ontology-rag]
+command = ".venv/bin/python"
+args = ["-m", "ontology_rag.mcp_server"]
+
+[mcp_servers.ontology-rag.env]
+ONTOLOGY_DIR = ".codex/ontology"
 ```
 
 ### Caching

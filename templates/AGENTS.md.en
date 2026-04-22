@@ -129,10 +129,11 @@ project/
 +-- AGENTS.md                    # Entry point
 +-- .codex/
 |   +-- agents/                  # Subagent definitions (44 files)
-|   +-- skills/                  # Skills (74 directories)
 |   +-- rules/                   # Global rules (R000-R020)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (ecomode)
++-- .agents/
+|   +-- skills/                  # Installed skills (74 directories)
 +-- guides/                      # Reference docs (26 topics)
 ```
 

@@ -102,7 +102,7 @@
 						</div>
 					{:else}
 						<div class="rounded-lg border border-zinc-800 p-6 text-center text-sm text-zinc-600">
-							No agent data yet. Run Claude Code sessions to populate.
+							No agent data yet. Run Codex/OMX sessions to populate.
 						</div>
 					{/if}
 				</div>
@@ -132,7 +132,7 @@
 						</div>
 					{:else}
 						<div class="rounded-lg border border-zinc-800 p-6 text-center text-sm text-zinc-600">
-							No skill data yet. Run Claude Code sessions to populate.
+							No skill data yet. Run Codex/OMX sessions to populate.
 						</div>
 					{/if}
 				</div>
@@ -142,7 +142,7 @@
 		<div class="mb-10">
 			<h2 class="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">Analytics</h2>
 			<div class="rounded-lg border border-zinc-800 bg-zinc-900/20 px-5 py-6 text-sm text-zinc-600">
-				No session data yet. Analytics appear after Claude Code sessions are recorded via
+				No session data yet. Analytics appear after Codex/OMX sessions are recorded via
 				<code class="text-zinc-500">eval-core</code>.
 			</div>
 		</div>

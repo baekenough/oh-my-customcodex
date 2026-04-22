@@ -6,14 +6,17 @@ import { getProjectRoot, getSkills } from '$lib/server/data';
 import { parseNaturalLanguage, buildAgentMarkdown, sanitizeName } from '$lib/server/agent-generator';
 import { parseFrontmatter } from '$lib/server/frontmatter';
 import { isClaudeAvailable, generateAgentWithClaude } from '$lib/server/claude-cli';
+import { detectServeProjectLayout } from '$lib/server/runtime-layout';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { root } = await parent();
+	const layout = await detectServeProjectLayout(root);
 	const skills = await getSkills(root);
 	const claudeAvailable = await isClaudeAvailable();
 	return {
 		skillNames: skills.map((s) => s.name),
-		claudeAvailable
+		claudeAvailable,
+		agentSaveDir: layout.agentsDir
 	};
 };
 
@@ -105,7 +108,8 @@ export const actions: Actions = {
 		}
 
 		const root = await getProjectRoot();
-		const allowedDir = resolve(root, '.claude', 'agents');
+		const layout = await detectServeProjectLayout(root);
+		const allowedDir = resolve(root, layout.agentsDir);
 		const agentPath = join(allowedDir, `${name}.md`);
 
 		// Path containment check — prevent directory traversal

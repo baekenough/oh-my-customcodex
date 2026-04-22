@@ -33,10 +33,10 @@
 		<a href="/guides" class="text-zinc-500 hover:text-zinc-300 text-sm mb-3 inline-block">← Guides</a>
 		<div class="flex items-center gap-3">
 			<h1 class="text-2xl font-bold text-zinc-50">New Guide</h1>
-			<!-- Claude availability badge -->
+			<!-- Optional Claude CLI compatibility helper badge -->
 			{#if data.claudeAvailable}
 				<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-900/50 text-emerald-400 border border-emerald-700/50">
-					Claude Code ✓
+					Claude CLI helper
 				</span>
 			{:else}
 				<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-800 text-zinc-500 border border-zinc-700">
@@ -83,7 +83,7 @@
 					{#if analyzing}
 						<span class="flex items-center gap-2">
 							<span class="inline-block animate-spin">⟳</span>
-							{data.claudeAvailable ? 'Claude Code로 분석 중...' : 'Analyzing...'}
+							{data.claudeAvailable ? 'Claude CLI helper로 생성 중...' : 'Analyzing...'}
 						</span>
 					{:else}
 						Analyze
@@ -92,9 +92,9 @@
 
 				<!-- Mode badge shown after analysis -->
 				{#if analysisMode === 'claude'}
-					<span class="text-xs text-emerald-400">🤖 Claude Code로 생성</span>
+					<span class="text-xs text-emerald-400">🤖 Claude CLI helper로 생성</span>
 				{:else if analysisMode === 'keyword-fallback'}
-					<span class="text-xs text-amber-400">⚠ Claude Code를 사용할 수 없습니다. 키워드 기반으로 전환합니다.</span>
+					<span class="text-xs text-amber-400">⚠ Claude CLI helper를 사용할 수 없습니다. 키워드 기반으로 전환합니다.</span>
 				{:else if analysisMode === 'keyword'}
 					<span class="text-xs text-zinc-500">📝 키워드 기반 생성</span>
 				{/if}

@@ -9,7 +9,11 @@ import { readFileSync, readdirSync } from 'fs';
 
 const HOME = process.env.HOME ?? process.env.USERPROFILE ?? '~';
 const EVAL_DIR = join(HOME, '.omcustom', 'evaluations');
-const EVAL_CORE_DB_PATH = join(HOME, '.config', 'oh-my-customcode', 'eval-core.sqlite');
+const EVAL_CORE_DB_PATHS = [
+	join(HOME, '.oh-my-customcodex', 'eval-core.sqlite'),
+	join(HOME, '.omcustom', 'eval.db'),
+	join(HOME, '.config', 'oh-my-customcode', 'eval-core.sqlite')
+];
 
 // ---------------------------------------------------------------------------
 // Types
@@ -106,7 +110,8 @@ export async function saveEvaluation(
 }
 
 // ---------------------------------------------------------------------------
-// Session summaries — derived from /tmp/.claude-task-outcomes-* JSONL files
+// Session summaries — derived from /tmp outcome JSONL files.
+// Prefer the active Codex prefix, but keep the legacy Claude prefix for compatibility.
 // ---------------------------------------------------------------------------
 
 function readTaskOutcomesSync(): TaskOutcome[] {
@@ -121,7 +126,10 @@ function readTaskOutcomesSync(): TaskOutcome[] {
 			return outcomes;
 		}
 
-		const matchingFiles = tmpFiles.filter((f) => f.startsWith('.claude-task-outcomes-'));
+		const prefixes = ['.codex-task-outcomes-', '.claude-task-outcomes-'];
+		const matchingFiles = tmpFiles.filter((f) =>
+			prefixes.some((prefix) => f.startsWith(prefix))
+		);
 
 		for (const file of matchingFiles) {
 			try {
@@ -146,34 +154,38 @@ function readTaskOutcomesSync(): TaskOutcome[] {
 }
 
 function readEvalCoreSessionsSync(): TaskOutcome[] {
-	try {
-		// eslint-disable-next-line @typescript-eslint/no-require-imports
-		const { Database } = require('bun:sqlite') as { Database: new (path: string, options?: { readonly?: boolean }) => { query: (sql: string) => { all: () => unknown[] }; close: () => void } };
-		const db = new Database(EVAL_CORE_DB_PATH, { readonly: true });
-		const rows = db.query(`
-			SELECT agent_type, outcome, model, timestamp, session_id
-			FROM agent_invocations
-			ORDER BY timestamp DESC
-			LIMIT 1000
-		`).all() as Array<{
-			agent_type: string;
-			outcome: string;
-			model: string;
-			timestamp: string;
-			session_id: string;
-		}>;
-		db.close();
+	for (const dbPath of EVAL_CORE_DB_PATHS) {
+		try {
+			// eslint-disable-next-line @typescript-eslint/no-require-imports
+			const { Database } = require('bun:sqlite') as { Database: new (path: string, options?: { readonly?: boolean }) => { query: (sql: string) => { all: () => unknown[] }; close: () => void } };
+			const db = new Database(dbPath, { readonly: true });
+			const rows = db.query(`
+				SELECT agent_type, outcome, model, timestamp, session_id
+				FROM agent_invocations
+				ORDER BY timestamp DESC
+				LIMIT 1000
+			`).all() as Array<{
+				agent_type: string;
+				outcome: string;
+				model: string;
+				timestamp: string;
+				session_id: string;
+			}>;
+			db.close();
 
-		return rows.map((r) => ({
-			agent_type: r.agent_type,
-			outcome: r.outcome,
-			model: r.model,
-			timestamp: r.timestamp,
-			session_id: r.session_id
-		}));
-	} catch {
-		return [];
+			return rows.map((r) => ({
+				agent_type: r.agent_type,
+				outcome: r.outcome,
+				model: r.model,
+				timestamp: r.timestamp,
+				session_id: r.session_id
+			}));
+		} catch {
+			// Try the next compatibility path.
+		}
 	}
+
+	return [];
 }
 
 export async function getSessionSummaries(): Promise<SessionSummary[]> {
