@@ -21,7 +21,7 @@
   "cli": {
     "description": "GPT Codex + OMX 위의 올인원 에이전트 하네스",
     "versionOption": "버전 번호 표시",
-    "usage": "사용법: omcodex <명령어> [옵션]",
+    "usage": "사용법: omcustomcodex <명령어> [옵션]",
     "commands": "명령어",
     "options": "옵션",
     "examples": "예제",
@@ -66,7 +66,7 @@
       "symlinking": "심볼릭 링크 생성 중...",
       "verifying": "설치 확인 중...",
       "success": "oh-my-customcodex 초기화 완료!",
-      "verificationFailed": "설치 확인 실패. 'omcodex doctor'를 실행하여 자세한 내용을 확인하세요.",
+      "verificationFailed": "설치 확인 실패. 'omcustomcodex doctor'를 실행하여 자세한 내용을 확인하세요.",
       "failed": "초기화 실패:",
       "alreadyInitialized": "이 디렉토리에 oh-my-customcodex가 이미 초기화되어 있습니다",
       "configCreated": "설정 파일 생성됨: {{path}}",
@@ -99,7 +99,7 @@
       "description": "에이전트 및 설정을 최신 버전으로 업데이트",
       "checking": "업데이트 확인 중...",
       "notInstalled": "이 디렉토리에 oh-my-customcodex가 설치되어 있지 않습니다.",
-      "runInitFirst": "먼저 'omcodex init'을 실행하여 설치하세요.",
+      "runInitFirst": "먼저 'omcustomcodex init'을 실행하여 설치하세요.",
       "alreadyLatest": "이미 최신 버전입니다.",
       "updating": "{{from}}에서 {{to}}로 업데이트 중...",
       "success": "최신 버전으로 업데이트 완료!",
@@ -188,7 +188,7 @@
       "description": "설정 문제 확인 및 수정",
       "fixOption": "자동으로 수정 가능한 문제 수정",
       "updatesOption": "oh-my-customcodex 업데이트 확인",
-      "updateAvailable": "업데이트 가능: v{{current}} → v{{latest}}. 'omcodex update'를 실행하여 적용하세요.",
+      "updateAvailable": "업데이트 가능: v{{current}} → v{{latest}}. 'omcustomcodex update'를 실행하여 적용하세요.",
       "updateUpToDate": "oh-my-customcodex가 최신 상태입니다 (v{{version}})",
       "updateCheckFailed": "업데이트 확인 실패 ({{reason}})",
       "checking": "진단 검사 실행 중...",
@@ -197,7 +197,7 @@
       "fixed": "{{name}}이(가) 수정되었습니다",
       "passed": "모든 검사 통과!",
       "failed": "일부 검사 실패.",
-      "runWithFix": "'omcodex doctor --fix'를 실행하여 {{count}}개 문제를 자동으로 수정할 수 있습니다.",
+      "runWithFix": "'omcustomcodex doctor --fix'를 실행하여 {{count}}개 문제를 자동으로 수정할 수 있습니다.",
       "summary": "요약: {{pass}}개 통과, {{warn}}개 경고, {{fail}}개 실패, {{fixed}}개 수정됨",
       "running": "상태 검사 실행 중...",
       "checkingConfig": "설정 확인 중...",
@@ -257,7 +257,7 @@
         },
         "framework": {
           "pass": "프레임워크가 최신 상태입니다 (v{{version}})",
-          "warn": "프레임워크가 구버전입니다: 설치됨 v{{installed}}, 최신 v{{latest}} ({{behind}}개 버전 뒤처짐). 'omcodex update'를 실행하여 동기화하세요."
+          "warn": "프레임워크가 구버전입니다: 설치됨 v{{installed}}, 최신 v{{latest}} ({{behind}}개 버전 뒤처짐). 'omcustomcodex update'를 실행하여 동기화하세요."
         },
         "rtk": {
           "pass": "RTK 설치됨",
@@ -288,16 +288,16 @@
         "description": "Web UI 서버 상태 표시",
         "running": "Web UI 실행 중: http://localhost:{{port}}",
         "notRunning": "Web UI가 실행 중이 아닙니다",
-        "startHint": "  시작하려면: omcodex web start"
+        "startHint": "  시작하려면: omcustomcodex web start"
       },
       "open": {
         "description": "기본 브라우저에서 Web UI 열기",
         "portOption": "포트 번호",
-        "notRunningWarn": "Web UI가 실행 중이지 않은 것 같습니다. 먼저 시작하세요: omcodex web start"
+        "notRunningWarn": "Web UI가 실행 중이지 않은 것 같습니다. 먼저 시작하세요: omcustomcodex web start"
       },
       "deprecated": {
-        "serve": "[Deprecated] `omcodex serve` is deprecated. Use `omcodex web start` instead.",
-        "serveStop": "[Deprecated] `omcodex serve-stop` is deprecated. Use `omcodex web stop` instead."
+        "serve": "[Deprecated] `omcustomcodex serve` is deprecated. Use `omcustomcodex web start` instead.",
+        "serveStop": "[Deprecated] `omcustomcodex serve-stop` is deprecated. Use `omcustomcodex web stop` instead."
       }
     },
     "sync": {

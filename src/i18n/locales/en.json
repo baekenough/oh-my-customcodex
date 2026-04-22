@@ -21,7 +21,7 @@
   "cli": {
     "description": "Batteries-included agent harness on top of GPT Codex + OMX",
     "versionOption": "Show version number",
-    "usage": "Usage: omcodex <command> [options]",
+    "usage": "Usage: omcustomcodex <command> [options]",
     "commands": "Commands",
     "options": "Options",
     "examples": "Examples",
@@ -66,7 +66,7 @@
       "symlinking": "Creating symlinks...",
       "verifying": "Verifying installation...",
       "success": "Successfully initialized oh-my-customcodex!",
-      "verificationFailed": "Installation verification failed. Run 'omcodex doctor' for details.",
+      "verificationFailed": "Installation verification failed. Run 'omcustomcodex doctor' for details.",
       "failed": "Failed to initialize:",
       "alreadyInitialized": "oh-my-customcodex is already initialized in this directory",
       "configCreated": "Configuration created at {{path}}",
@@ -99,7 +99,7 @@
       "description": "Update agents and configurations to latest version",
       "checking": "Checking for updates...",
       "notInstalled": "oh-my-customcodex is not installed in this directory.",
-      "runInitFirst": "Run 'omcodex init' first to install.",
+      "runInitFirst": "Run 'omcustomcodex init' first to install.",
       "alreadyLatest": "Already at the latest version.",
       "updating": "Updating from {{from}} to {{to}}...",
       "success": "Successfully updated to the latest version!",
@@ -188,7 +188,7 @@
       "description": "Check and fix configuration issues",
       "fixOption": "Automatically fix issues that can be fixed",
       "updatesOption": "Check for oh-my-customcodex updates",
-      "updateAvailable": "Update available: v{{current}} → v{{latest}}. Run 'omcodex update' to apply.",
+      "updateAvailable": "Update available: v{{current}} → v{{latest}}. Run 'omcustomcodex update' to apply.",
       "updateUpToDate": "oh-my-customcodex is up to date (v{{version}})",
       "updateCheckFailed": "Update check failed ({{reason}})",
       "checking": "Running diagnostic checks...",
@@ -197,7 +197,7 @@
       "fixed": "{{name}} has been fixed",
       "passed": "All checks passed!",
       "failed": "Some checks failed.",
-      "runWithFix": "Run 'omcodex doctor --fix' to fix {{count}} issue(s) automatically.",
+      "runWithFix": "Run 'omcustomcodex doctor --fix' to fix {{count}} issue(s) automatically.",
       "summary": "Summary: {{pass}} passed, {{warn}} warnings, {{fail}} failed, {{fixed}} fixed",
       "running": "Running health checks...",
       "checkingConfig": "Checking configuration...",
@@ -257,7 +257,7 @@
         },
         "framework": {
           "pass": "Framework is up to date (v{{version}})",
-          "warn": "Framework is outdated: installed v{{installed}}, latest v{{latest}} ({{behind}} version(s) behind). Run 'omcodex update' to sync."
+          "warn": "Framework is outdated: installed v{{installed}}, latest v{{latest}} ({{behind}} version(s) behind). Run 'omcustomcodex update' to sync."
         },
         "rtk": {
           "pass": "RTK installed",
@@ -288,16 +288,16 @@
         "description": "Show Web UI server status",
         "running": "Web UI is running: http://localhost:{{port}}",
         "notRunning": "Web UI is not running",
-        "startHint": "  Start with: omcodex web start"
+        "startHint": "  Start with: omcustomcodex web start"
       },
       "open": {
         "description": "Open the Web UI in the default browser",
         "portOption": "Port number",
-        "notRunningWarn": "Web UI does not appear to be running. Start it with: omcodex web start"
+        "notRunningWarn": "Web UI does not appear to be running. Start it with: omcustomcodex web start"
       },
       "deprecated": {
-        "serve": "[Deprecated] `omcodex serve` is deprecated. Use `omcodex web start` instead.",
-        "serveStop": "[Deprecated] `omcodex serve-stop` is deprecated. Use `omcodex web stop` instead."
+        "serve": "[Deprecated] `omcustomcodex serve` is deprecated. Use `omcustomcodex web start` instead.",
+        "serveStop": "[Deprecated] `omcustomcodex serve-stop` is deprecated. Use `omcustomcodex web stop` instead."
       }
     },
     "sync": {

@@ -16,7 +16,7 @@
 48 agents. 112 skills. 22 rules. One command.
 
 ```bash
-npm install -g oh-my-customcodex && cd your-project && omcodex init
+npm install -g oh-my-customcodex && cd your-project && omcustomcodex init
 ```
 
 ---
@@ -249,21 +249,21 @@ Security hooks are advisory (exit 0). They warn but never block.
 ## CLI
 
 ```bash
-omcodex init                  # Interactive setup wizard (language, framework, team mode)
-omcodex init --lang ko        # Initialize with Korean
-omcodex init --from-snapshot  # Install from pre-configured team snapshot
-omcodex sync                  # Detect drift between .codex/ state and lockfile
-omcodex sync --check          # Check for drift without applying changes
-omcodex sync --export         # Export current state as team snapshot
-omcodex update                # Update to latest
-omcodex list                  # List components
-omcodex doctor                # Verify installation
-omcodex doctor --fix          # Auto-fix issues
-omcodex security              # Scan for security issues
-omcodex projects              # List managed projects with version status
-omcodex update --all          # Batch update all outdated projects
-omcodex serve                 # Start built-in Web UI
-omcodex serve-stop            # Stop Web UI
+omcustomcodex init                  # Interactive setup wizard (language, framework, team mode)
+omcustomcodex init --lang ko        # Initialize with Korean
+omcustomcodex init --from-snapshot  # Install from pre-configured team snapshot
+omcustomcodex sync                  # Detect drift between .codex/ state and lockfile
+omcustomcodex sync --check          # Check for drift without applying changes
+omcustomcodex sync --export         # Export current state as team snapshot
+omcustomcodex update                # Update to latest
+omcustomcodex list                  # List components
+omcustomcodex doctor                # Verify installation
+omcustomcodex doctor --fix          # Auto-fix issues
+omcustomcodex security              # Scan for security issues
+omcustomcodex projects              # List managed projects with version status
+omcustomcodex update --all          # Batch update all outdated projects
+omcustomcodex serve                 # Start built-in Web UI
+omcustomcodex serve-stop            # Stop Web UI
 ```
 
 ---
@@ -293,11 +293,11 @@ your-project/
 
 ## External Tool Integrations
 
-RTK is automatically installed during `omcodex init` for 60-90% token savings. Other tools are optional:
+RTK is automatically installed during `omcustomcodex init` for 60-90% token savings. Other tools are optional:
 
 | Tool | Purpose | Install | Status |
 |------|---------|---------|--------|
-| [RTK](https://github.com/rtk-ai/rtk) | 60-90% token savings on CLI output | Auto-installed via `omcodex init` | **Recommended** |
+| [RTK](https://github.com/rtk-ai/rtk) | 60-90% token savings on CLI output | Auto-installed via `omcustomcodex init` | **Recommended** |
 | [Codex CLI](https://github.com/openai/codex) | OpenAI Codex hybrid workflows | `npm i -g @openai/codex` | Optional |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Google Gemini hybrid workflows | `npm i -g @google/gemini-cli` | Optional |
 

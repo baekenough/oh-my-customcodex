@@ -139,12 +139,12 @@ describe('self-update module', () => {
 
   describe('isNpxInvocation', () => {
     it('should detect _npx in argv[1] path (unix)', () => {
-      const argv = ['node', '/path/to/_npx/12345/node_modules/.bin/omcodex'];
+      const argv = ['node', '/path/to/_npx/12345/node_modules/.bin/omcustomcodex'];
       expect(isNpxInvocation(argv, {})).toBe(true);
     });
 
     it('should detect _npx in argv[1] path (windows)', () => {
-      const argv = ['node', 'C:\\path\\to\\_npx\\12345\\node_modules\\.bin\\omcodex.cmd'];
+      const argv = ['node', 'C:\\path\\to\\_npx\\12345\\node_modules\\.bin\\omcustomcodex.cmd'];
       expect(isNpxInvocation(argv, {})).toBe(true);
     });
 
@@ -167,7 +167,7 @@ describe('self-update module', () => {
     });
 
     it('should return false for normal invocation', () => {
-      const argv = ['node', '/usr/local/bin/omcodex'];
+      const argv = ['node', '/usr/local/bin/omcustomcodex'];
       const env = {};
       expect(isNpxInvocation(argv, env)).toBe(false);
     });
@@ -530,7 +530,7 @@ describe('self-update module', () => {
         cachePath: createCachePath('exec-cache-1.json'),
         fetchLatestVersion: () => '1.0.0', // same version → no update
         now: Date.now(),
-        argv: ['node', '/usr/local/bin/omcodex'],
+        argv: ['node', '/usr/local/bin/omcustomcodex'],
         env: {},
       };
 
@@ -548,7 +548,7 @@ describe('self-update module', () => {
         fetchLatestVersion: () => {
           throw new Error('Should not fetch for npx invocation');
         },
-        argv: ['node', '/path/to/_npx/12345/node_modules/.bin/omcodex'],
+        argv: ['node', '/path/to/_npx/12345/node_modules/.bin/omcustomcodex'],
         env: {},
       };
 
@@ -564,7 +564,7 @@ describe('self-update module', () => {
         fetchLatestVersion: () => {
           throw new Error('Should not fetch in CI');
         },
-        argv: ['node', '/usr/local/bin/omcodex'],
+        argv: ['node', '/usr/local/bin/omcustomcodex'],
         env: { CI: 'true' },
       };
 
@@ -580,7 +580,7 @@ describe('self-update module', () => {
         fetchLatestVersion: () => {
           throw new Error('Should not fetch when skip env is set');
         },
-        argv: ['node', '/usr/local/bin/omcodex'],
+        argv: ['node', '/usr/local/bin/omcustomcodex'],
         env: { OMCODEX_SKIP_SELF_UPDATE: 'true' },
       };
 
@@ -596,7 +596,7 @@ describe('self-update module', () => {
         fetchLatestVersion: () => {
           throw new Error('Should not fetch in GitHub Actions');
         },
-        argv: ['node', '/usr/local/bin/omcodex'],
+        argv: ['node', '/usr/local/bin/omcustomcodex'],
         env: { GITHUB_ACTIONS: 'true' },
       };
 
@@ -611,7 +611,7 @@ describe('self-update module', () => {
         cachePath: createCachePath('exec-cache-6.json'),
         fetchLatestVersion: () => '2.0.0',
         now: Date.now(),
-        argv: ['node', '/usr/local/bin/omcodex'],
+        argv: ['node', '/usr/local/bin/omcustomcodex'],
         env: {},
       };
 
@@ -628,7 +628,7 @@ describe('self-update module', () => {
         cachePath: createCachePath('exec-cache-7.json'),
         fetchLatestVersion: () => null,
         now: Date.now(),
-        argv: ['node', '/usr/local/bin/omcodex'],
+        argv: ['node', '/usr/local/bin/omcustomcodex'],
         env: {},
       };
 
@@ -660,7 +660,7 @@ describe('self-update module', () => {
         },
         forceRefresh: true,
         now,
-        argv: ['node', '/usr/local/bin/omcodex'],
+        argv: ['node', '/usr/local/bin/omcustomcodex'],
         env: {},
       });
 
@@ -690,7 +690,7 @@ describe('self-update module', () => {
           return '1.0.0';
         },
         now,
-        argv: ['node', '/usr/local/bin/omcodex'],
+        argv: ['node', '/usr/local/bin/omcustomcodex'],
         env: {},
       });
 
@@ -754,7 +754,7 @@ describe('self-update module', () => {
     it('should return immediately when --skip-version-check flag is present', async () => {
       const options: SelfUpdateOptions = {
         currentVersion: '1.0.0',
-        argv: ['node', 'omcodex', 'init', '--skip-version-check'],
+        argv: ['node', 'omcustomcodex', 'init', '--skip-version-check'],
         fetchLatestVersion: () => {
           throw new Error('Should not fetch with --skip-version-check');
         },

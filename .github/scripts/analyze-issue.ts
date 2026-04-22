@@ -64,7 +64,7 @@ const CONFIG = {
 
 const DEFAULT_PROJECT_CONTEXT = `oh-my-customcodex is a child npm package of oh-my-customcode that ports the parent Claude Code native harness onto a GPT Codex + OMX stack.
 Key components: Agents (48), Skills (106), Rules (22), Guides (38).
-Commands: omcodex init, list, doctor.
+Commands: omcustomcodex init, list, doctor.
 Tech: TypeScript/Bun, GitHub Actions, npm.`;
 
 // ============================================================================

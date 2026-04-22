@@ -16,41 +16,45 @@ const PACKAGE_JSON_PATH = join(TEST_DIR, '../../../package.json');
 describe('cli command aliases', () => {
   beforeEach(async () => {
     await initI18n('en');
-    setActiveCliCommandName('omcodex');
+    setActiveCliCommandName('omcustomcodex');
   });
 
-  it('detects omcustomx from the invoked binary path', () => {
-    expect(detectCliCommandName(['node', '/usr/local/bin/omcustomx'])).toBe('omcustomx');
-    expect(detectCliCommandName(['node', 'C:\\tools\\omcustomx.cmd'])).toBe('omcustomx');
+  it('detects omcustomcodex from the invoked binary path', () => {
     expect(detectCliCommandName(['node', '/usr/local/bin/omcustomcodex'])).toBe('omcustomcodex');
+    expect(detectCliCommandName(['node', 'C:\\tools\\omcustomcodex.cmd'])).toBe('omcustomcodex');
   });
 
-  it('rewrites standalone omcodex command references for alias output', () => {
-    setActiveCliCommandName('omcustomx');
+  it('rewrites standalone command references to the active canonical name', () => {
+    setActiveCliCommandName('omcustomcodex');
 
-    expect(i18n.t('cli.update.runInitFirst')).toContain("'omcustomx init'");
-    expect(i18n.t('cli.web.status.startHint')).toContain('omcustomx web start');
+    expect(i18n.t('cli.update.runInitFirst')).toContain("'omcustomcodex init'");
+    expect(i18n.t('cli.web.status.startHint')).toContain('omcustomcodex web start');
     expect(rewriteCliCommandReferences('See .omcodex.lock.json and run omcodex doctor')).toBe(
-      'See .omcodex.lock.json and run omcustomx doctor'
+      'See .omcodex.lock.json and run omcustomcodex doctor'
+    );
+    expect(rewriteCliCommandReferences('Run omcustom doctor if the old package is installed')).toBe(
+      'Run omcustomcodex doctor if the old package is installed'
     );
   });
 
   it('uses the active command name in commander help output', () => {
-    const program = createProgram('omcustomx');
+    const program = createProgram('omcustomcodex');
     const help = program.helpInformation().replace(/\s+/g, ' ');
 
-    expect(program.name()).toBe('omcustomx');
-    expect(help).toContain('Usage: omcustomx');
+    expect(program.name()).toBe('omcustomcodex');
+    expect(help).toContain('Usage: omcustomcodex');
     expect(help).toContain('(Deprecated) Start the Web UI server');
-    expect(help).toContain('omcustomx web start');
+    expect(help).toContain('omcustomcodex web start');
   });
 
-  it('publishes extended binary aliases', async () => {
+  it('publishes only the non-conflicting binary aliases', async () => {
     const packageJson = JSON.parse(await readFile(PACKAGE_JSON_PATH, 'utf-8')) as {
       bin?: Record<string, string>;
     };
 
-    expect(packageJson.bin?.omcustomx).toBe('./dist/cli/index.js');
+    expect(packageJson.bin?.omcustom).toBeUndefined();
+    expect(packageJson.bin?.omcustomx).toBeUndefined();
+    expect(packageJson.bin?.omcodex).toBeUndefined();
     expect(packageJson.bin?.omcustomcodex).toBe('./dist/cli/index.js');
   });
 });

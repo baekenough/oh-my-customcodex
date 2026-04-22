@@ -40,7 +40,7 @@
 	<aside class="w-52 shrink-0 border-r border-zinc-800 bg-zinc-950 flex flex-col">
 		<!-- Logo -->
 		<div class="px-4 py-5 border-b border-zinc-800">
-			<span class="text-emerald-400 font-bold text-lg tracking-tight">omcustom</span>
+			<span class="text-emerald-400 font-bold text-lg tracking-tight">omcustomcodex</span>
 			<div class="text-zinc-600 text-xs mt-0.5">agent harness</div>
 		</div>
 

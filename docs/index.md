@@ -42,7 +42,7 @@ npm install -g oh-my-customcodex
 
 # Initialize in your project
 cd your-project
-omcodex init
+omcustomcodex init
 ```
 
 That's it! Your project now has a full agent system ready to use with GPT Codex + OMX.

@@ -1,8 +1,8 @@
 import { basename } from 'node:path';
 
-export const DEFAULT_CLI_COMMAND = 'omcodex';
+export const DEFAULT_CLI_COMMAND = 'omcustomcodex';
 
-const KNOWN_CLI_COMMANDS = new Set([DEFAULT_CLI_COMMAND, 'omcustom', 'omcustomx', 'omcustomcodex']);
+const KNOWN_CLI_COMMANDS = new Set([DEFAULT_CLI_COMMAND]);
 const WINDOWS_SCRIPT_EXTENSIONS = /\.(cmd|exe|ps1|bat)$/i;
 
 let activeCliCommandName = DEFAULT_CLI_COMMAND;
@@ -32,16 +32,13 @@ export function getActiveCliCommandName(): string {
 }
 
 export function rewriteCliCommandReferences(
-  text: string,
+  text: string | null | undefined,
   commandName: string = getActiveCliCommandName()
 ): string {
+  const rawText = text ?? '';
   const normalizedCommandName = normalizeCliCommandName(commandName);
-  if (normalizedCommandName === DEFAULT_CLI_COMMAND) {
-    return text;
-  }
-
-  return text.replace(
-    /(^|[^A-Za-z0-9_.-])omcodex(?=$|[^A-Za-z0-9_.-])/g,
+  return rawText.replace(
+    /(^|[^A-Za-z0-9_.-])(omcodex|omcustomcodex|omcustomx|omcustom)(?=$|[^A-Za-z0-9_.-])/g,
     (_match, prefix: string) => `${prefix}${normalizedCommandName}`
   );
 }

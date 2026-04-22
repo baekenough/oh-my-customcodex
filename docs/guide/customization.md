@@ -273,7 +273,7 @@ Be careful when editing AGENTS.md. Breaking changes may affect agent behavior.
 
 ## Preserving Customizations
 
-When running `omcodex update`, your customizations are preserved by default:
+When running `omcustomcodex update`, your customizations are preserved by default:
 
 - Custom agents in new directories are kept
 - Modified files are not overwritten
@@ -282,7 +282,7 @@ When running `omcodex update`, your customizations are preserved by default:
 To force overwrite everything:
 
 ```bash
-omcodex update --force
+omcustomcodex update --force
 ```
 
 ::: tip

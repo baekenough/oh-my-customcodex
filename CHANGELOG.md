@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-04-22
+
+### Changed
+- Make `omcustomcodex` the only public CLI binary for this package and remove the conflicting `omcustom`, `omcustomx`, and `omcodex` shell aliases.
+- Rewrite shell-facing documentation, deploy smoke tests, issue templates, UI chrome, and self-update fixtures so repository management consistently refers to `omcustomcodex`.
+
+### Fixed
+- Harden CLI command reference rewriting so user-facing command text remains stable even when translation lookups return empty values during self-update flows.
+
 ## [0.3.1] - 2026-04-22
 
 ### Changed

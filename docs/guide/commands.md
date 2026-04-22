@@ -1,22 +1,22 @@
 # CLI Commands
 
-oh-my-customcodex provides a CLI tool (`omcodex`) for managing the child-package runtime templates.
+oh-my-customcodex provides a CLI tool (`omcustomcodex`) for managing the child-package runtime templates.
 
 ## Overview
 
 | Command | Description |
 |---------|-------------|
-| `omcodex init` | Initialize agent system |
-| `omcodex update` | Update managed components to latest templates |
-| `omcodex list` | List installed components |
-| `omcodex doctor` | Verify installation health |
+| `omcustomcodex init` | Initialize agent system |
+| `omcustomcodex update` | Update managed components to latest templates |
+| `omcustomcodex list` | List installed components |
+| `omcustomcodex doctor` | Verify installation health |
 
 ## init
 
 Initialize the agent system in your current project.
 
 ```bash
-omcodex init [options]
+omcustomcodex init [options]
 ```
 
 ### Options
@@ -29,10 +29,10 @@ omcodex init [options]
 
 ```bash
 # Initialize with default settings
-omcodex init
+omcustomcodex init
 
 # Initialize with Korean templates
-omcodex init --lang ko
+omcustomcodex init --lang ko
 ```
 
 ## update
@@ -40,7 +40,7 @@ omcodex init --lang ko
 Update managed components in the current project.
 
 ```bash
-omcodex update [options]
+omcustomcodex update [options]
 ```
 
 ### Options
@@ -62,13 +62,13 @@ omcodex update [options]
 
 ```bash
 # Update everything
-omcodex update
+omcustomcodex update
 
 # Preview changes only
-omcodex update --dry-run
+omcustomcodex update --dry-run
 
 # Update only agents and skills
-omcodex update --agents --skills
+omcustomcodex update --agents --skills
 ```
 
 ## list
@@ -76,7 +76,7 @@ omcodex update --agents --skills
 List installed components.
 
 ```bash
-omcodex list [options] [type]
+omcustomcodex list [options] [type]
 ```
 
 ### Arguments
@@ -96,13 +96,13 @@ omcodex list [options] [type]
 
 ```bash
 # List all components
-omcodex list
+omcustomcodex list
 
 # List only agents
-omcodex list agents
+omcustomcodex list agents
 
 # List skills as JSON
-omcodex list skills --format json
+omcustomcodex list skills --format json
 ```
 
 ## doctor
@@ -110,7 +110,7 @@ omcodex list skills --format json
 Check installation health.
 
 ```bash
-omcodex doctor [options]
+omcustomcodex doctor [options]
 ```
 
 ### Options
@@ -123,10 +123,10 @@ omcodex doctor [options]
 
 ```bash
 # Run health checks
-omcodex doctor
+omcustomcodex doctor
 
 # Auto-fix repairable issues
-omcodex doctor --fix
+omcustomcodex doctor --fix
 ```
 
 ## Global Options

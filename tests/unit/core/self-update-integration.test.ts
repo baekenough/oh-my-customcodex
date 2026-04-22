@@ -215,7 +215,7 @@ describe('self-update integration tests', () => {
         currentVersion: '1.0.0',
         packageName: 'test-package',
         cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcodex', 'init'],
+        argv: ['node', '/usr/local/bin/omcustomcodex', 'init'],
         env: {},
       };
 
@@ -253,7 +253,7 @@ describe('self-update integration tests', () => {
         currentVersion: '1.0.0',
         packageName: 'test-package',
         cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/home/user/.npm/_npx/12345/node_modules/.bin/omcodex', 'init'],
+        argv: ['node', '/home/user/.npm/_npx/12345/node_modules/.bin/omcustomcodex', 'init'],
         env: {},
       };
 
@@ -284,7 +284,7 @@ describe('self-update integration tests', () => {
         currentVersion: '1.0.0',
         packageName: 'test-package',
         cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcodex', 'init'],
+        argv: ['node', '/usr/local/bin/omcustomcodex', 'init'],
         env: {},
       };
 
@@ -311,7 +311,7 @@ describe('self-update integration tests', () => {
         currentVersion: '1.0.0',
         packageName: 'test-package',
         cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcodex', 'init'],
+        argv: ['node', '/usr/local/bin/omcustomcodex', 'init'],
         env: {},
       };
 
@@ -332,7 +332,7 @@ describe('self-update integration tests', () => {
         currentVersion: '',
         packageName: 'test-package',
         cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcodex', 'init'],
+        argv: ['node', '/usr/local/bin/omcustomcodex', 'init'],
         env: {},
       };
 
@@ -352,7 +352,7 @@ describe('self-update integration tests', () => {
         currentVersion: '1.0.0',
         packageName: 'test-package',
         cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcodex', 'init'],
+        argv: ['node', '/usr/local/bin/omcustomcodex', 'init'],
         env: {},
       };
 
@@ -387,7 +387,7 @@ describe('self-update integration tests', () => {
         currentVersion: '1.0.0',
         packageName: 'test-package',
         cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/home/user/.npm/_npx/12345/node_modules/.bin/omcodex', 'init'],
+        argv: ['node', '/home/user/.npm/_npx/12345/node_modules/.bin/omcustomcodex', 'init'],
         env: {},
       };
 
@@ -414,7 +414,7 @@ describe('self-update integration tests', () => {
         currentVersion: '1.0.0',
         packageName: 'test-package',
         cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcodex', 'init'],
+        argv: ['node', '/usr/local/bin/omcustomcodex', 'init'],
         env: {},
       };
 
@@ -449,7 +449,7 @@ describe('self-update integration tests', () => {
         currentVersion: '1.0.0',
         packageName: 'test-package',
         cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/home/user/.npm/_npx/12345/node_modules/.bin/omcodex', 'init'],
+        argv: ['node', '/home/user/.npm/_npx/12345/node_modules/.bin/omcustomcodex', 'init'],
         env: {},
       };
 
@@ -472,7 +472,7 @@ describe('self-update integration tests', () => {
         currentVersion: '1.0.0',
         packageName: 'test-package',
         cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcodex', 'init'],
+        argv: ['node', '/usr/local/bin/omcustomcodex', 'init'],
         env: {},
       };
 
@@ -495,7 +495,7 @@ describe('self-update integration tests', () => {
         currentVersion: '1.0.0',
         packageName: 'test-package',
         cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcodex', 'init'],
+        argv: ['node', '/usr/local/bin/omcustomcodex', 'init'],
         env: {},
       };
 
@@ -521,7 +521,7 @@ describe('self-update integration tests', () => {
         currentVersion: '1.0.0',
         packageName: 'test-package',
         cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcodex', 'init'],
+        argv: ['node', '/usr/local/bin/omcustomcodex', 'init'],
         env: {},
       };
 
@@ -547,7 +547,7 @@ describe('self-update integration tests', () => {
         currentVersion: '1.0.0',
         packageName: 'test-package',
         cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcodex', 'init'],
+        argv: ['node', '/usr/local/bin/omcustomcodex', 'init'],
         env: {},
       };
 
@@ -571,7 +571,7 @@ describe('self-update integration tests', () => {
         currentVersion: '1.0.0',
         packageName: 'test-package',
         cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcodex', 'init'],
+        argv: ['node', '/usr/local/bin/omcustomcodex', 'init'],
         env: {},
       };
 

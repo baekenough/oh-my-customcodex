@@ -33,7 +33,7 @@ bun add -g oh-my-customcodex
 ### Verify Installation
 
 ```bash
-omcodex --version
+omcustomcodex --version
 ```
 
 ## Initialize Your Project
@@ -42,7 +42,7 @@ Navigate to your project directory and run:
 
 ```bash
 cd your-project
-omcodex init
+omcustomcodex init
 ```
 
 This creates the following structure:
@@ -64,7 +64,7 @@ your-project/
 Initialize with Korean language support:
 
 ```bash
-omcodex init --lang ko
+omcustomcodex init --lang ko
 ```
 
 ## Backup Existing Installation
@@ -72,7 +72,7 @@ omcodex init --lang ko
 If you already have an agent system and want to preserve it:
 
 ```bash
-omcodex init --backup
+omcustomcodex init --backup
 ```
 
 This creates a backup of your existing runtime directory before initializing.
@@ -82,13 +82,13 @@ This creates a backup of your existing runtime directory before initializing.
 Run the doctor command to check that everything is set up correctly:
 
 ```bash
-omcodex doctor
+omcustomcodex doctor
 ```
 
 If issues are found, you can auto-fix common problems:
 
 ```bash
-omcodex doctor --fix
+omcustomcodex doctor --fix
 ```
 
 ## What's Next?
@@ -102,7 +102,7 @@ omcodex doctor --fix
 Keep your agent system up to date:
 
 ```bash
-omcodex update
+omcustomcodex update
 ```
 
 This updates all agents, skills, and rules to the latest versions while preserving your customizations.

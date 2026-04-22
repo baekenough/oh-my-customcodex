@@ -49,20 +49,20 @@ jobs:
         run: |
           npm install -g oh-my-customcodex --registry http://localhost:4873/
 
-      - name: Test omcodex --version
-        run: omcodex --version
+      - name: Test omcustomcodex --version
+        run: omcustomcodex --version
 
-      - name: Test omcodex --help
-        run: omcodex --help
+      - name: Test omcustomcodex --help
+        run: omcustomcodex --help
 
-      - name: Test omcodex init (dry run)
+      - name: Test omcustomcodex init (dry run)
         run: |
           # Create a test directory
           mkdir -p /tmp/test-project
           cd /tmp/test-project
 
           # Test init command (use echo to simulate user input or --help for now)
-          omcodex init --help || echo "Init help displayed"
+          omcustomcodex init --help || echo "Init help displayed"
 
       - name: Cleanup
         if: always()

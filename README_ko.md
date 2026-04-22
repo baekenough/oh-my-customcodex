@@ -18,10 +18,10 @@
 > **v0.1.7** — token-efficiency-audit 스킬, 토큰 효율 3계층 가이드, cc-token-saver/CLI flags cross-reference 추가
 
 ```bash
-npm install -g oh-my-customcodex && cd your-project && omcodex init
+npm install -g oh-my-customcodex && cd your-project && omcustomcodex init
 ```
 
-`omcodex init`은 언어, 프레임워크, 팀 모드를 묻는 인터랙티브 마법사를 실행합니다 (@clack/prompts 기반).
+`omcustomcodex init`은 언어, 프레임워크, 팀 모드를 묻는 인터랙티브 마법사를 실행합니다 (@clack/prompts 기반).
 
 ---
 
@@ -260,22 +260,22 @@ Agent(arch-documenter):haiku      ┘
 ## CLI
 
 ```bash
-omcodex init                  # 인터랙티브 마법사로 초기화 (언어, 프레임워크, 팀 모드)
-omcodex init --lang ko        # 한국어로 초기화
-omcodex init --team           # 팀 모드 활성화
-omcodex init --from-snapshot  # 사전 구성된 팀 스냅샷에서 설치
-omcodex sync                  # .codex/ 상태와 lockfile 간 드리프트 감지
-omcodex sync --check          # 변경 없이 드리프트 확인
-omcodex sync --export         # 현재 상태를 팀 스냅샷으로 내보내기
-omcodex update                # 최신 버전 업데이트
-omcodex list                  # 컴포넌트 목록
-omcodex doctor                # 설치 상태 검사
-omcodex doctor --fix          # 문제 자동 수정
-omcodex security              # 보안 이슈 스캔
-omcodex projects              # 관리 프로젝트 목록 및 버전 상태
-omcodex update --all          # 모든 구버전 프로젝트 일괄 업데이트
-omcodex serve                 # 내장 Web UI 시작
-omcodex serve-stop            # Web UI 중지
+omcustomcodex init                  # 인터랙티브 마법사로 초기화 (언어, 프레임워크, 팀 모드)
+omcustomcodex init --lang ko        # 한국어로 초기화
+omcustomcodex init --team           # 팀 모드 활성화
+omcustomcodex init --from-snapshot  # 사전 구성된 팀 스냅샷에서 설치
+omcustomcodex sync                  # .codex/ 상태와 lockfile 간 드리프트 감지
+omcustomcodex sync --check          # 변경 없이 드리프트 확인
+omcustomcodex sync --export         # 현재 상태를 팀 스냅샷으로 내보내기
+omcustomcodex update                # 최신 버전 업데이트
+omcustomcodex list                  # 컴포넌트 목록
+omcustomcodex doctor                # 설치 상태 검사
+omcustomcodex doctor --fix          # 문제 자동 수정
+omcustomcodex security              # 보안 이슈 스캔
+omcustomcodex projects              # 관리 프로젝트 목록 및 버전 상태
+omcustomcodex update --all          # 모든 구버전 프로젝트 일괄 업데이트
+omcustomcodex serve                 # 내장 Web UI 시작
+omcustomcodex serve-stop            # Web UI 중지
 ```
 
 ---
@@ -307,11 +307,11 @@ your-project/
 
 ## 외부 도구 통합
 
-RTK는 `omcodex init` 시 자동 설치되어 60-90% 토큰을 절감합니다. 나머지는 선택입니다:
+RTK는 `omcustomcodex init` 시 자동 설치되어 60-90% 토큰을 절감합니다. 나머지는 선택입니다:
 
 | 도구 | 용도 | 설치 | 상태 |
 |------|------|------|------|
-| [RTK](https://github.com/rtk-ai/rtk) | CLI 출력 토큰 60-90% 절감 | `omcodex init` 시 자동 설치 | **권장** |
+| [RTK](https://github.com/rtk-ai/rtk) | CLI 출력 토큰 60-90% 절감 | `omcustomcodex init` 시 자동 설치 | **권장** |
 | [Codex CLI](https://github.com/openai/codex) | OpenAI Codex 하이브리드 워크플로우 | `npm i -g @openai/codex` | 선택 |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Google Gemini 하이브리드 워크플로우 | `npm i -g @google/gemini-cli` | 선택 |
 
