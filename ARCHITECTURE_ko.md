@@ -275,10 +275,10 @@ flowchart LR
   <img src="assets/diagrams/09-workflow-engine.png" alt="Pipeline Engine" width="800" />
 </p>
 
-`workflows/` 디렉토리에 정의된 YAML 기반 파이프라인입니다. 각 파이프라인은 스킬 또는 프롬프트를 호출하는 순차 단계를 정의합니다.
+`workflows/` 디렉토리에 정의된 YAML 기반 파이프라인입니다. 각 파이프라인은 스킬 단계, 프롬프트 단계, 그리고 제한된 병렬 블록을 조합해 릴리즈나 문서화 같은 다단계 작업을 한 표면에서 선언합니다.
 
 사용 가능한 파이프라인:
-- `auto-dev` — 완전 자동 릴리즈 파이프라인: triage → plan → implement → verify → PR
+- `auto-dev` — 완전 자동 릴리즈 파이프라인: pre-triage → triage → plan → implement → verify → PR → publish → followup
 
 사용자는 `workflows/` 디렉토리에 `^[a-z0-9-]+$` 이름 규칙으로 커스텀 파이프라인을 정의할 수 있습니다.
 

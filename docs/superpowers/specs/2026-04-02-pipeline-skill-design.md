@@ -2,7 +2,7 @@
 
 ## Overview
 
-`pipeline` — A YAML-based sequential workflow engine for AI coding agents. Supports pipeline definition, listing, execution, and resume. Distributed as a standalone skill via skills.sh marketplace.
+`pipeline` — A YAML-based workflow engine for AI coding agents. Supports pipeline definition discovery, listing, execution, and resume. Sequential execution remains the default, with optional bounded `parallel` blocks for independent steps.
 
 Installation: `npx skills add baekenough/baekenough-skills --skill pipeline`
 
@@ -13,9 +13,6 @@ Installation: `npx skills add baekenough/baekenough-skills --skill pipeline`
 | `/pipeline` | List available pipelines |
 | `/pipeline <name>` | Execute a named pipeline |
 | `/pipeline resume` | Resume a halted pipeline |
-| `/pipeline add <natural language>` | Create pipeline from natural language description |
-| `/pipeline delete <name>` | Delete a pipeline |
-| `/pipeline --dir <path>` | Override pipeline directory (combinable with other commands) |
 
 ## YAML Schema
 
@@ -56,7 +53,7 @@ steps:
 
 ### Optional Fields
 
-- Per step: `condition` (natural language guard), `input` (reference previous step), `foreach` (iterate over collection)
+- Per step: `condition` (natural language guard), `input` (reference previous step), `foreach` (iterate over collection), `depends_on`, `parallel`
 - Top-level: `error` (halt-and-report | continue), `mode` (confirm | auto)
 
 All of `condition`, `input`, `foreach` are natural language — the agent interprets them from context.
@@ -67,25 +64,7 @@ All of `condition`, `input`, `foreach` are natural language — the agent interp
 |------|-----------|
 | `skill: name` | Invoke via Skill tool |
 | `prompt: text` | Agent interprets and executes the prompt directly |
-
-## Pipeline Add (Natural Language)
-
-```
-/pipeline add lint, test, build in sequence, halt on failure, name it release
--> Agent parses natural language
--> Shows YAML preview
--> User confirms
--> Saves to workflows/release.yaml
-```
-
-## Pipeline Delete
-
-```
-/pipeline delete release
--> Verify workflows/release.yaml exists
--> Confirm deletion
--> Remove file
-```
+| `parallel: [...]` | Spawn up to 4 independent child steps in one block |
 
 ## Execution Engine
 
@@ -178,7 +157,7 @@ oh-my-customcode will migrate from internal workflow skills to this pipeline ski
 
 ## Design Decisions
 
-1. **Sequential only** — DAG/parallel execution remains in oh-my-customcode's `dag-orchestration` skill
+1. **Sequential-first** — normal steps execute top-to-bottom, but bounded `parallel` blocks are allowed for independent work
 2. **`skill:` + `prompt:`** — Generic step types instead of hardcoded actions
 3. **Single SKILL.md** — All logic in one file since skills.sh installs per-skill
 4. **Natural language throughout** — condition, input, foreach, and add command all use natural language interpreted by the agent

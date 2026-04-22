@@ -328,10 +328,10 @@ The reasoning-sandwich skill structures prompts with context-instruction-context
   <img src="assets/diagrams/09-workflow-engine.png" alt="Workflow Engine" width="800" />
 </p>
 
-YAML-defined workflow pipelines in `workflows/` directory. Each workflow defines sequential steps that invoke skills or actions.
+YAML-defined workflow pipelines in `workflows/`. Pipelines combine skill steps, prompt steps, and bounded parallel blocks so the orchestrator can run multi-stage release or documentation workflows from one declared YAML surface.
 
 Available workflows:
-- `auto-dev` — Full-auto release pipeline: triage → plan → implement → verify → PR
+- `auto-dev` — Full-auto release pipeline: pre-triage → triage → plan → implement → verify → PR → publish → followup
 
 Custom workflows can be defined by users in `workflows/` with any `^[a-z0-9-]+$` name.
 

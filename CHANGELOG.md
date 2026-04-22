@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-04-22
+
+### Changed
+- Align the repo `auto-dev` workflow example, template copy, and architecture docs so the documented `/pipeline` release flow includes the current pre-triage, publish, and followup stages.
+- Update the pipeline customization guide and template registry to use the current `workflows/` + `/pipeline` surface instead of legacy `pipelines/` and `pipeline:*` command syntax.
+- Refresh the pipeline design spec so it matches the current skill contract, including bounded `parallel` blocks and the reduced command surface.
+
+### Fixed
+- Add regression coverage to catch future drift between `workflows/auto-dev.yaml`, `templates/workflows/auto-dev.yaml`, and the primary `/pipeline` documentation surfaces.
+
 ## [0.1.9] - 2026-04-19
 
 ### Added

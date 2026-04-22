@@ -704,4 +704,64 @@ describe('Template Validation', () => {
       }
     });
   });
+
+  describe('pipeline workflow and docs validation', () => {
+    const PROJECT_ROOT = resolve(import.meta.dir, '../../..');
+
+    it('repo and template auto-dev workflows stay in sync', async () => {
+      const repoWorkflow = await readFile(join(PROJECT_ROOT, 'workflows/auto-dev.yaml'), 'utf-8');
+      const templateWorkflow = await readFile(
+        join(PROJECT_ROOT, 'templates/workflows/auto-dev.yaml'),
+        'utf-8'
+      );
+
+      expect(repoWorkflow).toBe(templateWorkflow);
+    });
+
+    it('customization guide uses workflows/ and /pipeline syntax instead of legacy pipeline commands', async () => {
+      const customization = await readFile(
+        join(PROJECT_ROOT, 'docs/guide/customization.md'),
+        'utf-8'
+      );
+
+      expect(customization).toContain('Create them in `workflows/`:');
+      expect(customization).toContain('/pipeline my-workflow');
+      expect(customization).toContain('/pipeline resume');
+      expect(customization).not.toContain('Create in `pipelines/`:');
+      expect(customization).not.toContain('pipeline:run');
+      expect(customization).not.toContain('pipeline:list');
+    });
+
+    it('template pipeline registry documents the current /pipeline surface', async () => {
+      const registry = await readFile(join(PROJECT_ROOT, 'templates/index.yaml'), 'utf-8');
+
+      expect(registry).toContain('/pipeline <name>');
+      expect(registry).toContain('/pipeline');
+      expect(registry).toContain('/pipeline resume');
+      expect(registry).not.toContain('pipeline:run');
+      expect(registry).not.toContain('pipeline:list');
+      expect(registry).not.toContain('sequential workflows');
+    });
+
+    it('pipeline docs describe the current auto-dev stages and parallel-capable engine', async () => {
+      const architecture = await readFile(join(PROJECT_ROOT, 'ARCHITECTURE.md'), 'utf-8');
+      const architectureKo = await readFile(join(PROJECT_ROOT, 'ARCHITECTURE_ko.md'), 'utf-8');
+      const pipelineSpec = await readFile(
+        join(PROJECT_ROOT, 'docs/superpowers/specs/2026-04-02-pipeline-skill-design.md'),
+        'utf-8'
+      );
+
+      expect(architecture).toContain('pre-triage');
+      expect(architecture).toContain('publish');
+      expect(architecture).toContain('followup');
+      expect(architectureKo).toContain('pre-triage');
+      expect(architectureKo).toContain('publish');
+      expect(architectureKo).toContain('followup');
+      expect(pipelineSpec).toContain('parallel');
+      expect(pipelineSpec).not.toContain('Sequential only');
+      expect(pipelineSpec).not.toContain('/pipeline add');
+      expect(pipelineSpec).not.toContain('/pipeline delete');
+      expect(pipelineSpec).not.toContain('/pipeline --dir');
+    });
+  });
 });

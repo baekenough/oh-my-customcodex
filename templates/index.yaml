@@ -1,6 +1,6 @@
 # Pipeline Registry
 
-description: Registry of available pipelines for sequential workflows
+description: Registry of available workflow templates for the /pipeline skill
 
 pipelines:
   - name: code-review
@@ -13,6 +13,7 @@ templates:
     description: Base template for creating new pipelines
 
 usage:
-  run: "pipeline:run <name> --input key=value"
-  list: "pipeline:list"
-  create: "Use templates/pipeline-template.yaml as base"
+  run: "/pipeline <name>"
+  list: "/pipeline"
+  resume: "/pipeline resume"
+  create: "Create workflows/<name>.yaml from templates/pipeline-template.yaml"

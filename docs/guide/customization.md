@@ -180,35 +180,40 @@ applicable_to:
 
 ### Pipeline Definitions
 
-Pipelines define sequential workflows. Create in `pipelines/`:
+Pipelines define YAML workflows. Create them in `workflows/`:
 
 ```yaml
-# pipelines/my-workflow.yaml
+# workflows/my-workflow.yaml
 name: my-workflow
-description: Custom workflow for my project
-
-inputs:
-  - name: target_file
-    required: true
+description: "Custom workflow for my project"
 
 steps:
-  - id: analyze
-    agent: golang-expert
-    action: analyze
-    input: { file: "${target_file}" }
-    output: analysis
+  - name: analyze
+    skill: dev-review
+    description: Analyze the current implementation
 
-  - id: review
-    agent: qa-lead
-    action: review
-    input: { data: "${analysis}" }
-    output: report
+  - name: fix
+    prompt: "Apply the review findings to src/main.ts"
+    description: Implement the required fixes
+
+  - name: verify
+    parallel:
+      - name: lint
+        prompt: "Run the lint command for this project and report failures"
+        description: Validate style and lint rules
+      - name: test
+        prompt: "Run the relevant test suite and report failures"
+        description: Validate behavior
 ```
 
 ### Running Pipelines
 
-```bash
-pipeline:run my-workflow --input target_file=src/main.go
+Use the `/pipeline` skill surface from the Codex session:
+
+```text
+/pipeline my-workflow
+/pipeline
+/pipeline resume
 ```
 
 ## Linking Skills to Agents
