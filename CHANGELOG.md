@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-04-22
+
+### Changed
+- Remove the legacy tracked `.claude/` source tree and root `CLAUDE.md` from the codex child package branch so ongoing development can focus on the Codex/OMX surface.
+- Refresh pinned `actions/setup-node` SHAs across the GitHub workflow files that still used the previous v6 digest.
+
 ## [0.3.5] - 2026-04-22
 
 ### Fixed
