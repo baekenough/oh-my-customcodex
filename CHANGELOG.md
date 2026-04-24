@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.9] - 2026-04-24
+
+### Fixed
+- Update the macOS Codex installer path to use the current Homebrew cask.
+- Remove stale Bash output-directory pre-creation guidance from Codex skills/rules, templates, and docs, with regression coverage to keep it from returning.
+- Stabilize serve and doctor tests so release verification can complete reliably.
+
 ## [0.3.8] - 2026-04-22
 
 ### Fixed
