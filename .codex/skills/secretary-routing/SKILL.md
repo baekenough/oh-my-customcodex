@@ -24,6 +24,7 @@ Routes agent management tasks to the appropriate manager agent. This skill conta
 | mgr-claude-code-bible | Claude Code spec compliance | "spec check", "verify compliance" |
 | sys-memory-keeper | Memory operations | "save memory", "recall", "memory search" |
 | sys-naggy | TODO management | "todo", "track tasks", "task list" |
+| tracker-checkpoint | Pipeline checkpoint state | "pipeline resume", "checkpoint", "state restore" |
 
 ## Routing Decision (Priority Order)
 
@@ -53,6 +54,7 @@ verify   → mgr-sauron
 spec     → mgr-claude-code-bible
 memory   → sys-memory-keeper
 todo            → sys-naggy
+checkpoint      → tracker-checkpoint
 improve-report  → omcodex:improve-report (skill invocation)
 auto-improve    → omcodex:auto-improve (skill invocation)
 batch           → multiple (parallel)
@@ -108,6 +110,7 @@ When command requires multiple independent operations:
 | mgr-claude-code-bible | sonnet | Spec compliance checks |
 | sys-memory-keeper | sonnet | Memory operations, search |
 | sys-naggy | haiku | Simple TODO tracking |
+| tracker-checkpoint | sonnet | Pipeline state recovery |
 
 ## No Match Fallback
 

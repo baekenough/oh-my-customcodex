@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-48 agents. 112 skills. 22 rules. One command.
+49 agents. 112 skills. 22 rules. One command.
 
 ```bash
 npm install -g oh-my-customcodex && cd your-project && omcustomcodex init
@@ -112,7 +112,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-### Agents (48)
+### Agents (49)
 
 | Category | Count | Agents |
 |----------|-------|--------|
@@ -121,13 +121,14 @@ Agent(arch-documenter):haiku      ┘
 | Frontend | 5 | fe-vercel, fe-vuejs, fe-svelte, fe-flutter, fe-design |
 | Data Engineering | 6 | de-airflow, de-dbt, de-spark, de-kafka, de-snowflake, de-pipeline |
 | Database | 4 | db-supabase, db-postgres, db-redis, db-alembic |
-| Tooling | 4 | tool-npm, tool-optimizer, tool-bun, slack-cli |
+| Tooling | 3 | tool-npm, tool-optimizer, tool-bun |
 | Architecture | 2 | arch-documenter, arch-speckit |
 | Infrastructure | 2 | infra-docker, infra-aws |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | Security | 1 | sec-codeql |
 | Managers | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
-| System | 2 | sys-memory-keeper, sys-naggy |
+| System | 3 | sys-memory-keeper, sys-naggy, tracker-checkpoint |
+| Auxiliary | 2 | slack-cli, wiki-curator |
 
 Each agent declares its tools, model, memory scope, and limitations in YAML frontmatter. Tool budgets are enforced per agent type for accuracy.
 
@@ -277,7 +278,7 @@ omcustomcodex serve-stop            # Stop Web UI
 your-project/
 ├── AGENTS.md                   # Entry point
 ├── .codex/
-│   ├── agents/                 # 48 agent definitions
+│   ├── agents/                 # 49 agent definitions
 │   ├── rules/                  # 22 governance rules (R000-R021)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas

@@ -85,6 +85,9 @@ steps:
       - Parallel execution per R009 (max 4 concurrent, respect dependencies)
       - Issues whose prerequisites failed in-run MUST be skipped (log reason)
       - No direct orchestrator writes (R010)
+      - Codex-managed `.codex/` edits use the normal edit/patch flow
+      - Do not adopt upstream Claude-only `/tmp` bypass guidance as the default Codex path
+      - If `.claude` template parity changes are required, make them explicit and verify sensitive-path guard tests
     description: "Per-issue implementation with lifecycle and specialist routing"
     depends_on: deep-plan
 

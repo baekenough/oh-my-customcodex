@@ -29,7 +29,13 @@ steps:
     foreach: release-group
 
   - name: implement
-    prompt: "Execute implementation plan with appropriate agents"
+    prompt: |
+      Execute implementation plan with appropriate agents.
+
+      Codex-native sensitive-path policy:
+      - Codex-managed `.codex/` edits use the normal edit/patch flow.
+      - Do not adopt upstream Claude-only `/tmp` bypass guidance as the default path.
+      - If a port requires `.claude` template parity changes, make the change explicit and verify sensitive-path guard tests.
     description: Execute implementation plan with appropriate agents
     foreach: planned-issue
 

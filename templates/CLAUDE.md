@@ -114,7 +114,7 @@ oh-my-customcodex로 구동됩니다.
 project/
 +-- AGENTS.md                    # 진입점
 +-- .codex/
-|   +-- agents/                  # 서브에이전트 정의 (48 파일)
+|   +-- agents/                  # 서브에이전트 정의 (49 파일)
 |   +-- rules/                   # 전역 규칙 (R000-R022)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
@@ -166,7 +166,7 @@ oh-my-customcodex는 소프트웨어 컴파일과 동일한 구조를 따릅니�
 | SW Engineer/Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
 | SW Engineer/Backend | 6 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert |
 | SW Engineer/Frontend | 5 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent, fe-design-expert |
-| SW Engineer/Tooling | 4 | tool-npm-expert, tool-optimizer, tool-bun-expert, slack-cli-expert |
+| SW Engineer/Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | DE Engineer | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | SW Engineer/Database | 4 | db-supabase-expert, db-postgres-expert, db-redis-expert, db-alembic-expert |
 | Security | 1 | sec-codeql-expert |
@@ -174,8 +174,9 @@ oh-my-customcodex는 소프트웨어 컴파일과 동일한 구조를 따릅니�
 | Infra Engineer | 2 | infra-docker-expert, infra-aws-expert |
 | QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
-| System | 3 | sys-memory-keeper, sys-naggy, wiki-curator |
-| **총계** | **48** | |
+| System | 3 | sys-memory-keeper, sys-naggy, tracker-checkpoint |
+| Auxiliary | 2 | slack-cli-expert, wiki-curator |
+| **총계** | **49** | |
 
 ## Agent Teams (MUST when enabled)
 

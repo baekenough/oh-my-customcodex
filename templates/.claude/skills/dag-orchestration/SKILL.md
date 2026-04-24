@@ -193,6 +193,26 @@ Execute? [Y/n]
 
 The orchestrator builds the DAG from this inline format and executes using the same algorithm.
 
+## State Management via tracker-checkpoint
+
+Pipeline and DAG state is delegated to the `tracker-checkpoint` agent.
+
+### Flow
+
+1. Pipeline start: orchestrator delegates to `tracker-checkpoint` to create an initial state file (`/tmp/.codex-pipeline-{name}-{PPID}.json`)
+2. After each step: `tracker-checkpoint` updates step state with atomic writes
+3. Step failure: `tracker-checkpoint` freezes the state as `halted`
+4. `/pipeline resume`: `tracker-checkpoint` loads state and returns restore options to the orchestrator
+
+### Integration
+
+- PPID-scoped pipeline state path: `/tmp/.codex-pipeline-{name}-{PPID}.json`
+- PPID-scoped DAG state path: `/tmp/.codex-dag-{PPID}.json`
+- Delegate before and after step execution when resume support is required
+- On resume, rebuild the DAG from checkpoint state and continue from incomplete steps
+
+See `.codex/agents/tracker-checkpoint.md` for the agent contract.
+
 ## Limitations
 
 - No cycles allowed (DAG = acyclic)

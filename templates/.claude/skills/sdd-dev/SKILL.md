@@ -2,7 +2,7 @@
 name: sdd-dev
 description: Spec-Driven Development workflow — enforces sdd/ folder hierarchy with planning-first gates, current-state artifacts, and completion verification
 scope: core
-version: 1.0.0
+version: 1.1.0
 user-invocable: true
 argument-hint: "[task description or leave empty for guided workflow]"
 ---
@@ -27,7 +27,8 @@ sdd/
 ├── 03_build/        # Current build state, implementation notes
 ├── 04_verify/       # Verification evidence, test results, residual risks
 ├── 05_operate/      # Deployment notes, runbooks (conditional)
-└── 99_toolchain/    # Tool configs, scripts, environment setup
+├── 99_toolchain/    # Tool configs, scripts, environment setup
+└── decisions/       # Decision records for major design choices
 ```
 
 **Key Principle**: These folders are **current-state artifacts**, not history archives. Each file reflects the current state of the work — update in place rather than appending new versions.
@@ -44,7 +45,7 @@ ls sdd/ 2>/dev/null || echo "sdd/ folder not found"
 
 If `sdd/` does not exist:
 1. Inform the user that SDD workflow requires a `sdd/` folder
-2. Offer to create the folder structure: `mkdir -p sdd/{01_planning,02_plan,03_build,04_verify,05_operate,99_toolchain}`
+2. Offer to create the folder structure: `mkdir -p sdd/{01_planning,02_plan,03_build,04_verify,05_operate,99_toolchain,decisions}`
 3. Ask user to confirm before proceeding
 
 If `sdd/` exists, continue to Step 1.
@@ -121,6 +122,7 @@ Artifact to produce or update: `sdd/03_build/current.md`
 
 ## Decisions Made
 - {decision}: {rationale}
+- Write decision records for major choices: `sdd/decisions/{YYYY-MM-DD}-{topic}.md` using `templates/decision-record.md`
 
 ## Known Issues
 - {issue}: {planned resolution}
@@ -129,6 +131,7 @@ Artifact to produce or update: `sdd/03_build/current.md`
 During implementation:
 - Follow the plan from Step 2
 - Update `sdd/03_build/current.md` as work progresses
+- Create or update a decision record when a choice materially changes architecture, workflow behavior, dependency strategy, or release risk
 - Keep the artifact current (not a log — overwrite stale entries)
 
 **Display**:

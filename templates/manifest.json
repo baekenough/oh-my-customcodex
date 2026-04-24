@@ -1,6 +1,6 @@
 {
-  "version": "0.3.10",
-  "lastUpdated": "2026-04-24T09:10:47.000Z",
+  "version": "0.4.0",
+  "lastUpdated": "2026-04-24T14:35:00.000Z",
   "components": [
     {
       "name": "rules",
@@ -12,7 +12,7 @@
       "name": "agents",
       "path": ".codex/agents",
       "description": "AI agent definitions (flat .md files with prefixes)",
-      "files": 48
+      "files": 49
     },
     {
       "name": "skills",
