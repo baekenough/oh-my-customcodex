@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.10] - 2026-04-24
+
+### Fixed
+- Extend R006 sensitive-path guidance and hook guarding to cover Write/Edit targeting `.claude/**` and `templates/.claude/**`, with source/template/wiki regression coverage for #902.
+
 ## [0.3.9] - 2026-04-24
 
 ### Fixed
