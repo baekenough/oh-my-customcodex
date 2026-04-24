@@ -99,10 +99,22 @@ Build dependency graph:
 Count skills with context: fork in frontmatter:
   grep "context: fork" .codex/skills/*/SKILL.md
 
-  If count > 10:
-    ERROR: "Context fork cap exceeded: {count}/10"
-  If count >= 8:
-    WARN: "Context fork usage high: {count}/10 — only {10-count} slots remaining"
+  If count > 12:
+    ERROR: "Context fork cap exceeded: {count}/12"
+  If count >= 10:
+    WARN: "Context fork usage high: {count}/12 — only {12-count} slots remaining"
+```
+
+**Lint 5: R006 Fork List Cross-Validation**
+```
+Run: bash .github/scripts/verify-fork-list.sh
+
+Compare:
+  - R006 Context Fork Criteria current count/list
+  - Actual .codex/skills/*/SKILL.md frontmatter with context: fork
+
+If count or list differs:
+  ERROR: "R006 fork list drift detected"
 ```
 
 All structural lints are **advisory** (WARN level) except circular dependencies and fork cap exceeded (ERROR level — should block commit).

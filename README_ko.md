@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-48개 에이전트. 112개 스킬. 22개 규칙. 명령어 하나.
+49개 에이전트. 112개 스킬. 22개 규칙. 명령어 하나.
 
 > **v0.1.7** — token-efficiency-audit 스킬, 토큰 효율 3계층 가이드, cc-token-saver/CLI flags cross-reference 추가
 
@@ -127,7 +127,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 에이전트 (48개)
+## 에이전트 (49개)
 
 | 카테고리 | 수 | 에이전트 |
 |---------|-----|---------|
@@ -136,13 +136,14 @@ Agent(arch-documenter):haiku      ┘
 | 프론트엔드 | 5 | fe-vercel, fe-vuejs, fe-svelte, fe-flutter, fe-design |
 | 데이터 엔지니어링 | 6 | de-airflow, de-dbt, de-spark, de-kafka, de-snowflake, de-pipeline |
 | 데이터베이스 | 4 | db-supabase, db-postgres, db-redis, db-alembic |
-| 툴링 | 4 | tool-npm, tool-optimizer, tool-bun, slack-cli |
+| 툴링 | 3 | tool-npm, tool-optimizer, tool-bun |
 | 아키텍처 | 2 | arch-documenter, arch-speckit |
 | 인프라 | 2 | infra-docker, infra-aws |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | 보안 | 1 | sec-codeql |
 | 매니저 | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
-| 시스템 | 2 | sys-memory-keeper, sys-naggy |
+| 시스템 | 3 | sys-memory-keeper, sys-naggy, tracker-checkpoint |
+| 보조 | 2 | slack-cli, wiki-curator |
 
 각 에이전트는 YAML 프론트매터에 도구, 모델, 메모리 스코프, 한계를 선언합니다. 에이전트 유형별 도구 예산이 정확도를 위해 강제됩니다.
 
@@ -289,7 +290,7 @@ omcustomcodex serve-stop            # Web UI 중지
 your-project/
 ├── AGENTS.md                   # 진입점
 ├── .codex/
-│   ├── agents/                 # 48개 에이전트 정의
+│   ├── agents/                 # 49개 에이전트 정의
 │   ├── rules/                  # 22개 거버넌스 규칙 (R000-R022)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마

@@ -30,7 +30,7 @@ You are an automated verification specialist that executes the mandatory R017 ve
 6. Verify philosophy compliance (R006-R011)
 7. Verify Claude-native compatibility
 8. Spec density analysis: detects agents with excessive inline implementation detail (R006 compliance)
-9. Structural linting: routing coverage (unreachable agents), orphan skill detection, circular dependency check, context:fork cap verification
+9. Structural linting: routing coverage (unreachable agents), orphan skill detection, circular dependency check, context:fork cap verification, R006 fork-list/frontmatter cross-validation
 10. Auto-fix simple issues (count mismatches, missing fields)
 11. Generate verification report
 

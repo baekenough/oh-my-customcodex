@@ -1,10 +1,10 @@
 ---
 title: Agent Taxonomy
 type: architecture
-updated: 2026-04-12
+updated: 2026-04-24
 sources:
-  - CLAUDE.md
-  - .claude/rules/MUST-agent-design.md
+  - AGENTS.md
+  - .codex/rules/MUST-agent-design.md
 related:
   - [[overview]]
   - [[skill-taxonomy]]
@@ -14,7 +14,7 @@ related:
 
 # Agent Taxonomy
 
-47 agents are organized into 12 functional categories. Each agent is a specialist "build artifact" that composes skills into a focused domain expert with a specific model, toolset, and memory scope.
+49 agents are organized into 13 functional categories. Each agent is a specialist "build artifact" that composes skills into a focused domain expert with a specific model, toolset, and memory scope.
 
 ## Overview
 
@@ -67,8 +67,8 @@ Routed via `de-lead-routing` skill.
 ### Database Experts (4)
 Storage layer specialists: `db-supabase-expert`, `db-postgres-expert`, `db-redis-expert`, `db-alembic-expert`
 
-### Tooling (4)
-Build and toolchain: `tool-npm-expert`, `tool-optimizer`, `tool-bun-expert`, `slack-cli-expert`
+### Tooling (3)
+Build and toolchain: `tool-npm-expert`, `tool-optimizer`, `tool-bun-expert`
 
 ### Manager Agents (6)
 System maintenance and coordination layer.
@@ -90,7 +90,8 @@ System maintenance and coordination layer.
 | Architect | `arch-documenter`, `arch-speckit-agent` | Docs and specs |
 | Infra | `infra-docker-expert`, `infra-aws-expert` | Deploy and cloud |
 | QA | `qa-planner`, `qa-writer`, `qa-engineer` | Full QA lifecycle |
-| System | `sys-memory-keeper`, `sys-naggy` | Session memory and task tracking |
+| System | `sys-memory-keeper`, `sys-naggy`, `tracker-checkpoint` | Session memory, task tracking, and pipeline checkpoint state |
+| Auxiliary | `slack-cli-expert`, `wiki-curator` | External helper and wiki maintenance surfaces |
 
 ## Model Selection Patterns
 
@@ -113,5 +114,5 @@ Backend agents depend on their corresponding language agent's skills. The manage
 
 ## Sources
 
-- `CLAUDE.md` — agent summary table with counts and names
-- `.claude/rules/MUST-agent-design.md` — R006 frontmatter and model alias table
+- `AGENTS.md` — agent summary table with counts and names
+- `.codex/rules/MUST-agent-design.md` — R006 frontmatter and model alias table

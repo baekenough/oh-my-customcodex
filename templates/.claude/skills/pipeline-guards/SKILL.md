@@ -158,6 +158,25 @@ Guard warnings appear inline:
 | stuck-recovery | Guard triggers feed into stuck detection |
 | model-escalation | Repeated failures trigger escalation advisory |
 
+## Checkpoint Gate Integration
+
+Guard pass/fail state is recorded through the `tracker-checkpoint` agent when a pipeline needs resumable execution.
+
+### Flow
+
+1. Guard entry: record gate state as `running`
+2. Guard pass: record gate state as `passed` with relevant metrics
+3. Guard failure: record gate state as `failed` and freeze failure reason
+4. Next step: read checkpoint state to decide whether to resume or halt
+
+### Benefits
+
+- Long pipelines gain restore points at guard boundaries
+- Partial failures can retry from the prior guard boundary
+- Guard metrics accumulate for release-quality trend analysis
+
+See `.codex/agents/tracker-checkpoint.md` for the checkpoint contract.
+
 ## Override Policy
 
 - Defaults can be overridden in pipeline spec (within hard caps)

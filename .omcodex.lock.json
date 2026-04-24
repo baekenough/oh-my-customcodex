@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.3.10",
-  "generatedAt": "2026-04-24T09:10:58.909Z",
-  "templateVersion": "0.3.10",
+  "generatorVersion": "0.4.0",
+  "generatedAt": "2026-04-24T14:39:46.453Z",
+  "templateVersion": "0.4.0",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-design.md": {
-      "templateHash": "e7168f1816bef88ee57526a308cd9945335d2fd8d9ecff734dce0664f10acd76",
-      "size": 21774,
+      "templateHash": "1b716673f6fc603c71aff5a1bb9d55cec44b9bd032812b8f3bb8978fb369c7e3",
+      "size": 21766,
       "component": "rules"
     },
     ".codex/rules/MUST-agent-identification.md": {
@@ -165,8 +165,8 @@
       "component": "agents"
     },
     ".codex/agents/mgr-sauron.md": {
-      "templateHash": "c22cdd8dec86b19b29fc6ea2486133359c28969d95a5960385f22b813b8dc218",
-      "size": 4355,
+      "templateHash": "e68edd45f07d793d6eb971f08debe7afd2c55bd231a530e1676d383494b52287",
+      "size": 4400,
       "component": "agents"
     },
     ".codex/agents/fe-svelte-agent.md": {
@@ -237,6 +237,11 @@
     ".codex/agents/tool-npm-expert.md": {
       "templateHash": "ec00b71a6029038b91866c318b021330ca1670baa67d6eab9e6e2b1ef47cd454",
       "size": 896,
+      "component": "agents"
+    },
+    ".codex/agents/tracker-checkpoint.md": {
+      "templateHash": "89897a0ec3f3fc095342daa3f847da8e4166d90f86db12811e7fe30f77223b31",
+      "size": 2629,
       "component": "agents"
     },
     ".codex/agents/de-dbt-expert.md": {
@@ -580,8 +585,8 @@
       "component": "contexts"
     },
     ".codex/ontology/agents.yaml": {
-      "templateHash": "981050da40417b0fd9e85cbf77ce40dd5e71ea1884d2f3fe751ee15dab0ef84b",
-      "size": 28644,
+      "templateHash": "764531b3847cdf4bcd23d475c29532217da127734504809a2db7506f57c30c16",
+      "size": 29233,
       "component": "ontology"
     },
     ".codex/ontology/skills.yaml": {

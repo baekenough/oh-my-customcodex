@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { spawnSync } from 'node:child_process';
 import { access, readdir, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
@@ -705,6 +706,20 @@ describe('Template Validation', () => {
       );
 
       expect(repoWorkflow).toBe(templateWorkflow);
+    });
+
+    it('R006 context fork list matches actual skill frontmatter', () => {
+      const result = spawnSync(
+        'bash',
+        [join(PROJECT_ROOT, '.github/scripts/verify-fork-list.sh')],
+        {
+          cwd: PROJECT_ROOT,
+          encoding: 'utf-8',
+        }
+      );
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('OK: R006 fork list matches actual SKILL.md frontmatter');
     });
 
     it('customization guide uses workflows/ and /pipeline syntax instead of legacy pipeline commands', async () => {
