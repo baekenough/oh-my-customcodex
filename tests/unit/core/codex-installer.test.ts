@@ -266,7 +266,7 @@ describe('codex-installer', () => {
           getPlatform: () => 'darwin',
         });
         expect(installCodex(deps)).toBe(true);
-        expect(commands[1]).toBe('brew install openai-codex');
+        expect(commands[1]).toBe('brew install --cask codex');
       } finally {
         restore();
       }
@@ -297,7 +297,7 @@ describe('codex-installer', () => {
           getPlatform: () => 'darwin',
         });
         expect(installCodex(deps)).toBe(true);
-        expect(commands).toContain('brew install openai-codex');
+        expect(commands).toContain('brew install --cask codex');
         expect(commands).toContain('npm install -g @openai/codex');
       } finally {
         restore();

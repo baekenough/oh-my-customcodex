@@ -232,7 +232,7 @@ Skills persist output to `.codex/outputs/sessions/{YYYY-MM-DD}/{skill-name}-{HHm
 
 <!-- DETAIL: Artifact Output full spec
 **Format**: Metadata header with `skill`, `date`, `query` fields, followed by skill output content.
-**Rules**: Opt-in per skill, final subagent writes (R010 compliance), Skills create directory (mkdir -p), .codex/outputs/ is git-untracked, no indexing required.
+**Rules**: Opt-in per skill, final subagent writes with a file-write API that creates missing parent directories (R010 compliance), do not pre-create session output directories with Bash, .codex/outputs/ is git-untracked, no indexing required.
 -->
 
 ## Separation of Concerns

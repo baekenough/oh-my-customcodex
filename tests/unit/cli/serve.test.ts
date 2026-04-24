@@ -3,6 +3,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, rm, unlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
@@ -27,6 +28,30 @@ async function removePidFile(): Promise<void> {
     } catch {
       // Ignore — file may not exist
     }
+  }
+}
+
+async function withLongRunningChild<T>(callback: (pid: number) => Promise<T>): Promise<T> {
+  const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
+    stdio: 'ignore',
+  });
+  if (child.pid === undefined) {
+    throw new Error('Expected spawned test process to have a PID');
+  }
+
+  const exited = new Promise<void>((resolve) => {
+    child.once('exit', () => resolve());
+  });
+
+  try {
+    return await callback(child.pid);
+  } finally {
+    try {
+      process.kill(child.pid, 'SIGTERM');
+    } catch {
+      // The code under test may already have stopped it.
+    }
+    await Promise.race([exited, new Promise<void>((resolve) => setTimeout(resolve, 1000))]);
   }
 }
 
@@ -199,11 +224,13 @@ describe('serve.ts', () => {
     });
 
     it('should stop successfully when only the legacy PID file exists', async () => {
-      await writeFile(LEGACY_PID_FILE, String(process.pid), 'utf-8');
+      await withLongRunningChild(async (pid) => {
+        await writeFile(LEGACY_PID_FILE, String(pid), 'utf-8');
 
-      const result = await stopServe();
+        const result = await stopServe();
 
-      expect(result).toBe(true);
+        expect(result).toBe(true);
+      });
     });
   });
 

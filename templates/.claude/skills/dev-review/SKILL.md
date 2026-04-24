@@ -122,7 +122,7 @@ If only PASS/INFO: proceed automatically.
    query: "{original user query}"
    ---
    ```
-   The review agent creates the directory and writes the artifact before returning results (R010 compliance).
+   The review agent writes the artifact file before returning results; use a file-write API that creates missing parent directories instead of any Bash directory-creation pre-step (R010 compliance).
 
 ## Agent Selection
 

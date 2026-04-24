@@ -70,7 +70,7 @@ export function installCodex(deps: InstallerDeps = defaultDeps): boolean {
       // macOS: try brew first, fall back to npm
       try {
         info('codex.installing_brew');
-        deps.exec('brew install openai-codex', {
+        deps.exec('brew install --cask codex', {
           stdio: 'inherit',
           timeout: 120000,
         });

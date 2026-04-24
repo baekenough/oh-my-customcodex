@@ -3,15 +3,25 @@
  * Tests the actual CLI command execution end-to-end
  */
 
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  setDefaultTimeout,
+} from 'bun:test';
 import { access, mkdir, mkdtemp, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'bun';
 import { unregisterProject } from '../../src/core/registry.js';
 
-// Set 30s timeout for E2E tests (CI environments are slower)
-describe('E2E: omcodex doctor', { timeout: 30000 }, () => {
+// Set 30s timeout for E2E tests (CI environments are slower).
+setDefaultTimeout(30000);
+
+describe('E2E: omcodex doctor', () => {
   let tempDir: string;
   let cliPath: string;
 

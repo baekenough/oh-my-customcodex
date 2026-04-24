@@ -166,7 +166,7 @@ Example: `.claude/outputs/sessions/2026-03-12/research-143052.md`
 ### Constraints
 
 - Output persistence is opt-in per skill — no mandatory requirement
-- Skills create output directory (`mkdir -p`) before writing — no setup needed
+- Skills write artifact files with a file-write API that creates missing parent directories — no Bash directory pre-step needed
 - No indexing in P0 — simple date-based directory browsing is sufficient
 - Timestamp uses local time (KST, +09:00) for user readability
 

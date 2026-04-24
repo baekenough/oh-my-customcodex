@@ -213,7 +213,7 @@ Convergence expected by round 3. Hard stop at round 30.
    query: "{original user query}"
    ---
    ```
-   The agent creates the directory (`mkdir -p`) before writing. This is a subagent operation (R010 compliance).
+   The agent writes the artifact file using a file-write API that creates missing parent directories; do not run any Bash directory-creation pre-step for session outputs (R010 compliance).
 3. GitHub issue auto-created with findings
 4. Action items with effort estimates
 
