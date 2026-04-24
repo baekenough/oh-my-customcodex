@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const HOOKS_FILE = resolve(import.meta.dir, '../../../templates/.claude/hooks/hooks.json');
+const SOURCE_HOOKS_FILE = resolve(import.meta.dir, '../../../.codex/hooks/hooks.json');
 
 interface CommandHook {
   type: 'command';
@@ -443,7 +444,7 @@ describe('Hooks Validation', () => {
   });
 
   describe('Sensitive .claude path guard', () => {
-    it('should have a Bash hook that references the claude-sensitive-path-guard script', async () => {
+    it('should guard Bash, Write, and Edit operations that target .claude paths', async () => {
       const { parsed } = await loadHooksJson();
       const data = parsed as HooksStructure;
       const entries = data.hooks.PreToolUse ?? [];
@@ -457,9 +458,31 @@ describe('Hooks Validation', () => {
 
       expect(guardHook).toBeDefined();
       expect(guardHook?.matcher).toBe(
-        'tool == "Bash" && tool_input.command matches "\\\\.claude/"'
+        '(tool == "Bash" && tool_input.command matches "\\\\.claude/") || ((tool == "Write" || tool == "Edit") && tool_input.file_path matches "\\\\.claude/")'
       );
+      expect(guardHook?.description).toContain('Bash/Write/Edit');
       expect(guardHook?.description).toContain('.claude');
+    });
+
+    it('should keep source and template sensitive-path hook registration in sync', async () => {
+      const source = JSON.parse(await readFile(SOURCE_HOOKS_FILE, 'utf-8')) as HooksStructure;
+      const template = JSON.parse(await readFile(HOOKS_FILE, 'utf-8')) as HooksStructure;
+      const findGuard = (data: HooksStructure) =>
+        (data.hooks.PreToolUse ?? []).find((entry) =>
+          entry.hooks.some(
+            (hook) =>
+              hook.type === 'command' && hook.command.includes('claude-sensitive-path-guard.sh')
+          )
+        );
+
+      const sourceGuard = findGuard(source);
+      const templateGuard = findGuard(template);
+
+      expect(sourceGuard).toEqual(templateGuard);
+      expect(sourceGuard?.matcher).toContain('tool == "Bash"');
+      expect(sourceGuard?.matcher).toContain('tool == "Write"');
+      expect(sourceGuard?.matcher).toContain('tool == "Edit"');
+      expect(sourceGuard?.matcher).toContain('tool_input.file_path');
     });
   });
 

@@ -235,6 +235,26 @@ Skills persist output to `.codex/outputs/sessions/{YYYY-MM-DD}/{skill-name}-{HHm
 **Rules**: Opt-in per skill, final subagent writes with a file-write API that creates missing parent directories (R010 compliance), do not pre-create session output directories with Bash, .codex/outputs/ is git-untracked, no indexing required.
 -->
 
+## Sensitive Path Handling
+
+Claude Code treats `.claude/` and `templates/.claude/` as sensitive directories across Bash, Write, and Edit operations. The sensitive-path check runs above `bypassPermissions` and explicit allow rules, so allow rules do not override the sensitive-path check.
+
+This Codex port uses `.codex/` as the active runtime surface, but packaged compatibility templates still live under `templates/.claude/`. Any automation that writes those templates must account for Claude Code permission prompts.
+
+| Path pattern | Sensitive in Claude Code? | Affected operations |
+|--------------|---------------------------|---------------------|
+| `.claude/**` | Yes | Bash writes, Write, Edit |
+| `templates/.claude/**` | Yes | Bash writes, Write, Edit |
+| `.codex/**` | No | Normal Codex runtime writes; still follow R010/R017 |
+| `.codex/outputs/**` and `.claude/outputs/**` | Treat as constrained artifact paths | Use file-write APIs that create parents; do not pre-create with Bash |
+
+Recommended practice:
+
+1. Prefer Write/Edit in an interactive session, or managed sync/update paths, over Bash copy/mkdir/tee writes for `.claude/` and `templates/.claude/`.
+2. Keep allow rules only as defensive documentation; do not rely on them to suppress sensitive-path prompts.
+3. Do not run unattended Claude Code release automation that writes `templates/.claude/**` unless the workflow can handle interactive approval.
+4. In this Codex port, update `.codex/...` source files and their `templates/.claude/...` mirrors deliberately instead of bulk-copying with shell commands.
+
 ## Separation of Concerns
 
 | Location | Purpose | Contains |

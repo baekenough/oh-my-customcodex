@@ -1,5 +1,5 @@
 #!/bin/bash
-# Block Bash write operations targeting .claude/ sensitive paths.
+# Block tool write operations targeting .claude/ sensitive paths.
 # Claude Code can surface a sensitive-file permission prompt before allow rules
 # or bypassPermissions are evaluated, so fail fast before the command runs.
 
@@ -8,11 +8,15 @@ set -euo pipefail
 command -v jq >/dev/null 2>&1 || exit 0
 
 input=$(cat)
+tool=$(echo "$input" | jq -r '.tool // .tool_name // ""')
 cmd=$(echo "$input" | jq -r '.tool_input.command // ""')
+file_path=$(echo "$input" | jq -r '.tool_input.file_path // ""')
 
-if [ -z "$cmd" ]; then
-  echo "$input"
-  exit 0
+if [[ "$tool" =~ ^(Write|Edit)$ ]] && [[ "$file_path" =~ \.claude/ ]]; then
+  echo "[Hook] BLOCKED: $tool targeting .claude/ sensitive path" >&2
+  echo "[Hook] File: $file_path" >&2
+  echo "[Hook] Sensitive-path prompts can override allow rules. Use the repo's managed sync/update path or perform this change interactively." >&2
+  exit 2
 fi
 
 targets_claude=0
@@ -32,7 +36,7 @@ fi
 if [ "$targets_claude" -eq 1 ] && [ "$writes_claude" -eq 1 ]; then
   echo "[Hook] BLOCKED: Bash write targeting .claude/ sensitive path" >&2
   echo "[Hook] Command: $cmd" >&2
-  echo "[Hook] Use Write/Edit or the repo's managed sync/update path instead of Bash for .claude/ changes." >&2
+  echo "[Hook] Sensitive-path prompts can override allow rules. Use the repo's managed sync/update path or perform this change interactively." >&2
   exit 2
 fi
 
