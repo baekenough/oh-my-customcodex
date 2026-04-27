@@ -317,6 +317,15 @@ describe('Template Validation', () => {
   });
 
   describe('Skill frontmatter', () => {
+    it('packages Visual Ralph and Visual Verdict as mirrored skills', async () => {
+      const skillsDir = join(TEMPLATES_DIR, '.claude/skills');
+
+      for (const skillName of ['visual-ralph', 'visual-verdict']) {
+        const content = await readFile(join(skillsDir, skillName, 'SKILL.md'), 'utf-8');
+        expect(content).toContain(`name: ${skillName}`);
+      }
+    });
+
     it('every SKILL.md should have valid YAML frontmatter', async () => {
       const skillsDir = join(TEMPLATES_DIR, '.claude/skills');
       const skillDirs = await readdir(skillsDir, { withFileTypes: true });
@@ -727,6 +736,24 @@ describe('Template Validation', () => {
       );
 
       expect(repoWorkflow).toBe(templateWorkflow);
+    });
+
+    it('auto-dev workflow inventories release-monitor issues before declaring no work', async () => {
+      const repoWorkflow = await readFile(join(PROJECT_ROOT, 'workflows/auto-dev.yaml'), 'utf-8');
+      const skillWorkflow = await readFile(
+        join(PROJECT_ROOT, '.codex/skills/pipeline/workflows/auto-dev.yaml'),
+        'utf-8'
+      );
+
+      for (const content of [repoWorkflow, skillWorkflow]) {
+        expect(content).toContain('codex-release');
+        expect(content).toContain('oh-my-codex-release');
+        expect(content).toContain('release-monitor');
+      }
+
+      expect(skillWorkflow).toContain(
+        'Never terminate auto-dev from an empty `verify-done` query alone'
+      );
     });
 
     it('R006 context fork list matches actual skill frontmatter', () => {

@@ -1,5 +1,5 @@
 # /pipeline auto-dev — Full-auto release pipeline
-# Pre-triages open issues → triage verify-done → plan → implement → verify → PR/release → publish → followup
+# Pre-triages open issues and release monitors → triage verify-done → plan → implement → verify → PR/release → publish → followup
 
 name: auto-dev
 description: "Full-auto release pipeline: pre-triage → triage → plan → implement → verify → PR → publish → followup"
@@ -11,11 +11,11 @@ steps:
     parallel:
       - name: pre-triage
         skill: professor-triage
-        description: Run professor-triage on open issues that lack verify-done label
-        condition: "open issues without label:verify-done exist"
+        description: Run professor-triage on open issues that lack verify-done label, including release-monitor labels codex-release and oh-my-codex-release
+        condition: "open issues without label:verify-done exist OR open release-monitor issues with label:codex-release or label:oh-my-codex-release exist"
       - name: triage
         skill: professor-triage
-        description: Analyze verify-done issues against current codebase and perform automated triage
+        description: Analyze verify-done and release-monitor issues against current codebase and perform automated triage
 
   - name: plan
     depends_on: issue-analysis

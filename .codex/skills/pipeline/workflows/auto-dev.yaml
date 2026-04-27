@@ -19,13 +19,19 @@ steps:
       2. Scan open GitHub issues:
          gh issue list --state open --limit 100 --json number,title,labels,body,milestone
 
+         Also scan release-monitor queues even when `verify-done` is empty:
+         gh issue list --state open --label codex-release --limit 100 --json number,title,labels,body,milestone
+         gh issue list --state open --label oh-my-codex-release --limit 100 --json number,title,labels,body,milestone
+
       3. Group by label and compute for each issue:
          - dependencies: parse "see #N", "depends on #N", "#N 참조" from body
+         - release_monitor: true when labels include codex-release or oh-my-codex-release
          - blocked_by_decision: true if body references any decision-needed issue
          - effort: XS/S/M/L from scope
          - order: topological sort over dependencies
 
-      4. Output: dependency-sorted issue table with blocked_by_decision flag.
+      4. Output: dependency-sorted issue table with blocked_by_decision and release_monitor flags.
+         Never terminate auto-dev from an empty `verify-done` query alone while open release-monitor issues remain.
     description: "Ensure labels exist, scan issues, dependency-analyze"
 
   - name: scope-selection
@@ -39,9 +45,12 @@ steps:
       2. Exclude:
          - blocked_by_decision == true
          - Issues requiring manual/human action
-      3. Sort by dependency: prerequisites before dependents
-      4. Cap at 7 issues; if priority issues < 7, stop at that priority (don't mix tiers)
-      5. Minimum 1 issue; if 0 eligible, halt with "no eligible issues for auto-dev run"
+      3. Include release-monitor issues after explicit impact triage:
+         - If code/docs changes are needed, include the issue in the release manifest.
+         - If no change is needed, comment with evidence and close or mark as triaged.
+      4. Sort by dependency: prerequisites before dependents
+      5. Cap at 7 issues; if priority issues < 7, stop at that priority (don't mix tiers)
+      6. Minimum 1 issue or 1 release-monitor triage action; if 0 eligible and 0 release-monitor actions, halt with "no eligible issues for auto-dev run"
 
       Create release milestone and assign scoped issues.
       Output markdown release manifest:

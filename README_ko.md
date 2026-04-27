@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-49개 에이전트. 114개 스킬. 22개 규칙. 명령어 하나.
+49개 에이전트. 116개 스킬. 22개 규칙. 명령어 하나.
 
 > **v0.1.7** — token-efficiency-audit 스킬, 토큰 효율 3계층 가이드, cc-token-saver/CLI flags cross-reference 추가
 
@@ -149,7 +149,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (114개)
+## 스킬 (116개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
@@ -162,7 +162,7 @@ Agent(arch-documenter):haiku      ┘
 | 패키지 | 3 | npm-publish, npm-version, npm-audit |
 | 최적화 | 3 | optimize-analyze, optimize-bundle, optimize-report |
 | 보안 | 3 | adversarial-review, cve-triage, jinja2-prompts |
-| 기타 | 10 | codex-exec, claude-native, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely 외 |
+| 기타 | 12 | codex-exec, claude-native, visual-ralph, visual-verdict, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely 외 |
 
 스킬은 3-tier scope 시스템을 사용합니다: `core` (범용), `harness` (에이전트/스킬 관리), `package` (프로젝트 특화).
 
@@ -298,7 +298,7 @@ your-project/
 │   ├── contexts/               # 4개 공유 컨텍스트 파일
 │   └── ontology/               # RAG용 지식 그래프
 ├── .agents/
-│   └── skills/                 # 114개 설치 스킬 모듈
+│   └── skills/                 # 116개 설치 스킬 모듈
 └── guides/                     # 40개 레퍼런스 문서
 ```
 
