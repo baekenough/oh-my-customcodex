@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.4.7",
-  "generatedAt": "2026-04-27T04:54:56.178Z",
-  "templateVersion": "0.4.7",
+  "generatorVersion": "0.4.8",
+  "generatedAt": "2026-04-27T05:25:14.115Z",
+  "templateVersion": "0.4.8",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -814,6 +814,11 @@
       "size": 610,
       "component": "guides"
     },
+    "guides/agent-harness-anatomy/README.md": {
+      "templateHash": "d0b8d7ab431c116a496e24ed4b5006d541032e2eebd9bb147671c7e92cecf31f",
+      "size": 2956,
+      "component": "guides"
+    },
     "guides/rust/ownership.md": {
       "templateHash": "5d6d75722815c6854e7040d0d542d39b8b1206cf973b29001a112c681def674d",
       "size": 3244,
@@ -887,6 +892,11 @@
     "guides/airflow/README.md": {
       "templateHash": "c4345a9499e91c8e11c6953969e6e7a3af613ff44ffd1409a61635b0fcf6a128",
       "size": 1936,
+      "component": "guides"
+    },
+    "guides/harness-engineering/README.md": {
+      "templateHash": "68df1c657205a6980e2a4cca8bbfe36539e34819ea7105638832852fdbd4f05d",
+      "size": 2558,
       "component": "guides"
     },
     "guides/multi-model-routing/README.md": {
@@ -1060,13 +1070,18 @@
       "component": "guides"
     },
     "guides/index.yaml": {
-      "templateHash": "fd59433e66632a832bdf4ceaa387e561b0f9b91802b21a1683a7b39ecb997b36",
-      "size": 8002,
+      "templateHash": "e55beff646bb35f2ed72f657e59fd36f0f88ab6210999e19f29163cb63d63c2a",
+      "size": 8582,
       "component": "guides"
     },
     "guides/spark/README.md": {
       "templateHash": "381ef901b35938932692a90b7a280a11523a856e0bbcfc0ec67bad8b0212190f",
       "size": 1017,
+      "component": "guides"
+    },
+    "guides/middleware-patterns/README.md": {
+      "templateHash": "c051113470ae86be356a41a740a1988181cb5f6113387c666268ecb18e1efd94",
+      "size": 2678,
       "component": "guides"
     },
     "guides/agents-md-quality/README.md": {

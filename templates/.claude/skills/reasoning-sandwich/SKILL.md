@@ -38,6 +38,20 @@ A model allocation pattern that wraps implementation actions with stronger-model
 | Action (implement/generate) | sonnet | Optimized for code generation, balanced cost |
 | Post-verification (review/test) | sonnet or haiku | Structural verification, checklist validation |
 
+## Reasoning Budget Allocation
+
+Allocate deeper reasoning to phases that shape the harness or verify completion:
+
+| Workflow phase | Reasoning budget | Notes |
+|----------------|------------------|-------|
+| Requirements and boundary mapping | high | Identify missing context, owner boundaries, and verification evidence |
+| Mechanical edits | medium | Follow the established plan and local patterns |
+| Test failure diagnosis | high | Reconstruct the failing boundary before editing again |
+| Release verification | high | Confirm public surfaces, package versions, tags, and issue state |
+| Routine formatting | low | Use existing formatters and avoid new abstractions |
+
+If a phase repeats without new evidence, run `loop-detection-middleware` before spending more reasoning budget on the same path.
+
 ## When to Apply
 
 | Scenario | Apply Sandwich? | Reason |
@@ -54,6 +68,7 @@ This pattern is used by:
 - `structured-dev-cycle` — stages map to sandwich phases
 - `evaluator-optimizer` — generator/evaluator model selection guidance
 - `deep-plan` — research (pre) → plan (action) → verify (post)
+- `middleware-patterns` — uses this skill as the `wrap_model_call` substitute for Codex + OMX
 
 ## Anti-patterns
 

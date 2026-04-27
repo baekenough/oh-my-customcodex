@@ -65,6 +65,20 @@ Safer shape: Keep logic in a skill or routing layer; keep agent file declarative
 - warn when a change smells like the wrong layer owns the behavior
 - prefer concise warnings with one safer alternative
 
+## Pre-Completion Checklist Pattern
+
+For changes that alter harness behavior, emit a compact checklist before implementation starts:
+
+```text
+[PRE-COMPLETION-CHECKLIST]
+- Existing behavior locked by test or static validation
+- Source and template mirrors identified
+- Wiki or guide sync impact identified
+- Release verification surface identified
+```
+
+Use this checklist to prevent implementation from drifting into undocumented or unverified harness changes. If a checklist item cannot be satisfied, state the missing evidence and route through `deep-plan` or `ralplan` before editing.
+
 ## Integration
 
 Use before:
@@ -78,3 +92,4 @@ Good pairings:
 - `pre-generation-arch-check` -> `deep-plan`
 - `pre-generation-arch-check` -> `structured-dev-cycle`
 - `pre-generation-arch-check` -> implementation
+- `pre-generation-arch-check` -> `loop-detection-middleware` when repeated edits suggest a wrong boundary

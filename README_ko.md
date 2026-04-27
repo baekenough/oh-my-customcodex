@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-49개 에이전트. 116개 스킬. 22개 규칙. 명령어 하나.
+49개 에이전트. 117개 스킬. 22개 규칙. 명령어 하나.
 
 > **v0.1.7** — token-efficiency-audit 스킬, 토큰 효율 3계층 가이드, cc-token-saver/CLI flags cross-reference 추가
 
@@ -149,7 +149,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (116개)
+## 스킬 (117개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
@@ -298,7 +298,7 @@ your-project/
 │   ├── contexts/               # 4개 공유 컨텍스트 파일
 │   └── ontology/               # RAG용 지식 그래프
 ├── .agents/
-│   └── skills/                 # 116개 설치 스킬 모듈
+│   └── skills/                 # 117개 설치 스킬 모듈
 └── guides/                     # 40개 레퍼런스 문서
 ```
 

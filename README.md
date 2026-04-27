@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-49 agents. 116 skills. 22 rules. One command.
+49 agents. 117 skills. 22 rules. One command.
 
 ```bash
 npm install -g oh-my-customcodex && cd your-project && omcustomcodex init
@@ -134,7 +134,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (116)
+### Skills (117)
 
 | Category | Count | Includes |
 |----------|-------|----------|
@@ -227,7 +227,7 @@ Key rules: R010 (orchestrator never writes files), R009 (parallel execution mand
 
 ---
 
-### Guides (42)
+### Guides (45)
 
 Reference documentation covering best practices, architecture decisions, and integration patterns. Located in `guides/` at project root, covering topics from agent design to CI/CD to observability.
 
@@ -286,7 +286,7 @@ your-project/
 │   ├── contexts/               # 4 shared context files
 │   └── ontology/               # Knowledge graph for RAG
 ├── .agents/
-│   └── skills/                 # 116 installed skill modules
+│   └── skills/                 # 117 installed skill modules
 └── guides/                     # 40 reference documents
 ```
 
