@@ -160,8 +160,8 @@ Add this block to your project-scoped `.codex/config.toml`:
 
 ```toml
 [mcp_servers.ontology-rag]
-command = ".venv/bin/python"
-args = ["-m", "ontology_rag.mcp_server"]
+command = "uv"
+args = ["run", "--no-project", "--python", ".venv", "python", "-m", "ontology_rag.mcp_server"]
 
 [mcp_servers.ontology-rag.env]
 ONTOLOGY_DIR = ".codex/ontology"

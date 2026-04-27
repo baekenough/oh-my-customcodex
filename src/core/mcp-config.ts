@@ -14,18 +14,32 @@ import { getProviderLayout } from './layout.js';
 const PROJECT_CONFIG_DIR = '.codex';
 const PROJECT_CONFIG_FILE = 'config.toml';
 const ONTOLOGY_SERVER_TABLE = '[mcp_servers.ontology-rag]';
+const ONTOLOGY_SERVER_COMMAND = 'uv';
+const ONTOLOGY_SERVER_ARGS = [
+  'run',
+  '--no-project',
+  '--python',
+  '.venv',
+  'python',
+  '-m',
+  'ontology_rag.mcp_server',
+];
 
 export function getProjectMCPConfigPath(targetDir: string): string {
   return join(targetDir, PROJECT_CONFIG_DIR, PROJECT_CONFIG_FILE);
 }
 
+function renderTomlString(value: string): string {
+  return `"${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`;
+}
+
 function renderOntologyMCPBlock(ontologyDir: string): string {
   return `${ONTOLOGY_SERVER_TABLE}
-command = ".venv/bin/python"
-args = ["-m", "ontology_rag.mcp_server"]
+command = ${renderTomlString(ONTOLOGY_SERVER_COMMAND)}
+args = [${ONTOLOGY_SERVER_ARGS.map(renderTomlString).join(', ')}]
 
 [mcp_servers.ontology-rag.env]
-ONTOLOGY_DIR = "${ontologyDir}"
+ONTOLOGY_DIR = ${renderTomlString(ontologyDir)}
 `;
 }
 
