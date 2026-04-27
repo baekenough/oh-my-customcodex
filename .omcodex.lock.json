@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.4.5",
-  "generatedAt": "2026-04-27T04:09:54.167Z",
-  "templateVersion": "0.4.5",
+  "generatorVersion": "0.4.6",
+  "generatedAt": "2026-04-27T04:31:56.306Z",
+  "templateVersion": "0.4.6",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -35,8 +35,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-parallel-execution.md": {
-      "templateHash": "55744b87529fcbaab767723e50ee283cf099d575fd593438188871f22bb00494",
-      "size": 7299,
+      "templateHash": "80348744a85decb1904d823de4c810755545f1abc171ff72935ed0361b4f7537",
+      "size": 7849,
       "component": "rules"
     },
     ".codex/rules/SHOULD-ecomode.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-design.md": {
-      "templateHash": "7610bf7ae0f4ae48321003a0fd840d28d9ab8bcaf39b866afc45d915316fe0ac",
-      "size": 22677,
+      "templateHash": "06c0b1b9cece77f3f99912b5c1a0cddc7efa38a0a7b4d577d2225972ddd5c30b",
+      "size": 23993,
       "component": "rules"
     },
     ".codex/rules/MUST-agent-identification.md": {
@@ -65,8 +65,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-teams.md": {
-      "templateHash": "8714a38a22b35de190f5eb8c0140151f55abe5b7e9b6b7f2beb290373244e27d",
-      "size": 15223,
+      "templateHash": "e20dca80f4775e9cd906fa369b95e83296584f4475ce26778d5aa4da9aac2381",
+      "size": 15401,
       "component": "rules"
     },
     ".codex/rules/MAY-optimization.md": {
@@ -100,8 +100,8 @@
       "component": "rules"
     },
     ".codex/rules/SHOULD-memory-integration.md": {
-      "templateHash": "5116c226e578e40223c5d713ac4d3f759b2b6c57f221e79904ccb7c3d7d8d2cf",
-      "size": 15491,
+      "templateHash": "a92539c7eb129e19e7068247d33efcd2279328c59c5d6eaccacb863dd102cf0e",
+      "size": 15972,
       "component": "rules"
     },
     ".codex/rules/MUST-enforcement-policy.md": {
@@ -345,8 +345,8 @@
       "component": "agents"
     },
     ".codex/agents/sys-memory-keeper.md": {
-      "templateHash": "1fb3bb932cf7f451f3250e0b3aff79963dfe30aa66d0723d9401b330396beaef",
-      "size": 4882,
+      "templateHash": "a4756729dcfeb98a062423660b2b0895140b2a7917e78ce809b63b2de480b861",
+      "size": 5473,
       "component": "agents"
     },
     ".codex/agents/infra-aws-expert.md": {

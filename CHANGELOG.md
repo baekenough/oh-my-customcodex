@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-04-27
+
+### Changed
+- Move high-volume R006/R009/R011/R018 rule detail behind HTML comment `DETAIL` blocks while keeping concise visible summaries and Read-tool access to full detail.
+- Add sys-memory-keeper guidance for treating native `MEMORY.md` as an index with archive pointers rather than an ever-growing transcript.
+
+### Fixed
+- Add regression coverage for rule visible-byte budgets, source/template rule mirror sync, and native memory compaction guidance.
+
 ## [0.4.5] - 2026-04-27
 
 ### Fixed
