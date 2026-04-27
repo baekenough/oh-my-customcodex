@@ -5,6 +5,7 @@ export {
   evaluations,
   evalBaselines,
   improvementActions,
+  memoryRecords,
   projects,
   sessionFeedback,
   sessions,
@@ -13,3 +14,4 @@ export {
 export { collect, type CollectOptions, type CollectResult } from './collect/index.js';
 export { runMigrations } from './db/migrate.js';
 export * from './query/index.js';
+export * from './memory/index.js';

@@ -195,6 +195,22 @@ function applyDdl(db: EvalDb, sqlite: Database) {
       comment TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
+    `CREATE TABLE IF NOT EXISTS memory_records (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      source TEXT NOT NULL,
+      source_id TEXT,
+      scope TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      content TEXT NOT NULL,
+      content_hash TEXT NOT NULL UNIQUE,
+      sensitivity TEXT NOT NULL DEFAULT 'project',
+      project TEXT,
+      session_id TEXT,
+      tags TEXT,
+      metadata TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT
+    )`,
   ];
   for (const sql of statements) {
     sqlite.run(sql);
@@ -243,6 +259,7 @@ describe('runMigrations', () => {
     expect(names).toContain('agent_invocations');
     expect(names).toContain('evaluations');
     expect(names).toContain('session_feedback');
+    expect(names).toContain('memory_records');
     db.close();
   });
 
@@ -273,6 +290,7 @@ describe('runMigrations', () => {
     expect(indexNames).toContain('idx_invocations_baseline_id');
     expect(indexNames).toContain('idx_invocations_agent_model');
     expect(indexNames).toContain('idx_feedback_session_id');
+    expect(indexNames).toContain('idx_memory_records_hash');
     db.close();
   });
 

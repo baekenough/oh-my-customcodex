@@ -5,6 +5,12 @@ name: auto-dev
 description: "Full-auto release pipeline: pre-triage → triage → plan → implement → verify → PR → publish → followup"
 mode: auto
 error: halt-and-report
+observability:
+  token_spend:
+    enabled: true
+    state_file: "/tmp/auto-dev-spend-{PPID}.json"
+    estimate: "round((input_chars + output_chars) / 4)"
+    report_before: followup
 
 steps:
   - name: issue-analysis

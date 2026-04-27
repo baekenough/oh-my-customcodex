@@ -3,8 +3,8 @@
 
 meta:
   updated: "2026-04-27"
-  total_pages: 255
-  total_sources: 227
+  total_pages: 257
+  total_sources: 230
 
 pages:
   architecture:
@@ -610,6 +610,9 @@ pages:
     - file: guides/dbt.md
       title: "dbt Guide"
       summary: "Reference documentation for dbt (data build tool) SQL modeling and analytics engineering"
+    - file: guides/deep-plan.md
+      title: "Deep Plan Guide"
+      summary: "Implementation-ready release planning guidance for research, plan, verify, and handoff phases"
     - file: guides/django-best-practices.md
       title: "Django Best Practices Guide"
       summary: "Reference documentation for Django production-ready application patterns"
@@ -667,6 +670,9 @@ pages:
     - file: guides/postgres.md
       title: "PostgreSQL Guide"
       summary: "Reference documentation for pure PostgreSQL database administration, query optimization"
+    - file: guides/professor-triage.md
+      title: "Professor Triage Guide"
+      summary: "Evidence-first GitHub issue triage workflow for release planning and delegated analysis"
     - file: guides/python.md
       title: "Python Guide"
       summary: "Reference documentation for idiomatic Python coding style, PEP 8 conventions"

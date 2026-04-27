@@ -104,6 +104,24 @@ This skill activates when the user mentions any of:
 | `claude_code.tool_decision` | Tool accept/reject decisions |
 | `claude_code.user_prompt` | User prompt metadata (content redacted by default) |
 
+## Agent Trajectory Standard
+
+When monitoring is enabled, agent trajectory data should use the eval-core trajectory vocabulary so cost, correctness, and routing quality can be compared across releases.
+
+| OTel attribute | Eval-core field |
+| --- | --- |
+| `agent.type` | `agent_type` |
+| `agent.name` | `agent_name` |
+| `agent.model` | `model` |
+| `agent.outcome` | `outcome` |
+| `agent.skill` | `skill_name` |
+| `trajectory.correctness` | `correctness` |
+| `trajectory.step_ratio` | `step_ratio` |
+| `trajectory.tool_call_ratio` | `tool_call_ratio` |
+| `trajectory.latency_ratio` | `latency_ratio` |
+
+Release automation should record phase-level token spend alongside these attributes. If runtime usage events are unavailable, use the pipeline advisory estimate and mark the source as `estimated`.
+
 ## Upgrade Path
 
 For production monitoring, upgrade from console to OTLP:

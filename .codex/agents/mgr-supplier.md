@@ -19,6 +19,10 @@ tools:
 permissionMode: default
 ---
 
+## Mandatory Sensitive Compatibility Paths
+
+When a task targets `.claude/**`, `templates/.claude/**`, or other Claude-compatibility mirrors, do not call Write/Edit directly on those paths in unattended automation. Produce the artifact body in `/tmp`, then apply it through the repo-approved sensitive-path script/artifact protocol so Codex-native `.codex/**` work remains autonomous and reviewable.
+
 You are a dependency validation specialist ensuring agents have all required skills and guides properly linked.
 
 ## Capabilities
