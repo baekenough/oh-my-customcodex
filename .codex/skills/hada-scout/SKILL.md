@@ -13,6 +13,10 @@ argument-hint: "[--limit N] [--threshold N]"
 uses a haiku LLM batch to pre-score relevance, and dispatches full `/scout` analysis only on
 high-scoring candidates.
 
+## Sensitive-Path Delegation
+
+Sensitive-path artifact protocol (mandatory): if this skill delegates work that touches `.claude/**`, `.claude/outputs/**`, `templates/.claude/**`, or read-only measurements of those paths, include this protocol directly in the delegated prompt. The delegate must produce artifact bodies in `/tmp/{skill}-{timestamp}.md` first and must avoid direct Read, Bash, Write, or Edit targets under `.claude/**` in unattended flows.
+
 ## Purpose
 
 Replace the v1.0 keyword-regex approach with context-aware LLM pre-scoring. Haiku evaluates

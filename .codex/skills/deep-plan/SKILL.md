@@ -349,6 +349,8 @@ Phase 3 verification report is persisted by the final synthesis agent:
 .codex/outputs/sessions/{YYYY-MM-DD}/deep-plan-{HHmmss}.md
 ```
 
+Sensitive-path artifact protocol (mandatory): if any research, planning, or verification delegate must touch `.claude/**`, `.claude/outputs/**`, or `templates/.claude/**`, include the protocol directly in that delegate prompt. The delegate must write artifact bodies to `/tmp/deep-plan-{timestamp}.md` first and must avoid direct Read, Bash, Write, or Edit targets under `.claude/**` in unattended flows.
+
 With metadata header:
 ```markdown
 ---

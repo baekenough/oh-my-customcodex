@@ -132,6 +132,10 @@ Evaluate: Is this a specialized management/tooling task?
 - New monitoring tool setup (e.g., "Grafana 대시보드 관리")
 - Unfamiliar package manager operations
 
+## Sensitive-Path Delegation
+
+Sensitive-path artifact protocol (mandatory): if this skill delegates work that touches `.claude/**`, `.claude/outputs/**`, `templates/.claude/**`, or read-only measurements of those paths, include this protocol directly in the delegated prompt. The delegate must produce artifact bodies in `/tmp/{skill}-{timestamp}.md` first and must avoid direct Read, Bash, Write, or Edit targets under `.claude/**` in unattended flows.
+
 ## Usage
 
 This skill is NOT user-invocable. It is automatically triggered when the main conversation detects agent management intent.

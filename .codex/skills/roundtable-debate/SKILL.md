@@ -20,6 +20,10 @@ Run a bounded debate when convergence would hide useful disagreement. Unlike `ag
 - Review work where anchoring or groupthink is likely.
 - Decisions where a minority risk could be more important than the majority preference.
 
+## Sensitive-Path Delegation
+
+Sensitive-path artifact protocol (mandatory): if this skill delegates work that touches `.claude/**`, `.claude/outputs/**`, `templates/.claude/**`, or read-only measurements of those paths, include this protocol directly in the delegated prompt. The delegate must produce artifact bodies in `/tmp/{skill}-{timestamp}.md` first and must avoid direct Read, Bash, Write, or Edit targets under `.claude/**` in unattended flows.
+
 ## Workflow
 
 1. **Independent-first analysis**: spawn 3-5 reviewers in parallel. Do not share intermediate opinions before each reviewer submits an initial view.

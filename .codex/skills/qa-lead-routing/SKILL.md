@@ -92,6 +92,10 @@ Delegate to mgr-creator with context:
 - Specialized QA methodologies (e.g., "뮤테이션 테스트 전략 만들어줘")
 - Performance/security testing tools not covered by existing agents
 
+## Sensitive-Path Delegation
+
+Sensitive-path artifact protocol (mandatory): if this skill delegates work that touches `.claude/**`, `.claude/outputs/**`, `templates/.claude/**`, or read-only measurements of those paths, include this protocol directly in the delegated prompt. The delegate must produce artifact bodies in `/tmp/{skill}-{timestamp}.md` first and must avoid direct Read, Bash, Write, or Edit targets under `.claude/**` in unattended flows.
+
 ## Usage
 
 This skill is NOT user-invocable. It should be automatically triggered when the main conversation detects QA intent.

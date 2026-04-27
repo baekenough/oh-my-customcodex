@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-04-27
+
+### Fixed
+- Add mandatory sensitive-path artifact protocol guidance to delegated auto-dev, triage, planning, research, and verification prompts so `.claude/**` compatibility reads/writes do not reintroduce unattended permission prompts.
+- Extend sensitive-path regression coverage across source skills, Claude compatibility templates, R006, and wiki guidance.
+
 ## [0.3.10] - 2026-04-24
 
 ### Fixed

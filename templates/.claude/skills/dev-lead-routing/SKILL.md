@@ -8,6 +8,10 @@ context: fork
 
 # Dev Lead Routing
 
+## Sensitive-Path Delegation
+
+Sensitive-path artifact protocol (mandatory): if this skill delegates work that touches `.claude/**`, `.claude/outputs/**`, `templates/.claude/**`, or read-only measurements of those paths, include this protocol directly in the delegated prompt. The delegate must produce artifact bodies in `/tmp/{skill}-{timestamp}.md` first and must avoid direct Read, Bash, Write, or Edit targets under `.claude/**` in unattended flows.
+
 ## Engineers
 
 | Type | Agents |
@@ -20,6 +24,7 @@ context: fork
 | Architect | arch-documenter, arch-speckit-agent |
 | Security | sec-codeql-expert |
 | Infra | infra-docker-expert, infra-aws-expert |
+| Slack | slack-cli-expert |
 
 ## File Extension Mapping
 
@@ -74,6 +79,7 @@ context: fork
 | security, codeql, cve, vulnerability, sarif, sast, security audit | sec-codeql-expert |
 | architecture, adr, openapi, swagger, diagram | arch-documenter |
 | spec, specification, tdd, requirements | arch-speckit-agent |
+| slack, slack-cli, slack app, slack deploy, slack trigger, slack datastore | slack-cli-expert |
 
 ## Model Selection
 

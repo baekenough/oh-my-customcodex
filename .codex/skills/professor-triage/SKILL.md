@@ -231,6 +231,8 @@ Path: `.codex/outputs/sessions/YYYY-MM-DD/professor-triage-HHmmss.md`
 
 Timestamps use local machine time (consistent with other artifact skills).
 
+Sensitive-path artifact protocol (mandatory): if a delegated agent must create or inspect Claude compatibility artifacts under `.claude/**`, `.claude/outputs/**`, or `templates/.claude/**`, include this protocol in the delegated prompt. The agent must produce artifact bodies in `/tmp/professor-triage-{timestamp}.md` first and must not call Read, Bash, Write, or Edit directly on `.claude/**` paths in unattended flows. Codex-native `.codex/outputs/**` artifacts continue to use managed file-write APIs that create parents.
+
 Template:
 ```
 # Professor Triage 리포트 — YYYY-MM-DD

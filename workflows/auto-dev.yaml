@@ -36,6 +36,7 @@ steps:
       - Codex-managed `.codex/` edits use the normal edit/patch flow.
       - Do not adopt upstream Claude-only `/tmp` bypass guidance as the default path.
       - If a port requires `.claude` template parity changes, make the change explicit and verify sensitive-path guard tests.
+      - Sensitive-path artifact protocol (mandatory): delegated prompts that touch `.claude/**`, `templates/.claude/**`, `.claude/outputs/**`, or read-only measurements of those paths must instruct the subagent to produce artifact bodies in `/tmp/{skill}-{timestamp}.md` first and avoid direct Read/Bash/Write/Edit targets under `.claude/**` in unattended flows.
     description: Execute implementation plan with appropriate agents
     foreach: planned-issue
 

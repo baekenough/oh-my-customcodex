@@ -256,6 +256,12 @@ Recommended practice:
 4. In this Codex port, update `.codex/...` source files and their `templates/.claude/...` mirrors deliberately instead of bulk-copying with shell commands.
 5. For unattended Claude compatibility-template writes, use a reviewed temporary script wrapper and verify the resulting diff; direct Bash/Write/Edit targets under `templates/.claude/**` can all trigger the sensitive-path guard.
 
+Delegation prompt requirement:
+
+Any prompt that delegates work involving `.claude/**`, `templates/.claude/**`, `.claude/outputs/**`, or read-only measurement of those paths MUST include this block verbatim:
+
+> Sensitive-path artifact protocol (mandatory): do not ask a subagent to call Read, Bash, Write, or Edit directly on `.claude/**` or `templates/.claude/**` paths. If Claude compatibility artifacts are required, have the subagent produce the artifact body in `/tmp/{skill}-{timestamp}.md`, then use a reviewed temporary script wrapper or managed file-write API for the final checked-in path. Do not use direct Write/Edit/Bash targets under `.claude/**` in unattended flows.
+
 ## Separation of Concerns
 
 | Location | Purpose | Contains |

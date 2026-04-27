@@ -214,6 +214,7 @@ Convergence expected by round 3. Hard stop at round 30.
    ---
    ```
    The agent writes the artifact file using a file-write API that creates missing parent directories; do not run any Bash directory-creation pre-step for session outputs (R010 compliance).
+   Sensitive-path artifact protocol (mandatory): if a delegated research agent must inspect or create Claude compatibility artifacts under `.claude/**`, `.claude/outputs/**`, or `templates/.claude/**`, the delegated prompt must require `/tmp/research-{timestamp}.md` as the first artifact body target and must forbid direct Read, Bash, Write, or Edit targets under `.claude/**` in unattended flows.
 3. GitHub issue auto-created with findings
 4. Action items with effort estimates
 

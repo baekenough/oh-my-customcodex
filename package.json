@@ -3,7 +3,7 @@
   "workspaces": [
     "packages/*"
   ],
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Batteries-included agent harness on top of GPT Codex + OMX",
   "type": "module",
   "bin": {
