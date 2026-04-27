@@ -86,8 +86,10 @@ describe('mcp-config', () => {
       const content = await readFile(configPath, 'utf-8');
 
       expect(content).toContain('[mcp_servers.ontology-rag]');
-      expect(content).toContain('command = ".venv/bin/python"');
-      expect(content).toContain('args = ["-m", "ontology_rag.mcp_server"]');
+      expect(content).toContain('command = "uv"');
+      expect(content).toContain(
+        'args = ["run", "--no-project", "--python", ".venv", "python", "-m", "ontology_rag.mcp_server"]'
+      );
       expect(content).toContain('[mcp_servers.ontology-rag.env]');
       expect(content).toContain('ONTOLOGY_DIR = ".codex/ontology"');
     });
@@ -164,18 +166,23 @@ describe('mcp-config', () => {
     it('does not overwrite an existing ontology-rag config block', async () => {
       await mkdir(join(tempDir, '.codex', 'ontology'), { recursive: true });
       const configPath = getProjectMCPConfigPath(tempDir);
-      await writeFile(
-        configPath,
-        '[mcp_servers.ontology-rag]\ncommand = "custom-python"\nargs = ["--custom"]\n',
-        'utf-8'
-      );
+      const existingBlock = [
+        '[mcp_servers.ontology-rag]',
+        'command = "custom-python"',
+        'args = ["--custom"]',
+        '',
+        '[mcp_servers.ontology-rag.env]',
+        'ONTOLOGY_DIR = "custom-ontology"',
+        'CUSTOM_FLAG = "enabled"',
+        '',
+      ].join('\n');
+      await writeFile(configPath, existingBlock, 'utf-8');
       execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
 
       await generateMCPConfig(tempDir);
 
       const content = await readFile(configPath, 'utf-8');
-      expect(content).toContain('command = "custom-python"');
-      expect(content).toContain('args = ["--custom"]');
+      expect(content).toBe(existingBlock);
       expect(content.match(/\[mcp_servers\.ontology-rag\]/g)?.length).toBe(1);
     });
 
