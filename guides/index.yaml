@@ -52,6 +52,24 @@ guides:
     source:
       type: internal
 
+  - name: harness-engineering
+    description: Eval-driven harness hill-climbing, regression caching, and spring-cleaning guidance
+    path: ./harness-engineering/
+    source:
+      type: internal
+
+  - name: middleware-patterns
+    description: Lifecycle middleware vocabulary mapped to Codex + OMX hooks, skills, and rules
+    path: ./middleware-patterns/
+    source:
+      type: internal
+
+  - name: agent-harness-anatomy
+    description: Six-component agent harness anatomy mapped to oh-my-customcodex assets
+    path: ./agent-harness-anatomy/
+    source:
+      type: internal
+
   - name: multi-agent-debate-patterns
     description: Anti-groupthink debate patterns for Agora and roundtable-debate workflows
     path: ./multi-agent-debate-patterns/

@@ -103,6 +103,33 @@ For agent or skill benchmarks, enrich the 0-100 quality score with the `agent-ev
 
 Evaluation order is fixed: correctness first, efficiency second. A benchmark run with failed correctness cannot be rescued by strong efficiency ratios.
 
+## Eval Governance
+
+Each benchmark case should carry governance metadata so harness improvements can be optimized without overfitting:
+
+```yaml
+id: api-design-001
+capability: architecture
+source: benchmark
+split: optimization # optimization | holdout
+tags: [api, regression, routing]
+```
+
+Use `optimization` cases for day-to-day hill climbing. Keep `holdout` cases untouched until validation so they remain a generalization proxy.
+
+### Passing Eval Regression Cache
+
+When a previously failing eval passes after a harness change, preserve it as a regression case. Record:
+
+- the input/task summary
+- the acceptance criteria
+- the observed pass evidence
+- the version or commit where it first passed
+
+### Spring Cleaning
+
+Review eval sets periodically. Archive saturated duplicates, obsolete expectations, and ambiguous cases whose acceptance criteria cannot distinguish a real regression from harmless behavior drift.
+
 ## Output
 
 Results saved to `.codex/outputs/sessions/{YYYY-MM-DD}/harness-eval-{HHmmss}.md` with per-task scores and aggregate grade.

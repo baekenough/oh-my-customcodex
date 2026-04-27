@@ -242,6 +242,8 @@ Analyzes session history and eval-core data to populate `usage_stats` and `failu
 Most-used agents:   Count agent invocations across outputs
 Failure patterns:   Identify agents that frequently retried or errored
 Unused agents:      Active agents with zero invocations in recent N sessions
+Passing evals:      Preserve newly passing cases as regression candidates
+Loop signals:       Identify repeated errors, same-file edit loops, repeated tool-target calls
 ```
 
 ### Step 3: Update Profile
@@ -254,6 +256,21 @@ Based on failure patterns, suggest:
 - Rule overrides (e.g., increase `max_parallel` if timeout patterns detected)
 - Agent replacements (e.g., suggest escalation to `opus` model for frequently failing tasks)
 - Additional skills that may reduce failure rate
+- Missing middleware guidance when loop signals recur
+- Eval pruning when a case is saturated, obsolete, or ambiguous
+
+### Trace Analyzer Pattern
+
+When `--learn` sees repeated failures, classify each pattern before suggesting changes:
+
+| Pattern | Suggested action |
+|---------|------------------|
+| Same error repeats | Recommend `loop-detection-middleware` and `systematic-debugging` |
+| Missing local context | Add project-profile evidence or guide references to spawned prompts |
+| Completion claim without proof | Strengthen R020 checklist or skill output contract |
+| Passing eval newly appears | Add to harness regression cache |
+
+Do not auto-edit rules from one trace. Require repeated evidence or an explicit user request before promoting a suggestion into a rule or skill change.
 
 Output format:
 
@@ -325,6 +342,8 @@ Reads the bundle and applies the `active_agents` list to the current project by 
 | `R016` (Continuous Improvement) | Failure patterns from `--learn` may trigger rule updates |
 | `eval-core` | Primary data source for `--learn` invocation and usage pattern extraction |
 | `mgr-sauron` | Run after `--optimize` to verify structural integrity (R017) |
+| `loop-detection-middleware` | Consumes repeated failure/edit/tool patterns found by `--learn` |
+| `harness-eval` | Supplies optimization and holdout eval cases for hill-climbing |
 
 ## Notes
 

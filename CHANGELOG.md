@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.8] - 2026-04-27
+
+### Added
+- Add harness engineering, middleware lifecycle, and agent harness anatomy guides for the LangChain v0.115 port.
+- Add `loop-detection-middleware` as an advisory harness skill for repeated errors, edit loops, and repeated tool-target calls.
+
+### Changed
+- Extend `harness-eval`, `adaptive-harness`, `reasoning-sandwich`, and `pre-generation-arch-check` with eval governance, trace analysis, reasoning-budget, and pre-completion checklist guidance.
+- Refresh template/wiki indexes and README counts for the expanded harness guidance surface.
+
 ## [0.4.7] - 2026-04-27
 
 ### Added

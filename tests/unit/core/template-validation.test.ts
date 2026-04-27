@@ -387,6 +387,16 @@ describe('Template Validation', () => {
         }
       }
     });
+
+    it('packages loop-detection middleware as a harness skill', async () => {
+      const skillPath = join(TEMPLATES_DIR, '.claude/skills/loop-detection-middleware/SKILL.md');
+      const content = await readFile(skillPath, 'utf-8');
+
+      expect(content).toContain('name: loop-detection-middleware');
+      expect(content).toContain('scope: harness');
+      expect(content).toContain('Same error text or hash repeats');
+      expect(content).toContain('same-file edit loops');
+    });
   });
 
   describe('Agent frontmatter', () => {
@@ -554,6 +564,39 @@ describe('Template Validation', () => {
         expect(content).not.toContain('/plugin marketplace add obra/superpowers-marketplace');
         expect(content).not.toContain('/plugin install superpowers');
       }
+    });
+  });
+
+  describe('harness engineering guidance', () => {
+    it('documents middleware, anatomy, and hill-climbing guide surfaces', async () => {
+      const requiredGuides = [
+        ['middleware-patterns', 'Lifecycle Mapping'],
+        ['agent-harness-anatomy', 'Six Components'],
+        ['harness-engineering', 'Eval-Driven Hill Climbing'],
+      ] as const;
+
+      for (const [guideName, expectedText] of requiredGuides) {
+        const source = await readFile(
+          join(TEMPLATES_DIR, 'guides', guideName, 'README.md'),
+          'utf-8'
+        );
+        expect(source).toContain(expectedText);
+      }
+    });
+
+    it('keeps eval and architecture skills linked to harness-engineering concepts', async () => {
+      const files = [
+        join(TEMPLATES_DIR, '.claude/skills/harness-eval/SKILL.md'),
+        join(TEMPLATES_DIR, '.claude/skills/adaptive-harness/SKILL.md'),
+        join(TEMPLATES_DIR, '.claude/skills/reasoning-sandwich/SKILL.md'),
+        join(TEMPLATES_DIR, '.claude/skills/pre-generation-arch-check/SKILL.md'),
+      ];
+      const combined = (await Promise.all(files.map((file) => readFile(file, 'utf-8')))).join('\n');
+
+      expect(combined).toContain('Eval Governance');
+      expect(combined).toContain('Trace Analyzer Pattern');
+      expect(combined).toContain('Reasoning Budget Allocation');
+      expect(combined).toContain('Pre-Completion Checklist Pattern');
     });
   });
 
