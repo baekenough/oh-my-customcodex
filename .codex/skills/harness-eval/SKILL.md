@@ -86,6 +86,19 @@ This skill provides preset rubrics for the evaluator-optimizer pipeline:
 
 The evaluator-optimizer skill's `pre_negotiation` phase accepts harness-eval rubric dimensions as sprint contract criteria.
 
+## Optional 4-Metric Trajectory Evidence
+
+For agent or skill benchmarks, enrich the 0-100 quality score with the `agent-eval-framework` metrics:
+
+| Metric | Source | Use |
+|--------|--------|-----|
+| `correctness` | benchmark assertions and acceptance criteria | Required before efficiency is considered |
+| `step_ratio` | observed steps vs. ideal trajectory | Advisory signal for unnecessary loops |
+| `tool_call_ratio` | observed tool calls vs. ideal trajectory | Advisory signal for noisy tool use |
+| `latency_ratio` | observed duration vs. ideal trajectory | Advisory signal for runtime regression |
+
+Evaluation order is fixed: correctness first, efficiency second. A benchmark run with failed correctness cannot be rescued by strong efficiency ratios.
+
 ## Output
 
 Results saved to `.codex/outputs/sessions/{YYYY-MM-DD}/harness-eval-{HHmmss}.md` with per-task scores and aggregate grade.

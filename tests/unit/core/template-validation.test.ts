@@ -527,6 +527,27 @@ describe('Template Validation', () => {
     });
   });
 
+  describe('Codex init guidance', () => {
+    it('does not present Claude Code plugins as required Codex init steps', async () => {
+      const initSource = await readFile(
+        resolve(import.meta.dir, '../../../src/cli/init.ts'),
+        'utf-8'
+      );
+      const agentsKo = await readFile(join(TEMPLATES_DIR, 'AGENTS.md.ko'), 'utf-8');
+      const agentsEn = await readFile(join(TEMPLATES_DIR, 'AGENTS.md.en'), 'utf-8');
+
+      expect(initSource).not.toContain('Required plugins (install manually)');
+      expect(initSource).not.toContain('/plugin install superpowers');
+
+      for (const content of [agentsKo, agentsEn]) {
+        expect(content).not.toContain('### Required Plugins');
+        expect(content).not.toContain('### 필수 플러그인');
+        expect(content).not.toContain('/plugin marketplace add obra/superpowers-marketplace');
+        expect(content).not.toContain('/plugin install superpowers');
+      }
+    });
+  });
+
   describe('repo root provider layout validation', () => {
     const PROJECT_ROOT = resolve(import.meta.dir, '../../..');
 

@@ -104,6 +104,26 @@ When `conditional.enabled: true` and ANY `skip_when` condition is met, the evalu
 | Complex architecture, security-critical | High | Run with pre-negotiation |
 | Previously failed task retry | Any | Always run |
 
+### Quantitative Efficiency Metrics
+
+When a task provides an ideal trajectory, the evaluator MAY attach `agent-eval-framework` metrics after the normal quality gate:
+
+```yaml
+evaluator-optimizer:
+  quantitative_metrics:
+    enabled: true
+    ideal:
+      steps: 4
+      tool_calls: 5
+      latency_ms: 120000
+    advisory_thresholds:
+      step_ratio: 1.25
+      tool_call_ratio: 1.25
+      latency_ratio: 1.50
+```
+
+Correctness remains the primary gate. Efficiency ratios are used to compare correctness-passing candidates or to create follow-up improvement suggestions.
+
 ### Parameter Details
 
 | Parameter | Required | Default | Description |

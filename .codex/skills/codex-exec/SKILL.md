@@ -204,3 +204,15 @@ When routing skills detect a code generation task and codex is available:
 ```
 /codex-exec "Generate {description} following {framework} best practices" --effort high --full-auto
 ```
+
+## Browser Verify Workflow
+
+For frontend or browser-visible changes, use a Build + Vision + Verify loop instead of stopping at a successful build:
+
+1. Build or start the local dev server.
+2. Open the target in the available browser automation surface.
+3. Capture screenshot evidence and console/network errors.
+4. If the visual state or console is wrong, run `codex-exec` with the concrete evidence and repeat.
+5. Stop only when build, browser render, and error checks all pass.
+
+This pattern composes with the Codex App Browser Use plugin or any local browser MCP. Keep the loop evidence-driven: screenshot, console output, network status, and the exact command that produced the build.

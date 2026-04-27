@@ -21,6 +21,19 @@ Before declaring any task `[Done]`, verify completion against task-type-specific
 
 Before [Done]: (1) Verify ACTUAL outcome not just attempt — "ran command" ≠ "succeeded". (2) Check task-type criteria above. (3) No unchecked items. (4) Would bet $100 it's complete.
 
+## Optional: Quantitative Evidence
+
+For agent, skill, or workflow changes, completion evidence MAY include `agent-eval-framework` metrics:
+
+| Metric | Meaning | Gate |
+|--------|---------|------|
+| `correctness` | Acceptance criteria satisfied | Required if included |
+| `step_ratio` | Observed steps vs. ideal steps | Advisory |
+| `tool_call_ratio` | Observed tool calls vs. ideal tool calls | Advisory |
+| `latency_ratio` | Observed duration vs. ideal duration | Advisory |
+
+These metrics strengthen a `[Done]` claim but do not replace task-specific verification. A failed correctness score blocks completion even if efficiency ratios are good.
+
 <!-- DETAIL: Self-Check box
 1. Did I verify ACTUAL outcome? "I ran the command" ≠ "the command succeeded" → YES: Continue / NO: Verify first
 2. Does task type have specific criteria? YES: Check each / NO: Apply general verification

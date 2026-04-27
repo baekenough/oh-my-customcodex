@@ -1,6 +1,6 @@
 {
-  "version": "0.4.0",
-  "lastUpdated": "2026-04-24T14:35:00.000Z",
+  "version": "0.4.1",
+  "lastUpdated": "2026-04-27T01:00:00.000Z",
   "components": [
     {
       "name": "rules",
@@ -18,13 +18,13 @@
       "name": "skills",
       "path": ".agents/skills",
       "description": "Reusable skill modules (project-scoped repo skills)",
-      "files": 112
+      "files": 114
     },
     {
       "name": "guides",
       "path": "guides",
       "description": "Reference documentation",
-      "files": 40
+      "files": 42
     },
     {
       "name": "hooks",

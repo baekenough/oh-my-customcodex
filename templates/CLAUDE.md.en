@@ -222,9 +222,9 @@ Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 
 ## External Dependencies
 
-### Required Plugins
+### Claude Code Plugins
 
-Install via `/plugin install <name>`:
+Install in Claude Code via `/plugin install <name>`:
 
 | Plugin | Source | Purpose |
 |--------|--------|---------|
@@ -240,7 +240,7 @@ Install via `/plugin install <name>`:
 |--------|---------|
 | omx-memory | Session memory persistence |
 
-### Setup Commands
+### Claude Code Setup Commands
 
 ```bash
 # Add marketplace

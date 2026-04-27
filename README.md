@@ -134,7 +134,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (112)
+### Skills (114)
 
 | Category | Count | Includes |
 |----------|-------|----------|
@@ -227,7 +227,7 @@ Key rules: R010 (orchestrator never writes files), R009 (parallel execution mand
 
 ---
 
-### Guides (40)
+### Guides (42)
 
 Reference documentation covering best practices, architecture decisions, and integration patterns. Located in `guides/` at project root, covering topics from agent design to CI/CD to observability.
 

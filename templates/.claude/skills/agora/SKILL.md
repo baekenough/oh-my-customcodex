@@ -43,6 +43,17 @@ source:
 Spawn 3 reviewers as Agent Team members:
 
 ```
+
+### Anti-Groupthink Mode
+
+Use `--anti-groupthink` when consensus itself is a risk:
+
+1. Reviewers submit independent findings before seeing peer output.
+2. One reviewer is assigned as devil's advocate.
+3. Minority findings are preserved unless the synthesis explicitly rejects them with evidence.
+4. Debate is capped at two challenge rounds before the lead either decides or requests more facts.
+
+For decisions where dissent preservation is the main goal, use `roundtable-debate` directly instead of `agora`.
 Agent(name: "claude-critic", model: opus, effort: max)
   → 20-point deep adversarial review
   
