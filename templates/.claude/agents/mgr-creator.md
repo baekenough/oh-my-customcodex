@@ -7,6 +7,7 @@ memory: project
 effort: high
 skills:
   - create-agent
+  - agent-eval-framework
 tools:
   - Read
   - Write
@@ -35,6 +36,16 @@ Frontmatter (name, description, model, tools, skills, memory) + body (purpose, c
 ### Phase 3: Auto-discovery
 
 No registry update needed - agents auto-discovered from `.claude/agents/*.md`.
+
+### Phase 4: Optional Quantitative Gate
+
+For high-risk or reusable agents, use `agent-eval-framework` after creation:
+
+1. Define an ideal trajectory for the agent's first representative task.
+2. Run correctness checks before measuring efficiency.
+3. Record `step_ratio`, `tool_call_ratio`, and `latency_ratio` as advisory evidence.
+
+Do not force this gate for every small helper agent. It is opt-in when the extra cost is justified by reuse, safety, or routing criticality.
 
 ## Rules Applied
 

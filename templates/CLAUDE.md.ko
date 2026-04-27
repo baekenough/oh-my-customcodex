@@ -222,9 +222,9 @@ Codex CLI의 Agent Teams 기능이 활성화되어 있으면 (`OMCODEX_AGENT_TEA
 
 ## 외부 의존성
 
-### 필수 플러그인
+### Claude Code 플러그인
 
-`/plugin install <이름>`으로 설치:
+Claude Code 환경에서 `/plugin install <이름>`으로 설치:
 
 | 플러그인 | 소스 | 용도 |
 |----------|------|------|
@@ -240,7 +240,7 @@ Codex CLI의 Agent Teams 기능이 활성화되어 있으면 (`OMCODEX_AGENT_TEA
 |------|------|
 | omx-memory | 세션 메모리 영속성 |
 
-### 설치 명령어
+### Claude Code 설치 명령어
 
 ```bash
 # 마켓플레이스 추가

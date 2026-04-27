@@ -1,12 +1,12 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.4.0",
-  "generatedAt": "2026-04-24T14:39:46.453Z",
-  "templateVersion": "0.4.0",
+  "generatorVersion": "0.4.1",
+  "generatedAt": "2026-04-27T01:04:57.205Z",
+  "templateVersion": "0.4.1",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
-      "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
-      "size": 2487,
+      "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
+      "size": 2796,
       "component": "rules"
     },
     ".codex/rules/SHOULD-hud-statusline.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-design.md": {
-      "templateHash": "1b716673f6fc603c71aff5a1bb9d55cec44b9bd032812b8f3bb8978fb369c7e3",
-      "size": 21766,
+      "templateHash": "6bcadf1f1a2dd2132fe6d235910e6b1203d11735af86c49289f3eb3b72c15b99",
+      "size": 21995,
       "component": "rules"
     },
     ".codex/rules/MUST-agent-identification.md": {
@@ -115,8 +115,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-completion-verification.md": {
-      "templateHash": "71711d39a564088c713103019f1e2b4e1e3bd373b2ab922290666a5c5436a201",
-      "size": 5547,
+      "templateHash": "9aae499cf32ad1f2e2e532702e93949eb0048f7fc4de521a3225abf91ab1f65f",
+      "size": 6195,
       "component": "rules"
     },
     ".codex/agents/be-springboot-expert.md": {
@@ -295,8 +295,8 @@
       "component": "agents"
     },
     ".codex/agents/mgr-creator.md": {
-      "templateHash": "83a8f31defc229bd86ed4ec4f0e7c7a92abefdb789cadf3f779f2fe06335a346",
-      "size": 1800,
+      "templateHash": "00dcee0e4e8b4bf64d43140909164f3369caa030e4b295cef22f09d4beaf893a",
+      "size": 2300,
       "component": "agents"
     },
     ".codex/agents/qa-writer.md": {
@@ -709,6 +709,16 @@
       "size": 651,
       "component": "guides"
     },
+    "guides/agent-eval/README.md": {
+      "templateHash": "601aad7506dd76bc207482f89a54ad1fb119fd8702f6959dc10f416460740086",
+      "size": 1585,
+      "component": "guides"
+    },
+    "guides/agent-eval/index.yaml": {
+      "templateHash": "6dfad9a2ca7f5ed8a8b62b9a8077a2d7006c0a32534fdaded6797adc08faf6e1",
+      "size": 147,
+      "component": "guides"
+    },
     "guides/web-design/accessibility.md": {
       "templateHash": "92cc51f7d89cef28ce632c4fe07ff8335b14f6007fa4bead31e5cb7a59dfd001",
       "size": 1181,
@@ -1030,8 +1040,8 @@
       "component": "guides"
     },
     "guides/browser-automation/README.md": {
-      "templateHash": "c51465e8fdf79a2fedf2803138e13bb6531edefafe280ae6612a639e31cbdfc0",
-      "size": 3779,
+      "templateHash": "665d7b72e1f6469fa46d70edf1f6d6baccae06367c6c7d4b592d44652d7c2195",
+      "size": 4343,
       "component": "guides"
     },
     "guides/browser-automation/index.yaml": {
@@ -1039,9 +1049,19 @@
       "size": 392,
       "component": "guides"
     },
+    "guides/multi-agent-debate-patterns/README.md": {
+      "templateHash": "08b86f425d7417d9f5e1a90f0198078b243033122940623d0a56a8eb124edf23",
+      "size": 1015,
+      "component": "guides"
+    },
+    "guides/multi-agent-debate-patterns/index.yaml": {
+      "templateHash": "f71bd7dc36a3ad03fe44db13ac293c4713626d733676f76c0d34a7757ab9cdaa",
+      "size": 167,
+      "component": "guides"
+    },
     "guides/index.yaml": {
-      "templateHash": "902f0a11505ce991cc2f5f420b76cd8c7078809f76dd8586a44f605a72090e4e",
-      "size": 7631,
+      "templateHash": "fd59433e66632a832bdf4ceaa387e561b0f9b91802b21a1683a7b39ecb997b36",
+      "size": 8002,
       "component": "guides"
     },
     "guides/spark/README.md": {

@@ -1,0 +1,6 @@
+name: multi-agent-debate-patterns
+description: Anti-groupthink debate patterns for Agora and roundtable-debate workflows
+source:
+  type: internal
+files:
+  - README.md

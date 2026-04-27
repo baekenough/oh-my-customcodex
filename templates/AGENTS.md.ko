@@ -220,38 +220,23 @@ Codex CLI의 Agent Teams 기능이 활성화되어 있으면 (`OMCODEX_AGENT_TEA
 
 ## 외부 의존성
 
-### 필수 플러그인
-
-`/plugin install <이름>`으로 설치:
-
-| 플러그인 | 소스 | 용도 |
-|----------|------|------|
-| superpowers | claude-plugins-official | TDD, 디버깅, 협업 패턴 |
-| openai-docs | superpowers-marketplace | Codex CLI 개발 문서 |
-| elements-of-style | superpowers-marketplace | 글쓰기 명확성 가이드라인 |
-| obsidian-skills | - | 옵시디언 마크다운 지원 |
-| context7 | claude-plugins-official | 라이브러리 문서 조회 |
-
-### 권장 MCP 서버
+### Codex 권장 MCP 서버
 
 | 서버 | 용도 |
 |------|------|
 | omx-memory | 세션 메모리 영속성 (Chroma 기반) |
+| context7 | 라이브러리 문서 조회용 MCP 서버 (프로젝트 필요 시 설정) |
 
 ### 설치 명령어
 
 ```bash
-# 마켓플레이스 추가
-/plugin marketplace add obra/superpowers-marketplace
-
-# 플러그인 설치
-/plugin install superpowers
-/plugin install openai-docs
-/plugin install elements-of-style
-
 # MCP 설정 (omx-memory)
 npm install -g omx-memory
 omx-memory setup
 ```
+
+### Claude Code 호환 참고
+
+Claude Code 플러그인 생태계를 쓰는 프로젝트에서는 `superpowers`, `openai-docs`, `elements-of-style`, `context7` 같은 플러그인을 별도로 설치할 수 있습니다. Codex 초기화의 필수 단계는 아닙니다.
 
 <!-- omcodex:git-workflow -->

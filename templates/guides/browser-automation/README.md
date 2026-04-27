@@ -75,6 +75,18 @@ Capture at least one of:
 
 When summarizing evidence for the model, preserve reference tokens and URLs so follow-up steps can still target the right page elements.
 
+## Build + Vision + Verify Loop
+
+For browser-visible changes, treat a successful build as the start of verification, not the end:
+
+1. Build or start the local app.
+2. Open the page in the available browser surface.
+3. Capture screenshot, console, and network evidence.
+4. Feed concrete failures back to the implementation agent.
+5. Repeat until build, render, and runtime evidence all pass.
+
+This is the Codex Browser Use pattern in portable form. Prefer the in-app Browser Use plugin when available; otherwise use Playwright or the existing browser MCP surface.
+
 ## Design And Strategy Workflows
 
 ### Product strategy sessions

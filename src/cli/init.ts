@@ -228,14 +228,7 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
     }
 
     console.log('');
-    console.log('Required plugins (install manually):');
-    console.log('  /plugin marketplace add obra/superpowers-marketplace');
-    console.log('  /plugin install superpowers');
-    console.log('  /plugin install openai-docs');
-    console.log('  /plugin install elements-of-style');
-    console.log('  /plugin install context7');
-    console.log('');
-    console.log('See AGENTS.md "외부 의존성" section for details.');
+    console.log('Codex setup complete. See AGENTS.md for Codex-native MCP and runtime guidance.');
 
     return {
       success: true,

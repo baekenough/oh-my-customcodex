@@ -35,6 +35,8 @@
 
 ## Output Styles
 
+Session-level style enforcement belongs in runtime output-style mechanisms when the host supports them. In this Codex port, R003 remains the portable source of style-selection rules; packaged Claude compatibility may additionally provide `.claude/output-styles/` presets that reinforce the same constraints.
+
 | Style | Trigger | Behavior |
 |-------|---------|----------|
 | `concise` | effort: low, batch operations | Key result only, no preamble, no elaboration |

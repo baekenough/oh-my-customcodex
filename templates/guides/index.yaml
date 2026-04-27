@@ -40,6 +40,18 @@ guides:
     source:
       type: internal
 
+  - name: agent-eval
+    description: Quantitative agent evaluation with correctness-first 4-metric evidence
+    path: ./agent-eval/
+    source:
+      type: internal
+
+  - name: multi-agent-debate-patterns
+    description: Anti-groupthink debate patterns for Agora and roundtable-debate workflows
+    path: ./multi-agent-debate-patterns/
+    source:
+      type: internal
+
   # Languages
   - name: golang
     description: Go language reference from Effective Go

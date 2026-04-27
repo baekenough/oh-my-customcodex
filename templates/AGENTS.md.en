@@ -220,38 +220,23 @@ Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 
 ## External Dependencies
 
-### Required Plugins
-
-Install via `/plugin install <name>`:
-
-| Plugin | Source | Purpose |
-|--------|--------|---------|
-| superpowers | claude-plugins-official | TDD, debugging, collaboration patterns |
-| openai-docs | superpowers-marketplace | OpenAI and Codex development documentation |
-| elements-of-style | superpowers-marketplace | Writing clarity guidelines |
-| obsidian-skills | - | Obsidian markdown support |
-| context7 | claude-plugins-official | Library documentation lookup |
-
-### Recommended MCP Servers
+### Recommended Codex MCP Servers
 
 | Server | Purpose |
 |--------|---------|
 | omx-memory | Session memory persistence (Chroma-based) |
+| context7 | Library documentation lookup MCP server when a project needs it |
 
 ### Setup Commands
 
 ```bash
-# Add marketplace
-/plugin marketplace add obra/superpowers-marketplace
-
-# Install plugins
-/plugin install superpowers
-/plugin install openai-docs
-/plugin install elements-of-style
-
 # MCP setup (omx-memory)
 npm install -g omx-memory
 omx-memory setup
 ```
+
+### Claude Code Compatibility Note
+
+Projects that run in the Claude Code plugin ecosystem may separately install plugins such as `superpowers`, `openai-docs`, `elements-of-style`, and `context7`. They are not required Codex init steps.
 
 <!-- omcodex:git-workflow -->

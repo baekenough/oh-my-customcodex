@@ -1,0 +1,6 @@
+name: agent-eval
+description: Quantitative agent evaluation with correctness-first 4-metric evidence
+source:
+  type: internal
+files:
+  - README.md
