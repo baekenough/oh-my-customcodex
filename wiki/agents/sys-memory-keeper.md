@@ -19,6 +19,8 @@ Session memory management specialist for saving/restoring context across compact
 
 Important: MCP tools (claude-mem, episodic-memory) are orchestrator-scoped — `sys-memory-keeper` only handles MEMORY.md; the orchestrator handles MCP saves directly after receiving the summary.
 
+Native MEMORY.md should remain an index, not a transcript. When session/release history approaches the loaded 200-line budget, keep recent active context inline, move older detail to topic/archive files, retain one-line summaries with archive pointers, and avoid deleting detail solely for line count.
+
 ## Key Details
 
 - **Model**: sonnet
