@@ -575,9 +575,17 @@ describe('Template Validation', () => {
 
     it('uses AGENTS.md as the repo entry file and documents the visible status block', async () => {
       const agentsMd = await readFile(join(PROJECT_ROOT, 'AGENTS.md'), 'utf-8');
-      expect(agentsMd).toContain('Agent: Codex');
-      expect(agentsMd).toContain('Skill:');
-      expect(agentsMd).toContain('Status:');
+      const expectedVisibleHeader = [
+        '```text',
+        '    ┌─ Agent: Codex (gpt-5.4)',
+        '    ├─ Skill: <active-skill-or-routing-surface>',
+        '    └─ Status: <current-action-or-verdict>',
+        '    ```',
+      ].join('\n');
+
+      expect(agentsMd).toContain(expectedVisibleHeader);
+      expect(agentsMd).not.toContain('│ Skill:');
+      expect(agentsMd).not.toContain('│ Status:');
     });
 
     it('repo root agent, skill, and rule surfaces are present and non-empty', async () => {
