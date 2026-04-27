@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.4.4",
-  "generatedAt": "2026-04-27T03:11:24.005Z",
-  "templateVersion": "0.4.4",
+  "generatorVersion": "0.4.5",
+  "generatedAt": "2026-04-27T04:09:54.167Z",
+  "templateVersion": "0.4.5",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-design.md": {
-      "templateHash": "6bcadf1f1a2dd2132fe6d235910e6b1203d11735af86c49289f3eb3b72c15b99",
-      "size": 21995,
+      "templateHash": "7610bf7ae0f4ae48321003a0fd840d28d9ab8bcaf39b866afc45d915316fe0ac",
+      "size": 22677,
       "component": "rules"
     },
     ".codex/rules/MUST-agent-identification.md": {

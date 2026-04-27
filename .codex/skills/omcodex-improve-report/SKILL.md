@@ -13,6 +13,10 @@ Display improvement suggestions from eval-core analysis engine as read-only repo
 
 Surface actionable improvement suggestions gathered by the eval-core analysis engine. Reads from eval-core's local database and renders insights as structured markdown. Useful for understanding routing quality, skill effectiveness, and agent usage patterns.
 
+## Sensitive-Path Delegation
+
+Sensitive-path artifact protocol (mandatory): if this skill delegates work that touches `.claude/**`, `.claude/outputs/**`, `templates/.claude/**`, or read-only measurements of those paths, include this protocol directly in the delegated prompt. The delegate must produce artifact bodies in `/tmp/{skill}-{timestamp}.md` first and must avoid direct Read, Bash, Write, or Edit targets under `.claude/**` in unattended flows.
+
 ## Usage
 
 ```

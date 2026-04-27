@@ -14,6 +14,10 @@ Extract a canonical specification from an existing agent or skill file. Inspired
 
 When an agent or skill has evolved organically without a formal spec, `omcodex:takeover` reverse-engineers a structured specification that captures its intent, invariants, workflow contract, and I/O contract.
 
+## Sensitive-Path Delegation
+
+Sensitive-path artifact protocol (mandatory): if this skill delegates work that touches `.claude/**`, `.claude/outputs/**`, `templates/.claude/**`, or read-only measurements of those paths, include this protocol directly in the delegated prompt. The delegate must produce artifact bodies in `/tmp/{skill}-{timestamp}.md` first and must avoid direct Read, Bash, Write, or Edit targets under `.claude/**` in unattended flows.
+
 ## Usage
 
 ```

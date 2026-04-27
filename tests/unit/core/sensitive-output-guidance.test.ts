@@ -13,6 +13,28 @@ const GUIDANCE_DIRS = [
 const SOURCE_R006 = join(ROOT, '.codex/rules/MUST-agent-design.md');
 const TEMPLATE_R006 = join(ROOT, 'templates/.claude/rules/MUST-agent-design.md');
 const WIKI_R006 = join(ROOT, 'wiki/rules/r006.md');
+const SENSITIVE_DELEGATION_SKILLS = [
+  'professor-triage',
+  'deep-plan',
+  'deep-verify',
+  'research',
+  'scout',
+  'hada-scout',
+  'agora',
+  'roundtable-debate',
+  'harness-eval',
+  'omcodex-improve-report',
+  'omcodex-takeover',
+  'optimize-report',
+  'optimize-analyze',
+  'secretary-routing',
+  'dev-lead-routing',
+  'de-lead-routing',
+  'qa-lead-routing',
+  'dag-orchestration',
+  'task-decomposition',
+  'worker-reviewer-pipeline',
+];
 
 async function collectMarkdownFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -78,6 +100,7 @@ describe('sensitive output guidance', () => {
       'allow rules do not override the sensitive-path check',
       'do not rely on them to suppress sensitive-path prompts',
       'update `.codex/...` source files and their `templates/.claude/...` mirrors deliberately',
+      'Sensitive-path artifact protocol (mandatory)',
     ];
 
     for (const phrase of required) {
@@ -87,5 +110,20 @@ describe('sensitive output guidance', () => {
 
     expect(wiki).toContain('.codex/rules/MUST-agent-design.md');
     expect(wiki).not.toContain('.claude/rules/MUST-agent-design.md');
+  });
+
+  it('keeps delegated artifact skills on the mandatory sensitive-path protocol', async () => {
+    for (const skill of SENSITIVE_DELEGATION_SKILLS) {
+      const source = await readFile(join(ROOT, '.codex/skills', skill, 'SKILL.md'), 'utf-8');
+      const template = await readFile(
+        join(ROOT, 'templates/.claude/skills', skill, 'SKILL.md'),
+        'utf-8'
+      );
+
+      expect(source).toContain('Sensitive-path artifact protocol (mandatory)');
+      expect(source).toContain('/tmp/');
+      expect(source).toContain('Read, Bash, Write, or Edit');
+      expect(template).toContain('Sensitive-path artifact protocol (mandatory)');
+    }
   });
 });

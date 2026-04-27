@@ -16,7 +16,7 @@ Routes agent management tasks to the appropriate manager agent. This skill conta
 
 | Agent | Purpose | Triggers |
 |-------|---------|----------|
-| mgr-creator | Create new agents | "create agent", "new agent" |
+| mgr-creator | Create new agents, skills, guides | "create agent", "new agent", "create skill", "new skill", "create guide", "new guide" |
 | mgr-updater | Update external agents | "update agent", "sync" |
 | mgr-supplier | Validate dependencies | "audit", "check deps" |
 | mgr-gitnerd | Git operations | "commit", "push", "pr" |
@@ -45,6 +45,8 @@ Before routing via Task tool, evaluate Agent Teams eligibility first:
 User Input → Routing → Manager Agent
 
 create   → mgr-creator
+create skill → mgr-creator
+create guide → mgr-creator
 update   → mgr-updater
 audit    → mgr-supplier
 git      → mgr-gitnerd
@@ -129,6 +131,10 @@ Evaluate: Is this a specialized management/tooling task?
 - New CI/CD tool management (e.g., "ArgoCD 배포 관리해줘")
 - New monitoring tool setup (e.g., "Grafana 대시보드 관리")
 - Unfamiliar package manager operations
+
+## Sensitive-Path Delegation
+
+Sensitive-path artifact protocol (mandatory): if this skill delegates work that touches `.claude/**`, `.claude/outputs/**`, `templates/.claude/**`, or read-only measurements of those paths, include this protocol directly in the delegated prompt. The delegate must produce artifact bodies in `/tmp/{skill}-{timestamp}.md` first and must avoid direct Read, Bash, Write, or Edit targets under `.claude/**` in unattended flows.
 
 ## Usage
 

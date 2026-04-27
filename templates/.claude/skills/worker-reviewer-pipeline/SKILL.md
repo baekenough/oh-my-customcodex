@@ -12,6 +12,10 @@ Defines an iterative Worker→Reviewer pipeline where one agent implements chang
 
 **Orchestrator-only** — only the main conversation activates this pipeline (R010). Worker and Reviewer are subagents.
 
+## Sensitive-Path Delegation
+
+Sensitive-path artifact protocol (mandatory): if this skill delegates work that touches `.claude/**`, `.claude/outputs/**`, `templates/.claude/**`, or read-only measurements of those paths, include this protocol directly in the delegated prompt. The delegate must produce artifact bodies in `/tmp/{skill}-{timestamp}.md` first and must avoid direct Read, Bash, Write, or Edit targets under `.claude/**` in unattended flows.
+
 ## When to Activate
 
 | Condition | Activate? |

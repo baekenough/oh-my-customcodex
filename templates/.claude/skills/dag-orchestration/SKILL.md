@@ -57,7 +57,7 @@ nodes:
     depends_on: [test, review, docs]
 
 config:
-  max_parallel: 4          # R009 limit
+  max_parallel: 4          # R009 soft default (hard cap: 5)
   failure_strategy: stop   # stop | skip | retry
   retry_count: 2           # Max retries per node (if strategy=retry)
   timeout_per_node: 300    # Seconds per node (0 = no limit)
@@ -76,19 +76,28 @@ config:
    c. On completion:
       - Success → decrement in-degree of dependents
       - Failure → apply failure_strategy
-   d. Enqueue newly-ready nodes (in-degree = 0)
+   d. Stall check:
+      - If running node duration > 2x average completed duration
+      - AND pending nodes exist with in-degree = 0 (ignoring stalled node's edges)
+      - THEN enqueue those independent nodes immediately (adaptive split)
+   e. Enqueue newly-ready nodes (in-degree = 0)
 6. Verify all nodes executed (detect unreachable nodes)
 ```
+
+## Sensitive-Path Delegation
+
+Sensitive-path artifact protocol (mandatory): if this skill delegates work that touches `.claude/**`, `.claude/outputs/**`, `templates/.claude/**`, or read-only measurements of those paths, include this protocol directly in the delegated prompt. The delegate must produce artifact bodies in `/tmp/{skill}-{timestamp}.md` first and must avoid direct Read, Bash, Write, or Edit targets under `.claude/**` in unattended flows.
 
 ## Execution Rules
 
 | Rule | Detail |
 |------|--------|
-| Max parallel | 4 concurrent nodes (R009) |
+| Max parallel | 5 concurrent nodes max, 4 default (R009) |
 | Agent Teams gate | 3+ parallel nodes → check R018 eligibility |
 | Orchestrator only | DAG scheduling runs in main conversation (R010) |
 | Node execution | Each node = one Task tool call to specified agent |
 | State tracking | `/tmp/.codex-dag-$PPID.json` |
+| Stall detection | Running node > 2x avg completed duration → enqueue independent pending nodes early |
 
 ## Failure Strategies
 
@@ -219,3 +228,22 @@ See `.codex/agents/tracker-checkpoint.md` for the agent contract.
 - Max 20 nodes per workflow (complexity guard)
 - Nested DAGs not supported (flatten instead)
 - Cross-workflow dependencies not supported
+
+## External References
+
+### Multica — Managed Agent Platform
+
+> Reference: [Multica](https://github.com/multica-ai/multica) — managed agent platform for Claude Code/Codex.
+> Verdict: INTEGRATE (external reference, not internalize)
+
+Multica's task lifecycle pattern (enqueue → claim → start → complete/fail) is a useful reference for DAG node state management:
+
+| Multica State | DAG Equivalent | Notes |
+|---------------|---------------|-------|
+| enqueue | pending | Node waiting for dependencies |
+| claim | ready | Dependencies resolved, ready to execute |
+| start | running | Agent spawned and executing |
+| complete | completed | Node finished successfully |
+| fail | failed | Node execution failed |
+
+Consider this pattern when extending DAG node state tracking or implementing retry logic.

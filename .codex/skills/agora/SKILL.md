@@ -23,6 +23,10 @@ source:
 - `gemini-exec` skill (Gemini 호출)
 - Agent Teams enabled (`OMCODEX_AGENT_TEAMS=1`) or Agent tool available
 
+## Sensitive-Path Delegation
+
+Sensitive-path artifact protocol (mandatory): if this skill delegates work that touches `.claude/**`, `.claude/outputs/**`, `templates/.claude/**`, or read-only measurements of those paths, include this protocol directly in the delegated prompt. The delegate must produce artifact bodies in `/tmp/{skill}-{timestamp}.md` first and must avoid direct Read, Bash, Write, or Edit targets under `.claude/**` in unattended flows.
+
 ## Usage
 
 ```

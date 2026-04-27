@@ -10,6 +10,10 @@ user-invocable: false
 
 Analyzes task complexity and decomposes large tasks into smaller, parallelizable subtasks compatible with the DAG orchestration skill. The orchestrator uses this as a planning frontend before execution.
 
+## Sensitive-Path Delegation
+
+Sensitive-path artifact protocol (mandatory): if this skill delegates work that touches `.claude/**`, `.claude/outputs/**`, `templates/.claude/**`, or read-only measurements of those paths, include this protocol directly in the delegated prompt. The delegate must produce artifact bodies in `/tmp/{skill}-{timestamp}.md` first and must avoid direct Read, Bash, Write, or Edit targets under `.claude/**` in unattended flows.
+
 ## Trigger Conditions
 
 Decomposition is **recommended** when any of these thresholds are met:

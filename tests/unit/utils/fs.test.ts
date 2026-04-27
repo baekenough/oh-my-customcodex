@@ -711,15 +711,16 @@ describe('fs utilities', () => {
   });
 
   describe('getPackageRoot', () => {
-    it('should return the package root directory', () => {
+    it('should return the package root directory', async () => {
       const root = getPackageRoot();
 
       expect(root).toBeDefined();
       expect(typeof root).toBe('string');
       // Should be an absolute path
       expect(root.startsWith('/')).toBe(true);
-      // Should contain oh-my-customcodex in the path
-      expect(root).toContain('oh-my-customcodex');
+
+      const packageJson = JSON.parse(await readFile(join(root, 'package.json'), 'utf-8'));
+      expect(packageJson.name).toBe('oh-my-customcodex');
     });
   });
 
