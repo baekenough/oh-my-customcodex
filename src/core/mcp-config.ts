@@ -15,6 +15,7 @@ const PROJECT_CONFIG_DIR = '.codex';
 const PROJECT_CONFIG_FILE = 'config.toml';
 const ONTOLOGY_SERVER_TABLE = '[mcp_servers.ontology-rag]';
 const ONTOLOGY_SERVER_COMMAND = 'uv';
+const ONTOLOGY_PYTHON_VERSION = '3.12';
 const ONTOLOGY_SERVER_ARGS = [
   'run',
   '--no-project',
@@ -63,9 +64,10 @@ export async function generateMCPConfig(targetDir: string): Promise<void> {
 
   try {
     execSync('uv --version', { stdio: 'pipe' });
+    execSync(`uv python find ${ONTOLOGY_PYTHON_VERSION}`, { cwd: targetDir, stdio: 'pipe' });
   } catch {
     warn(
-      'uv (Python package manager) not found. Install it with: curl -LsSf https://astral.sh/uv/install.sh | sh'
+      `uv and Python ${ONTOLOGY_PYTHON_VERSION} are required for ontology-rag. Install uv, then run: uv python install ${ONTOLOGY_PYTHON_VERSION}`
     );
     warn(
       'Skipping ontology-rag MCP configuration in .codex/config.toml. You can set it up manually later.'
@@ -74,7 +76,10 @@ export async function generateMCPConfig(targetDir: string): Promise<void> {
   }
 
   try {
-    execSync('uv venv .venv', { cwd: targetDir, stdio: 'pipe' });
+    execSync(`uv venv --python ${ONTOLOGY_PYTHON_VERSION} .venv`, {
+      cwd: targetDir,
+      stdio: 'pipe',
+    });
     execSync(
       'uv pip install "ontology-rag @ git+https://github.com/baekenough/oh-my-customcodex.git#subdirectory=packages/ontology-rag"',
       { cwd: targetDir, stdio: 'pipe' }
@@ -114,6 +119,7 @@ export async function generateMCPConfig(targetDir: string): Promise<void> {
 export async function checkUvAvailable(): Promise<boolean> {
   try {
     execSync('uv --version', { stdio: 'pipe' });
+    execSync(`uv python find ${ONTOLOGY_PYTHON_VERSION}`, { stdio: 'pipe' });
     return true;
   } catch {
     return false;

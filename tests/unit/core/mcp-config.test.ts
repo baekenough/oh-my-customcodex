@@ -45,11 +45,13 @@ describe('mcp-config', () => {
 
       expect(result).toBe(true);
       expect(execSyncSpy).toHaveBeenCalledWith('uv --version', { stdio: 'pipe' });
+      expect(execSyncSpy).toHaveBeenCalledWith('uv python find 3.12', { stdio: 'pipe' });
     });
 
-    it('returns false when uv is unavailable', async () => {
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => {
-        throw new Error('uv not found');
+    it('returns false when uv is unavailable or Python 3.12 cannot be found', async () => {
+      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((command) => {
+        if (String(command) === 'uv --version') return Buffer.from('');
+        throw new Error('Python 3.12 not found');
       });
 
       const result = await checkUvAvailable();
@@ -115,7 +117,8 @@ describe('mcp-config', () => {
 
       expect(seenCommands).toEqual([
         'uv --version',
-        'uv venv .venv',
+        'uv python find 3.12',
+        'uv venv --python 3.12 .venv',
         'uv pip install "ontology-rag @ git+https://github.com/baekenough/oh-my-customcodex.git#subdirectory=packages/ontology-rag"',
       ]);
     });
@@ -136,6 +139,7 @@ describe('mcp-config', () => {
       await mkdir(join(tempDir, '.codex', 'ontology'), { recursive: true });
       execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((command) => {
         if (String(command) === 'uv --version') return Buffer.from('');
+        if (String(command) === 'uv python find 3.12') return Buffer.from('');
         throw new Error('install failed');
       });
 

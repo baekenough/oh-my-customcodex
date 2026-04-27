@@ -21,6 +21,10 @@ Important: MCP tools (claude-mem, episodic-memory) are orchestrator-scoped — `
 
 Native MEMORY.md should remain an index, not a transcript. When session/release history approaches the loaded 200-line budget, keep recent active context inline, move older detail to topic/archive files, retain one-line summaries with archive pointers, and avoid deleting detail solely for line count.
 
+## Sensitive Compatibility Paths
+
+When work targets `.claude/**`, `templates/.claude/**`, or Claude-compatibility mirrors, `sys-memory-keeper` must avoid direct unattended Write/Edit calls on those paths. It should produce artifacts under `/tmp` and apply them through the repo-approved sensitive-path script/artifact protocol while keeping normal Codex-native `.codex/**` edits reviewable.
+
 ## Key Details
 
 - **Model**: sonnet

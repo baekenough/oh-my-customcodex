@@ -128,6 +128,22 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
       applied_at TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
+    `CREATE TABLE IF NOT EXISTS memory_records (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      source TEXT NOT NULL,
+      source_id TEXT,
+      scope TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      content TEXT NOT NULL,
+      content_hash TEXT NOT NULL UNIQUE,
+      sensitivity TEXT NOT NULL DEFAULT 'project',
+      project TEXT,
+      session_id TEXT,
+      tags TEXT,
+      metadata TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT
+    )`,
     'CREATE INDEX IF NOT EXISTS idx_projects_cwd ON projects(cwd)',
     'CREATE INDEX IF NOT EXISTS idx_sessions_session_id ON sessions(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_eval_baselines_task_capability ON eval_baselines(task_id, capability)',
@@ -142,6 +158,10 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
     'CREATE INDEX IF NOT EXISTS idx_feedback_session_id ON session_feedback(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_improvement_actions_target ON improvement_actions(target_name)',
     'CREATE INDEX IF NOT EXISTS idx_improvement_actions_status ON improvement_actions(status)',
+    'CREATE INDEX IF NOT EXISTS idx_memory_records_hash ON memory_records(content_hash)',
+    'CREATE INDEX IF NOT EXISTS idx_memory_records_source ON memory_records(source, source_id)',
+    'CREATE INDEX IF NOT EXISTS idx_memory_records_project ON memory_records(project)',
+    'CREATE INDEX IF NOT EXISTS idx_memory_records_scope_kind ON memory_records(scope, kind)',
   ];
 
   db.transaction(() => {

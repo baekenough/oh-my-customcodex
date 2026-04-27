@@ -96,6 +96,17 @@ Track per-step state:
 
 State saved to `/tmp/.codex-pipeline-{name}-{PPID}.json` on failure.
 
+## Phase Token Spend Tracking
+
+For release pipelines such as `auto-dev`, record an advisory token-spend estimate at every phase boundary. This is intentionally lightweight and does not require provider billing APIs.
+
+- State file: `/tmp/auto-dev-spend-{PPID}.json`
+- Estimate: `(input_chars + output_chars) / 4`, rounded to the nearest integer
+- Required fields per phase: `name`, `started_at`, `completed_at`, `input_chars`, `output_chars`, `estimated_tokens`
+- Final report: print a phase table and total estimated tokens before the follow-up step
+
+If exact usage events are available from the runtime, prefer them and set `token_source: "runtime"`. Otherwise set `token_source: "estimated"`. Missing spend data must not block a release; it should be reported as an observability gap.
+
 ## Parallel Execution
 
 Pipeline steps can be grouped for parallel execution:

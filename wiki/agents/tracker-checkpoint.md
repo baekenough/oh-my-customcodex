@@ -20,6 +20,10 @@ Pipeline execution state tracker with checkpoint persistence for `/pipeline resu
 
 `tracker-checkpoint` owns checkpoint file operations for resumable pipeline and DAG workflows. It records pipeline starts, step checkpoints, halted failure state, and resume metadata in PPID-scoped `/tmp/.codex-*` state files while the orchestrator keeps scheduling authority.
 
+## Sensitive Compatibility Paths
+
+When work targets `.claude/**`, `templates/.claude/**`, or Claude-compatibility mirrors, `tracker-checkpoint` must avoid direct unattended Write/Edit calls on those paths. It should produce artifacts under `/tmp` and apply them through the repo-approved sensitive-path script/artifact protocol while keeping normal Codex-native `.codex/**` edits reviewable.
+
 ## Key Details
 
 - **Model**: sonnet

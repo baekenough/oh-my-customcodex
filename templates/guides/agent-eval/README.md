@@ -46,3 +46,8 @@ acceptance_criteria:
 - Use `agent-eval-framework` for task-level scoring.
 - Use `harness-eval` when running repeatable benchmark suites.
 - Use `omcustomcodex:improve-report` to turn repeated ratio regressions into improvement suggestions.
+- Use `monitoring-setup` to export trajectory fields as OTel attributes when release or pipeline runs need operational visibility.
+
+## OTel Mapping
+
+The stable trajectory fields are `agent_type`, `agent_name`, `model`, `outcome`, `skill_name`, `correctness`, `step_ratio`, `tool_call_ratio`, and `latency_ratio`. Monitoring exporters should keep these names as the eval-core source of truth and map them to dotted OTel attributes only at the export boundary.

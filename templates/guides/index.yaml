@@ -52,6 +52,18 @@ guides:
     source:
       type: internal
 
+  - name: professor-triage
+    description: Issue triage phases and release-planning handoff checklists
+    path: ./professor-triage/
+    source:
+      type: internal
+
+  - name: deep-plan
+    description: Research-plan-verify workflow detail for implementation-ready plans
+    path: ./deep-plan/
+    source:
+      type: internal
+
   - name: middleware-patterns
     description: Lifecycle middleware vocabulary mapped to Codex + OMX hooks, skills, and rules
     path: ./middleware-patterns/

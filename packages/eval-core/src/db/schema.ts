@@ -134,3 +134,22 @@ export const sessionFeedback = sqliteTable('session_feedback', {
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
 });
+
+export const memoryRecords = sqliteTable('memory_records', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  source: text('source').notNull(), // native | claude-mem | episodic-memory | future adapter id
+  sourceId: text('source_id'),
+  scope: text('scope').notNull(), // user | project | local
+  kind: text('kind').notNull(), // behavior | decision | fact | summary | task | artifact
+  content: text('content').notNull(),
+  contentHash: text('content_hash').notNull().unique(),
+  sensitivity: text('sensitivity').notNull().default('project'),
+  project: text('project'),
+  sessionId: text('session_id'),
+  tags: text('tags'), // JSON array
+  metadata: text('metadata'), // JSON object
+  createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at'),
+});

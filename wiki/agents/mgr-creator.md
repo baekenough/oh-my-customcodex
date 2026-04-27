@@ -24,6 +24,10 @@ Agent creation specialist that follows R006 design guidelines, auto-researches a
 
 The agent runs for up to 25 turns to allow thorough research and creation.
 
+## Sensitive Compatibility Paths
+
+When work targets `.claude/**`, `templates/.claude/**`, or Claude-compatibility mirrors, `mgr-creator` must avoid direct unattended Write/Edit calls on those paths. It should produce artifacts under `/tmp` and apply them through the repo-approved sensitive-path script/artifact protocol while keeping normal Codex-native `.codex/**` edits reviewable.
+
 ## Key Details
 
 - **Model**: sonnet
