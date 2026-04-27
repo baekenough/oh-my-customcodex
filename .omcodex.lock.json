@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "0.4.9",
-  "generatedAt": "2026-04-27T09:07:45.773Z",
+  "generatedAt": "2026-04-27T23:58:12.772Z",
   "templateVersion": "0.4.9",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
@@ -485,8 +485,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/session-env-check.sh": {
-      "templateHash": "c5a81d1c5cbf5d2c3311a948b53d3dcfc215d81041f84842dca96ad7ceee91c2",
-      "size": 9000,
+      "templateHash": "264143dbcc109777dd95c2086e174b74c7717152dfb4c74b5460e49587f4eaf6",
+      "size": 9206,
       "component": "hooks"
     },
     ".codex/hooks/scripts/feedback-collector.sh": {
