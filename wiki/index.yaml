@@ -492,6 +492,12 @@ pages:
     - file: skills/vercel-deploy.md
       title: "Vercel Deploy"
       summary: "Deploy applications to Vercel with environment configuration and preview URLs."
+    - file: skills/visual-ralph.md
+      title: "visual-ralph"
+      summary: "Measured frontend implementation loop using approved references, Ralph execution, Visual Verdict scoring, and reusable design-system evidence."
+    - file: skills/visual-verdict.md
+      title: "visual-verdict"
+      summary: "Structured visual QA verdict for screenshot-to-reference comparisons with a JSON pass/fail contract."
     - file: skills/web-design-guidelines.md
       title: "Web Design Guidelines"
       summary: "UI code review with 100+ rules for production-quality web interfaces."
