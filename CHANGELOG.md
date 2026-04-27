@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-04-27
+
+### Added
+- Add eval-core trajectory baselines and optional invocation metrics for agent evaluation persistence.
+- Add trajectory query helpers for baseline lookup, invocation inspection, and per-baseline aggregate analysis.
+
+### Fixed
+- Keep existing feedback and dashboard invocation queries compatible with the expanded schema through regression coverage.
+
 ## [0.4.6] - 2026-04-27
 
 ### Changed

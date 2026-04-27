@@ -3,6 +3,7 @@ export { createDb, type EvalDb } from './db/client.js';
 export {
   agentInvocations,
   evaluations,
+  evalBaselines,
   improvementActions,
   projects,
   sessionFeedback,

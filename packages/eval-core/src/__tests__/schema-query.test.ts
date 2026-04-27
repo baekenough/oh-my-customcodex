@@ -16,6 +16,11 @@ import {
   getProjectStats,
   getRecentSessions,
 } from '../query/dashboard.js';
+import {
+  getTrajectoryAnalysis,
+  getTrajectoryBaselines,
+  getTrajectoryInvocations,
+} from '../query/trajectory.js';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -136,14 +141,35 @@ function applyDdl(db: EvalDb, sqlite: Database) {
       timestamp TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
+    `CREATE TABLE IF NOT EXISTS eval_baselines (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id TEXT NOT NULL,
+      capability TEXT NOT NULL,
+      ideal_steps INTEGER,
+      ideal_tool_calls INTEGER,
+      ideal_latency_ms INTEGER,
+      description TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
     `CREATE TABLE IF NOT EXISTS agent_invocations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       session_ppid TEXT NOT NULL,
       session_id TEXT,
+      baseline_id INTEGER REFERENCES eval_baselines(id),
       timestamp TEXT NOT NULL,
       agent_type TEXT NOT NULL,
+      agent_name TEXT,
       model TEXT NOT NULL,
       outcome TEXT NOT NULL,
+      observed_steps INTEGER,
+      observed_tool_calls INTEGER,
+      observed_latency_ms INTEGER,
+      correctness REAL,
+      step_ratio REAL,
+      tool_call_ratio REAL,
+      latency_ratio REAL,
+      started_at TEXT,
+      completed_at TEXT,
       pattern_used TEXT,
       skill_name TEXT,
       description TEXT,
@@ -213,6 +239,7 @@ describe('runMigrations', () => {
     expect(names).toContain('projects');
     expect(names).toContain('sessions');
     expect(names).toContain('turns');
+    expect(names).toContain('eval_baselines');
     expect(names).toContain('agent_invocations');
     expect(names).toContain('evaluations');
     expect(names).toContain('session_feedback');
@@ -240,8 +267,11 @@ describe('runMigrations', () => {
     expect(indexNames).toContain('idx_projects_cwd');
     expect(indexNames).toContain('idx_sessions_session_id');
     expect(indexNames).toContain('idx_sessions_project_id');
+    expect(indexNames).toContain('idx_eval_baselines_task_capability');
     expect(indexNames).toContain('idx_turns_session_id');
     expect(indexNames).toContain('idx_invocations_ppid');
+    expect(indexNames).toContain('idx_invocations_baseline_id');
+    expect(indexNames).toContain('idx_invocations_agent_model');
     expect(indexNames).toContain('idx_feedback_session_id');
     db.close();
   });
@@ -345,6 +375,171 @@ describe('schema uniqueness constraints', () => {
     expect(() => {
       seedTurn(db, 'sess-1', 'turn-dup', '2026-01-01T10:06:00.000Z');
     }).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Trajectory baseline and invocation analysis
+// ---------------------------------------------------------------------------
+
+describe('trajectory eval schema and queries', () => {
+  it('stores eval baselines and optional invocation trajectory metrics', () => {
+    const { db } = makeDb();
+    seedSession(db, 'sess-trajectory', null);
+
+    const baseline = db
+      .insert(schema.evalBaselines)
+      .values({
+        taskId: 'task-routing',
+        capability: 'routing',
+        idealSteps: 4,
+        idealToolCalls: 2,
+        idealLatencyMs: 1200,
+        description: 'Expected routing trajectory',
+      })
+      .returning()
+      .get();
+
+    db.insert(schema.agentInvocations)
+      .values({
+        sessionPpid: 'ppid-trajectory',
+        sessionId: 'sess-trajectory',
+        baselineId: baseline.id,
+        agentType: 'planner',
+        agentName: 'planner',
+        model: 'gpt-5.4',
+        outcome: 'success',
+        observedSteps: 5,
+        observedToolCalls: 3,
+        observedLatencyMs: 1500,
+        correctness: 0.9,
+        stepRatio: 1.25,
+        toolCallRatio: 1.5,
+        latencyRatio: 1.25,
+        startedAt: '2026-04-27T00:00:00.000Z',
+        completedAt: '2026-04-27T00:00:01.500Z',
+        timestamp: '2026-04-27T00:00:01.500Z',
+      })
+      .run();
+
+    const rows = getTrajectoryInvocations(db, { baselineId: baseline.id });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      baselineId: baseline.id,
+      taskId: 'task-routing',
+      capability: 'routing',
+      agentName: 'planner',
+      model: 'gpt-5.4',
+      observedSteps: 5,
+      observedToolCalls: 3,
+      observedLatencyMs: 1500,
+      correctness: 0.9,
+      stepRatio: 1.25,
+      toolCallRatio: 1.5,
+      latencyRatio: 1.25,
+      sessionId: 'sess-trajectory',
+    });
+  });
+
+  it('summarizes trajectory metrics by baseline', () => {
+    const { db } = makeDb();
+    seedSession(db, 'sess-analysis', null);
+
+    const baseline = db
+      .insert(schema.evalBaselines)
+      .values({
+        taskId: 'task-edit',
+        capability: 'code-edit',
+        idealSteps: 4,
+        idealToolCalls: 2,
+        idealLatencyMs: 1000,
+      })
+      .returning()
+      .get();
+
+    db.insert(schema.agentInvocations)
+      .values([
+        {
+          sessionPpid: 'ppid-analysis',
+          sessionId: 'sess-analysis',
+          baselineId: baseline.id,
+          agentType: 'executor',
+          agentName: 'executor',
+          model: 'gpt-5.4',
+          outcome: 'success',
+          observedSteps: 4,
+          observedToolCalls: 2,
+          observedLatencyMs: 1100,
+          correctness: 1,
+          stepRatio: 1,
+          toolCallRatio: 1,
+          latencyRatio: 1.1,
+          timestamp: '2026-04-27T00:00:01.000Z',
+        },
+        {
+          sessionPpid: 'ppid-analysis',
+          sessionId: 'sess-analysis',
+          baselineId: baseline.id,
+          agentType: 'executor',
+          agentName: 'executor',
+          model: 'gpt-5.4',
+          outcome: 'success',
+          observedSteps: 6,
+          observedToolCalls: 4,
+          observedLatencyMs: 1300,
+          correctness: 0.8,
+          stepRatio: 1.5,
+          toolCallRatio: 2,
+          latencyRatio: 1.3,
+          timestamp: '2026-04-27T00:00:02.000Z',
+        },
+      ])
+      .run();
+
+    const [analysis] = getTrajectoryAnalysis(db, { capability: 'code-edit' });
+    expect(analysis).toMatchObject({
+      baselineId: baseline.id,
+      taskId: 'task-edit',
+      capability: 'code-edit',
+      invocationCount: 2,
+      avgCorrectness: 0.9,
+      avgStepRatio: 1.25,
+      avgToolCallRatio: 1.5,
+      avgObservedSteps: 5,
+      avgObservedToolCalls: 3,
+      avgObservedLatencyMs: 1200,
+      bestCorrectness: 1,
+      lastInvocationAt: '2026-04-27T00:00:02.000Z',
+    });
+    expect(analysis?.avgLatencyRatio).toBeCloseTo(1.2);
+  });
+
+  it('keeps baselines queryable before any invocation is recorded', () => {
+    const { db } = makeDb();
+    db.insert(schema.evalBaselines)
+      .values({
+        taskId: 'task-holdout',
+        capability: 'holdout',
+        idealSteps: 3,
+      })
+      .run();
+
+    const baselines = getTrajectoryBaselines(db, { capability: 'holdout' });
+    expect(baselines).toHaveLength(1);
+    expect(baselines[0]).toMatchObject({
+      taskId: 'task-holdout',
+      capability: 'holdout',
+      idealSteps: 3,
+    });
+
+    const [analysis] = getTrajectoryAnalysis(db, { capability: 'holdout' });
+    expect(analysis).toMatchObject({
+      taskId: 'task-holdout',
+      capability: 'holdout',
+      invocationCount: 0,
+      avgCorrectness: null,
+      lastInvocationAt: null,
+    });
   });
 });
 
