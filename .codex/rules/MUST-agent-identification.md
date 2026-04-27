@@ -9,8 +9,10 @@ Every response MUST start with agent identification:
 ```
 ┌─ Agent: {agent-name} ({agent-type})
 ├─ Skill: {skill-name} (if applicable)
-└─ Task: {brief-task-description}
+└─ Status: {current-action-or-verdict}
 ```
+
+Use `├─` for every intermediate metadata line. Only the final metadata line uses `└─`.
 
 Default (no specific agent): `┌─ Agent: claude (default)`
 
@@ -26,7 +28,7 @@ When the orchestrator uses a routing skill, identification should reflect the ac
 ```
 ┌─ Agent: claude (secretary-routing)
 ├─ Skill: secretary-routing
-└─ Task: route agent management request
+└─ Status: route agent management request
 ```
 
 | Context | Identification |
@@ -44,7 +46,7 @@ When the orchestrator invokes a skill via the Skill tool, the skill name MUST be
 
 ```
 ┌─ Agent: claude → {skill-name}
-└─ Task: {brief-task-description}
+└─ Status: {current-action-or-verdict}
 ```
 
 ### Common Violations
@@ -52,18 +54,18 @@ When the orchestrator invokes a skill via the Skill tool, the skill name MUST be
 ```
 Incorrect: Skill as separate display
    ┌─ Agent: claude (default)
-   └─ Task: research topic analysis
+   └─ Status: research topic analysis
 
    Skill(research)    ← separate, disconnected
 
 Correct: Skill integrated into identification
    ┌─ Agent: claude → research
-   └─ Task: research topic analysis
+   └─ Status: research topic analysis
 
 Correct: With sub-skill
    ┌─ Agent: claude → research
    ├─ Skill: result-aggregation
-   └─ Task: aggregate team findings
+   └─ Status: aggregate team findings
 ```
 
 ## When to Display
