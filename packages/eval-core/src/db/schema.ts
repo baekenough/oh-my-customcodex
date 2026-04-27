@@ -67,14 +67,38 @@ export const turns = sqliteTable('turns', {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+export const evalBaselines = sqliteTable('eval_baselines', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  taskId: text('task_id').notNull(),
+  capability: text('capability').notNull(),
+  idealSteps: integer('ideal_steps'),
+  idealToolCalls: integer('ideal_tool_calls'),
+  idealLatencyMs: integer('ideal_latency_ms'),
+  description: text('description'),
+  createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 export const agentInvocations = sqliteTable('agent_invocations', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   sessionPpid: text('session_ppid').notNull(),
   sessionId: text('session_id'),
+  baselineId: integer('baseline_id').references(() => evalBaselines.id),
   timestamp: text('timestamp').notNull(),
   agentType: text('agent_type').notNull(),
+  agentName: text('agent_name'),
   model: text('model').notNull(),
   outcome: text('outcome').notNull(),
+  observedSteps: integer('observed_steps'),
+  observedToolCalls: integer('observed_tool_calls'),
+  observedLatencyMs: integer('observed_latency_ms'),
+  correctness: real('correctness'),
+  stepRatio: real('step_ratio'),
+  toolCallRatio: real('tool_call_ratio'),
+  latencyRatio: real('latency_ratio'),
+  startedAt: text('started_at'),
+  completedAt: text('completed_at'),
   patternUsed: text('pattern_used'),
   skillName: text('skill_name'),
   description: text('description'),

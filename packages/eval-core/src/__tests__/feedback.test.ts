@@ -31,14 +31,35 @@ function makeDb(): { db: EvalDb; sqlite: Database } {
 
   // DDL includes improvement_actions table
   const statements = [
+    `CREATE TABLE IF NOT EXISTS eval_baselines (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id TEXT NOT NULL,
+      capability TEXT NOT NULL,
+      ideal_steps INTEGER,
+      ideal_tool_calls INTEGER,
+      ideal_latency_ms INTEGER,
+      description TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
     `CREATE TABLE IF NOT EXISTS agent_invocations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       session_ppid TEXT NOT NULL,
       session_id TEXT,
+      baseline_id INTEGER REFERENCES eval_baselines(id),
       timestamp TEXT NOT NULL,
       agent_type TEXT NOT NULL,
+      agent_name TEXT,
       model TEXT NOT NULL,
       outcome TEXT NOT NULL,
+      observed_steps INTEGER,
+      observed_tool_calls INTEGER,
+      observed_latency_ms INTEGER,
+      correctness REAL,
+      step_ratio REAL,
+      tool_call_ratio REAL,
+      latency_ratio REAL,
+      started_at TEXT,
+      completed_at TEXT,
       pattern_used TEXT,
       skill_name TEXT,
       description TEXT,

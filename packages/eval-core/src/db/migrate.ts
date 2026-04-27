@@ -58,14 +58,35 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
       timestamp TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
+    `CREATE TABLE IF NOT EXISTS eval_baselines (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id TEXT NOT NULL,
+      capability TEXT NOT NULL,
+      ideal_steps INTEGER,
+      ideal_tool_calls INTEGER,
+      ideal_latency_ms INTEGER,
+      description TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
     `CREATE TABLE IF NOT EXISTS agent_invocations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       session_ppid TEXT NOT NULL,
       session_id TEXT,
+      baseline_id INTEGER REFERENCES eval_baselines(id),
       timestamp TEXT NOT NULL,
       agent_type TEXT NOT NULL,
+      agent_name TEXT,
       model TEXT NOT NULL,
       outcome TEXT NOT NULL,
+      observed_steps INTEGER,
+      observed_tool_calls INTEGER,
+      observed_latency_ms INTEGER,
+      correctness REAL,
+      step_ratio REAL,
+      tool_call_ratio REAL,
+      latency_ratio REAL,
+      started_at TEXT,
+      completed_at TEXT,
       pattern_used TEXT,
       skill_name TEXT,
       description TEXT,
@@ -109,9 +130,12 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
     )`,
     'CREATE INDEX IF NOT EXISTS idx_projects_cwd ON projects(cwd)',
     'CREATE INDEX IF NOT EXISTS idx_sessions_session_id ON sessions(session_id)',
+    'CREATE INDEX IF NOT EXISTS idx_eval_baselines_task_capability ON eval_baselines(task_id, capability)',
     'CREATE INDEX IF NOT EXISTS idx_turns_session_id ON turns(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_ppid ON agent_invocations(session_ppid)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_agent_type ON agent_invocations(agent_type)',
+    'CREATE INDEX IF NOT EXISTS idx_invocations_baseline_id ON agent_invocations(baseline_id)',
+    'CREATE INDEX IF NOT EXISTS idx_invocations_agent_model ON agent_invocations(agent_type, model)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_type_outcome_ts ON agent_invocations(agent_type, outcome, timestamp)',
     'CREATE INDEX IF NOT EXISTS idx_evaluations_session_id ON evaluations(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_evaluations_turn_id ON evaluations(turn_id)',
@@ -152,6 +176,30 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
     }
   }
 
+  // Migration: expand agent_invocations for optional trajectory analysis fields (idempotent)
+  for (const col of [
+    'ALTER TABLE agent_invocations ADD COLUMN baseline_id INTEGER REFERENCES eval_baselines(id)',
+    'ALTER TABLE agent_invocations ADD COLUMN agent_name TEXT',
+    'ALTER TABLE agent_invocations ADD COLUMN observed_steps INTEGER',
+    'ALTER TABLE agent_invocations ADD COLUMN observed_tool_calls INTEGER',
+    'ALTER TABLE agent_invocations ADD COLUMN observed_latency_ms INTEGER',
+    'ALTER TABLE agent_invocations ADD COLUMN correctness REAL',
+    'ALTER TABLE agent_invocations ADD COLUMN step_ratio REAL',
+    'ALTER TABLE agent_invocations ADD COLUMN tool_call_ratio REAL',
+    'ALTER TABLE agent_invocations ADD COLUMN latency_ratio REAL',
+    'ALTER TABLE agent_invocations ADD COLUMN started_at TEXT',
+    'ALTER TABLE agent_invocations ADD COLUMN completed_at TEXT',
+  ]) {
+    try {
+      db.run(col);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
+        throw err;
+      }
+    }
+  }
+
   // Add project_id index after the ALTER TABLE migration (column may not exist on legacy DBs)
   try {
     db.run('CREATE INDEX IF NOT EXISTS idx_sessions_project_id ON sessions(project_id)');
@@ -159,6 +207,20 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
     const msg = err instanceof Error ? err.message : '';
     if (!msg.includes('already exists') && !msg.includes('no such column')) {
       throw err; // Re-throw unexpected errors
+    }
+  }
+
+  for (const indexSql of [
+    'CREATE INDEX IF NOT EXISTS idx_invocations_baseline_id ON agent_invocations(baseline_id)',
+    'CREATE INDEX IF NOT EXISTS idx_invocations_agent_model ON agent_invocations(agent_type, model)',
+  ]) {
+    try {
+      db.run(indexSql);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      if (!msg.includes('already exists') && !msg.includes('no such column')) {
+        throw err;
+      }
     }
   }
 }
