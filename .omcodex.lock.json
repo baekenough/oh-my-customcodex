@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.4.11",
-  "generatedAt": "2026-04-28T00:25:35.637Z",
-  "templateVersion": "0.4.11",
+  "generatorVersion": "0.4.12",
+  "generatedAt": "2026-04-28T00:37:38.035Z",
+  "templateVersion": "0.4.12",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -844,6 +844,11 @@
       "size": 564,
       "component": "guides"
     },
+    "guides/deep-plan/phases.md": {
+      "templateHash": "a910ecda1d3fde63bb372d8f6031070edd63f7cca0046fed578453417abccd1b",
+      "size": 10752,
+      "component": "guides"
+    },
     "guides/deep-plan/README.md": {
       "templateHash": "4bb97bd739d0e160fea8b2bef03aa5df194214b067ad88be92b64dfc0ffd9f6f",
       "size": 1201,
@@ -902,6 +907,11 @@
     "guides/professor-triage/checklists.md": {
       "templateHash": "44c076b0346628db5f6e58b84418298e2c171faca8d2ed2b052209ad43b3c474",
       "size": 1057,
+      "component": "guides"
+    },
+    "guides/professor-triage/phases.md": {
+      "templateHash": "164be0bf4e738eaa38fbb026c33718d7d85b2643db124de7e44ee4ff94adaaff",
+      "size": 12619,
       "component": "guides"
     },
     "guides/professor-triage/README.md": {
