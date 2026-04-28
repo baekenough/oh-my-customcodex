@@ -31,7 +31,7 @@ Execute OpenAI Codex CLI prompts in non-interactive mode and return structured r
 ```
 1. Pre-checks
    - Verify `codex` binary is installed (which codex || npx codex --version)
-   - Verify authentication (OPENAI_API_KEY or logged in)
+   - Verify authentication (`OPENAI_API_KEY`, `CODEX_API_KEY`, or stored `codex login` / ChatGPT login)
 2. Build command
    - Base: codex exec --ephemeral "<prompt>"
    - Apply options: --json, --model, --full-auto, -C <dir>
@@ -132,7 +132,7 @@ Works with the orchestrator pattern:
 codex-exec requires the Codex CLI binary to be installed and authenticated. The skill is only usable when:
 
 1. `codex` binary is found in PATH (`which codex` succeeds)
-2. Authentication is valid (OPENAI_API_KEY set or `codex` logged in)
+2. Authentication is valid (`OPENAI_API_KEY`, `CODEX_API_KEY`, or stored auth from `codex login --api-key` / ChatGPT login)
 
 If either check fails, this skill cannot be used. Fall back to Claude agents for the task.
 
@@ -158,7 +158,7 @@ Orchestrator delegates generation task
 
 When the orchestrator or intent-detection detects a research/information gathering request (routing_rule in agent-triggers.yaml):
 
-1. **Check Codex availability**: Verify `codex` binary and `OPENAI_API_KEY`
+1. **Check Codex availability**: Verify `codex` binary plus `OPENAI_API_KEY`, `CODEX_API_KEY`, or stored `codex login` auth
 2. **If available**: Execute with xhigh reasoning effort for thorough research
 3. **If unavailable**: Fall back to Claude's WebFetch/WebSearch
 

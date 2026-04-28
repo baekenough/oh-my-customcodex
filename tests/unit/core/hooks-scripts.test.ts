@@ -19,7 +19,7 @@ const SOURCE_CLAUDE_SENSITIVE_PATH_GUARD_SCRIPT = join(
   SOURCE_SCRIPTS_DIR,
   'claude-sensitive-path-guard.sh'
 );
-const SESSION_ENV_CHECK_SCRIPT = join(SCRIPTS_DIR, 'session-env-check.sh');
+const SOURCE_SESSION_ENV_CHECK_SCRIPT = join(SOURCE_SCRIPTS_DIR, 'session-env-check.sh');
 const STALE_TODO_SCANNER_SCRIPT = join(SCRIPTS_DIR, 'stale-todo-scanner.sh');
 const FEEDBACK_COLLECTOR_SCRIPT = join(SCRIPTS_DIR, 'feedback-collector.sh');
 const SKILL_EXTRACTOR_ANALYZER_SCRIPT = join(SCRIPTS_DIR, 'skill-extractor-analyzer.sh');
@@ -1145,6 +1145,44 @@ describe('skill-extractor-analyzer.sh', () => {
 describe('session-env-check.sh', () => {
   const sessionInput = JSON.stringify({ event: 'session_start' });
 
+  async function createFakeCodexEnv(options?: { authFile?: boolean; codexApiKey?: boolean }) {
+    const baseDir = join(
+      tmpdir(),
+      `omcc-session-env-${Date.now()}-${Math.random().toString(16).slice(2)}`
+    );
+    const fakeBinDir = join(baseDir, 'bin');
+    const fakeHomeDir = join(baseDir, 'home');
+    const fakeCodexHomeDir = join(baseDir, 'codex-home');
+    const fakeCodexPath = join(fakeBinDir, 'codex');
+
+    await mkdir(fakeBinDir, { recursive: true });
+    await mkdir(fakeHomeDir, { recursive: true });
+    await writeFile(
+      fakeCodexPath,
+      '#!/bin/bash\nif [ "$1" = "--version" ]; then\n  echo "codex 0.0.0-test"\nfi\nexit 0\n'
+    );
+    execFileSync('chmod', ['+x', fakeCodexPath]);
+
+    if (options?.authFile) {
+      await mkdir(fakeCodexHomeDir, { recursive: true });
+      await writeFile(join(fakeCodexHomeDir, 'auth.json'), '{"provider":"chatgpt"}\n');
+    }
+
+    return {
+      baseDir,
+      env: {
+        PATH: `${fakeBinDir}:/usr/bin:/bin`,
+        HOME: fakeHomeDir,
+        CODEX_HOME: fakeCodexHomeDir,
+        OPENAI_API_KEY: '',
+        CODEX_API_KEY: options?.codexApiKey ? 'codex-api-key-test' : '',
+        GIT_DIR: '',
+        GIT_WORK_TREE: '',
+        GIT_INDEX_FILE: '',
+      },
+    };
+  }
+
   afterEach(() => {
     // Clean up status files created during tests.
     const { execSync } = require('node:child_process');
@@ -1158,48 +1196,48 @@ describe('session-env-check.sh', () => {
   // --- Basic pass-through behavior ---
 
   it('should always exit with code 0', async () => {
-    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
+    const result = await runHookScript(SOURCE_SESSION_ENV_CHECK_SCRIPT, sessionInput);
     expect(result.exitCode).toBe(0);
   });
 
   it('should pass stdin through to stdout', async () => {
-    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
+    const result = await runHookScript(SOURCE_SESSION_ENV_CHECK_SCRIPT, sessionInput);
     expect(result.stdout.trim()).toBe(sessionInput);
   });
 
   // --- Environment check output ---
 
   it('should output environment check header to stderr', async () => {
-    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
+    const result = await runHookScript(SOURCE_SESSION_ENV_CHECK_SCRIPT, sessionInput);
     expect(result.stderr).toContain('Session Environment Check');
   });
 
   it('should report codex CLI status in stderr', async () => {
-    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
+    const result = await runHookScript(SOURCE_SESSION_ENV_CHECK_SCRIPT, sessionInput);
     expect(result.stderr).toContain('codex CLI:');
   });
 
   it('should report Agent Teams status in stderr', async () => {
-    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
+    const result = await runHookScript(SOURCE_SESSION_ENV_CHECK_SCRIPT, sessionInput);
     expect(result.stderr).toContain('Agent Teams:');
   });
 
   it('should show Agent Teams disabled when env var is not set to 1', async () => {
-    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput, {
+    const result = await runHookScript(SOURCE_SESSION_ENV_CHECK_SCRIPT, sessionInput, {
       OMCODEX_AGENT_TEAMS: '0',
     });
     expect(result.stderr).toContain('Agent Teams: disabled');
   });
 
   it('should show Agent Teams enabled when env var is 1', async () => {
-    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput, {
+    const result = await runHookScript(SOURCE_SESSION_ENV_CHECK_SCRIPT, sessionInput, {
       OMCODEX_AGENT_TEAMS: '1',
     });
     expect(result.stderr).toContain('Agent Teams: enabled');
   });
 
   it('should show codex unavailable when binary is not in PATH', async () => {
-    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput, {
+    const result = await runHookScript(SOURCE_SESSION_ENV_CHECK_SCRIPT, sessionInput, {
       PATH: '/usr/bin:/bin',
       OPENAI_API_KEY: '',
       // Unset git env vars that may be inherited from a parent hook context,
@@ -1211,8 +1249,46 @@ describe('session-env-check.sh', () => {
     expect(result.stderr).toContain('codex CLI: unavailable');
   });
 
+  it('should treat CODEX_API_KEY as authenticated when OPENAI_API_KEY is absent', async () => {
+    const { baseDir, env } = await createFakeCodexEnv({ codexApiKey: true });
+
+    try {
+      const result = await runHookScript(SOURCE_SESSION_ENV_CHECK_SCRIPT, sessionInput, env);
+      expect(result.stderr).toContain('codex CLI: available (authenticated)');
+      expect(result.stderr).not.toContain('OPENAI_API_KEY not set');
+    } finally {
+      await rm(baseDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should treat stored auth as authenticated when OPENAI_API_KEY is absent', async () => {
+    const { baseDir, env } = await createFakeCodexEnv({ authFile: true });
+
+    try {
+      const result = await runHookScript(SOURCE_SESSION_ENV_CHECK_SCRIPT, sessionInput, env);
+      expect(result.stderr).toContain('codex CLI: available (authenticated via stored login)');
+      expect(result.stderr).not.toContain('OPENAI_API_KEY not set');
+    } finally {
+      await rm(baseDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should mention codex login guidance when codex is installed without env auth', async () => {
+    const { baseDir, env } = await createFakeCodexEnv();
+
+    try {
+      const result = await runHookScript(SOURCE_SESSION_ENV_CHECK_SCRIPT, sessionInput, env);
+      expect(result.stderr).toContain(
+        'codex CLI: installed (auth may be managed via `codex login`)'
+      );
+      expect(result.stderr).not.toContain('OPENAI_API_KEY not set');
+    } finally {
+      await rm(baseDir, { recursive: true, force: true });
+    }
+  });
+
   it('should create a status file in /tmp', async () => {
-    await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
+    await runHookScript(SOURCE_SESSION_ENV_CHECK_SCRIPT, sessionInput);
     const { execSync } = require('node:child_process');
     // The file is named .claude-env-status-<PPID>; at least one must exist after the run.
     const output = execSync('ls /tmp/.codex-env-status-* 2>/dev/null || echo "none"')
@@ -1222,19 +1298,19 @@ describe('session-env-check.sh', () => {
   });
 
   it('should handle empty stdin gracefully', async () => {
-    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, '');
+    const result = await runHookScript(SOURCE_SESSION_ENV_CHECK_SCRIPT, '');
     expect(result.exitCode).toBe(0);
   });
 
   it('should handle arbitrary JSON stdin and pass it through', async () => {
     const input = JSON.stringify({ complex: { nested: true } });
-    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, input);
+    const result = await runHookScript(SOURCE_SESSION_ENV_CHECK_SCRIPT, input);
     expect(result.stdout.trim()).toBe(input);
     expect(result.exitCode).toBe(0);
   });
 
   it('should report both codex CLI and Agent Teams statuses in a single run', async () => {
-    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
+    const result = await runHookScript(SOURCE_SESSION_ENV_CHECK_SCRIPT, sessionInput);
     const stderrLines = result.stderr.split('\n');
     const codexLine = stderrLines.find((l) => l.includes('codex CLI:'));
     const teamsLine = stderrLines.find((l) => l.includes('Agent Teams:'));

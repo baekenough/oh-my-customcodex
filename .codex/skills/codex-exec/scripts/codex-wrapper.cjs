@@ -128,9 +128,11 @@ function validateEnvironment() {
     }
   }
 
-  // Note: OPENAI_API_KEY is optional if codex has its own stored auth (via `codex auth`)
-  if (!process.env.OPENAI_API_KEY) {
-    console.error('[codex-wrapper] Note: OPENAI_API_KEY not set, relying on codex built-in auth');
+  // OPENAI_API_KEY/CODEX_API_KEY are optional when codex has stored auth from `codex login`.
+  if (!process.env.OPENAI_API_KEY && !process.env.CODEX_API_KEY) {
+    console.error(
+      '[codex-wrapper] Note: no OPENAI_API_KEY/CODEX_API_KEY set, relying on stored codex login or ChatGPT auth'
+    );
   }
 
   return {
@@ -204,6 +206,7 @@ function executeCodex(binary, args, timeout, workingDir = null) {
     const spawnOptions = {
       cwd: workingDir || process.cwd(),
       env: process.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
     };
 
     const child = spawn(binary, args, spawnOptions);
