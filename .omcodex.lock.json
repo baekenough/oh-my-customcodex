@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.4.10",
-  "generatedAt": "2026-04-28T00:01:33.392Z",
-  "templateVersion": "0.4.10",
+  "generatorVersion": "0.4.11",
+  "generatedAt": "2026-04-28T00:25:35.637Z",
+  "templateVersion": "0.4.11",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -130,8 +130,8 @@
       "component": "agents"
     },
     ".codex/agents/wiki-curator.md": {
-      "templateHash": "eb5f20a3d5450bf05afcfc8ac4a51936e9fa7a8a1fdd442e05416ca811415dde",
-      "size": 2296,
+      "templateHash": "377a69c33f595329ec95fe7a7cc12a2cc362686eed2d01de1ab3dead693bac3e",
+      "size": 2696,
       "component": "agents"
     },
     ".codex/agents/arch-speckit-agent.md": {
@@ -290,8 +290,8 @@
       "component": "agents"
     },
     ".codex/agents/mgr-gitnerd.md": {
-      "templateHash": "ed56f3571a9f181580803bfb3e0090b0d53645c8371c2aff93e0bf51ebc34c43",
-      "size": 1254,
+      "templateHash": "146c62dd16de102a0cfd6cff8960b6e83922ccd2e07255467d89d859dac3d791",
+      "size": 1654,
       "component": "agents"
     },
     ".codex/agents/mgr-creator.md": {
@@ -419,6 +419,11 @@
       "size": 721,
       "component": "hooks"
     },
+    ".codex/hooks/scripts/auto-dev-token-summary.sh": {
+      "templateHash": "0c2ab04344f1320752bda46b7b71b472b6860a4b5453ca04c56239eccfe1b9c7",
+      "size": 2117,
+      "component": "hooks"
+    },
     ".codex/hooks/scripts/omcustom-auto-update.sh": {
       "templateHash": "e4f7a36be85d927a8e070b313554e56834fe9bce986ecb93f2234324640643aa",
       "size": 5612,
@@ -442,6 +447,11 @@
     ".codex/hooks/scripts/model-escalation-advisor.sh": {
       "templateHash": "986b6269a9cc866af97218dfa2aee017da524f41e8e703828f3d800ebd6a161e",
       "size": 3054,
+      "component": "hooks"
+    },
+    ".codex/hooks/scripts/auto-dev-token-tracker.sh": {
+      "templateHash": "ce6202a56d3e7b98cb088c7a6f5b6f6041a4c1d27c6ff268a10294841e98ecd4",
+      "size": 1864,
       "component": "hooks"
     },
     ".codex/hooks/scripts/schema-validator.sh": {
@@ -555,8 +565,8 @@
       "component": "hooks"
     },
     ".codex/hooks/hooks.json": {
-      "templateHash": "fc20d40f837382cbdc5f472060953cf4a080cf45e3e4e5bf2e5782ea268f2eb9",
-      "size": 26493,
+      "templateHash": "0bbff7e9d7b3a005fd8d581af31bb63ca836852a68140d4b1fcc9d2349d479e7",
+      "size": 27092,
       "component": "hooks"
     },
     ".codex/contexts/ecomode.md": {
