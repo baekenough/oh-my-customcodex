@@ -499,6 +499,16 @@
           }
         ],
         "description": "Advisory reminder to sync skill counts in 6 locations when a SKILL.md is created/modified (R021)"
+      },
+      {
+        "matcher": "tool == \"Task\" || tool == \"Agent\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/scripts/auto-dev-token-tracker.sh"
+          }
+        ],
+        "description": "Advisory auto-dev token spend tracking by phase"
       }
     ],
     "Stop": [
@@ -511,6 +521,16 @@
           }
         ],
         "description": "Final console.log audit and session diagnostics before session ends"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/scripts/auto-dev-token-summary.sh"
+          }
+        ],
+        "description": "Print advisory auto-dev token spend summary when available"
       },
       {
         "matcher": "*",
