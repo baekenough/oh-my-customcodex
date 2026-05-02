@@ -13,28 +13,17 @@ const GUIDANCE_DIRS = [
 const SOURCE_R006 = join(ROOT, '.codex/rules/MUST-agent-design.md');
 const TEMPLATE_R006 = join(ROOT, 'templates/.claude/rules/MUST-agent-design.md');
 const WIKI_R006 = join(ROOT, 'wiki/rules/r006.md');
-const SENSITIVE_DELEGATION_SKILLS = [
-  'professor-triage',
-  'deep-plan',
-  'deep-verify',
-  'research',
-  'scout',
-  'hada-scout',
-  'agora',
-  'roundtable-debate',
-  'harness-eval',
-  'omcodex-improve-report',
-  'omcodex-takeover',
-  'optimize-report',
-  'optimize-analyze',
-  'secretary-routing',
-  'dev-lead-routing',
-  'de-lead-routing',
-  'qa-lead-routing',
-  'dag-orchestration',
-  'task-decomposition',
-  'worker-reviewer-pipeline',
+const PACKAGE_JSON = join(ROOT, 'package.json');
+const TEMPLATE_MANIFEST = join(ROOT, 'templates/manifest.json');
+const VERSION_AWARE_COMPATIBILITY_FILES = [
+  '.codex/agents/mgr-creator.md',
+  '.codex/agents/mgr-updater.md',
+  '.codex/skills/agora/SKILL.md',
+  '.codex/skills/pipeline/workflows/auto-dev.yaml',
+  'workflows/auto-dev.yaml',
+  'templates/workflows/auto-dev.yaml',
 ];
+const CODEX_EXEC_SKILL = join(ROOT, '.codex/skills/codex-exec/SKILL.md');
 
 async function collectMarkdownFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -96,11 +85,12 @@ describe('sensitive output guidance', () => {
     const wiki = await readFile(WIKI_R006, 'utf-8');
     const required = [
       'templates/.claude/**',
-      'Bash writes, Write, Edit',
-      'allow rules do not override the sensitive-path check',
-      'do not rely on them to suppress sensitive-path prompts',
+      'Codex edit/patch flow',
+      'CC v2.1.121+',
+      'CC v2.1.126+',
+      'Historical fallback only',
       'update `.codex/...` source files and their `templates/.claude/...` mirrors deliberately',
-      'Sensitive-path artifact protocol (mandatory)',
+      'Sensitive-path compatibility note',
     ];
 
     for (const phrase of required) {
@@ -112,18 +102,46 @@ describe('sensitive output guidance', () => {
     expect(wiki).not.toContain('.claude/rules/MUST-agent-design.md');
   });
 
-  it('keeps delegated artifact skills on the mandatory sensitive-path protocol', async () => {
-    for (const skill of SENSITIVE_DELEGATION_SKILLS) {
-      const source = await readFile(join(ROOT, '.codex/skills', skill, 'SKILL.md'), 'utf-8');
-      const template = await readFile(
-        join(ROOT, 'templates/.claude/skills', skill, 'SKILL.md'),
-        'utf-8'
-      );
-
-      expect(source).toContain('Sensitive-path artifact protocol (mandatory)');
-      expect(source).toContain('/tmp/');
-      expect(source).toContain('Read, Bash, Write, or Edit');
-      expect(template).toContain('Sensitive-path artifact protocol (mandatory)');
+  it('keeps high-traffic compatibility surfaces on version-aware .claude guidance', async () => {
+    for (const relativePath of VERSION_AWARE_COMPATIBILITY_FILES) {
+      const content = await readFile(join(ROOT, relativePath), 'utf-8');
+      expect(content).toContain('v2.1.121+');
+      expect(content).toContain('v2.1.126+');
+      expect(/(?:historical|legacy) fallback/.test(content)).toBe(true);
+      expect(content).not.toContain('Sensitive-path artifact protocol (mandatory)');
     }
+  });
+
+  it('removes the codex-exec /tmp status-file boilerplate', async () => {
+    const content = await readFile(CODEX_EXEC_SKILL, 'utf-8');
+    expect(content).toContain('command -v codex');
+    expect(content).not.toContain('/tmp/.codex-env-status-*');
+  });
+
+  it('tracks minimum Claude Code compatibility metadata in package and manifest', async () => {
+    const packageJson = JSON.parse(await readFile(PACKAGE_JSON, 'utf-8')) as {
+      version: string;
+      requiresCC?: string;
+      claudeCode?: {
+        minimumVersion?: string;
+        protectedPathBypassVersion?: string;
+      };
+    };
+    const manifest = JSON.parse(await readFile(TEMPLATE_MANIFEST, 'utf-8')) as {
+      version: string;
+      requiresCC?: string;
+      claudeCode?: {
+        minimumVersion?: string;
+        protectedPathBypassVersion?: string;
+      };
+    };
+
+    expect(packageJson.version).toBe(manifest.version);
+    expect(packageJson.requiresCC).toBe('>=2.1.121');
+    expect(manifest.requiresCC).toBe('>=2.1.121');
+    expect(packageJson.claudeCode?.minimumVersion).toBe('2.1.121');
+    expect(manifest.claudeCode?.minimumVersion).toBe('2.1.121');
+    expect(packageJson.claudeCode?.protectedPathBypassVersion).toBe('2.1.126');
+    expect(manifest.claudeCode?.protectedPathBypassVersion).toBe('2.1.126');
   });
 });

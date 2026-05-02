@@ -58,18 +58,18 @@ Agent selection constraint: artifact-writing delegated agents need Bash access f
 - 10+ issues: prefer a coordinated team surface when available.
 - Phase 4A and 4B are parallel; Phase 4C waits for both; Phase 4D and 4E are parallel after synthesis.
 
-## Sensitive-path artifact protocol (mandatory)
+## Sensitive-path compatibility note
 
 Codex-native artifacts go under `.codex/outputs/sessions/YYYY-MM-DD/professor-triage-HHmmss.md` and may be written with the repo's normal file-write APIs.
 
-If a delegated task must create, inspect, or modify Claude compatibility artifacts under `.claude/**`, `.claude/outputs/**`, or `templates/.claude/**`, include this block verbatim in the delegated prompt:
+If a delegated task must create, inspect, or modify Claude compatibility artifacts under `.claude/**`, `.claude/outputs/**`, or `templates/.claude/**`, include this block in the delegated prompt:
 
 ```text
-Sensitive-path artifact protocol (mandatory):
-1. Build the artifact body in /tmp first, for example /tmp/professor-triage-<timestamp>.md.
-2. If the final target is under .claude/** or templates/.claude/**, create and execute a /tmp/*.sh script that copies or writes the /tmp artifact to the final path.
-3. Do not call Read, Bash, Write, or Edit directly on .claude/** or templates/.claude/** in unattended flows.
-4. Verify the final file through the least sensitive available path and report the exact artifact path.
+Sensitive-path compatibility note:
+1. Keep Codex-native .codex/** artifacts on the normal file-write path.
+2. On Claude Code v2.1.121+ with bypassPermissions, direct writes to .claude/skills/, .claude/agents/, and .claude/commands/ are allowed.
+3. On Claude Code v2.1.126+ with bypassPermissions, broader protected paths such as .claude/**, .git/**, and .vscode/** are also covered.
+4. Use /tmp/professor-triage-<timestamp>.md only as a legacy fallback when the runtime is older or still prompts, then verify the resulting diff.
 ```
 
 This protocol must be inline in the delegate prompt; relying on this SKILL.md being present in the parent context is not enough.

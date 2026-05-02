@@ -21,6 +21,21 @@
 | Write | Source code, new files in project | .env, .git/config, paths outside project |
 | Delete | Temp files created by agent | Existing files (without request), entire directories |
 
+## Claude Code Protected-Path Compatibility
+
+Codex-native `.codex/**` edits are normal project writes and do not require the historical Claude-only `/tmp` bypass pattern.
+
+Claude Code compatibility behavior changed in two steps:
+
+- **CC v2.1.121+**: `--dangerously-skip-permissions` / `bypassPermissions` no longer prompts for writes to `.claude/skills/`, `.claude/agents/`, and `.claude/commands/`.
+- **CC v2.1.126+**: the same mode also bypasses prompts for broader protected paths such as `.claude/**`, `.git/**`, `.vscode/**`, and shell config files.
+
+Current guidance:
+
+- Prefer direct Write/Edit/Bash targets for `.codex/**`.
+- For `.claude/**` or `templates/.claude/**`, direct writes are acceptable when the target Claude Code runtime is new enough and the session is running with `bypassPermissions`.
+- Treat the old `/tmp/{skill}-{timestamp}.md` wrapper flow as a historical fallback only for older Claude Code versions, non-bypass sessions, or interactive runs that still surface a protected-path prompt.
+
 ## Permission Request Format
 
 ```

@@ -46,3 +46,19 @@ describe('release.yml — CI gate', () => {
     expect(content).toContain('docs-validate:');
   });
 });
+
+describe('release.yml — publish safeguards', () => {
+  it('should verify version sync before npm publish checks', async () => {
+    const content = await readWorkflow();
+    const verifyBuildIndex = content.indexOf('- name: Verify build artifacts');
+    const verifyVersionSyncIndex = content.indexOf('- name: Verify version sync');
+    const checkNpmVersionIndex = content.indexOf('- name: Check npm version');
+    const publishIndex = content.indexOf('- name: Publish to npm');
+
+    expect(verifyBuildIndex).toBeGreaterThan(-1);
+    expect(verifyVersionSyncIndex).toBeGreaterThan(verifyBuildIndex);
+    expect(checkNpmVersionIndex).toBeGreaterThan(verifyVersionSyncIndex);
+    expect(publishIndex).toBeGreaterThan(checkNpmVersionIndex);
+    expect(content).toContain('run: bash .github/scripts/verify-version-sync.sh');
+  });
+});

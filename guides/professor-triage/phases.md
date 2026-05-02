@@ -229,18 +229,7 @@ _`/professor-triage` v2.3.0에 의해 현재 코드베이스 대비 분석됨 �
 
 Delegate to general-purpose. Path: `.codex/outputs/sessions/YYYY-MM-DD/professor-triage-HHmmss.md`
 
-**Sensitive-path protocol**: Use `/tmp/*.sh` bypass — direct Write/Edit/Bash on `.codex/outputs/` triggers Codex/Claude-compat sensitive-path guard.
-
-```bash
-cat > /tmp/professor-triage-$(date +%H%M%S).sh << 'ARTIFACT_SCRIPT'
-mkdir -p .codex/outputs/sessions/YYYY-MM-DD
-cat > .codex/outputs/sessions/YYYY-MM-DD/professor-triage-HHmmss.md << 'ARTIFACT_CONTENT'
-{artifact content here}
-ARTIFACT_CONTENT
-ARTIFACT_SCRIPT
-bash /tmp/professor-triage-HHmmss.sh
-rm /tmp/professor-triage-HHmmss.sh
-```
+**Sensitive-path compatibility note**: Write `.codex/outputs/` artifacts with the normal file-write path. Use `/tmp/professor-triage-<timestamp>.md` only as a legacy fallback when an older Claude Code runtime still prompts on `.claude/**` or `templates/.claude/**` compatibility paths, then verify the resulting diff.
 
 Artifact template:
 

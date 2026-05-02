@@ -3,7 +3,12 @@
   "workspaces": [
     "packages/*"
   ],
-  "version": "0.4.12",
+  "version": "0.4.13",
+  "requiresCC": ">=2.1.121",
+  "claudeCode": {
+    "minimumVersion": "2.1.121",
+    "protectedPathBypassVersion": "2.1.126"
+  },
   "description": "Batteries-included agent harness on top of GPT Codex + OMX",
   "type": "module",
   "bin": {

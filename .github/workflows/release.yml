@@ -288,6 +288,9 @@ jobs:
           test -f dist/index.js || { echo "::error::Missing dist/index.js"; exit 1; }
           echo "Build artifacts verified"
 
+      - name: Verify version sync
+        run: bash .github/scripts/verify-version-sync.sh
+
       # Check if version already exists on npm
       - name: Check npm version
         id: npm_check
