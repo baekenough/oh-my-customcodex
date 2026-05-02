@@ -147,6 +147,19 @@ Key violations to avoid (file writes, git commands, bundled operations — all m
 ```
 -->
 
+## Historical Sensitive-Path Bypass
+
+**Status**: deprecated as of Claude Code v2.1.121 for `.claude/skills/`, `.claude/agents/`, and `.claude/commands/`; fully deprecated in `bypassPermissions` as of v2.1.126 for broader protected paths.
+
+Older guidance sometimes required a universal `/tmp` artifact-wrapper flow before touching Claude compatibility paths. Do not use that as the default in this Codex-native port.
+
+Current guidance:
+
+- Edit `.codex/**` directly with the normal Codex edit/patch flow.
+- In Claude Code `bypassPermissions`, direct writes to `.claude/skills/`, `.claude/agents/`, and `.claude/commands/` are acceptable on v2.1.121+.
+- In Claude Code `bypassPermissions`, broader protected-path writes such as `.claude/**`, `.git/**`, and `.vscode/**` are acceptable on v2.1.126+.
+- Keep the `/tmp/{skill}-{timestamp}.md` pattern only as a legacy fallback for older Claude Code versions or sessions that still surface a protected-path prompt.
+
 <!-- DETAIL: Autonomous Execution Mode
 
 ## Autonomous Execution Mode

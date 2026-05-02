@@ -50,18 +50,18 @@ Research-validated planning that eliminates the gap between research assumptions
 | `/structured-dev-cycle` | Implementation pipeline | Yes, stage by stage |
 | `/deep-plan` | Analysis + planning + verification | Yes, 3-pass cross-verification |
 
-## Sensitive-path artifact protocol (mandatory)
+## Sensitive-path compatibility note
 
 Codex-native verification artifacts go under `.codex/outputs/sessions/YYYY-MM-DD/deep-plan-HHmmss.md` and may be written with the repo's normal file-write APIs.
 
-If any research, planning, or verification delegate must touch `.claude/**`, `.claude/outputs/**`, or `templates/.claude/**`, include this block verbatim in that delegate prompt:
+If any research, planning, or verification delegate must touch `.claude/**`, `.claude/outputs/**`, or `templates/.claude/**`, include this block in that delegate prompt:
 
 ```text
-Sensitive-path artifact protocol (mandatory):
-1. Build the artifact body in /tmp first, for example /tmp/deep-plan-<timestamp>.md.
-2. If the final target is under .claude/** or templates/.claude/**, create and execute a /tmp/*.sh script that copies or writes the /tmp artifact to the final path.
-3. Do not call Read, Bash, Write, or Edit directly on .claude/** or templates/.claude/** in unattended flows.
-4. Verify the final file through the least sensitive available path and report the exact artifact path.
+Sensitive-path compatibility note:
+1. Keep Codex-native .codex/** artifacts on the normal file-write path.
+2. On Claude Code v2.1.121+ with bypassPermissions, direct writes to .claude/skills/, .claude/agents/, and .claude/commands/ are allowed.
+3. On Claude Code v2.1.126+ with bypassPermissions, broader protected paths such as .claude/**, .git/**, and .vscode/** are also covered.
+4. Use /tmp/deep-plan-<timestamp>.md only as a legacy fallback when the runtime is older or still prompts, then verify the resulting diff.
 ```
 
 The protocol must be copied into delegate prompts. A parent-only mention is insufficient because forked contexts can lose the directive.

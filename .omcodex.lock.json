@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.4.12",
-  "generatedAt": "2026-04-28T00:37:38.035Z",
-  "templateVersion": "0.4.12",
+  "generatorVersion": "0.4.13",
+  "generatedAt": "2026-05-02T04:09:13.397Z",
+  "templateVersion": "0.4.13",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "d42928e60e2c20bd670265588b7ab88ae5b5c1ca5fb6150f64f086bbb5bda07b",
-      "size": 19413,
+      "templateHash": "520fb9b45716e7ac7da4e50c18f0cda4ac7c262b37660e8d923c105dec76d7d3",
+      "size": 20372,
       "component": "rules"
     },
     ".codex/rules/MUST-intent-transparency.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-design.md": {
-      "templateHash": "06c0b1b9cece77f3f99912b5c1a0cddc7efa38a0a7b4d577d2225972ddd5c30b",
-      "size": 23993,
+      "templateHash": "4a7989cf1b7213583087367a3143e64d8c703acf50ea59ee4b34cf46ad89c8f2",
+      "size": 24382,
       "component": "rules"
     },
     ".codex/rules/MUST-agent-identification.md": {
@@ -80,8 +80,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-permissions.md": {
-      "templateHash": "814153e387f2214458b2907c02ceece69d7b766673ef240a41afe1f9aea39e73",
-      "size": 1466,
+      "templateHash": "94f78cbedf41abc2929f0d6e47534f960a4a1da6e333b76a9a1b1511d7e5dd64",
+      "size": 2483,
       "component": "rules"
     },
     ".codex/rules/SHOULD-ontology-rag-routing.md": {
@@ -130,8 +130,8 @@
       "component": "agents"
     },
     ".codex/agents/wiki-curator.md": {
-      "templateHash": "377a69c33f595329ec95fe7a7cc12a2cc362686eed2d01de1ab3dead693bac3e",
-      "size": 2696,
+      "templateHash": "676222776c43434702d8fee475077a4f8505043f922117c2bbf3983c65d5cdeb",
+      "size": 2718,
       "component": "agents"
     },
     ".codex/agents/arch-speckit-agent.md": {
@@ -145,8 +145,8 @@
       "component": "agents"
     },
     ".codex/agents/mgr-updater.md": {
-      "templateHash": "079949e2db42c18f41b4785684638580fff98356e7c22df9afbcc2fa253bcd91",
-      "size": 1427,
+      "templateHash": "1fcf9dbc2daa82b710618434956b13a154ba49b0ffdbe1207c3a26da4a56ca1f",
+      "size": 1449,
       "component": "agents"
     },
     ".codex/agents/lang-kotlin-expert.md": {
@@ -165,8 +165,8 @@
       "component": "agents"
     },
     ".codex/agents/mgr-sauron.md": {
-      "templateHash": "4c8f0a36532007c19e08bcf258e0793f61df54fdafa25386dd7241947509fb46",
-      "size": 4800,
+      "templateHash": "c8a574a947a72baccef699d25b3c8ca1b39068343ded96e54975d4df03f59cd6",
+      "size": 4822,
       "component": "agents"
     },
     ".codex/agents/fe-svelte-agent.md": {
@@ -185,8 +185,8 @@
       "component": "agents"
     },
     ".codex/agents/sys-naggy.md": {
-      "templateHash": "15926b65b0f7668a173af0ed86d72992bbaf99e26577aa5504b3f691b3c21e21",
-      "size": 2575,
+      "templateHash": "40d0ac6388cbefc0f7b7982de1fead890d2bc17285a4958435a3e0844872070b",
+      "size": 2597,
       "component": "agents"
     },
     ".codex/agents/db-redis-expert.md": {
@@ -240,8 +240,8 @@
       "component": "agents"
     },
     ".codex/agents/tracker-checkpoint.md": {
-      "templateHash": "79e550de81a187e3b7656a0b58a5f3d98bc61048e58ded8ea6f71dd895df1f9d",
-      "size": 3029,
+      "templateHash": "3ce24b86fceee8deb121c1b5a4018d8a948f88cf0ae374ec04307eeb45b74231",
+      "size": 3051,
       "component": "agents"
     },
     ".codex/agents/de-dbt-expert.md": {
@@ -270,8 +270,8 @@
       "component": "agents"
     },
     ".codex/agents/mgr-claude-code-bible.md": {
-      "templateHash": "05fa25c9087b58125902d7e3b3a7ba5cb673bd9e919307d0f3a11884849f2ff3",
-      "size": 2655,
+      "templateHash": "9cda83cda94c621c3148d5a9dd2603f2886f125523a90851904f684b62659930",
+      "size": 2677,
       "component": "agents"
     },
     ".codex/agents/fe-flutter-agent.md": {
@@ -290,13 +290,13 @@
       "component": "agents"
     },
     ".codex/agents/mgr-gitnerd.md": {
-      "templateHash": "146c62dd16de102a0cfd6cff8960b6e83922ccd2e07255467d89d859dac3d791",
-      "size": 1654,
+      "templateHash": "2cdde561d86976a44504d00805932906d5670436f3d373b44dd0d884efbf28ac",
+      "size": 1676,
       "component": "agents"
     },
     ".codex/agents/mgr-creator.md": {
-      "templateHash": "066dcda6aeef5eb35788724fa0dc4011ee9b5486bf7ef23548d35964798646c4",
-      "size": 2700,
+      "templateHash": "c7b9428b39615f8ad08c1937023b3cbc872eecc731caa49cd2b9866421158f34",
+      "size": 2722,
       "component": "agents"
     },
     ".codex/agents/qa-writer.md": {
@@ -320,8 +320,8 @@
       "component": "agents"
     },
     ".codex/agents/mgr-supplier.md": {
-      "templateHash": "18a1f285b77fd8c9390250b8ef68e874f74f725da3fbd662ec0953400455b0b6",
-      "size": 1481,
+      "templateHash": "0bc6445c325bd971037201865793ad48e2c72c895ac72ee1e7318ad636f82b68",
+      "size": 1503,
       "component": "agents"
     },
     ".codex/agents/arch-documenter.md": {
@@ -345,8 +345,8 @@
       "component": "agents"
     },
     ".codex/agents/sys-memory-keeper.md": {
-      "templateHash": "9a666d4bc85461caf740b985ae49868e62bd49a728901702ade11f2dbf36e015",
-      "size": 5873,
+      "templateHash": "726a57895dece4213d2f904535c2953313f9e87cfcfc6aa8aab2ca9c86ee532c",
+      "size": 5895,
       "component": "agents"
     },
     ".codex/agents/infra-aws-expert.md": {
@@ -910,8 +910,8 @@
       "component": "guides"
     },
     "guides/professor-triage/phases.md": {
-      "templateHash": "164be0bf4e738eaa38fbb026c33718d7d85b2643db124de7e44ee4ff94adaaff",
-      "size": 12619,
+      "templateHash": "46942d283367abb7437a0a72c979832021f3a769ba33d14713839ea977130670",
+      "size": 12442,
       "component": "guides"
     },
     "guides/professor-triage/README.md": {

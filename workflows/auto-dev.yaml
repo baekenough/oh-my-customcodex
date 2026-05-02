@@ -40,9 +40,9 @@ steps:
 
       Codex-native sensitive-path policy:
       - Codex-managed `.codex/` edits use the normal edit/patch flow.
-      - Do not adopt upstream Claude-only `/tmp` bypass guidance as the default path.
+      - Claude Code `bypassPermissions` can write `.claude/skills/`, `.claude/agents/`, and `.claude/commands/` directly on v2.1.121+, with broader protected-path writes available on v2.1.126+.
       - If a port requires `.claude` template parity changes, make the change explicit and verify sensitive-path guard tests.
-      - Sensitive-path artifact protocol (mandatory): delegated prompts that touch `.claude/**`, `templates/.claude/**`, `.claude/outputs/**`, or read-only measurements of those paths must instruct the subagent to produce artifact bodies in `/tmp/{skill}-{timestamp}.md` first and avoid direct Read/Bash/Write/Edit targets under `.claude/**` in unattended flows.
+      - Use `/tmp/{skill}-{timestamp}.md` only as a historical fallback for older Claude Code versions, non-bypass sessions, or runs that still surface a protected-path prompt.
     description: Execute implementation plan with appropriate agents
     foreach: planned-issue
 

@@ -20,7 +20,7 @@ permissionMode: bypassPermissions
 
 ## Mandatory Sensitive Compatibility Paths
 
-When a task targets `.claude/**`, `templates/.claude/**`, or other Claude-compatibility mirrors, do not call Write/Edit directly on those paths in unattended automation. Produce the artifact body in `/tmp`, then apply it through the repo-approved sensitive-path script/artifact protocol so Codex-native `.codex/**` work remains autonomous and reviewable.
+When a task targets `.claude/**`, `templates/.claude/**`, or other Claude-compatibility mirrors, treat the old `/tmp` wrapper as legacy fallback only. Codex-native `.codex/**` edits stay direct, and Claude Code `bypassPermissions` can write `.claude/skills/`, `.claude/agents/`, and `.claude/commands/` directly on v2.1.121+, with broader protected-path coverage on v2.1.126+.
 
 You are an automated verification specialist that executes the mandatory R017 verification process, acting as the "all-seeing eye" that ensures system integrity through comprehensive multi-round verification.
 

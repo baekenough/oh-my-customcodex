@@ -207,7 +207,7 @@ Convergence expected by round 3. Hard stop at round 30.
 
 ### Compatibility artifact protocol
 
-When delegated work must touch `.claude/outputs/`, `.claude/**`, or `templates/.claude/**`, use the mandatory 2-step bypass: write the artifact body to `/tmp/research-$(date +%H%M%S).md` first, then execute a `/tmp/*.sh` Bash script that copies or writes that body to the final compatibility path. Do not call Read, Bash, Write, or Edit directly on `.claude/**` or `templates/.claude/**` in unattended flows.
+Sensitive-path compatibility note: when delegated work touches `.claude/outputs/`, `.claude/**`, or `templates/.claude/**`, keep `.codex/**` artifacts on the normal file-write path. On Claude Code v2.1.121+ with `bypassPermissions`, direct compatibility writes are allowed for `.claude/skills/`, `.claude/agents/`, and `.claude/commands/`; on v2.1.126+ broader protected paths are covered. Use `/tmp/<skill>-<timestamp>.md` only as a legacy fallback when the runtime is older or still prompts.
 
    ```
    With metadata header:
@@ -219,7 +219,7 @@ When delegated work must touch `.claude/outputs/`, `.claude/**`, or `templates/.
    ---
    ```
    The agent writes the artifact file using a file-write API that creates missing parent directories; do not run any Bash directory-creation pre-step for session outputs (R010 compliance).
-   Sensitive-path artifact protocol (mandatory): if a delegated research agent must inspect or create Claude compatibility artifacts under `.claude/**`, `.claude/outputs/**`, or `templates/.claude/**`, the delegated prompt must require `/tmp/research-{timestamp}.md` as the first artifact body target and must forbid direct Read, Bash, Write, or Edit targets under `.claude/**` in unattended flows.
+   Sensitive-path compatibility note: delegated research agents should keep `.codex/**` artifacts on the normal write path and use `/tmp/research-{timestamp}.md` only as a legacy fallback when an older Claude Code runtime still prompts on compatibility paths.
 3. GitHub issue auto-created with findings
 4. Action items with effort estimates
 

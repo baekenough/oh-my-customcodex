@@ -73,7 +73,7 @@ Each agent receives the full diff and returns findings as structured JSON:
 - Verify all changes align with project's compilation metaphor (Skills=source, Agents=artifacts, Rules=spec)
 - Check separation of concerns: no agents containing skill logic, no skills with agent definitions
 - Verify orchestrator rules: no new file writes from orchestrator context
-- Verify sensitive-path delegation: prompts that touch `.claude/**`, `.claude/outputs/**`, or `templates/.claude/**` include the exact phrase `Sensitive-path artifact protocol (mandatory)`, require an explicit `/tmp/{skill}-{timestamp}.md` artifact body path, mention `Read, Bash, Write, or Edit` coverage, and do not rely on a single vague `/tmp` recommendation
+- Verify sensitive-path compatibility: prompts that touch `.claude/**`, `.claude/outputs/**`, or `templates/.claude/**` include the `Sensitive-path compatibility note`, keep `.codex/**` artifacts on the normal file-write path, and treat `/tmp/{skill}-{timestamp}.md` only as a legacy fallback for older Claude Code versions or sessions that still prompt
 - Check advisory-first: no new hard-blocking hooks introduced
 - Confirm no feature regressions: existing APIs preserved, test coverage maintained
 - Performance sanity: no O(n^2) on large datasets, no missing indexes for new queries

@@ -148,7 +148,7 @@ The `skill-extractor-analyzer.sh` Stop hook provides a lightweight pre-analysis:
 
 ## Compatibility Artifact Protocol
 
-When delegated work must write extraction evidence under `.claude/outputs/`, `.claude/**`, or `templates/.claude/**`, use the mandatory 2-step bypass in unattended flows: write the evidence body to `/tmp/skill-extractor-$(date +%H%M%S).md` first, then execute a `/tmp/*.sh` Bash script that copies or writes the body to the final compatibility path. Do not call Read, Bash, Write, or Edit directly on `.claude/**` or `templates/.claude/**`.
+Sensitive-path compatibility note: when delegated work touches `.claude/outputs/`, `.claude/**`, or `templates/.claude/**`, keep `.codex/**` artifacts on the normal file-write path. On Claude Code v2.1.121+ with `bypassPermissions`, direct compatibility writes are allowed for `.claude/skills/`, `.claude/agents/`, and `.claude/commands/`; on v2.1.126+ broader protected paths are covered. Use `/tmp/<skill>-<timestamp>.md` only as a legacy fallback when the runtime is older or still prompts.
 
 ## Safety
 

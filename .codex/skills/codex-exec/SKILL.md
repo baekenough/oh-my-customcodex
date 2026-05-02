@@ -182,7 +182,7 @@ When the orchestrator or intent-detection detects a research/information gatheri
 
 When routing skills detect a code generation task and codex is available:
 
-1. **Check availability**: Verify codex CLI via `/tmp/.codex-env-status-*`
+1. **Check availability**: Verify the codex CLI directly (`command -v codex`) or via current session diagnostics
 2. **If available + new file creation**: Suggest hybrid workflow
 3. **Hybrid pattern**:
    - codex-exec generates initial code (fast, broad generation)
