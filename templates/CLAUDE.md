@@ -99,7 +99,7 @@ oh-my-customcodex로 구동됩니다.
 |----------|------------|------|
 | 프로젝트 관리 | `/omcustomcodex:analysis`, `/omcustomcodex:create-agent`, `/omcustomcodex:audit-agents` | 분석, 에이전트/스킬 생성, 감사 |
 | 아이디어 | `/idea` | 자연어 아이디어를 구조화된 이슈 스펙으로 변환 |
-| 개발 | `/dev-review`, `/dev-refactor`, `/sdd-dev`, `/structured-dev-cycle` | 코드 리뷰, 리팩토링, SDD |
+| 개발 | `/goal`, `/dev-review`, `/dev-refactor`, `/sdd-dev`, `/structured-dev-cycle` | 목표 실행, 코드 리뷰, 리팩토링, SDD |
 | 검증 | `/omcustomcodex:sauron-watch`, `/deep-verify`, `/adversarial-review` | R017 검증, 릴리즈 품질, 보안 리뷰 |
 | 릴리즈 | `/pipeline auto-dev`, `/omcustomcodex-release-notes`, `/release-plan` | 자동 개발, 릴리즈 노트 |
 | 리서치 | `/research`, `/scout`, `/deep-plan`, `/omcustomcodex:agora` | 병렬 분석, URL 평가, 연구 계획 |
@@ -119,7 +119,7 @@ project/
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
 +-- .agents/
-|   +-- skills/                  # 스킬 (109 디렉토리)
+|   +-- skills/                  # 스킬 (118 디렉토리)
 +-- guides/                      # 레퍼런스 문서 (39 토픽)
 ```
 

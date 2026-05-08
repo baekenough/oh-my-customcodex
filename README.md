@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-49 agents. 117 skills. 22 rules. One command.
+49 agents. 118 skills. 22 rules. One command.
 
 ```bash
 npm install -g oh-my-customcodex && cd your-project && omcustomcodex init
@@ -134,7 +134,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (117)
+### Skills (118)
 
 | Category | Count | Includes |
 |----------|-------|----------|
@@ -170,6 +170,7 @@ All commands are invoked inside the oh-my-customcodex GPT Codex + OMX session.
 | `/ambiguity-gate` | Pre-routing ambiguity analysis |
 | `/pre-generation-arch-check` | Check architecture risks before implementation |
 | `/adversarial-review` | Attacker-mindset security code review |
+| `/goal` | Keep a concrete objective in view through planning, execution, and verification |
 | `/pipeline` | Execute YAML-defined pipelines |
 | `/pipeline resume` | Resume a halted pipeline from last failure point |
 
@@ -286,7 +287,7 @@ your-project/
 │   ├── contexts/               # 4 shared context files
 │   └── ontology/               # Knowledge graph for RAG
 ├── .agents/
-│   └── skills/                 # 117 installed skill modules
+│   └── skills/                 # 118 installed skill modules
 └── guides/                     # 47 reference documents
 ```
 

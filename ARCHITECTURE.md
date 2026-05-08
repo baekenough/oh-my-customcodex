@@ -4,7 +4,7 @@
 
 ## 1. System Overview
 
-oh-my-customcodex is the Codex + OMX native child package of oh-my-customcode. It preserves the parent harness model, workflow intent, and package structure while retargeting the execution surface from Claude Code native to GPT Codex + OMX. The current shipped template surface includes 49 pre-built subagents, 106 skills, 22 governing rules, and a comprehensive hook system. The core philosophy remains: **"No expert? CREATE one, connect knowledge, and USE it."**
+oh-my-customcodex is the Codex + OMX native child package of oh-my-customcode. It preserves the parent harness model, workflow intent, and package structure while retargeting the execution surface from Claude Code native to GPT Codex + OMX. The current shipped template surface includes 49 pre-built subagents, 118 skills, 22 governing rules, and a comprehensive hook system. The core philosophy remains: **"No expert? CREATE one, connect knowledge, and USE it."**
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
@@ -89,7 +89,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 
 Each agent is defined in the source tree (`.codex/agents/{name}.md`) and compiled into the installed Codex runtime surface. YAML frontmatter specifies model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
 
-### 3.3 Skill Catalog (106 skills)
+### 3.3 Skill Catalog (118 skills)
 
 **Routing skills (4, context: fork)**
 
@@ -110,7 +110,7 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 **Slash command / user-invocable skills**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcodex-release-notes, omcodex:takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, pipeline, improve-report, omcodex-feedback, omcodex-web, omcodex-loop, sdd-dev, harness-synthesizer, idea
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, goal, omcodex-release-notes, omcodex:takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, pipeline, improve-report, omcodex-feedback, omcodex-web, omcodex-loop, sdd-dev, harness-synthesizer, idea
 
 **System / internal skills**
 

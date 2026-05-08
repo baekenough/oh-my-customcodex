@@ -41,7 +41,7 @@ Skills:
   Total:          13 skills
 
 Guides:            12 loaded
-Commands:          10 available
+Commands:          11 available
 
 Health: ✓ OK
 ```
@@ -122,7 +122,7 @@ Guides:
   ✓ docker, aws
 
 Commands:
-  system:    lists, status, help
+  system:    lists, status, help, goal
   manager:   create-agent, update-docs, update-external, audit-agents, fix-refs
   dev:       dev-review, dev-refactor
 

@@ -4,7 +4,7 @@
 
 ## 1. 시스템 개요
 
-oh-my-customcodex는 oh-my-customcode의 child package로, parent 하네스의 구조와 워크플로를 유지한 채 실행 표면만 GPT Codex + OMX로 옮긴 포트입니다. 현재 shipped template surface는 49개의 서브에이전트, 106개의 스킬, 22개의 거버넌스 규칙, 훅 시스템으로 구성됩니다. 핵심 철학은 그대로 유지됩니다: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."**
+oh-my-customcodex는 oh-my-customcode의 child package로, parent 하네스의 구조와 워크플로를 유지한 채 실행 표면만 GPT Codex + OMX로 옮긴 포트입니다. 현재 shipped template surface는 49개의 서브에이전트, 118개의 스킬, 22개의 거버넌스 규칙, 훅 시스템으로 구성됩니다. 핵심 철학은 그대로 유지됩니다: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."**
 
 현재 패키지 식별자: npm `oh-my-customcodex`, GitHub Packages `@baekenough/oh-my-customcodex`, CLI `omcodex`
 
@@ -77,7 +77,7 @@ oh-my-customcode parent가 정의한 컴파일 메타포를 oh-my-customcodex도
 | 보조 | 2 | slack-cli-expert, wiki-curator |
 | **합계** | **49** | |
 
-### 3.3 스킬 카탈로그 (106개)
+### 3.3 스킬 카탈로그 (118개)
 
 **라우팅 스킬 (4개, context: fork)**
 
@@ -98,7 +98,7 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 **슬래시 커맨드 / 사용자 직접 호출 스킬**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcodex-release-notes, omcodex-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, pipeline, improve-report, omcodex-feedback, omcodex-web, omcodex-loop, sdd-dev, harness-synthesizer, idea
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, goal, omcodex-release-notes, omcodex-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, pipeline, improve-report, omcodex-feedback, omcodex-web, omcodex-loop, sdd-dev, harness-synthesizer, idea
 
 **시스템 / 내부 스킬**
 

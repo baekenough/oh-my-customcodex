@@ -27,6 +27,7 @@ System:
   lists              Show all available commands
   status             Show system status
   help               Show help information
+  /goal              Run a goal-to-execution workflow
 
 Manager:
   /create-agent          Create a new agent
@@ -55,6 +56,7 @@ System Commands:
 │ lists   │ Show all available commands                  │
 │ status  │ Show system status and health checks         │
 │ help    │ Show help for commands and agents            │
+│ /goal   │ Run a goal-to-execution workflow             │
 └─────────┴──────────────────────────────────────────────┘
 
 Manager Commands:
@@ -76,5 +78,5 @@ Dev Commands:
 │ /dev-refactor│ Suggest and apply refactoring          │
 └──────────────┴────────────────────────────────────────┘
 
-Total: 10 commands available
+Total: 11 commands available
 ```
