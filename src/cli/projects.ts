@@ -164,6 +164,28 @@ function sortProjects(projects: ProjectInfo[]): ProjectInfo[] {
   });
 }
 
+async function buildRegistryProjectInfo(
+  projectPath: string,
+  entry: { version?: string; installedAt?: string; updatedAt?: string },
+  options: ProjectsOptions,
+  home: string,
+  currentVersion: string
+): Promise<ProjectInfo | null> {
+  if (!matchesSearchPaths(projectPath, options.paths)) return null;
+  if (!isUnderHome(projectPath, home)) return null;
+  if (!(await fileExists(projectPath))) return null;
+
+  return {
+    name: basename(projectPath),
+    path: projectPath,
+    version: entry.version || null,
+    installedAt: entry.installedAt || null,
+    updatedAt: entry.updatedAt || null,
+    status: computeStatus(entry.version || null, currentVersion),
+    detectionMethod: 'registry',
+  };
+}
+
 /**
  * Find all projects registered in the local registry.
  *
@@ -197,18 +219,14 @@ export async function findProjects(options: ProjectsOptions = {}): Promise<Proje
   const home = process.env.HOME ?? homedir();
 
   for (const [projectPath, entry] of Object.entries(registry.projects)) {
-    if (!matchesSearchPaths(projectPath, options.paths)) continue;
-    if (!isUnderHome(projectPath, home)) continue;
-
-    results.push({
-      name: basename(projectPath),
-      path: projectPath,
-      version: entry.version || null,
-      installedAt: entry.installedAt || null,
-      updatedAt: entry.updatedAt || null,
-      status: computeStatus(entry.version || null, currentVersion),
-      detectionMethod: 'registry',
-    });
+    const project = await buildRegistryProjectInfo(
+      projectPath,
+      entry,
+      options,
+      home,
+      currentVersion
+    );
+    if (project) results.push(project);
   }
 
   return sortProjects(results);

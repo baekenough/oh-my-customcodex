@@ -789,6 +789,22 @@ describe('Template Validation', () => {
       expect(repoWorkflow).toBe(templateWorkflow);
     });
 
+    it('professor-triage detailed phase guide is included in templates', async () => {
+      const sourceGuide = await readFile(
+        join(PROJECT_ROOT, 'guides/professor-triage/phases.md'),
+        'utf-8'
+      );
+      const templateGuide = await readFile(
+        join(PROJECT_ROOT, 'templates/guides/professor-triage/phases.md'),
+        'utf-8'
+      );
+
+      expect(templateGuide).toBe(sourceGuide);
+      expect(templateGuide).toContain('Senior Architect Analysis');
+      expect(templateGuide).toContain('Project Colleague Review');
+      expect(templateGuide).toContain('Professor Synthesis');
+    });
+
     it('auto-dev workflow inventories release-monitor issues before declaring no work', async () => {
       const repoWorkflow = await readFile(join(PROJECT_ROOT, 'workflows/auto-dev.yaml'), 'utf-8');
       const skillWorkflow = await readFile(

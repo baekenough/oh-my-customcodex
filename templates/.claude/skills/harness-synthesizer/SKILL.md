@@ -112,6 +112,38 @@ Sensitive-path compatibility note: when delegated work touches `.claude/outputs/
 | `evaluator-optimizer` | Provides iterative refinement loop (gradient-free optimization) |
 | `pipeline-guards` | Harness checks usable as pipeline quality gates |
 
+## Two-Stage Isolation Pattern
+
+Use two-stage isolation when generated verifier/filter/policy code must execute sample inputs during synthesis. Stage 1 encodes the candidate harness and fixtures as Base64 so shell quoting, prompt delimiters, and embedded newlines cannot change the payload. Stage 2 decodes inside a subprocess with a narrow environment and validates the behavior through stdin/stdout only.
+
+```yaml
+harness:
+  agent: mgr-gitnerd
+  mode: verifier
+  isolation:
+    stage_1_payload:
+      encoding: base64
+      includes:
+        - candidate_harness
+        - fixtures
+        - expected_results
+    stage_2_runner:
+      command: "node /tmp/harness-runner.mjs"
+      env:
+        NODE_OPTIONS: "--no-warnings"
+      stdin: base64_payload
+      timeout_ms: 5000
+      network: disabled
+  checks:
+    - name: rejects force push
+      fixture: "git push --force origin main"
+      expect:
+        valid: false
+        reason_contains: "Force push"
+```
+
+Prefer this pattern over inline shell snippets when the fixture contains quotes, heredocs, JSON, or code blocks. The subprocess must receive only the encoded payload and return structured JSON; do not let it read project files unless the policy explicitly requires file-system evidence.
+
 ## Usage Examples
 
 ```bash

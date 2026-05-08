@@ -26,22 +26,22 @@ The pipeline spans two hook events and three scripts:
 SubagentStart event
   └─ agent-start-recorder.sh
        reads:  stdin JSON (agent_type, model, description)
-       writes: /tmp/.claude-agent-starts-$PPID  (appends 1 JSON line)
+       writes: /tmp/.codex-agent-starts-$PPID  (appends 1 JSON line)
 
 SubagentStop event  [hooks execute in array order — ordering is critical]
   │
   ├─ [1] task-outcome-recorder.sh
   │       reads:  stdin JSON (agent_type, model, outcome)
-  │       reads:  /tmp/.claude-agent-starts-$PPID  (duration calc — entry still present)
-  │       writes: /tmp/.claude-task-outcomes-$PPID  (appends 1 JSON line with duration_seconds)
+  │       reads:  /tmp/.codex-agent-starts-$PPID  (duration calc — entry still present)
+  │       writes: /tmp/.codex-task-outcomes-$PPID  (appends 1 JSON line with duration_seconds)
   │       writes: stderr  (on failure only)
   │
   └─ [2] stall-detection-advisor.sh
           reads:  stdin JSON (agent_type, model, description)
-          reads:  /tmp/.claude-agent-starts-$PPID  (finds matching start entry for duration)
-          reads:  /tmp/.claude-agent-durations-$PPID  (peer durations for average calculation)
-          writes: /tmp/.claude-agent-durations-$PPID  (appends completed agent's duration)
-          writes: /tmp/.claude-agent-starts-$PPID  (removes consumed start entry)
+          reads:  /tmp/.codex-agent-starts-$PPID  (finds matching start entry for duration)
+          reads:  /tmp/.codex-agent-durations-$PPID  (peer durations for average calculation)
+          writes: /tmp/.codex-agent-durations-$PPID  (appends completed agent's duration)
+          writes: /tmp/.codex-agent-starts-$PPID  (removes consumed start entry)
           writes: stderr  (advisory block if stall detected — R021 advisory-only)
 ```
 
@@ -49,9 +49,9 @@ SubagentStop event  [hooks execute in array order — ordering is critical]
 
 At SubagentStop, after at least one peer has already completed:
 
-1. Calculate `avg_duration` from all entries in `.claude-agent-durations-$PPID`
+1. Calculate `avg_duration` from all entries in `.codex-agent-durations-$PPID`
 2. Set `stall_threshold = avg_duration * 2`
-3. Scan `.claude-agent-starts-$PPID` for agents not yet in the duration file (still running)
+3. Scan `.codex-agent-starts-$PPID` for agents not yet in the duration file (still running)
 4. For each still-running agent where `elapsed > stall_threshold`, emit advisory to stderr
 
 The current agent's duration is recorded *after* stall detection so it does not inflate the average for its own check.
@@ -73,9 +73,9 @@ The current agent's duration is recorded *after* stall detection so it does not 
 
 | File | Writer | Readers | Lifecycle |
 |------|--------|---------|-----------|
-| `/tmp/.claude-agent-starts-$PPID` | `agent-start-recorder.sh` (append) | `task-outcome-recorder.sh` (read), `stall-detection-advisor.sh` (read + remove entry) | Session-scoped via PPID; ring buffer 50 entries; entry removed after `stall-detection-advisor` consumes it |
-| `/tmp/.claude-task-outcomes-$PPID` | `task-outcome-recorder.sh` (append) | `feedback-collector.sh`, `eval-core-batch-save.sh` (at Stop) | Session-scoped via PPID; ring buffer 50 entries |
-| `/tmp/.claude-agent-durations-$PPID` | `stall-detection-advisor.sh` (append) | `stall-detection-advisor.sh` (read for average calculation) | Session-scoped via PPID; ring buffer 50 entries |
+| `/tmp/.codex-agent-starts-$PPID` | `agent-start-recorder.sh` (append) | `task-outcome-recorder.sh` (read), `stall-detection-advisor.sh` (read + remove entry) | Session-scoped via PPID; ring buffer 50 entries; entry removed after `stall-detection-advisor` consumes it |
+| `/tmp/.codex-task-outcomes-$PPID` | `task-outcome-recorder.sh` (append) | `feedback-collector.sh`, `eval-core-batch-save.sh` (at Stop) | Session-scoped via PPID; ring buffer 50 entries |
+| `/tmp/.codex-agent-durations-$PPID` | `stall-detection-advisor.sh` (append) | `stall-detection-advisor.sh` (read for average calculation) | Session-scoped via PPID; ring buffer 50 entries |
 
 ---
 
@@ -93,7 +93,7 @@ The SubagentStop hook array in `hooks.json` defines a strict ordering:
 
 **task-outcome-recorder MUST run before stall-detection-advisor.**
 
-Reason: `stall-detection-advisor.sh` removes the matching start entry from `.claude-agent-starts-$PPID` after reading it (to prevent re-matching on the next SubagentStop). If the order were reversed, `task-outcome-recorder.sh` would find no start entry for the agent and would always record `duration_seconds=0`.
+Reason: `stall-detection-advisor.sh` removes the matching start entry from `.codex-agent-starts-$PPID` after reading it (to prevent re-matching on the next SubagentStop). If the order were reversed, `task-outcome-recorder.sh` would find no start entry for the agent and would always record `duration_seconds=0`.
 
 If the order is swapped:
 - `task-outcome-recorder` records `duration_seconds=0` for all agents
@@ -107,10 +107,10 @@ If the order is swapped:
 ```
 Session start (PPID assigned)
   │
-  ├─ First SubagentStart  →  .claude-agent-starts-$PPID  created
+  ├─ First SubagentStart  →  .codex-agent-starts-$PPID  created
   │
-  ├─ First SubagentStop   →  .claude-task-outcomes-$PPID  created
-  │                          .claude-agent-durations-$PPID  created
+  ├─ First SubagentStop   →  .codex-task-outcomes-$PPID  created
+  │                          .codex-agent-durations-$PPID  created
   │
   ├─ Each SubagentStop    →  start entry consumed (removed by stall-detection-advisor)
   │                          duration entry appended

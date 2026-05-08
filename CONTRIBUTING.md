@@ -170,7 +170,8 @@ The release pipeline is fully automated:
 2. **Bump version and update CHANGELOG:**
    ```bash
    npm version [major|minor|patch]
-   # Update CHANGELOG.md
+   # Promote CHANGELOG.md [Unreleased] to ## [x.y.z] - YYYY-MM-DD
+   # Then create a fresh empty ## [Unreleased] section
    git add .
    git commit -m "chore: prepare release x.y.z"
    ```
@@ -217,7 +218,7 @@ For critical bugs in production:
    # Make fix
    bun test
    npm version patch
-   # Update CHANGELOG.md
+   # Add the fix to CHANGELOG.md [Unreleased], then promote it for the hotfix tag
    git add .
    git commit -m "fix: critical bug description"
    ```

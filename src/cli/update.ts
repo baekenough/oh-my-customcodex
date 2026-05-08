@@ -256,9 +256,11 @@ function reportProjectUpdateResult(
  */
 async function updateAllProjects(options: UpdateCommandOptions): Promise<void> {
   const { findProjects } = await import('./projects.js');
+  const { cleanRegistry } = await import('../core/registry.js');
   const currentVersion = packageJson.version as string;
 
   console.log(i18n.t('cli.update.allScanning'));
+  await cleanRegistry();
   const projects = await findProjects();
 
   if (projects.length === 0) {

@@ -156,13 +156,11 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
         run: |
-          ISSUES=$(
-            echo "$PR_BODY" |
-              grep -ioE '(Closes|Fixes|Resolves)([[:space:]]+#[0-9]+)+' |
-              grep -oE '#[0-9]+' |
-              grep -oE '[0-9]+' |
-              sort -u
-          )
+          ISSUES=$(printf '%s\n' "$PR_BODY" \
+            | grep -oiE '(Closes|Fixes|Resolves)([[:space:]]+#[0-9]+)+' \
+            | grep -oE '#[0-9]+' \
+            | tr -d '#' \
+            | sort -u)
           for ISSUE in $ISSUES; do
             echo "Closing issue #$ISSUE"
             gh issue close "$ISSUE" \

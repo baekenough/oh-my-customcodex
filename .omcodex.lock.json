@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "0.4.15",
-  "generatedAt": "2026-05-08T08:19:47.731Z",
+  "generatedAt": "2026-05-08T08:23:50.971Z",
   "templateVersion": "0.4.15",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
@@ -425,8 +425,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/omcustom-auto-update.sh": {
-      "templateHash": "e4f7a36be85d927a8e070b313554e56834fe9bce986ecb93f2234324640643aa",
-      "size": 5612,
+      "templateHash": "842bda2ac6d6a7196aa4224120597208f7f261fe335ee0f28864278d76886acf",
+      "size": 5661,
       "component": "hooks"
     },
     ".codex/hooks/scripts/stale-todo-scanner.sh": {
@@ -495,8 +495,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/session-env-check.sh": {
-      "templateHash": "264143dbcc109777dd95c2086e174b74c7717152dfb4c74b5460e49587f4eaf6",
-      "size": 9206,
+      "templateHash": "c558a08acacc0cd02bbd1788abeae11356bb3d9f7f227318688c3ad1847fb523",
+      "size": 9455,
       "component": "hooks"
     },
     ".codex/hooks/scripts/feedback-collector.sh": {
@@ -1080,8 +1080,8 @@
       "component": "guides"
     },
     "guides/hook-data-flow/README.md": {
-      "templateHash": "ec6541160b66eb0f599e954290d6073bd73eead5e3d4dc93648ad967d9e7493a",
-      "size": 6712,
+      "templateHash": "3eb238f5ee27668821ecfe4800e68e2695135d3843eee8ed2ee2dd1bfb4a8379",
+      "size": 6696,
       "component": "guides"
     },
     "guides/browser-automation/README.md": {

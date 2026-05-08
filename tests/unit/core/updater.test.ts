@@ -1009,6 +1009,67 @@ describe('updater', () => {
     });
   });
 
+  describe('statusLine settings backfill', () => {
+    it('should add refreshInterval to existing statusLine settings during full update', async () => {
+      await createConfig(MANIFEST_VERSION, {
+        rules: MANIFEST_VERSION,
+        agents: MANIFEST_VERSION,
+        skills: MANIFEST_VERSION,
+        guides: MANIFEST_VERSION,
+        hooks: MANIFEST_VERSION,
+        contexts: MANIFEST_VERSION,
+        ontology: MANIFEST_VERSION,
+      });
+
+      const layout = getProviderLayout();
+      await createDirStructure({
+        [`${layout.rootDir}/settings.local.json`]: JSON.stringify({
+          statusLine: {
+            type: 'command',
+            command: `${layout.rootDir}/custom-statusline.sh`,
+            padding: 2,
+          },
+          enableAllProjectMcpServers: true,
+        }),
+      });
+
+      const result = await update({ targetDir: tempDir });
+
+      const settings = JSON.parse(
+        await readFile(join(tempDir, layout.rootDir, 'settings.local.json'), 'utf-8')
+      );
+      expect(result.success).toBe(true);
+      expect(settings.statusLine.command).toBe(`${layout.rootDir}/custom-statusline.sh`);
+      expect(settings.statusLine.padding).toBe(2);
+      expect(settings.statusLine.refreshInterval).toBe(10);
+      expect(settings.enableAllProjectMcpServers).toBe(true);
+    });
+
+    it('should create statusLine settings during full update when settings.local.json is missing', async () => {
+      await createConfig(MANIFEST_VERSION, {
+        rules: MANIFEST_VERSION,
+        agents: MANIFEST_VERSION,
+        skills: MANIFEST_VERSION,
+        guides: MANIFEST_VERSION,
+        hooks: MANIFEST_VERSION,
+        contexts: MANIFEST_VERSION,
+        ontology: MANIFEST_VERSION,
+      });
+
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({ targetDir: tempDir });
+
+      const settings = JSON.parse(
+        await readFile(join(tempDir, layout.rootDir, 'settings.local.json'), 'utf-8')
+      );
+      expect(result.success).toBe(true);
+      expect(settings.statusLine.command).toBe(`${layout.rootDir}/statusline.sh`);
+      expect(settings.statusLine.refreshInterval).toBe(10);
+    });
+  });
+
   describe('removeDeprecatedFiles (Bug #202)', () => {
     it('should remove deprecated files during full update', async () => {
       await createConfig('0.1.0');

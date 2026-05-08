@@ -458,6 +458,7 @@ async function runFullUpdatePostProcessing(
     result.removedDeprecatedFiles = removed;
 
     if (!options.dryRun) {
+      await ensureStatusLineConfig(options.targetDir);
       await updateEntryDoc(options.targetDir, config, options);
     }
   }
@@ -477,6 +478,43 @@ async function runFullUpdatePostProcessing(
       version: result.newVersion,
       components: result.updatedComponents.join(', '),
     });
+  }
+}
+
+/**
+ * Backfill statusLine settings for installations created before
+ * refreshInterval was added. Preserve custom commands and padding.
+ */
+async function ensureStatusLineConfig(targetDir: string): Promise<void> {
+  const layout = getProviderLayout();
+  const settingsPath = join(targetDir, layout.rootDir, 'settings.local.json');
+  const statusLineConfig = {
+    type: 'command' as const,
+    command: `${layout.rootDir}/statusline.sh`,
+    padding: 0,
+    refreshInterval: 10,
+  };
+
+  if (!(await fileExists(settingsPath))) {
+    await ensureDirectory(join(settingsPath, '..'));
+    await writeJsonFile(settingsPath, { statusLine: statusLineConfig });
+    return;
+  }
+
+  const settings = await readJsonFile<Record<string, unknown>>(settingsPath);
+  const statusLine = settings.statusLine;
+
+  if (!statusLine || typeof statusLine !== 'object' || Array.isArray(statusLine)) {
+    settings.statusLine = statusLineConfig;
+    await writeJsonFile(settingsPath, settings);
+    return;
+  }
+
+  const mergedStatusLine = statusLine as Record<string, unknown>;
+  if (mergedStatusLine.refreshInterval === undefined) {
+    mergedStatusLine.refreshInterval = statusLineConfig.refreshInterval;
+    settings.statusLine = mergedStatusLine;
+    await writeJsonFile(settingsPath, settings);
   }
 }
 
@@ -584,6 +622,16 @@ function checkAndInstallOmxAfterUpdate(): void {
   }
 }
 
+async function handleNoUpdateResult(options: UpdateOptions, result: UpdateResult): Promise<void> {
+  const isFullUpdate = !options.components || options.components.length === 0;
+  if (isFullUpdate && !options.dryRun) {
+    await ensureStatusLineConfig(options.targetDir);
+  }
+  info('update.no_updates');
+  result.success = true;
+  result.skippedComponents = options.components || getAllUpdateComponents();
+}
+
 /**
  * Update the current installation
  */
@@ -617,9 +665,7 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     result.newVersion = updateCheck.latestVersion;
 
     if (!updateCheck.hasUpdates && !options.force) {
-      info('update.no_updates');
-      result.success = true;
-      result.skippedComponents = options.components || getAllUpdateComponents();
+      await handleNoUpdateResult(options, result);
       return result;
     }
 

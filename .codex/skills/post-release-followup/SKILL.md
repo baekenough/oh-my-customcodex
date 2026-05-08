@@ -96,7 +96,7 @@ Use AskUserQuestion (or equivalent user prompt) to get the choice.
 
 **Option C (모두 이슈 등록)**:
 - All Immediate + Trackable items → `gh issue create` with appropriate labels
-- Label: `professor` for auto-triage in next workflow run
+- Label: `triage-needed` for the next workflow run; reserve `professor` for manual analysis requests
 
 **Option D (개별 선택)**:
 - For each item, ask: `[{n}] {description} — 실행(E) / 이슈(I) / 건너뛰기(S)?`
