@@ -118,6 +118,7 @@ NO EXCEPTIONS. NO EXCUSES.
 | `/deep-plan` | Research-validated planning (research → plan → verify) |
 | `/omcustomcodex:sauron-watch` | Full R017 verification |
 | `/structured-dev-cycle` | 6-stage structured development cycle (Plan → Verify → Implement → Verify → Compound → Done) |
+| `/goal` | Keep a concrete objective through planning, execution, and verification |
 | `/omcustomcodex:lists` | Show all available commands |
 | `/omcustomcodex:status` | Show system status |
 | `/omcustomcodex:help` | Show help information |
@@ -133,7 +134,7 @@ project/
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (ecomode)
 +-- .agents/
-|   +-- skills/                  # Installed skills (74 directories)
+|   +-- skills/                  # Installed skills (118 directories)
 +-- guides/                      # Reference docs (26 topics)
 ```
 

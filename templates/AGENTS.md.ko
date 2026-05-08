@@ -118,6 +118,7 @@ oh-my-customcodex로 구동됩니다.
 | `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
 | `/omcustomcodex:sauron-watch` | 전체 R017 검증 |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
+| `/goal` | 구체 목표를 계획, 실행, 검증까지 유지 |
 | `/omcustomcodex:lists` | 모든 사용 가능한 커맨드 표시 |
 | `/omcustomcodex:status` | 시스템 상태 표시 |
 | `/omcustomcodex:help` | 도움말 표시 |
@@ -133,7 +134,7 @@ project/
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
 +-- .agents/
-|   +-- skills/                  # 설치된 스킬 (74 디렉토리)
+|   +-- skills/                  # 설치된 스킬 (118 디렉토리)
 +-- guides/                      # 레퍼런스 문서 (26 토픽)
 ```
 

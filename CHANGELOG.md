@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.14] - 2026-05-08
+
+### Added
+- Add `/goal` as a Codex + OMX skill surface for disciplined goal-to-execution workflows.
+- Package the `goal` skill in both source and install template skill trees, with docs and catalog counts updated to 118 skills.
+
 ## [0.4.8] - 2026-04-27
 
 ### Added

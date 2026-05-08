@@ -30,8 +30,10 @@ Quick Start:
   lists              Show all available commands
   status             Show system status
   help <command>     Get help for a specific command
+  /goal <objective>  Run a goal-to-execution workflow
 
 Common Commands:
+  /goal              Keep an objective through planning, execution, and verification
   /update-docs       Sync documentation with project
   /update-external   Update external agents
   /audit-agents      Check agent dependencies

@@ -12,6 +12,16 @@ Skills encapsulate knowledge and best practices that agents can use. This page d
 | System | Core system utilities | Core system utilities |
 | Orchestration | Workflow coordination | Workflow coordination |
 
+## Core Workflow Skills
+
+### goal
+
+**Category**: core
+
+Goal-to-execution workflow for `/goal <objective>`. The skill keeps a concrete objective visible while the agent clarifies only blockers, inspects repository context, plans non-trivial work, executes with local conventions, verifies completion, and reports changed files plus residual risk.
+
+This is implemented as a normal oh-my-customcodex skill surface for the Codex + OMX stack. It does not require Codex `features.goals` configuration.
+
 ## Development Skills
 
 ### go-best-practices

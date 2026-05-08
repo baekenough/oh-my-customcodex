@@ -45,6 +45,10 @@ classes:
     skills: [status, help, lists]
     description: "System information and utilities"
 
+  GoalWorkflowSkill:
+    skills: [goal]
+    description: "Goal-to-execution workflow coordination"
+
   VerificationSkill:
     skills: [sauron-watch]
     description: "Verification and compliance"
@@ -173,6 +177,16 @@ skills:
     summary: "Review code for best practices using language-specific expert agents"
     keywords: [review, code-review, best-practices, quality]
     rule_references: []
+
+  goal:
+    class: GoalWorkflowSkill
+    description: "Goal-to-execution workflow for disciplined Codex + OMX task completion"
+    user_invocable: true
+    model_invocable: true
+    scope: core
+    summary: "Keep a concrete objective visible through clarification, planning, execution, verification, and completion reporting"
+    keywords: [goal, objective, planning, execution, verification, completion]
+    rule_references: [R020]
 
   docker-best-practices:
     class: BestPracticeSkill

@@ -3,8 +3,8 @@
 
 meta:
   updated: "2026-04-27"
-  total_pages: 257
-  total_sources: 230
+  total_pages: 258
+  total_sources: 231
 
 pages:
   architecture:
@@ -258,6 +258,9 @@ pages:
     - file: skills/fastapi-best-practices.md
       title: "FastAPI Best Practices"
       summary: "FastAPI patterns for high-performance Python API development."
+    - file: skills/goal.md
+      title: "Goal"
+      summary: "Goal-to-execution workflow for disciplined Codex + OMX task completion."
     - file: skills/fix-refs.md
       title: "Fix Refs"
       summary: "Fix broken references in agent definitions, skills, and routing tables."
