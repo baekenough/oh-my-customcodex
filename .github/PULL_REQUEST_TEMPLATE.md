@@ -25,6 +25,7 @@
 
 ## Checklist
 
+- [ ] `CHANGELOG.md` `## [Unreleased]` updated, or this PR has no user-visible/package-visible change
 - [ ] I have run `bun run lint` (Biome) and fixed all issues
 - [ ] I have performed a self-review of my code
 - [ ] I have updated documentation if needed

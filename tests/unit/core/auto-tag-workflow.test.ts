@@ -310,6 +310,24 @@ describe('auto-tag.yml — tag creation', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Linked issue closure
+// ---------------------------------------------------------------------------
+
+describe('auto-tag.yml — linked issue closure', () => {
+  it('should parse multiple issue references after one closing keyword', async () => {
+    const content = await readWorkflow();
+    expect(content).toContain('(Closes|Fixes|Resolves)([[:space:]]+#[0-9]+)+');
+    expect(content).toContain("grep -oE '#[0-9]+'");
+  });
+
+  it('should keep closing issue numbers unique before invoking gh issue close', async () => {
+    const content = await readWorkflow();
+    expect(content).toContain('sort -u');
+    expect(content).toContain('for ISSUE in $ISSUES');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Checkout configuration
 // ---------------------------------------------------------------------------
 

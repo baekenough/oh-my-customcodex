@@ -39,6 +39,16 @@ git diff --name-status ${PREV_TAG}..HEAD
 gh issue list --state closed --search "closed:>$(git log -1 --format=%ci ${PREV_TAG} | cut -d' ' -f1)" --json number,title,labels
 ```
 
+### Phase 1.5: Promote CHANGELOG
+
+Before creating a release, keep `CHANGELOG.md` as the durable source of release history:
+
+1. Confirm `CHANGELOG.md` has a `## [Unreleased]` section.
+2. Move non-empty `Unreleased` entries into `## [VERSION] - YYYY-MM-DD`.
+3. Insert a fresh empty `## [Unreleased]` section above the promoted version.
+4. Verify `.github/workflows/release.yml` can extract the promoted section with its existing `awk "/^## \\[${VERSION}\\]/{flag=1; next} /^## \\[/{flag=0} flag"` logic.
+5. If `Unreleased` is empty, add the release summary there first rather than relying only on GitHub auto-generated notes.
+
 ### Phase 2: Classify Changes
 
 Categorize commits using Conventional Commits:

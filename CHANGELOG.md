@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.15] - 2026-05-08
+
+### Changed
+- Require `omcustomcodex-release-notes` to promote populated `CHANGELOG.md` `Unreleased` entries into versioned release sections before publishing.
+- Document the upstream-port sweep dispositions for the remaining May 8 port backlog.
+
+### Fixed
+- Allow `auto-tag.yml` to close multiple linked issues from one keyword, such as `Closes #1 #2 #3`.
+
 ## [0.4.14] - 2026-05-08
 
 ### Added

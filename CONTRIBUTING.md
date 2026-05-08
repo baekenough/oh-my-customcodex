@@ -127,6 +127,8 @@ feature/another ──────┘                                           
    bun run typecheck  # Must pass
    ```
 
+   Update `CHANGELOG.md` under `## [Unreleased]` for user-visible code, docs, workflow, or packaged-template changes. Use the existing Added/Changed/Fixed/Removed/Security categories where they fit.
+
 3. **Commit with conventional message:**
    ```bash
    git commit -m "feat: add my new feature"
