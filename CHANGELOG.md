@@ -9,12 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.15] - 2026-05-08
 
+### Added
+- Add release workflow coverage for multi-issue `Closes #A #B` auto-close parsing and package the professor-triage detailed phase guide in templates.
+- Surface RTK availability in the statusline from the Codex session environment bridge.
+- Document the harness-synthesizer two-stage Base64 plus subprocess isolation pattern.
+
 ### Changed
 - Require `omcustomcodex-release-notes` to promote populated `CHANGELOG.md` `Unreleased` entries into versioned release sections before publishing.
 - Document the upstream-port sweep dispositions for the remaining May 8 port backlog.
+- Tighten release-note guidance so `CHANGELOG.md` `[Unreleased]` entries are promoted into versioned sections during release preparation.
+- Port SessionStart auto-update prompts and environment guidance to the `omcustomcodex` command boundary.
 
 ### Fixed
 - Allow `auto-tag.yml` to close multiple linked issues from one keyword, such as `Closes #1 #2 #3`.
+- Skip stale registry project paths during project discovery and clean the registry before `omcustomcodex update --all`.
+- Add a timeout to statusline PR lookup and update hook data-flow docs to use `.codex` temp-file names.
+- Backfill `statusLine.refreshInterval` during full `omcustomcodex update` runs for existing installations.
 
 ## [0.4.14] - 2026-05-08
 

@@ -46,8 +46,9 @@ Before creating a release, keep `CHANGELOG.md` as the durable source of release 
 1. Confirm `CHANGELOG.md` has a `## [Unreleased]` section.
 2. Move non-empty `Unreleased` entries into `## [VERSION] - YYYY-MM-DD`.
 3. Insert a fresh empty `## [Unreleased]` section above the promoted version.
-4. Verify `.github/workflows/release.yml` can extract the promoted section with its existing `awk "/^## \\[${VERSION}\\]/{flag=1; next} /^## \\[/{flag=0} flag"` logic.
-5. If `Unreleased` is empty, add the release summary there first rather than relying only on GitHub auto-generated notes.
+4. Keep Keep a Changelog categories (`Added`, `Changed`, `Fixed`, `Removed`, `Deprecated`, `Security`) intact.
+5. Verify `.github/workflows/release.yml` can extract the promoted section with its existing `awk "/^## \\[${VERSION}\\]/{flag=1; next} /^## \\[/{flag=0} flag"` logic.
+6. If `Unreleased` is empty, add the release summary there first rather than relying only on GitHub auto-generated notes.
 
 ### Phase 2: Classify Changes
 
@@ -63,7 +64,7 @@ Categorize commits using Conventional Commits:
 | chore: | Chores | :wrench: |
 | security | Security | :lock: |
 
-### Phase 3: Generate Notes
+### Phase 4: Generate Notes
 
 Output format:
 
@@ -102,7 +103,7 @@ Output format:
 _Release notes generated with oh-my-customcodex_
 ```
 
-### Phase 4: Apply
+### Phase 5: Apply
 
 The generated notes can be:
 1. **Direct**: Passed to `gh release create --notes "{notes}"`

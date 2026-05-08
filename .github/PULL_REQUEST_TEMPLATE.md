@@ -29,6 +29,7 @@
 - [ ] I have run `bun run lint` (Biome) and fixed all issues
 - [ ] I have performed a self-review of my code
 - [ ] I have updated documentation if needed
+- [ ] I have updated `CHANGELOG.md` under `[Unreleased]` if this changes user-facing behavior
 - [ ] I have added tests that prove my fix/feature works
 - [ ] All tests pass with 100% coverage
 - [ ] My changes generate no new warnings

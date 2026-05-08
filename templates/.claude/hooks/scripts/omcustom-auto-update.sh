@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SessionStart auto-update hook — interactive omcodex update check
+# SessionStart auto-update hook — interactive omcustomcodex update check
 # Trigger: SessionStart (runs BEFORE session-env-check.sh)
 # Purpose: Check for oh-my-customcodex updates, prompt user, optionally update
 # Protocol: stdin JSON -> stdout pass-through, exit 0 ALWAYS
@@ -135,17 +135,17 @@ if read -r -t "$INPUT_TIMEOUT" answer </dev/tty 2>/dev/null; then
         echo "  ✓ Updated to v${LATEST_VERSION}" >&2
 
         # Check if project harness should be updated too
-        if [ -f ".omcustomrc.json" ]; then
+        if [ -f ".omcodexrc.json" ] || [ -f ".omcustomrc.json" ]; then
           printf "  Update project harness too? [y/N] " >/dev/tty 2>/dev/null
           if read -r -t "$INPUT_TIMEOUT" harness_answer </dev/tty 2>/dev/null; then
             case "$harness_answer" in
               [yY]|[yY][eE][sS])
                 echo "  Updating project harness..." >&2
-                if command -v omcustom >/dev/null 2>&1; then
-                  omcustom update --force >&2 2>&1 || echo "  ⚠ Harness update failed (non-blocking)" >&2
+                if command -v omcustomcodex >/dev/null 2>&1; then
+                  omcustomcodex update --force >&2 2>&1 || echo "  ⚠ Harness update failed (non-blocking)" >&2
                   echo "  ✓ Project harness updated" >&2
                 else
-                  echo "  ⚠ omcustom command not found after install" >&2
+                  echo "  ⚠ omcustomcodex command not found after install" >&2
                 fi
                 ;;
               *)

@@ -524,6 +524,37 @@ describe('findProjects() — registry-based detection', () => {
 
     expect(results.find((p) => p.path === subProject)).toBeDefined();
   });
+
+  it('skips stale registry entries whose project paths no longer exist', async () => {
+    const existingDir = await mkDir(tempRoot, 'existing-registry-project');
+    const missingDir = join(tempRoot, 'deleted-registry-project');
+    const registryDir = join(tempRoot, '.oh-my-customcodex');
+    await mkdir(registryDir, { recursive: true });
+    await writeFile(
+      join(registryDir, 'projects.json'),
+      JSON.stringify({
+        projects: {
+          [existingDir]: {
+            version: '0.79.0',
+            installedAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          },
+          [missingDir]: {
+            version: '0.79.0',
+            installedAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          },
+        },
+      }),
+      'utf-8'
+    );
+    _setRegistryDirForTesting(registryDir);
+
+    const results = await findProjects();
+
+    expect(results.find((p) => p.path === existingDir)).toBeDefined();
+    expect(results.find((p) => p.path === missingDir)).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -936,9 +967,9 @@ describe('projectsCommand() — shortenPath coverage', () => {
     const realHome = homedir();
     process.env.HOME = realHome;
 
-    // Create a project path under home dir to trigger the ~ shortening branch
-    // We don't actually create the directory — we fake the registry entry instead
+    // Create a project path under home dir to trigger the ~ shortening branch.
     const projectUnderHome = join(realHome, '.oh-my-customcodex-test-project-coverage');
+    await mkdir(projectUnderHome, { recursive: true });
     const registryDir = join(tempRoot, '.oh-my-customcodex');
     await mkdir(registryDir, { recursive: true });
     await writeFile(
@@ -968,6 +999,7 @@ describe('projectsCommand() — shortenPath coverage', () => {
       expect(output).toContain('~');
     } finally {
       consoleSpy.mockRestore();
+      await rm(projectUnderHome, { recursive: true, force: true });
       // Restore HOME to tempRoot for the afterEach cleanup to work correctly
       process.env.HOME = tempRoot;
     }

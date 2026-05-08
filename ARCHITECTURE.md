@@ -613,7 +613,7 @@ The `omcodex:takeover` skill enables reverse compilation: analyzing an existing 
 | Native binary spawning | No | Yes (v2.1.113+) | Compatible — per-platform optional dependency replaces bundled JavaScript |
 | `/loop` Esc cancel | No | Yes (v2.1.113+) | Compatible — Esc now cancels pending wakeups |
 
-Tested and compatible with Claude Code v2.1.72 through v2.1.114+.
+Tested and compatible with Claude Code v2.1.72 through v2.1.132+, with Codex-native behavior managed through `.codex/**` and OMX.
 
 ---
 

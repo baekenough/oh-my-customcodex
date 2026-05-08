@@ -246,7 +246,7 @@ if [[ -n "$git_branch" ]] && command -v gh >/dev/null 2>&1; then
         pr_number="$cached_pr"
     else
         # Cache miss — query gh and update cache
-        pr_number="$(gh pr view --json number -q .number 2>/dev/null || echo "")"
+        pr_number="$(timeout 2 gh pr view --json number -q .number 2>/dev/null || echo "")"
         printf '%s\t%s\n' "$git_branch" "$pr_number" > "$cache_file"
     fi
 
@@ -360,21 +360,42 @@ if [[ -n "$wl_display" ]]; then
     wl_segment=" | ${wl_color}${wl_display}${COLOR_RESET}"
 fi
 
+# Build the RTK segment from the session-env bridge if available.
+rtk_segment=""
+env_status_file="/tmp/.codex-env-status-${PPID}"
+if [[ -f "$env_status_file" ]]; then
+    rtk_status=""
+    while IFS='=' read -r key value; do
+        if [[ "$key" == "rtk" ]]; then
+            rtk_status="$value"
+            break
+        fi
+    done < "$env_status_file"
+
+    if [[ "$rtk_status" == "available" ]]; then
+        rtk_segment=" | ${COLOR_CTX_OK}RTK:on${COLOR_RESET}"
+    elif [[ "$rtk_status" == "unavailable" ]]; then
+        rtk_segment=" | ${COLOR_CTX_WARN}RTK:off${COLOR_RESET}"
+    fi
+fi
+
 if [[ -n "$git_branch" ]]; then
-    printf "${cost_color}%s${COLOR_RESET} | %s | %s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
+    printf "${cost_color}%s${COLOR_RESET} | %s | %s%s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
         "$cost_display" \
         "$project_name" \
         "$branch_display" \
         "$pr_segment" \
         "$rl_segment" \
         "$wl_segment" \
+        "$rtk_segment" \
         "$ctx_display"
 else
-    printf "${cost_color}%s${COLOR_RESET} | %s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
+    printf "${cost_color}%s${COLOR_RESET} | %s%s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
         "$cost_display" \
         "$project_name" \
         "$pr_segment" \
         "$rl_segment" \
         "$wl_segment" \
+        "$rtk_segment" \
         "$ctx_display"
 fi

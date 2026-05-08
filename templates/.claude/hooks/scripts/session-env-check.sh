@@ -126,8 +126,10 @@ OMCUSTOM_UPDATE_STATUS="unknown"
 INSTALLED_VERSION=""
 CACHED_LATEST=""
 
-# Read installed version from .omcustomrc.json
-if [ -f ".omcustomrc.json" ]; then
+# Read installed version from the Codex config, falling back to the legacy parent config.
+if [ -f ".omcodexrc.json" ]; then
+  INSTALLED_VERSION=$(grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' .omcodexrc.json 2>/dev/null | head -1 | grep -o '"[^"]*"$' | tr -d '"')
+elif [ -f ".omcustomrc.json" ]; then
   INSTALLED_VERSION=$(grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' .omcustomrc.json 2>/dev/null | head -1 | grep -o '"[^"]*"$' | tr -d '"')
 fi
 
@@ -222,8 +224,8 @@ case "$DRIFT_STATUS" in
 esac
 echo "" >&2
 echo "  [Lockfile Drift]" >&2
-echo "  Note: file-level lockfile drift (template hash changes) is checked via 'omcodex doctor'" >&2
-echo "  Run 'omcodex doctor' to detect modified/removed template files since install." >&2
+echo "  Note: file-level lockfile drift (template hash changes) is checked via 'omcustomcodex doctor'" >&2
+echo "  Run 'omcustomcodex doctor' to detect modified/removed template files since install." >&2
 echo "------------------------------------" >&2
 
 # SessionEnd hooks timeout (v2.1.74+)
@@ -238,12 +240,12 @@ echo "  [Update Check]" >&2
 if [ -n "$INSTALLED_VERSION" ] && [ -n "$CACHED_LATEST" ]; then
   if [ "$OMCUSTOM_UPDATE_STATUS" = "available" ]; then
     echo "  ⚡ oh-my-customcodex v${CACHED_LATEST} available (current: v${INSTALLED_VERSION})" >&2
-    echo "     Run 'omcodex update' to apply" >&2
+    echo "     Run 'omcustomcodex update' to apply" >&2
   else
     echo "  ✓ oh-my-customcodex is up to date (v${INSTALLED_VERSION})" >&2
   fi
 elif [ -n "$INSTALLED_VERSION" ]; then
-  echo "  ℹ oh-my-customcodex v${INSTALLED_VERSION} (run 'omcodex doctor --updates' to check for updates)" >&2
+  echo "  ℹ oh-my-customcodex v${INSTALLED_VERSION} (run 'omcustomcodex doctor --updates' to check for updates)" >&2
 else
   echo "  ℹ oh-my-customcodex not detected in this project" >&2
 fi
