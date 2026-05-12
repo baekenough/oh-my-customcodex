@@ -1,5 +1,5 @@
 ---
-name: goal
+name: omcustomcodex:goal
 description: Goal-to-execution workflow for disciplined Codex + OMX task completion
 scope: core
 version: 1.0.0
@@ -7,11 +7,13 @@ user-invocable: true
 argument-hint: "<objective>"
 ---
 
-# /goal - Goal-To-Execution Workflow
+# /omcustomcodex:goal - Goal-To-Execution Workflow
 
-Use `/goal <objective>` when the user wants Codex to keep a concrete objective in view until it is genuinely complete.
+Use `/omcustomcodex:goal <objective>` when the user wants Codex to keep a concrete objective in view until it is genuinely complete.
 
 This is the Codex + OMX port of the upstream goal workflow. It is implemented as a normal skill surface and does not depend on native Codex feature flags such as `features.goals`.
+
+Native runtimes may reserve `/goal` for their own session-level completion tracker. Keep this workflow on the `omcustomcodex:` namespace so the workflow remains callable without shadowing the native command.
 
 ## Contract
 

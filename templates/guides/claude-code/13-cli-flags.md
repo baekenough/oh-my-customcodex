@@ -8,7 +8,7 @@
 | `--remote` | Connect to remote Claude Code instance | `claude --remote` |
 | `--bare` | Minimal UI, no statusline | `claude --bare` |
 | `--agent <name>` | Use specific agent as main thread | `claude --agent lang-golang-expert` |
-| `--agents` | List available agents | `claude --agents` |
+| `--agents` | List available agents (legacy flag; use `claude agents` for the unified view on v2.1.139+) | `claude --agents` |
 | `--from-pr <url>` | Start from a pull request | `claude --from-pr https://github.com/org/repo/pull/123` |
 | `--chrome` | Enable Chrome browser automation | `claude --chrome` |
 | `--json-schema` | Output JSON schema for structured output | `claude --json-schema schema.json` |
@@ -16,6 +16,18 @@
 | `--fallback-model <id>` | Model to use when primary unavailable | `claude --fallback-model claude-sonnet-4-6` |
 | `--fork-session` | Fork an existing session | `claude --fork-session` |
 | `--teleport` | Transfer session context to another terminal | `claude --teleport` |
+
+## Interactive Commands
+
+Claude Code v2.1.139+ adds a few user-facing commands that are useful when running oh-my-customcodex compatibility templates inside Claude Code:
+
+| Command | Use |
+|---------|-----|
+| `claude agents` | Open the Research Preview agent view with a unified list across sessions. Use it to confirm installed `.claude/agents/` entries after template updates. |
+| `/scroll-speed` | Tune mouse-wheel scroll speed with live preview. This is a local UI preference and does not change harness behavior. |
+| `claude plugin details <name>` | Inspect a plugin's component inventory and projected per-session token cost. Use it after plugin installs to validate skill/agent counts. |
+
+`/goal` is also native in v2.1.139+. The oh-my-customcodex workflow entrypoint is `/omcustomcodex:goal` so the workflow does not shadow the native completion tracker.
 
 ## Headless Mode (`claude -p`)
 

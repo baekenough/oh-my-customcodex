@@ -550,8 +550,8 @@
       "component": "skills"
     },
     ".claude/skills/help/SKILL.md": {
-      "templateHash": "4ef9e09008c4433a3db5d5a75a671551a56f03a4c4757a23772e6a975a2fdbeb",
-      "size": 3106,
+      "templateHash": "ffe10b0eb64c34af2cf705c8e77462a7d40d081a0014bc12a1791a91091ebb5f",
+      "size": 3266,
       "component": "skills"
     },
     ".claude/skills/idea/SKILL.md": {
@@ -595,8 +595,8 @@
       "component": "skills"
     },
     ".claude/skills/lists/SKILL.md": {
-      "templateHash": "b6d2b298a04eca3aacd402839db3bf625177aafcae575ab4be0ad5506826ff80",
-      "size": 3622,
+      "templateHash": "474414eeb88056fc15401b6174ecbb3b1992f396842eb21a6b0c210061cc51bb",
+      "size": 3749,
       "component": "skills"
     },
     ".claude/skills/memory-management/SKILL.md": {
@@ -870,8 +870,8 @@
       "component": "skills"
     },
     ".claude/skills/status/SKILL.md": {
-      "templateHash": "8ff65a71f7aed19c7ea7c18608bd03be162eff2e48c80805b74a81021b7ae462",
-      "size": 3082,
+      "templateHash": "694db0f9d1de5e9db0e59c5f9b0b4801e70b57a5d957a141955f5df5cfaba14d",
+      "size": 3104,
       "component": "skills"
     },
     ".claude/skills/structured-dev-cycle/SKILL.md": {
@@ -1195,8 +1195,8 @@
       "component": "ontology"
     },
     ".claude/ontology/skills.yaml": {
-      "templateHash": "f4ac5fad977f3238b5d53c33137fb5f6ae58764a508784d5575c0911fc43b37a",
-      "size": 23515,
+      "templateHash": "2fa02bd2e8d68de5876fb1c019e9597558738ce665fdeda5ee6884ac5dedcfce",
+      "size": 24101,
       "component": "ontology"
     },
     "guides/agents-md-quality/README.md": {
@@ -1245,8 +1245,8 @@
       "component": "guides"
     },
     "guides/claude-code/04-agent-skills.md": {
-      "templateHash": "daf1b6ed7da15dbcdfaa39276da5e94a0289203dcf35fa402f87da32f86c08e8",
-      "size": 3571,
+      "templateHash": "c1b9200ae32056e86e91e2680de8053dbd83a9a1804dbb0689a8948bf077df7f",
+      "size": 4714,
       "component": "guides"
     },
     "guides/claude-code/05-agent-sdk.md": {
@@ -1255,8 +1255,8 @@
       "component": "guides"
     },
     "guides/claude-code/06-mcp.md": {
-      "templateHash": "14ee344e8f586231eadf31a556d587c582aace0195762c3b20fad5b1daef9307",
-      "size": 3892,
+      "templateHash": "87a195f766e8bfe6f509e2d3482d306e8ae6cf239dc66a27caebd57c10f6f213",
+      "size": 4496,
       "component": "guides"
     },
     "guides/claude-code/07-prompt-engineering.md": {
@@ -1290,8 +1290,8 @@
       "component": "guides"
     },
     "guides/claude-code/13-cli-flags.md": {
-      "templateHash": "da13ae95b0e5c58e5315390f9a1b1017e260187ed798826b256963b430d4d4dc",
-      "size": 4782,
+      "templateHash": "bd4c258dd1aa40bb71412dc5e7e203959c4b0208142043277cf9d224d045edde",
+      "size": 5814,
       "component": "guides"
     },
     "guides/claude-code/index.yaml": {

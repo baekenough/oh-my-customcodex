@@ -99,7 +99,7 @@ oh-my-customcodex로 구동됩니다.
 |----------|------------|------|
 | 프로젝트 관리 | `/omcustomcodex:analysis`, `/omcustomcodex:create-agent`, `/omcustomcodex:audit-agents` | 분석, 에이전트/스킬 생성, 감사 |
 | 아이디어 | `/idea` | 자연어 아이디어를 구조화된 이슈 스펙으로 변환 |
-| 개발 | `/goal`, `/dev-review`, `/dev-refactor`, `/sdd-dev`, `/structured-dev-cycle` | 목표 실행, 코드 리뷰, 리팩토링, SDD |
+| 개발 | `/omcustomcodex:goal`, `/dev-review`, `/dev-refactor`, `/sdd-dev`, `/structured-dev-cycle` | 목표 실행, 코드 리뷰, 리팩토링, SDD |
 | 검증 | `/omcustomcodex:sauron-watch`, `/deep-verify`, `/adversarial-review` | R017 검증, 릴리즈 품질, 보안 리뷰 |
 | 릴리즈 | `/pipeline auto-dev`, `/omcustomcodex-release-notes`, `/release-plan` | 자동 개발, 릴리즈 노트 |
 | 리서치 | `/research`, `/scout`, `/deep-plan`, `/omcustomcodex:agora` | 병렬 분석, URL 평가, 연구 계획 |
@@ -255,6 +255,15 @@ Codex CLI의 Agent Teams 기능이 활성화되어 있으면 (`OMCODEX_AGENT_TEA
 /plugin install superpowers
 /plugin install openai-docs
 /plugin install elements-of-style
+
+# 플러그인 인벤토리와 세션 토큰 비용 예측 확인 (Claude Code v2.1.139+)
+claude plugin details superpowers
+
+# 세션 전체 에이전트 목록 확인 (Claude Code v2.1.139+)
+claude agents
+
+# 인터랙티브 세션에서 마우스 휠 스크롤 속도 조정
+/scroll-speed
 
 # MCP 설정 (omx-memory)
 omx memory doctor

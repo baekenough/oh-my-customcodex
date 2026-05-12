@@ -10,6 +10,8 @@ This sweep records the pipeline disposition for the open upstream-port backlog s
 | --- | --- | --- |
 | #1288 | Forward-looking CHANGELOG policy ported | `omcustomcodex-release-notes` now requires `Unreleased` promotion, `CONTRIBUTING.md` and the PR template require `Unreleased` updates. |
 | #1273 | Multi-close parsing fixed | `auto-tag.yml` now parses `Closes #A #B #C` style references and tests assert the parser shape. |
+| #1303 | Goal workflow namespace collision ported | `goal` workflow entrypoints now use `/omcustomcodex:goal` while native `/goal` remains reserved for runtime completion tracking. |
+| #1304 | Claude Code v2.1.139 onboarding documented | Compatibility, Claude guide, and template onboarding docs now cover `claude agents`, `/scroll-speed`, `claude plugin details`, and `/mcp` reconnect behavior. |
 
 ## Already Present On Develop
 

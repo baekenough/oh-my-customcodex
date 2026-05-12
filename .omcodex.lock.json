@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.4.15",
-  "generatedAt": "2026-05-08T08:23:50.971Z",
-  "templateVersion": "0.4.15",
+  "generatorVersion": "0.4.16",
+  "generatedAt": "2026-05-12T15:35:35.453Z",
+  "templateVersion": "0.4.16",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -600,8 +600,8 @@
       "component": "ontology"
     },
     ".codex/ontology/skills.yaml": {
-      "templateHash": "eb79041596d03f7719c128b183eb311350ccc2a6f11287a2170401c26d336bf2",
-      "size": 24049,
+      "templateHash": "2fa02bd2e8d68de5876fb1c019e9597558738ce665fdeda5ee6884ac5dedcfce",
+      "size": 24101,
       "component": "ontology"
     },
     "guides/java21/java-style-guide.md": {
@@ -660,13 +660,13 @@
       "component": "guides"
     },
     "guides/claude-code/04-agent-skills.md": {
-      "templateHash": "daf1b6ed7da15dbcdfaa39276da5e94a0289203dcf35fa402f87da32f86c08e8",
-      "size": 3571,
+      "templateHash": "c1b9200ae32056e86e91e2680de8053dbd83a9a1804dbb0689a8948bf077df7f",
+      "size": 4714,
       "component": "guides"
     },
     "guides/claude-code/06-mcp.md": {
-      "templateHash": "14ee344e8f586231eadf31a556d587c582aace0195762c3b20fad5b1daef9307",
-      "size": 3892,
+      "templateHash": "87a195f766e8bfe6f509e2d3482d306e8ae6cf239dc66a27caebd57c10f6f213",
+      "size": 4496,
       "component": "guides"
     },
     "guides/claude-code/01-overview.md": {
@@ -675,8 +675,8 @@
       "component": "guides"
     },
     "guides/claude-code/13-cli-flags.md": {
-      "templateHash": "e752de67d30ffd435f046243ac5936322ba129e5c826b61c924dca04e685e077",
-      "size": 4881,
+      "templateHash": "bd4c258dd1aa40bb71412dc5e7e203959c4b0208142043277cf9d224d045edde",
+      "size": 5814,
       "component": "guides"
     },
     "guides/claude-code/12-workflow-patterns.md": {

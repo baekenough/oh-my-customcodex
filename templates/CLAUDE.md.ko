@@ -121,7 +121,7 @@ oh-my-customcodex로 구동됩니다.
 | `/pre-generation-arch-check` | 구현 전 아키텍처 위험 점검 |
 | `/omcustomcodex:sauron-watch` | 전체 R017 검증 |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
-| `/goal` | 구체 목표를 계획, 실행, 검증까지 유지 |
+| `/omcustomcodex:goal` | 구체 목표를 계획, 실행, 검증까지 유지 |
 | `/omcustomcodex:lists` | 모든 사용 가능한 커맨드 표시 |
 | `/omcustomcodex:status` | 시스템 상태 표시 |
 | `/omcustomcodex:help` | 도움말 표시 |
@@ -251,6 +251,15 @@ Claude Code 환경에서 `/plugin install <이름>`으로 설치:
 /plugin install superpowers
 /plugin install openai-docs
 /plugin install elements-of-style
+
+# 플러그인 인벤토리와 세션 토큰 비용 예측 확인 (Claude Code v2.1.139+)
+claude plugin details superpowers
+
+# 세션 전체 에이전트 목록 확인 (Claude Code v2.1.139+)
+claude agents
+
+# 인터랙티브 세션에서 마우스 휠 스크롤 속도 조정
+/scroll-speed
 
 # MCP 설정 (omx-memory)
 omx memory doctor

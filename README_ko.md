@@ -187,7 +187,7 @@ Agent(arch-documenter):haiku      ┘
 | `/ambiguity-gate` | 사전 라우팅 모호성 분석 |
 | `/pre-generation-arch-check` | 구현 전 아키텍처 위험 점검 |
 | `/adversarial-review` | 공격자 관점 보안 코드 리뷰 |
-| `/goal` | 구체 목표를 계획, 실행, 검증까지 유지 |
+| `/omcustomcodex:goal` | 구체 목표를 계획, 실행, 검증까지 유지 |
 | `/pipeline` | YAML 파이프라인 실행 |
 | `/pipeline resume` | 중단된 파이프라인 재개 |
 

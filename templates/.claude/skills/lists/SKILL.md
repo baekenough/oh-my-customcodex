@@ -27,7 +27,7 @@ System:
   lists              Show all available commands
   status             Show system status
   help               Show help information
-  /goal              Run a goal-to-execution workflow
+  /omcustomcodex:goal  Run a goal-to-execution workflow
 
 Manager:
   /create-agent          Create a new agent
@@ -56,7 +56,7 @@ System Commands:
 │ lists   │ Show all available commands                  │
 │ status  │ Show system status and health checks         │
 │ help    │ Show help for commands and agents            │
-│ /goal   │ Run a goal-to-execution workflow             │
+│ /omcustomcodex:goal │ Run a goal-to-execution workflow  │
 └─────────┴──────────────────────────────────────────────┘
 
 Manager Commands:

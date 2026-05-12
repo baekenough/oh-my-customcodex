@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.16] - 2026-05-12
+
+### Changed
+- Rename the goal workflow entrypoint to `/omcustomcodex:goal` across source skills, install templates, command docs, ontology, and wiki guidance so native `/goal` remains available for runtime completion tracking.
+- Document Claude Code v2.1.139 onboarding commands for compatibility-template users, including `claude agents`, `/scroll-speed`, `claude plugin details`, and `/mcp` reconnect behavior.
+
 ## [0.4.15] - 2026-05-08
 
 ### Added

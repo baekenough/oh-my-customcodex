@@ -46,7 +46,7 @@ classes:
     description: "System information and utilities"
 
   GoalWorkflowSkill:
-    skills: [goal]
+    skills: ["omcustomcodex:goal"]
     description: "Goal-to-execution workflow coordination"
 
   VerificationSkill:
@@ -178,14 +178,14 @@ skills:
     keywords: [review, code-review, best-practices, quality]
     rule_references: []
 
-  goal:
+  "omcustomcodex:goal":
     class: GoalWorkflowSkill
     description: "Goal-to-execution workflow for disciplined Codex + OMX task completion"
     user_invocable: true
     model_invocable: true
     scope: core
     summary: "Keep a concrete objective visible through clarification, planning, execution, verification, and completion reporting"
-    keywords: [goal, objective, planning, execution, verification, completion]
+    keywords: [goal, omcustomcodex-goal, objective, planning, execution, verification, completion]
     rule_references: [R020]
 
   docker-best-practices:
