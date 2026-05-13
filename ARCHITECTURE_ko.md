@@ -576,8 +576,12 @@ packages/eval-core/
 | `/scroll-speed` 커맨드 | 아니오 | 예 (v2.1.139+) | 호환 — 로컬 UI 설정이며 하네스 동작 변경 없음 |
 | `claude plugin details <name>` | 아니오 | 예 (v2.1.139+) | 플러그인 구성 요소 인벤토리와 토큰 비용 예측 확인용으로 문서화 |
 | `/mcp` reconnect의 `.mcp.json` 재로딩 | 아니오 | 예 (v2.1.139+) | Claude 템플릿 테스트에 호환; Codex MCP 설정은 `.codex/config.toml` 유지 |
+| Hook `args: string[]` exec form | 아니오 | 예 (v2.1.139+) | 검토 완료 — shell expansion 없는 정적 바이너리 호출이 아니면 shell command hook 유지 |
+| PostToolUse `continueOnBlock` | 아니오 | 예 (v2.1.139+) | context-budget, stuck-detector, cost-cap 복구 신호에 포팅 |
+| 완화된 `subagent_type` 매칭 | 아니오 | 예 (v2.1.140+) | 호환되지만 Codex/Claude parity를 위해 문서는 canonical kebab-case 이름 유지 |
+| 플러그인 component-folder 충돌 경고 | 아니오 | 예 (v2.1.140+) | `/doctor`, `claude plugin list`, `/plugin`, `claude plugin details` 호환성 점검으로 문서화 |
 
-Claude Code v2.1.72 ~ v2.1.139+ 테스트 및 호환 확인.
+Claude Code v2.1.72 ~ v2.1.140+ 테스트 및 호환 확인.
 
 ---
 

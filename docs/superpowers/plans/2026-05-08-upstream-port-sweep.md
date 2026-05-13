@@ -12,6 +12,9 @@ This sweep records the pipeline disposition for the open upstream-port backlog s
 | #1273 | Multi-close parsing fixed | `auto-tag.yml` now parses `Closes #A #B #C` style references and tests assert the parser shape. |
 | #1303 | Goal workflow namespace collision ported | `goal` workflow entrypoints now use `/omcustomcodex:goal` while native `/goal` remains reserved for runtime completion tracking. |
 | #1304 | Claude Code v2.1.139 onboarding documented | Compatibility, Claude guide, and template onboarding docs now cover `claude agents`, `/scroll-speed`, `claude plugin details`, and `/mcp` reconnect behavior. |
+| #1306 | Hook `args: string[]` migration reviewed | `15-version-compatibility.md` records that existing hooks keep shell `command` form unless a future hook is a static binary invocation. |
+| #1307 | PostToolUse `continueOnBlock` ported | `context-budget-advisor.sh`, `stuck-detector.sh`, and `cost-cap-advisor.sh` now set `continueOnBlock: true` and use exit 2 only for model-visible recovery signals. |
+| #1308 | Claude Code v2.1.140 release reviewed | Version compatibility guidance records subagent matching, native `/goal`, settings, background service, `/loop`, `Read`, Windows `gh`, and plugin-warning impact. |
 
 ## Already Present On Develop
 

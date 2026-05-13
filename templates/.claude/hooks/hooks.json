@@ -438,6 +438,7 @@
             "command": "bash .codex/hooks/scripts/context-budget-advisor.sh"
           }
         ],
+        "continueOnBlock": true,
         "description": "Context budget advisor — track tool usage patterns and advise ecomode activation"
       },
       {
@@ -448,6 +449,7 @@
             "command": "bash .codex/hooks/scripts/stuck-detector.sh"
           }
         ],
+        "continueOnBlock": true,
         "description": "Detect repetitive failure loops and advise recovery strategies"
       },
       {
@@ -458,6 +460,7 @@
             "command": "bash .codex/hooks/scripts/cost-cap-advisor.sh"
           }
         ],
+        "continueOnBlock": true,
         "description": "Advisory cost cap monitoring — warn when session cost approaches configurable limit"
       },
       {

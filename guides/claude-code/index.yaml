@@ -64,3 +64,8 @@ documents:
     title: 토큰 효율 레이어
     description: 플러그인, 런타임, 설정 레이어를 분리한 토큰 효율 최적화 가이드
     path: ./14-token-efficiency.md
+
+  - name: version-compatibility
+    title: 버전 호환성
+    description: Claude Code 릴리스별 oh-my-customcodex 호환성 판단 기록
+    path: ./15-version-compatibility.md

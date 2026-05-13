@@ -617,8 +617,12 @@ The `omcodex:takeover` skill enables reverse compilation: analyzing an existing 
 | `/scroll-speed` command | No | Yes (v2.1.139+) | Compatible — local UI preference, no harness behavior change |
 | `claude plugin details <name>` | No | Yes (v2.1.139+) | Documented for plugin component inventory and token-cost projection checks |
 | `/mcp` reconnect reloads `.mcp.json` | No | Yes (v2.1.139+) | Compatible for Claude template testing; Codex MCP config stays under `.codex/config.toml` |
+| Hook `args: string[]` exec form | No | Yes (v2.1.139+) | Reviewed — keep shell command hooks unless a hook is a static binary invocation with no shell expansion |
+| PostToolUse `continueOnBlock` | No | Yes (v2.1.139+) | Ported for context-budget, stuck-detector, and cost-cap recovery signals |
+| Relaxed `subagent_type` matching | No | Yes (v2.1.140+) | Compatible, but docs keep canonical kebab-case names for deterministic Codex/Claude parity |
+| Plugin component-folder conflict warnings | No | Yes (v2.1.140+) | Documented as a compatibility check through `/doctor`, `claude plugin list`, `/plugin`, and `claude plugin details` |
 
-Tested and compatible with Claude Code v2.1.72 through v2.1.139+, with Codex-native behavior managed through `.codex/**` and OMX.
+Tested and compatible with Claude Code v2.1.72 through v2.1.140+, with Codex-native behavior managed through `.codex/**` and OMX.
 
 ---
 
