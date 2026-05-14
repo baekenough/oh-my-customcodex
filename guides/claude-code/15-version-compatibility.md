@@ -2,6 +2,26 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
+## v2.1.141
+
+Published: 2026-05-13.
+
+Source: upstream oh-my-customcode #1137, Codex port #1310.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Hook JSON output can include `terminalSequence` for desktop notifications, window titles, and terminal bells | Optional complement to stderr HUD events and the command statusline; no Codex hook change is required for this release. | Record the option in R012 and defer any hook implementation until there is a concrete UX need. |
+| `CLAUDE_CODE_PLUGIN_PREFER_HTTPS` clones GitHub plugin sources over HTTPS instead of SSH | Helps Claude-template users install plugins in CI or locked-down networks without GitHub SSH keys. | No command change; document as opt-in environment behavior. |
+| `ANTHROPIC_WORKSPACE_ID` scopes workload identity federation tokens to one workspace | Useful only for multi-workspace enterprise Claude environments. | No Codex-side change required. |
+| `claude agents --cwd <path>` scopes the session list to a directory | Reduces noise when monitoring Claude compatibility sessions from a monorepo or multi-project workspace. | Track as a P3 CLI-flags guide follow-up; keep canonical project examples on `oh-my-customcodex`. |
+| `/feedback` can include recent sessions from the last 24 hours or 7 days | Improves upstream bug reports for multi-session agent behavior. | No harness change required. |
+| Rewind menu can summarize earlier context while preserving recent turns | Complements manual context management and memory handoff guidance. | No hook change required. |
+| Auto-mode permission dialogs explain which `permissions.ask` rule caused a prompt | Makes Claude-template permission debugging easier. | Keep permission guidance explicit; no template mutation needed. |
+| IDE file-edit prompts restored the "view diff in your IDE" option | UX restoration only. | No action. |
+| Background agents launched via `/bg` or `←←` preserve the current permission mode | Removes a historical source of unattended permission prompts in Claude compatibility sessions. | Add an R010 note; keep delegated tool policy explicit for workflows that rely on unattended writes. |
+| `claude agents` marks completed agents correctly even if a background shell remains | Improves R009/R018 monitoring for long-running compatibility sessions. | No Codex-side change required. |
+| Spinner, plugin menu, provider fallback, daemon, and Windows fixes are additive stability improvements | No direct package behavior change. | No action beyond this compatibility record. |
+
 ## v2.1.140
 
 Published: 2026-05-12.

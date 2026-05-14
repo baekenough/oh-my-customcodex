@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.17] - 2026-05-14
+
+### Added
+- Record Claude Code v2.1.141 compatibility decisions for `terminalSequence`, HTTPS plugin installs, workspace-scoped federation, cwd-scoped `claude agents`, recent-session feedback, rewind summarization, permission-dialog diagnostics, `/bg` permission preservation, and related additive UX fixes.
+
+### Changed
+- Update R010, R006, and R012 source/template rule guidance with v2.1.141 compatibility notes while keeping `.codex/**` as the Codex-native runtime surface.
+
 ## [0.4.16] - 2026-05-13
 
 ### Changed
