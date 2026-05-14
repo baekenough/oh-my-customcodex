@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.4.15",
-  "generatedAt": "2026-05-08T08:23:50.971Z",
-  "templateVersion": "0.4.15",
+  "generatorVersion": "0.4.16",
+  "generatedAt": "2026-05-13T06:58:48.427Z",
+  "templateVersion": "0.4.16",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -105,8 +105,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-enforcement-policy.md": {
-      "templateHash": "84728edba3c29d7552d8836682c633564920ee6bf23f3f8a049e4f9a954a95e6",
-      "size": 2513,
+      "templateHash": "9e31e30f205c114a922fc605b55a692a45154910f6f2f994dab3ad8c97311a2d",
+      "size": 2721,
       "component": "rules"
     },
     ".codex/rules/index.yaml": {
@@ -370,8 +370,8 @@
       "component": "agents"
     },
     ".codex/hooks/PARALLEL-GROUPS.md": {
-      "templateHash": "16ce249f5a2d66e06f746ce90e5356210c67aacc51a65f64ddadff4248dc13f7",
-      "size": 9201,
+      "templateHash": "c05b2eec0956d14d284cced8e4e4342d871e031183bcf2c005c06c796a9f72ec",
+      "size": 9838,
       "component": "hooks"
     },
     ".codex/hooks/skill-count-reminder.sh": {
@@ -475,8 +475,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/stuck-detector.sh": {
-      "templateHash": "eec7b98804c2bbd665479751270fe7242b224504b0e06200c7aa70b23e726e38",
-      "size": 7491,
+      "templateHash": "9f9d6701f53f2a2b8bb2ed426919565ed6eff27b1445075f272416a3f303f040",
+      "size": 7499,
       "component": "hooks"
     },
     ".codex/hooks/scripts/claude-sensitive-path-guard.sh": {
@@ -540,8 +540,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/context-budget-advisor.sh": {
-      "templateHash": "8f1586392cc5f7887590f0f9857a0b53689bca48e734fe5b8e357bc485c1eb6e",
-      "size": 3240,
+      "templateHash": "0ef495b3f18fb46bf643a3508954a8fb95aeded558fe7d48b93657431260ef3a",
+      "size": 4637,
       "component": "hooks"
     },
     ".codex/hooks/scripts/stall-detection-advisor.sh": {
@@ -555,8 +555,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/cost-cap-advisor.sh": {
-      "templateHash": "ced94367105b2c6c93ee6850bedab75e46facffed68a5c9a41e504c7bdaa5caa",
-      "size": 2504,
+      "templateHash": "067276873a9cb1679a46b8ddb451ce427c365c84056dd2ab1f36fb0313a88f32",
+      "size": 2656,
       "component": "hooks"
     },
     ".codex/hooks/scripts/session-autofix.sh": {
@@ -565,8 +565,8 @@
       "component": "hooks"
     },
     ".codex/hooks/hooks.json": {
-      "templateHash": "0bbff7e9d7b3a005fd8d581af31bb63ca836852a68140d4b1fcc9d2349d479e7",
-      "size": 27092,
+      "templateHash": "ce0359df3d3917e94fa7daf64667f9e5ceaa4b39c4297dd56b95a00589b69604",
+      "size": 27191,
       "component": "hooks"
     },
     ".codex/contexts/ecomode.md": {
@@ -600,8 +600,8 @@
       "component": "ontology"
     },
     ".codex/ontology/skills.yaml": {
-      "templateHash": "eb79041596d03f7719c128b183eb311350ccc2a6f11287a2170401c26d336bf2",
-      "size": 24049,
+      "templateHash": "2fa02bd2e8d68de5876fb1c019e9597558738ce665fdeda5ee6884ac5dedcfce",
+      "size": 24101,
       "component": "ontology"
     },
     "guides/java21/java-style-guide.md": {
@@ -660,13 +660,13 @@
       "component": "guides"
     },
     "guides/claude-code/04-agent-skills.md": {
-      "templateHash": "daf1b6ed7da15dbcdfaa39276da5e94a0289203dcf35fa402f87da32f86c08e8",
-      "size": 3571,
+      "templateHash": "c1b9200ae32056e86e91e2680de8053dbd83a9a1804dbb0689a8948bf077df7f",
+      "size": 4714,
       "component": "guides"
     },
     "guides/claude-code/06-mcp.md": {
-      "templateHash": "14ee344e8f586231eadf31a556d587c582aace0195762c3b20fad5b1daef9307",
-      "size": 3892,
+      "templateHash": "87a195f766e8bfe6f509e2d3482d306e8ae6cf239dc66a27caebd57c10f6f213",
+      "size": 4496,
       "component": "guides"
     },
     "guides/claude-code/01-overview.md": {
@@ -675,8 +675,8 @@
       "component": "guides"
     },
     "guides/claude-code/13-cli-flags.md": {
-      "templateHash": "e752de67d30ffd435f046243ac5936322ba129e5c826b61c924dca04e685e077",
-      "size": 4881,
+      "templateHash": "bd4c258dd1aa40bb71412dc5e7e203959c4b0208142043277cf9d224d045edde",
+      "size": 5814,
       "component": "guides"
     },
     "guides/claude-code/12-workflow-patterns.md": {
@@ -695,8 +695,8 @@
       "component": "guides"
     },
     "guides/claude-code/index.yaml": {
-      "templateHash": "750a812b624c3e48a62c9272f91aa65e2c5096cab8d8f2e44cff30a78dad7f21",
-      "size": 2040,
+      "templateHash": "30466d0d1d8578d8e5ef15ab55fbc5a6a460c2d4f85a1b0fc380e74bf320e4af",
+      "size": 2225,
       "component": "guides"
     },
     "guides/claude-code/05-agent-sdk.md": {
@@ -1122,6 +1122,11 @@
     "guides/agents-md-quality/README.md": {
       "templateHash": "637286208768fe3a8ee12ad53e628f5a3c6df4de87d9e9eef9c27a84b988ec4b",
       "size": 3840,
+      "component": "guides"
+    },
+    "guides/claude-code/15-version-compatibility.md": {
+      "templateHash": "4b7f1a106e6417586f05c45a40e7acf372e04f9f0b45167708cda18aff8340e9",
+      "size": 3737,
       "component": "guides"
     }
   }

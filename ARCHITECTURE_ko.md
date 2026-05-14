@@ -98,7 +98,7 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 **슬래시 커맨드 / 사용자 직접 호출 스킬**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, goal, omcodex-release-notes, omcodex-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, pipeline, improve-report, omcodex-feedback, omcodex-web, omcodex-loop, sdd-dev, harness-synthesizer, idea
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustomcodex:goal, omcodex-release-notes, omcodex-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, pipeline, improve-report, omcodex-feedback, omcodex-web, omcodex-loop, sdd-dev, harness-synthesizer, idea
 
 **시스템 / 내부 스킬**
 
@@ -571,8 +571,17 @@ packages/eval-core/
 | Bash 거부 exec 래퍼 매칭 | 아니오 | 예 (v2.1.113+) | 호환 — 거부 규칙이 `env`/`sudo`/`watch`/`ionice`/`setsid` 래퍼 매칭 |
 | 네이티브 바이너리 스포닝 | 아니오 | 예 (v2.1.113+) | 호환 — 플랫폼별 옵셔널 의존성이 번들 JavaScript 대체 |
 | `/loop` Esc 취소 | 아니오 | 예 (v2.1.113+) | 호환 — Esc로 대기 중인 웨이크업 취소 |
+| 네이티브 `/goal` 커맨드 | 아니오 | 예 (v2.1.139+) | 예 — goal 워크플로우는 `/omcustomcodex:goal`을 사용해 네이티브 완료 추적기를 가리지 않음 |
+| `claude agents` 통합 뷰 | 아니오 | 예 (v2.1.139+) | 호환 — Claude 템플릿 에이전트 인벤토리 확인에 사용; Codex 인벤토리는 `omcustomcodex list agents` 유지 |
+| `/scroll-speed` 커맨드 | 아니오 | 예 (v2.1.139+) | 호환 — 로컬 UI 설정이며 하네스 동작 변경 없음 |
+| `claude plugin details <name>` | 아니오 | 예 (v2.1.139+) | 플러그인 구성 요소 인벤토리와 토큰 비용 예측 확인용으로 문서화 |
+| `/mcp` reconnect의 `.mcp.json` 재로딩 | 아니오 | 예 (v2.1.139+) | Claude 템플릿 테스트에 호환; Codex MCP 설정은 `.codex/config.toml` 유지 |
+| Hook `args: string[]` exec form | 아니오 | 예 (v2.1.139+) | 검토 완료 — shell expansion 없는 정적 바이너리 호출이 아니면 shell command hook 유지 |
+| PostToolUse `continueOnBlock` | 아니오 | 예 (v2.1.139+) | context-budget, stuck-detector, cost-cap 복구 신호에 포팅 |
+| 완화된 `subagent_type` 매칭 | 아니오 | 예 (v2.1.140+) | 호환되지만 Codex/Claude parity를 위해 문서는 canonical kebab-case 이름 유지 |
+| 플러그인 component-folder 충돌 경고 | 아니오 | 예 (v2.1.140+) | `/doctor`, `claude plugin list`, `/plugin`, `claude plugin details` 호환성 점검으로 문서화 |
 
-Claude Code v2.1.72 ~ v2.1.114+ 테스트 및 호환 확인.
+Claude Code v2.1.72 ~ v2.1.140+ 테스트 및 호환 확인.
 
 ---
 

@@ -53,6 +53,22 @@ description: Brief description of what this Skill does and when to use it
 - 비어 있지 않아야 함
 - 최대 1024자
 
+### 네이티브 커맨드 충돌 피하기
+
+Claude Code v2.1.139+는 `/goal`을 세션 완료 조건 추적용 네이티브 커맨드로 예약합니다. oh-my-customcodex의 목표 실행 워크플로우는 `/omcustomcodex:goal`로 호출해야 하며, Skill 프론트매터도 `name: omcustomcodex:goal`을 사용합니다.
+
+디렉터리 이름은 호환성을 위해 `goal/`로 유지할 수 있지만, 사용자에게 노출되는 엔트리포인트는 프론트매터의 `name` 값입니다. 새 스킬이 Claude Code 네이티브 커맨드와 이름이 겹칠 가능성이 있으면 `omcustomcodex:` 네임스페이스를 우선 사용하세요.
+
+### 플러그인 인벤토리 검증
+
+Claude Code v2.1.139+에서는 다음 명령으로 설치된 플러그인의 구성 요소와 세션별 토큰 비용 예측을 확인할 수 있습니다:
+
+```bash
+claude plugin details <plugin-name>
+```
+
+oh-my-customcodex 호환 템플릿을 검증할 때는 플러그인 설치 후 이 명령으로 skill/agent 구성 요소 수와 예상 토큰 비용을 확인하고, Codex 쪽 패키지 인벤토리는 `omcustomcodex list`로 확인하세요.
+
 ## 사용 가능한 Skills
 
 ### 사전 구축된 Agent Skills

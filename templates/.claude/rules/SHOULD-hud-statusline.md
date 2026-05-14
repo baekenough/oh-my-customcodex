@@ -15,6 +15,8 @@
 
 Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` — implemented in `.codex/hooks/hooks.json` (PreToolUse → Agent/Task matcher). Display for multi-step/parallel/long-running ops only.
 
+> **Claude Code v2.1.141+ compatibility**: Hook JSON output can include `terminalSequence` to emit desktop notifications, window title changes, or terminal bells without a controlling terminal. Treat this as an optional companion to stderr HUD events and the command statusline; do not add terminal-control hook behavior until there is a concrete Codex-compatible UX need.
+
 <!-- DETAIL: HUD Events full spec
 ### When to Display: Multi-step tasks, parallel execution, long-running operations. Skip for single brief operations.
 ### Parallel Display:

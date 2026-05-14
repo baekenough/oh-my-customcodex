@@ -567,6 +567,22 @@ describe('Template Validation', () => {
     });
   });
 
+  describe('Claude Code version compatibility guidance', () => {
+    it('mirrors the v2.1.139 and v2.1.140 compatibility guide into templates', async () => {
+      const projectRoot = resolve(import.meta.dir, '../../..');
+      const guidePath = 'guides/claude-code/15-version-compatibility.md';
+      const sourceGuide = await readFile(join(projectRoot, guidePath), 'utf-8');
+      const templateGuide = await readFile(join(TEMPLATES_DIR, guidePath), 'utf-8');
+
+      expect(templateGuide).toBe(sourceGuide);
+      expect(templateGuide).toContain('v2.1.139');
+      expect(templateGuide).toContain('v2.1.140');
+      expect(templateGuide).toContain('continueOnBlock');
+      expect(templateGuide).toContain('args: string[]');
+      expect(templateGuide).toContain('extraKnownMarketplaces');
+    });
+  });
+
   describe('harness engineering guidance', () => {
     it('documents middleware, anatomy, and hill-climbing guide surfaces', async () => {
       const requiredGuides = [

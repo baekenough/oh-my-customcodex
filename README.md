@@ -170,7 +170,7 @@ All commands are invoked inside the oh-my-customcodex GPT Codex + OMX session.
 | `/ambiguity-gate` | Pre-routing ambiguity analysis |
 | `/pre-generation-arch-check` | Check architecture risks before implementation |
 | `/adversarial-review` | Attacker-mindset security code review |
-| `/goal` | Keep a concrete objective in view through planning, execution, and verification |
+| `/omcustomcodex:goal` | Keep a concrete objective in view through planning, execution, and verification |
 | `/pipeline` | Execute YAML-defined pipelines |
 | `/pipeline resume` | Resume a halted pipeline from last failure point |
 

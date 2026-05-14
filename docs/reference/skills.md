@@ -14,13 +14,13 @@ Skills encapsulate knowledge and best practices that agents can use. This page d
 
 ## Core Workflow Skills
 
-### goal
+### omcustomcodex:goal
 
 **Category**: core
 
-Goal-to-execution workflow for `/goal <objective>`. The skill keeps a concrete objective visible while the agent clarifies only blockers, inspects repository context, plans non-trivial work, executes with local conventions, verifies completion, and reports changed files plus residual risk.
+Goal-to-execution workflow for `/omcustomcodex:goal <objective>`. The skill keeps a concrete objective visible while the agent clarifies only blockers, inspects repository context, plans non-trivial work, executes with local conventions, verifies completion, and reports changed files plus residual risk.
 
-This is implemented as a normal oh-my-customcodex skill surface for the Codex + OMX stack. It does not require Codex `features.goals` configuration.
+This is implemented as a normal oh-my-customcodex skill surface for the Codex + OMX stack. It does not require Codex `features.goals` configuration. Native `/goal` remains available to runtimes that reserve it for session-level completion tracking.
 
 ## Development Skills
 

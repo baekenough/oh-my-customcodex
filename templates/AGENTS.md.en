@@ -118,7 +118,7 @@ NO EXCEPTIONS. NO EXCUSES.
 | `/deep-plan` | Research-validated planning (research → plan → verify) |
 | `/omcustomcodex:sauron-watch` | Full R017 verification |
 | `/structured-dev-cycle` | 6-stage structured development cycle (Plan → Verify → Implement → Verify → Compound → Done) |
-| `/goal` | Keep a concrete objective through planning, execution, and verification |
+| `/omcustomcodex:goal` | Keep a concrete objective through planning, execution, and verification |
 | `/omcustomcodex:lists` | Show all available commands |
 | `/omcustomcodex:status` | Show system status |
 | `/omcustomcodex:help` | Show help information |
@@ -239,5 +239,7 @@ omx-memory setup
 ### Claude Code Compatibility Note
 
 Projects that run in the Claude Code plugin ecosystem may separately install plugins such as `superpowers`, `openai-docs`, `elements-of-style`, and `context7`. They are not required Codex init steps.
+
+On Claude Code v2.1.139+, use `claude agents` to inspect the unified agent list, `claude plugin details <name>` to inspect plugin components and projected token cost, and `/scroll-speed` for local scroll tuning. The native `/goal` command is reserved for Claude Code's completion tracker; use `/omcustomcodex:goal` for the oh-my-customcodex workflow.
 
 <!-- omcodex:git-workflow -->

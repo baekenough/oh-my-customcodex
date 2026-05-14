@@ -2,7 +2,7 @@
 # cost-cap-advisor.sh — Advisory hook for session cost monitoring
 # Trigger: PostToolUse (Agent/Task)
 # Purpose: Warn when session cost approaches configurable cap
-# Protocol: stdin JSON -> stdout pass-through, exit 0 always (advisory only, R010)
+# Protocol: stdin JSON -> stdout pass-through; exit 2 only for continueOnBlock wrap-up signals
 
 input=$(cat)
 
@@ -30,10 +30,13 @@ if ! printf '%f' "$cost_usd" >/dev/null 2>&1; then
   echo "$input"
   exit 0
 fi
+if ! printf '%f' "$COST_CAP" >/dev/null 2>&1; then
+  echo "$input"
+  exit 0
+fi
 
 # Calculate percentage of cap used
-# Use bc for float arithmetic
-cost_pct=$(echo "scale=0; $cost_usd * 100 / $COST_CAP" | bc 2>/dev/null || echo "0")
+cost_pct=$(awk -v cost="$cost_usd" -v cap="$COST_CAP" 'BEGIN { if (cap <= 0) print 0; else printf "%d", (cost * 100 / cap) }' 2>/dev/null || echo "0")
 
 # Staleness check — skip if data is older than 60 seconds
 now=$(date +%s)
@@ -54,6 +57,8 @@ if [ "$cost_pct" -ge 100 ] && [ "$last_level" != "100" ]; then
   echo "[Cost Cap] Session cost \$${cost_usd} has reached cap \$${COST_CAP} (${cost_pct}%)" >&2
   echo "[Cost Cap] Consider wrapping up or increasing CLAUDE_COST_CAP" >&2
   echo "100" > "$ADVISORY_FILE"
+  echo "$input"
+  exit 2
 elif [ "$cost_pct" -ge 90 ] && [ "$last_level" != "90" ] && [ "$last_level" != "100" ]; then
   echo "[Cost Cap] Session cost \$${cost_usd} at 90% of cap \$${COST_CAP}" >&2
   echo "[Cost Cap] Ecomode recommended — consider /compact" >&2

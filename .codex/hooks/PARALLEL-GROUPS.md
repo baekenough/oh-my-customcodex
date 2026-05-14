@@ -14,9 +14,9 @@ which hooks are theoretically parallelizable and which require serial ordering.
 | Hook script | Trigger (PostToolUse) | Reads | Writes | Blocks? |
 |---|---|---|---|---|
 | `audit-log.sh` | Edit, Write, Bash, Agent | none | `~/.codex/audit.jsonl` | never (exit 0) |
-| `context-budget-advisor.sh` | Edit, Write, Agent, Task, Read, Glob, Grep, Bash | `/tmp/.codex-context-budget-$PPID` | `/tmp/.codex-context-budget-$PPID` | never (exit 0) |
-| `stuck-detector.sh` | Edit, Write, Bash, Task, Agent | `/tmp/.codex-tool-history-$PPID` | `/tmp/.codex-tool-history-$PPID` | exits 1 on hard-block only |
-| `cost-cap-advisor.sh` | Edit, Write, Bash, Task, Agent | `/tmp/.codex-cost-$PPID`, `/tmp/.codex-cost-advisory-$PPID` | `/tmp/.codex-cost-advisory-$PPID` | never (exit 0) |
+| `context-budget-advisor.sh` | Edit, Write, Agent, Task, Read, Glob, Grep, Bash | `/tmp/.codex-cost-$PPID`, `/tmp/.codex-context-budget-$PPID`, `/tmp/.codex-context-budget-signal-$PPID` | `/tmp/.codex-context-budget-$PPID`, `/tmp/.codex-context-budget-signal-$PPID` | exits 2 via continueOnBlock on high-context signal only |
+| `stuck-detector.sh` | Edit, Write, Bash, Task, Agent | `/tmp/.codex-tool-history-$PPID` | `/tmp/.codex-tool-history-$PPID` | exits 2 via continueOnBlock on hard-block only |
+| `cost-cap-advisor.sh` | Edit, Write, Bash, Task, Agent | `/tmp/.codex-cost-$PPID`, `/tmp/.codex-cost-advisory-$PPID` | `/tmp/.codex-cost-advisory-$PPID` | exits 2 via continueOnBlock at cost cap only |
 | `content-hash-validator.sh` (PostToolUse/Read) | Read | none | `/tmp/.codex-content-hashes-$PPID` | never (exit 0) |
 | `content-hash-validator.sh` (PreToolUse/Edit) | Edit (PreToolUse) | `/tmp/.codex-content-hashes-$PPID` | none | never (exit 0) |
 | `secret-filter.sh` | Bash, Read, Grep | none (scans stdin output) | none | never (exit 0) |
@@ -53,9 +53,13 @@ that other hooks depend on within the same invocation.
 - **`context-budget-advisor.sh`** → reads+writes `/tmp/.codex-context-budget-$PPID`
   (self-contained counter; no other hook reads this file)
 - **`cost-cap-advisor.sh`** → reads `/tmp/.codex-cost-$PPID` (written by `statusline.sh`, not a hook);
-  reads+writes `/tmp/.codex-cost-advisory-$PPID` (self-contained dedup state)
+  reads+writes `/tmp/.codex-cost-advisory-$PPID` (self-contained dedup state);
+  can exit 2 at the configured cap with `continueOnBlock`
+- **`context-budget-advisor.sh`** → reads `/tmp/.codex-cost-$PPID` (written by `statusline.sh`, not a hook);
+  reads+writes `/tmp/.codex-context-budget-$PPID` and `/tmp/.codex-context-budget-signal-$PPID`;
+  can exit 2 at context threshold with `continueOnBlock`
 - **`stuck-detector.sh`** → reads+writes `/tmp/.codex-tool-history-$PPID` (self-contained ring buffer);
-  can exit 1 on hard-block — this is the **only non-advisory hook in this group**
+  can exit 2 on hard-block with `continueOnBlock` — this is the **only loop-breaking hook in this group**
 - **`secret-filter.sh`** → reads only from stdin JSON (no filesystem state)
 
 **Parallelizable**: Yes for `context-budget-advisor.sh`, `cost-cap-advisor.sh`, `secret-filter.sh`.
@@ -113,10 +117,10 @@ stdin JSON (hook input)
        │      content-hash-validator.sh (Read mode)
        │
        ├──[B: advisory readers]──────────────────────────── can be parallel
-       │      context-budget-advisor.sh
-       │      cost-cap-advisor.sh
+       │      context-budget-advisor.sh (may exit 2 via continueOnBlock)
+       │      cost-cap-advisor.sh (may exit 2 via continueOnBlock)
        │      secret-filter.sh
-       │      stuck-detector.sh (may exit 1)
+       │      stuck-detector.sh (may exit 2 via continueOnBlock)
        │
        └──[C: file formatters]────────────────────────────── serial per language
               prettier → tsc → console.log check   (TypeScript/JS)

@@ -118,7 +118,7 @@ oh-my-customcodex로 구동됩니다.
 | `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
 | `/omcustomcodex:sauron-watch` | 전체 R017 검증 |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
-| `/goal` | 구체 목표를 계획, 실행, 검증까지 유지 |
+| `/omcustomcodex:goal` | 구체 목표를 계획, 실행, 검증까지 유지 |
 | `/omcustomcodex:lists` | 모든 사용 가능한 커맨드 표시 |
 | `/omcustomcodex:status` | 시스템 상태 표시 |
 | `/omcustomcodex:help` | 도움말 표시 |
@@ -239,5 +239,7 @@ omx-memory setup
 ### Claude Code 호환 참고
 
 Claude Code 플러그인 생태계를 쓰는 프로젝트에서는 `superpowers`, `openai-docs`, `elements-of-style`, `context7` 같은 플러그인을 별도로 설치할 수 있습니다. Codex 초기화의 필수 단계는 아닙니다.
+
+Claude Code v2.1.139+에서는 `claude agents`로 통합 에이전트 목록을 확인하고, `claude plugin details <name>`으로 플러그인 구성 요소와 예상 토큰 비용을 점검하며, `/scroll-speed`로 로컬 스크롤 속도를 조정할 수 있습니다. 네이티브 `/goal`은 Claude Code 완료 추적기용으로 남기고, oh-my-customcodex 워크플로우는 `/omcustomcodex:goal`을 사용합니다.
 
 <!-- omcodex:git-workflow -->

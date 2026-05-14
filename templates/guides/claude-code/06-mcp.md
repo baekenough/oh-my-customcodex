@@ -55,6 +55,12 @@ response = client.beta.messages.create(
 | `name` | string | 예 | 이 MCP 서버의 고유 식별자 |
 | `authorization_token` | string | 아니오 | OAuth 인증 토큰 |
 
+## Claude Code 로컬 MCP 재연결
+
+Claude Code v2.1.139+에서는 `/mcp` reconnect가 `.mcp.json` 편집을 전체 재시작 없이 다시 읽습니다. Claude Code 호환 템플릿을 검증할 때 로컬 MCP 서버를 추가하거나 수정했다면 `/mcp`에서 reconnect를 실행해 즉시 반영 여부를 확인하세요.
+
+oh-my-customcodex의 Codex 런타임 MCP 설정은 여전히 `.codex/config.toml` 및 `omcustomcodex` 관리 경로를 기준으로 합니다. Claude Code 호환 테스트를 위해 `.mcp.json`을 쓰더라도 Codex 설치 경로의 MCP 설정과 혼동하지 마세요.
+
 ## MCP 도구 집합 구성
 
 ```json

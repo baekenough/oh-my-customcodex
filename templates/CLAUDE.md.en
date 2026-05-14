@@ -121,7 +121,7 @@ NO EXCEPTIONS. NO EXCUSES.
 | `/pre-generation-arch-check` | Check architecture risks before implementation |
 | `/omcustomcodex:sauron-watch` | Full R017 verification |
 | `/structured-dev-cycle` | 6-stage structured development cycle (Plan → Verify → Implement → Verify → Compound → Done) |
-| `/goal` | Keep a concrete objective through planning, execution, and verification |
+| `/omcustomcodex:goal` | Keep a concrete objective through planning, execution, and verification |
 | `/omcustomcodex:lists` | Show all available commands |
 | `/omcustomcodex:status` | Show system status |
 | `/omcustomcodex:help` | Show help information |
@@ -251,6 +251,15 @@ Install in Claude Code via `/plugin install <name>`:
 /plugin install superpowers
 /plugin install openai-docs
 /plugin install elements-of-style
+
+# Inspect plugin inventory and projected session token cost (Claude Code v2.1.139+)
+claude plugin details superpowers
+
+# Inspect installed agents across sessions (Claude Code v2.1.139+)
+claude agents
+
+# Tune local mouse-wheel scrolling inside the interactive session
+/scroll-speed
 
 # MCP setup (omx-memory)
 omx memory doctor

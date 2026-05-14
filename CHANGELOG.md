@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.17] - 2026-05-14
+
+### Added
+- Record Claude Code v2.1.141 compatibility decisions for `terminalSequence`, HTTPS plugin installs, workspace-scoped federation, cwd-scoped `claude agents`, recent-session feedback, rewind summarization, permission-dialog diagnostics, `/bg` permission preservation, and related additive UX fixes.
+
+### Changed
+- Update R010, R006, and R012 source/template rule guidance with v2.1.141 compatibility notes while keeping `.codex/**` as the Codex-native runtime surface.
+
+## [0.4.16] - 2026-05-13
+
+### Changed
+- Rename the goal workflow entrypoint to `/omcustomcodex:goal` across source skills, install templates, command docs, ontology, and wiki guidance so native `/goal` remains available for runtime completion tracking.
+- Document Claude Code v2.1.139 onboarding commands for compatibility-template users, including `claude agents`, `/scroll-speed`, `claude plugin details`, and `/mcp` reconnect behavior.
+- Record Claude Code v2.1.139 and v2.1.140 compatibility decisions in source and template guides, including hook `args` review, relaxed `subagent_type` matching, native `/goal`, and plugin warning impact.
+- Route high-signal PostToolUse advisories through `continueOnBlock` so context-budget, stuck-detector, and cost-cap recovery guidance reaches the model without ending the turn.
+
 ## [0.4.15] - 2026-05-08
 
 ### Added

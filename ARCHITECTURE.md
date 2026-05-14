@@ -110,7 +110,7 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 **Slash command / user-invocable skills**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, goal, omcodex-release-notes, omcodex:takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, pipeline, improve-report, omcodex-feedback, omcodex-web, omcodex-loop, sdd-dev, harness-synthesizer, idea
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustomcodex:goal, omcodex-release-notes, omcodex:takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, pipeline, improve-report, omcodex-feedback, omcodex-web, omcodex-loop, sdd-dev, harness-synthesizer, idea
 
 **System / internal skills**
 
@@ -612,8 +612,17 @@ The `omcodex:takeover` skill enables reverse compilation: analyzing an existing 
 | Bash deny exec wrapper matching | No | Yes (v2.1.113+) | Compatible — deny rules match `env`/`sudo`/`watch`/`ionice`/`setsid` wrappers |
 | Native binary spawning | No | Yes (v2.1.113+) | Compatible — per-platform optional dependency replaces bundled JavaScript |
 | `/loop` Esc cancel | No | Yes (v2.1.113+) | Compatible — Esc now cancels pending wakeups |
+| Native `/goal` command | No | Yes (v2.1.139+) | Yes — goal workflow uses `/omcustomcodex:goal` so the native completion tracker remains unshadowed |
+| `claude agents` unified view | No | Yes (v2.1.139+) | Compatible — use for Claude template agent inventory; Codex inventory remains `omcustomcodex list agents` |
+| `/scroll-speed` command | No | Yes (v2.1.139+) | Compatible — local UI preference, no harness behavior change |
+| `claude plugin details <name>` | No | Yes (v2.1.139+) | Documented for plugin component inventory and token-cost projection checks |
+| `/mcp` reconnect reloads `.mcp.json` | No | Yes (v2.1.139+) | Compatible for Claude template testing; Codex MCP config stays under `.codex/config.toml` |
+| Hook `args: string[]` exec form | No | Yes (v2.1.139+) | Reviewed — keep shell command hooks unless a hook is a static binary invocation with no shell expansion |
+| PostToolUse `continueOnBlock` | No | Yes (v2.1.139+) | Ported for context-budget, stuck-detector, and cost-cap recovery signals |
+| Relaxed `subagent_type` matching | No | Yes (v2.1.140+) | Compatible, but docs keep canonical kebab-case names for deterministic Codex/Claude parity |
+| Plugin component-folder conflict warnings | No | Yes (v2.1.140+) | Documented as a compatibility check through `/doctor`, `claude plugin list`, `/plugin`, and `claude plugin details` |
 
-Tested and compatible with Claude Code v2.1.72 through v2.1.132+, with Codex-native behavior managed through `.codex/**` and OMX.
+Tested and compatible with Claude Code v2.1.72 through v2.1.140+, with Codex-native behavior managed through `.codex/**` and OMX.
 
 ---
 

@@ -20,6 +20,7 @@ type HookCommand = CommandHook | PromptHook;
 interface HookEntry {
   matcher: string;
   hooks: HookCommand[];
+  continueOnBlock?: boolean;
   description: string;
 }
 
@@ -243,6 +244,27 @@ describe('Hooks Validation', () => {
         expect(Array.isArray(entry.hooks)).toBe(true);
         expect(entry).toHaveProperty('description');
         expect(typeof entry.description).toBe('string');
+      }
+    });
+
+    it('should feed high-signal PostToolUse advisories back through continueOnBlock', async () => {
+      const source = JSON.parse(await readFile(SOURCE_HOOKS_FILE, 'utf-8')) as HooksStructure;
+      const template = JSON.parse(await readFile(HOOKS_FILE, 'utf-8')) as HooksStructure;
+      const expectedScripts = [
+        'context-budget-advisor.sh',
+        'stuck-detector.sh',
+        'cost-cap-advisor.sh',
+      ];
+
+      for (const data of [source, template]) {
+        for (const script of expectedScripts) {
+          const entry = (data.hooks.PostToolUse ?? []).find((candidate) =>
+            candidate.hooks.some((hook) => hook.type === 'command' && hook.command.includes(script))
+          );
+
+          expect(entry).toBeDefined();
+          expect(entry?.continueOnBlock).toBe(true);
+        }
       }
     });
 

@@ -8,13 +8,14 @@ command -v jq >/dev/null 2>&1 || exit 0
 # Context Budget Advisor Hook
 # Trigger: PostToolUse (Edit/Write/Agent/Task/Read/Glob/Grep/Bash)
 # Purpose: Monitor context usage and advise ecomode activation based on task type
-# Protocol: stdin JSON -> stdout pass-through, exit 0 always
+# Protocol: stdin JSON -> stdout pass-through; exit 2 only for continueOnBlock signals
 
 input=$(cat)
 
 # Read context info from status file if available
-STATUS_FILE="/tmp/.codex-env-status-${PPID}"
+COST_FILE="/tmp/.codex-cost-${PPID}"
 BUDGET_FILE="/tmp/.codex-context-budget-${PPID}"
+SIGNAL_FILE="/tmp/.codex-context-budget-signal-${PPID}"
 
 # Initialize budget tracking file
 if [ ! -f "$BUDGET_FILE" ]; then
@@ -76,6 +77,43 @@ case "$task_type" in
   management)    THRESHOLD=70 ;;
   *)             THRESHOLD=80 ;;
 esac
+
+# Use statusline bridge data when available. Exiting 2 with continueOnBlock=true
+# turns a high-context advisory into model-visible feedback without halting.
+ctx_pct="0"
+ctx_timestamp="0"
+if [ -f "$COST_FILE" ]; then
+  IFS=$'\t' read -r _cost_usd ctx_pct ctx_timestamp _rl_5h _rl_7d _rl_5h_resets _rl_7d_resets < "$COST_FILE" 2>/dev/null || true
+fi
+
+ctx_int="${ctx_pct%%.*}"
+case "$ctx_int" in
+  ''|*[!0-9]*) ctx_int=0 ;;
+esac
+case "$ctx_timestamp" in
+  ''|*[!0-9]*) ctx_timestamp=0 ;;
+esac
+
+now=$(date +%s)
+age=$((now - ${ctx_timestamp:-0}))
+signal_key="${task_type}:${THRESHOLD}"
+last_signal=""
+if [ -f "$SIGNAL_FILE" ]; then
+  last_signal=$(cat "$SIGNAL_FILE" 2>/dev/null || echo "")
+fi
+
+if [ "$age" -le 60 ] && [ "$ctx_int" -ge "$THRESHOLD" ] && [ "$last_signal" != "$signal_key" ]; then
+  echo "[Context Budget] ${ctx_int}% context used meets ${task_type} threshold ${THRESHOLD}%" >&2
+  echo "[Context Budget] Switch to ecomode, compact, or narrow the remaining task before continuing." >&2
+  echo "$signal_key" > "$SIGNAL_FILE"
+  echo "$input"
+  HOOK_END=$(date +%s%N 2>/dev/null || echo 0)
+  if [ "$HOOK_START" != "0" ] && [ "$HOOK_END" != "0" ]; then
+    HOOK_MS=$(( (HOOK_END - HOOK_START) / 1000000 ))
+    echo "[Hook Perf] $(basename "$0"): ${HOOK_MS}ms" >> "/tmp/.codex-hook-perf-${PPID}.log"
+  fi
+  exit 2
+fi
 
 # Emit advisory at milestones (every 25 tool calls)
 if [ "$tool_count" -gt 0 ] && [ $((tool_count % 25)) -eq 0 ]; then

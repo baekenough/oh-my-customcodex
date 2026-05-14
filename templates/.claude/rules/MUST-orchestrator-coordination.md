@@ -160,6 +160,12 @@ Current guidance:
 - In Claude Code `bypassPermissions`, broader protected-path writes such as `.claude/**`, `.git/**`, and `.vscode/**` are acceptable on v2.1.126+.
 - Keep the `/tmp/{skill}-{timestamp}.md` pattern only as a legacy fallback for older Claude Code versions or sessions that still surface a protected-path prompt.
 
+## Claude Compatibility Background Mode
+
+Claude Code v2.1.141+ preserves the current permission mode when a session is detached with `/bg` or `←←` backgrounding. Earlier versions could revert to the default mode and surprise unattended release flows with permission prompts.
+
+For this Codex port, native Codex/OMX subagents still follow the active Codex runtime tool policy. Claude compatibility prompts should keep delegated write authority explicit when a workflow relies on unattended edits, but v2.1.141+ no longer needs an extra `/bg` permission-mode workaround.
+
 <!-- DETAIL: Autonomous Execution Mode
 
 ## Autonomous Execution Mode
