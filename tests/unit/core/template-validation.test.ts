@@ -292,6 +292,7 @@ describe('Template Validation', () => {
         ['templates/CLAUDE.md', `레퍼런스 문서 (${templateGuideCount} 토픽)`],
         ['templates/CLAUDE.md.en', `Reference docs (${templateGuideCount} topics)`],
         ['templates/CLAUDE.md.ko', `레퍼런스 문서 (${templateGuideCount} 토픽)`],
+        ['templates/README.md', `reference docs (${templateGuideCount} topics)`],
       ];
 
       for (const [relativePath, expectedText] of entryDocs) {
@@ -840,6 +841,42 @@ describe('Template Validation', () => {
         expect(content).toContain('bash .github/scripts/verify-version-sync.sh');
         expect(content).toContain('before tag');
       }
+    });
+
+    it('auto-dev workflows require sync, label standards, milestone checks, and bun test', async () => {
+      const workflowPaths = [
+        'workflows/auto-dev.yaml',
+        'templates/workflows/auto-dev.yaml',
+        '.codex/skills/pipeline/workflows/auto-dev.yaml',
+      ];
+
+      for (const relativePath of workflowPaths) {
+        const content = await readFile(join(PROJECT_ROOT, relativePath), 'utf-8');
+        expect(content).toContain('git fetch --all --tags --prune');
+        expect(content).toContain('stale');
+        expect(content).toContain('labels.md');
+        expect(content).toContain('milestone');
+        expect(content).toContain('compression_mode');
+        expect(content).toContain('bun test');
+        expect(content).toContain('baseline');
+      }
+    });
+
+    it('pipeline label standards are packaged for source and templates', async () => {
+      const sourceLabels = await readFile(
+        join(PROJECT_ROOT, '.codex/skills/pipeline/labels.md'),
+        'utf-8'
+      );
+      const templateLabels = await readFile(
+        join(PROJECT_ROOT, 'templates/.claude/skills/pipeline/labels.md'),
+        'utf-8'
+      );
+
+      expect(templateLabels).toBe(sourceLabels);
+      expect(sourceLabels).toContain('verify-ready');
+      expect(sourceLabels).toContain('verify-done');
+      expect(sourceLabels).toContain('codex-release');
+      expect(sourceLabels).toContain('Compression Eligibility');
     });
 
     it('professor-triage detailed phase guide is included in templates', async () => {

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add pipeline label standards and template README documentation for the Codex distribution mapping.
+- Record Claude Code v2.1.142 compatibility impact and the upstream nested plan `.gitignore` limitation in source/template guides and wiki pages.
+
+### Changed
+- Harden `auto-dev` with pre-triage git sync, stale issue-version warnings, milestone state checks, docs-only compression selection, and mandatory `bun test` baseline verification.
+- Teach `auto-tag.yml` to close a release milestone automatically when all linked issues are closed.
+
 ## [0.4.17] - 2026-05-14
 
 ### Added
