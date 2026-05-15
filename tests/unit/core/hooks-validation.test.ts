@@ -522,7 +522,8 @@ describe('Hooks Validation', () => {
 
       expect(guardHook).toBeDefined();
       expect(guardHook?.matcher).toContain('tool == "Bash"');
-      expect(guardHook?.matcher).toContain('git reset --hard');
+      expect(guardHook?.matcher).toContain('git (');
+      expect(guardHook?.matcher).toContain('reset --hard');
       expect(guardHook?.description).toContain('destructive git');
     });
 
