@@ -325,7 +325,7 @@ bun test             # Run tests
 bun run build        # Production build
 ```
 
-Requirements: Node.js >= 18.0.0, Codex CLI.
+Requirements: Node.js >= 18.0.0, Bun, Codex CLI. GitHub CLI (`gh`) and `jq` are recommended for release automation and local hook validation.
 
 ---
 

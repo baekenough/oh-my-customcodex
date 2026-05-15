@@ -3,7 +3,8 @@ import { spawnSync } from 'node:child_process';
 import { access, readdir, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
-const TEMPLATES_DIR = resolve(import.meta.dir, '../../../templates');
+const PROJECT_ROOT = resolve(import.meta.dir, '../../..');
+const TEMPLATES_DIR = resolve(PROJECT_ROOT, 'templates');
 
 interface ManifestComponent {
   name: string;
@@ -273,6 +274,30 @@ describe('Template Validation', () => {
 
       const actualCount = await countActualFiles(guidesComponent?.path ?? '', 'guides');
       expect(actualCount).toBe(guidesComponent?.files);
+    });
+
+    it('should keep guide counts in docs matching actual guide directories', async () => {
+      const sourceGuideCount = await countGuidesDirectories(join(PROJECT_ROOT, 'guides'));
+      const templateGuideCount = await countGuidesDirectories(join(TEMPLATES_DIR, 'guides'));
+
+      expect(sourceGuideCount).toBe(templateGuideCount);
+
+      const readme = await readFile(join(PROJECT_ROOT, 'README.md'), 'utf-8');
+      expect(readme).toContain(`### Guides (${sourceGuideCount})`);
+      expect(readme).toContain(`# ${sourceGuideCount} reference documents`);
+
+      const entryDocs = [
+        ['templates/AGENTS.md.en', `Reference docs (${templateGuideCount} topics)`],
+        ['templates/AGENTS.md.ko', `레퍼런스 문서 (${templateGuideCount} 토픽)`],
+        ['templates/CLAUDE.md', `레퍼런스 문서 (${templateGuideCount} 토픽)`],
+        ['templates/CLAUDE.md.en', `Reference docs (${templateGuideCount} topics)`],
+        ['templates/CLAUDE.md.ko', `레퍼런스 문서 (${templateGuideCount} 토픽)`],
+      ];
+
+      for (const [relativePath, expectedText] of entryDocs) {
+        const doc = await readFile(join(PROJECT_ROOT, relativePath), 'utf-8');
+        expect(doc).toContain(expectedText);
+      }
     });
 
     it('should have files count matching actual hooks directory', async () => {
@@ -775,8 +800,6 @@ describe('Template Validation', () => {
   });
 
   describe('bypassPermissions guidance validation', () => {
-    const PROJECT_ROOT = resolve(import.meta.dir, '../../..');
-
     it('pipeline, scout, DE routing, and QA routing skills document bypassPermissions guidance', async () => {
       const files = [
         join(PROJECT_ROOT, 'templates/.claude/skills/pipeline/SKILL.md'),
@@ -793,8 +816,6 @@ describe('Template Validation', () => {
   });
 
   describe('pipeline workflow and docs validation', () => {
-    const PROJECT_ROOT = resolve(import.meta.dir, '../../..');
-
     it('repo and template auto-dev workflows stay in sync', async () => {
       const repoWorkflow = await readFile(join(PROJECT_ROOT, 'workflows/auto-dev.yaml'), 'utf-8');
       const templateWorkflow = await readFile(
@@ -803,6 +824,22 @@ describe('Template Validation', () => {
       );
 
       expect(repoWorkflow).toBe(templateWorkflow);
+    });
+
+    it('auto-dev release prompts require package and manifest version sync before release', async () => {
+      const workflowPaths = [
+        'workflows/auto-dev.yaml',
+        'templates/workflows/auto-dev.yaml',
+        '.codex/skills/pipeline/workflows/auto-dev.yaml',
+      ];
+
+      for (const relativePath of workflowPaths) {
+        const content = await readFile(join(PROJECT_ROOT, relativePath), 'utf-8');
+        expect(content).toContain('package.json');
+        expect(content).toContain('templates/manifest.json');
+        expect(content).toContain('bash .github/scripts/verify-version-sync.sh');
+        expect(content).toContain('before tag');
+      }
     });
 
     it('professor-triage detailed phase guide is included in templates', async () => {

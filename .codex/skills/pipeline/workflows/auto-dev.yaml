@@ -129,7 +129,11 @@ steps:
       1. Version:
          - No existing tags → v0.1.0
          - Otherwise: semver bump (patch for bugfix, minor for features)
-      2. Release notes via omcustom-release-notes skill
+         - For npm projects: update `package.json` and `templates/manifest.json`
+           to the chosen version in the same commit before tag creation.
+         - Run `bash .github/scripts/verify-version-sync.sh` after the bump and
+           before tag or PR creation.
+      2. Release notes via omcustomcodex-release-notes skill
       3. Delegate to mgr-gitnerd:
          - preflight: `git branch --list release --format='%(refname:short)'`
            before creating `release/v*`; if a local `release` branch exists,

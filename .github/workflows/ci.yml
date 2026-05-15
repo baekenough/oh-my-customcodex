@@ -352,9 +352,10 @@ jobs:
 
           DOC_AGENTS=$(grep -oP '에이전트 정의 \(\K[0-9]+' "$ENTRY_DOC" || grep -oP 'agents.*\((\K[0-9]+)' "$ENTRY_DOC" || echo "0")
           DOC_SKILLS=$(grep -oP '스킬 \(\K[0-9]+' "$ENTRY_DOC" || grep -oP 'skills.*\((\K[0-9]+)' "$ENTRY_DOC" || echo "0")
+          DOC_GUIDES=$(grep -oP 'guides/\s*#\s*\K[0-9]+' "$ENTRY_DOC" || grep -oP 'Guides \(\K[0-9]+' README.md || grep -oP 'guides/.*#\s*\K[0-9]+' README.md || echo "0")
 
           echo "Actual: agents=$ACTUAL_AGENTS skills=$ACTUAL_SKILLS rules=$ACTUAL_RULES guides=$ACTUAL_GUIDES"
-          echo "$ENTRY_DOC: agents=$DOC_AGENTS skills=$DOC_SKILLS"
+          echo "$ENTRY_DOC: agents=$DOC_AGENTS skills=$DOC_SKILLS guides=$DOC_GUIDES"
 
           ERRORS=0
           if [ "$ACTUAL_AGENTS" != "$DOC_AGENTS" ] && [ "$DOC_AGENTS" != "0" ]; then
@@ -363,6 +364,10 @@ jobs:
           fi
           if [ "$ACTUAL_SKILLS" != "$DOC_SKILLS" ] && [ "$DOC_SKILLS" != "0" ]; then
             echo "::warning::$ENTRY_DOC skill count ($DOC_SKILLS) != actual ($ACTUAL_SKILLS)"
+            ERRORS=$((ERRORS + 1))
+          fi
+          if [ "$ACTUAL_GUIDES" != "$DOC_GUIDES" ] && [ "$DOC_GUIDES" != "0" ]; then
+            echo "::warning::guide count ($DOC_GUIDES) != actual ($ACTUAL_GUIDES)"
             ERRORS=$((ERRORS + 1))
           fi
           if [ "$ERRORS" -gt 0 ]; then

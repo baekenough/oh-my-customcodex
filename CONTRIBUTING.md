@@ -70,6 +70,17 @@ These defensive code paths exist for production safety, not for behavior specifi
 
 ## Development Setup
 
+### Prerequisites
+
+Install these tools before running the local release and hook validation paths:
+
+| Tool | Required For | Notes |
+|------|--------------|-------|
+| Node.js >= 18 | Package runtime and TypeScript tooling | Matches `package.json` engines |
+| Bun | Tests, builds, and CLI development | Used by `bun test`, `bun run build`, and local scripts |
+| GitHub CLI (`gh`) | PR, issue, and release workflow checks | Authenticate with `gh auth login` before release work |
+| jq | Hook JSON parsing in local agent environments | Hooks that need jq skip gracefully when it is unavailable |
+
 1. **Clone the repository**
    ```bash
    git clone https://github.com/baekenough/oh-my-customcodex.git
