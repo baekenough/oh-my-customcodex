@@ -54,6 +54,13 @@ steps:
     prompt: |
       Create release branch and pull request.
 
+      Required version preflight for npm package releases:
+      - Determine NEW_VERSION before creating a release branch, PR, or tag.
+      - Update `package.json` and `templates/manifest.json` to NEW_VERSION in the same commit.
+      - Use same-directory temporary files for generated JSON writes; do not write through `/tmp`.
+      - Run `bash .github/scripts/verify-version-sync.sh` after the bump and before tag or PR creation.
+      - Commit the bump with `chore(release): bump to v{NEW_VERSION}` before any release tag is created.
+
       Before creating `release/v*`, check whether a local branch named exactly
       `release` exists. Git stores refs as files/directories, so
       `refs/heads/release` blocks `refs/heads/release/vX.Y.Z`.

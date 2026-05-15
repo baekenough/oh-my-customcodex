@@ -120,7 +120,7 @@ project/
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
 +-- .agents/
 |   +-- skills/                  # 스킬 (119 디렉토리)
-+-- guides/                      # 레퍼런스 문서 (40 토픽)
++-- guides/                      # 레퍼런스 문서 (48 토픽)
 ```
 
 ## 오케스트레이션
