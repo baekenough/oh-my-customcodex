@@ -13,28 +13,77 @@ observability:
     report_before: followup
 
 steps:
+  - name: preflight-sync
+    prompt: |
+      Phase 0 — Sync local repository and detect stale issue context before triage.
+
+      1. Run `git fetch --all --tags --prune`.
+      2. Compute `behind=$(git rev-list --count HEAD..origin/$(git rev-parse --abbrev-ref HEAD))`.
+      3. If behind > 0 and the worktree is clean, run `git pull --ff-only` and report synced commits.
+      4. If behind > 0 and the worktree is dirty, halt with a manual reconcile message.
+      5. Report latest tag, local HEAD, and synced/behind state.
+      6. Compare open issue body `vX.Y.Z` references against local git tags and warn on references to missing tags.
+      7. Create required lifecycle labels idempotently: in-progress, verify-ready, needs-review, decision-needed.
+    description: Sync remote state, detect stale version references, and ensure lifecycle labels
+
   - name: issue-analysis
+    depends_on: preflight-sync
     parallel:
       - name: pre-triage
         skill: professor-triage
-        description: Run professor-triage on open issues that lack verify-done label, including release-monitor labels codex-release and oh-my-codex-release
+        description: Run professor-triage on open issues that lack verify-done label, including release-monitor labels codex-release and oh-my-codex-release; never terminate from an empty verify-done query alone while release-monitor issues remain
         condition: "open issues without label:verify-done exist OR open release-monitor issues with label:codex-release or label:oh-my-codex-release exist"
       - name: triage
         skill: professor-triage
         description: Analyze verify-done and release-monitor issues against current codebase and perform automated triage
 
-  - name: plan
+  - name: scope-selection
     depends_on: issue-analysis
+    prompt: |
+      Select one bounded release scope and protect against stale milestone reuse.
+
+      Milestone pre-check:
+      - Query all milestones, open and closed, before creating vX.Y.Z.
+      - If the target milestone already exists and is closed, halt and require a version bump or manual reopen.
+      - If it exists and is open, reuse it.
+      - If it does not exist, create it and assign scoped issues.
+
+      Label semantics:
+      - Reference `.codex/skills/pipeline/labels.md`.
+      - Exclude blocked_by_decision, decision-needed, needs-review, verify-done, manual-action, and in-progress issues.
+      - Prefer verify-ready, codex-release, oh-my-codex-release, claude-code-release, and documentation issues.
+      - Sort by P1, P2, P3, then dependency order; cap a release unit at 7 issues.
+
+      Output a release manifest with issue number, title, prerequisite, effort, and labels.
+    description: Milestone state pre-check, label filter, and bounded release scope selection
+
+  - name: compression-mode-eval
+    depends_on: scope-selection
+    prompt: |
+      Evaluate docs-only compression mode.
+
+      Use `compression_mode=docs-only` only when:
+      - scope size is 3 or fewer issues
+      - every scoped issue has at least one of documentation, automated, codex-release, oh-my-codex-release, claude-code-release, or enhancement-yaml-only
+
+      In docs-only mode, replace heavyweight triage/plan/deep-plan/deep-verify spawns with direct summaries plus local self-review. Otherwise use standard mode.
+      Output the selected compression_mode for downstream steps.
+    description: Evaluate docs-only compression eligibility
+
+  - name: plan
+    depends_on: compression-mode-eval
     skill: release-plan
-    description: Group triaged issues into release units by priority and size
+    description: Group triaged issues into release units by priority and size; skipped if compression_mode=docs-only
     input: triage-results
 
   - name: deep-plan
+    depends_on: plan
     skill: deep-plan
-    description: Create detailed implementation plan for each release group
+    description: Create detailed implementation plan for each release group; skipped if compression_mode=docs-only
     foreach: release-group
 
   - name: implement
+    depends_on: deep-plan
     prompt: |
       Execute implementation plan with appropriate agents.
 
@@ -46,11 +95,30 @@ steps:
     description: Execute implementation plan with appropriate agents
     foreach: planned-issue
 
+  - name: verify-build
+    depends_on: implement
+    prompt: |
+      Project-specific build + test verification.
+
+      For Node/Bun projects:
+      1. Run `bun install` and halt on lockfile drift.
+      2. Run `bun run lint` when available.
+      3. Run `bun run typecheck` when available.
+      4. Run `bun test` mandatorily; do not silently skip tests.
+      5. Adopt the prior version's test result as the dynamic baseline. Current Codex baseline is 0 failures after #1328 verification.
+      6. Halt if current failures exceed baseline; otherwise report pass/fail counts and delta.
+      7. Run `bun run build` when available.
+
+      Halt on lint errors, typecheck errors, new test failures, build failure, or lockfile drift.
+    description: Auto-detected build + test verification with mandatory bun test baseline delta guard
+
   - name: verify
+    depends_on: verify-build
     skill: deep-verify
-    description: Multi-angle release quality verification
+    description: Multi-angle release quality verification; self-review checklist only if compression_mode=docs-only
 
   - name: release
+    depends_on: verify
     prompt: |
       Create release branch and pull request.
 

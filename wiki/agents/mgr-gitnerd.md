@@ -47,6 +47,17 @@ Types: feat, fix, docs, style, refactor, test, chore
 - NEVER skip pre-commit hooks without reason
 - REFUSE push if mgr-sauron:watch was not run
 
+### rustup symlink multiplexer is not cache poisoning
+
+Source: upstream oh-my-customcode #1148, Codex port #1327.
+
+`readlink -f $(which cargo) | grep -q "rustup-init"` returning true is normal rustup behavior, not evidence of cache poisoning.
+
+- rustup uses a single binary with argv[0]-based multiplexing, so `cargo`, `rustc`, and `rustup` may all resolve to the same `rustup-init` target.
+- Binary identity checks for cargo verification can false-positive on standard CI images.
+- Prefer functional verification such as `cargo --list | grep test` and the actual command behavior.
+- The failure signal to detect is a broken `cargo test` invocation, not the symlink target.
+
 ## Relationships
 
 - **Depends on**: mgr-sauron verification (prerequisite for push)
@@ -56,3 +67,4 @@ Types: feat, fix, docs, style, refactor, test, chore
 ## Sources
 
 - `.codex/agents/mgr-gitnerd.md` — agent definition
+- Upstream issue #1148 — rustup symlink false-positive CI lesson

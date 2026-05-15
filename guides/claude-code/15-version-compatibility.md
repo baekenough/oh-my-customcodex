@@ -2,6 +2,24 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
+## v2.1.142
+
+Published: 2026-05-14.
+
+Source: upstream oh-my-customcode #1158, Codex port #1329.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| `claude agents` added `--add-dir`, `--settings`, `--mcp-config`, `--plugin-dir`, `--permission-mode`, `--model`, `--effort`, and `--dangerously-skip-permissions` | Useful for Claude compatibility sessions that need CLI-level overrides for background agents. Codex-native child agents still use the Codex tool surface and repo model contract. | No Codex runtime change. Keep unattended Claude-template prompts explicit about permission mode. |
+| Fast Mode now defaults to Opus 4.7 | Only affects Claude compatibility users running Fast Mode with `model: opus` agents. | Pin with `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1` only when a compatibility session needs old behavior. |
+| Root-level plugin `SKILL.md` is surfaced as a skill | Does not change this repo's packaged `.claude/skills/<name>/SKILL.md` layout. | No template migration. |
+| `/plugin details` shows plugin LSP servers | Improves plugin inventory visibility for compatibility users. | No package change. |
+| `/web-setup` warns before replacing an existing GitHub App connection | UX safety improvement outside this harness. | No action. |
+| `MCP_TOOL_TIMEOUT` now raises remote HTTP/SSE MCP request timeout as intended | Helpful for slow remote memory or ontology MCP servers. | Set `MCP_TOOL_TIMEOUT` in affected environments only. |
+| Background sessions can edit existing git worktrees | Stabilizes Claude compatibility workflows that use git worktrees for parallel branches. | No Codex-side change. |
+| Background sessions survive macOS sleep/wake more reliably | Improves long-running Claude compatibility sessions. | No action. |
+| `--dangerously-skip-permissions` persists across retire/wake cycles | Reduces unattended permission-mode drops for Claude compatibility sessions. | Keep explicit permission guidance in workflow prompts. |
+
 ## v2.1.141
 
 Published: 2026-05-13.
@@ -49,6 +67,23 @@ Published: 2026-05-11.
 | PostToolUse `continueOnBlock` | Ported for high-signal advisory hooks. `context-budget-advisor.sh`, `stuck-detector.sh`, and `cost-cap-advisor.sh` set `continueOnBlock: true`; scripts use `exit 2` only when model-visible recovery guidance is needed. |
 | Native `/goal` | The packaged workflow uses `/omcustomcodex:goal`; native `/goal` stays available for Claude Code completion tracking. |
 | `claude agents`, `/scroll-speed`, `claude plugin details <name>`, `/mcp` reconnect | Documented in the CLI, MCP, AGENTS, and CLAUDE template guidance. |
+
+## Known Limitations
+
+### Parent `.gitignore` nested plan pattern
+
+Source: upstream oh-my-customcode #1147, Codex port #1326.
+
+The parent package documented a future-proofing limitation for this pattern:
+
+```gitignore
+docs/superpowers/plans/*
+!docs/superpowers/plans/*.md
+```
+
+That pattern only tracks direct-child Markdown files. Git cannot re-include a file inside a directory that was already excluded by a broader parent pattern unless the directory path is also re-included.
+
+Current Codex-port status: not applicable. This repository does not ignore `docs/superpowers/plans/`, and existing nested plan documents are trackable. If a future ignore rule reintroduces that parent pattern, add explicit subdirectory re-includes before relying on nested plan files.
 
 ## Compatibility Rules
 

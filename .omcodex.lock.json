@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "0.5.0",
-  "generatedAt": "2026-05-14T23:59:30.796Z",
+  "generatedAt": "2026-05-15T15:55:33.419Z",
   "templateVersion": "0.5.0",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
@@ -10,13 +10,13 @@
       "component": "rules"
     },
     ".codex/rules/SHOULD-hud-statusline.md": {
-      "templateHash": "4011ea8ee0c069c1b10fda3e7ac9b09c3f3e6d90f4feb6a933c1b2510a15c13d",
-      "size": 2445,
+      "templateHash": "0583726d8603ba37ceaaa25a70b77ce490ad37295ec507131c6681661f3e1ac4",
+      "size": 2819,
       "component": "rules"
     },
     ".codex/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "520fb9b45716e7ac7da4e50c18f0cda4ac7c262b37660e8d923c105dec76d7d3",
-      "size": 20372,
+      "templateHash": "74bc663ffa6f0380b90164873fdb43b489c5e1e9feb812a176d445ca5185668b",
+      "size": 20945,
       "component": "rules"
     },
     ".codex/rules/MUST-intent-transparency.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-design.md": {
-      "templateHash": "4a7989cf1b7213583087367a3143e64d8c703acf50ea59ee4b34cf46ad89c8f2",
-      "size": 24382,
+      "templateHash": "f2b9fb69b55db01e16d097889f4ff29a524e5f85497fc4c2ca5aae5068403052",
+      "size": 24978,
       "component": "rules"
     },
     ".codex/rules/MUST-agent-identification.md": {
@@ -404,6 +404,11 @@
       "size": 2455,
       "component": "hooks"
     },
+    ".codex/hooks/scripts/destructive-git-guard.sh": {
+      "templateHash": "9bbbf3342be3a1761fb6815dc9f73604e169bb3c7a727410a6557d9261376e1a",
+      "size": 1884,
+      "component": "hooks"
+    },
     ".codex/hooks/scripts/user-prompt-preprocessor.sh": {
       "templateHash": "71a4e7fec6f830c7c12fbb00f8d1469a8dd92805f06495d31afa1a2ef88532cf",
       "size": 843,
@@ -647,6 +652,11 @@
     "guides/claude-code/10-monitoring.md": {
       "templateHash": "758db80beaf99034d1860a842102397e664eb07f5e9b06046ad420f7c614f789",
       "size": 1842,
+      "component": "guides"
+    },
+    "guides/claude-code/15-version-compatibility.md": {
+      "templateHash": "f6c1ad74ad02690e956307169029f3eba3b0f44d50902bd423ec4bf3363b876a",
+      "size": 9094,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {
@@ -939,6 +949,11 @@
       "size": 3592,
       "component": "guides"
     },
+    "guides/git-safety/README.md": {
+      "templateHash": "f57db39f3699ba083dea1c374b82a6925ab3d2bfceb682aa6b305bd1ca0f17d0",
+      "size": 2475,
+      "component": "guides"
+    },
     "guides/flutter/architecture.md": {
       "templateHash": "aeff2687237bef966164ca25dc2b4d5354cf32f3c67b6f2f85a96952a40ac501",
       "size": 3624,
@@ -1122,21 +1137,6 @@
     "guides/agents-md-quality/README.md": {
       "templateHash": "637286208768fe3a8ee12ad53e628f5a3c6df4de87d9e9eef9c27a84b988ec4b",
       "size": 3840,
-      "component": "guides"
-    },
-    "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "4b7f1a106e6417586f05c45a40e7acf372e04f9f0b45167708cda18aff8340e9",
-      "size": 3737,
-      "component": "guides"
-    },
-    ".codex/hooks/scripts/destructive-git-guard.sh": {
-      "templateHash": "9bbbf3342be3a1761fb6815dc9f73604e169bb3c7a727410a6557d9261376e1a",
-      "size": 1884,
-      "component": "hooks"
-    },
-    "guides/git-safety/README.md": {
-      "templateHash": "f57db39f3699ba083dea1c374b82a6925ab3d2bfceb682aa6b305bd1ca0f17d0",
-      "size": 2475,
       "component": "guides"
     }
   }

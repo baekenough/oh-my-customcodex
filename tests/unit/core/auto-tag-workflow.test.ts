@@ -326,6 +326,15 @@ describe('auto-tag.yml — linked issue closure', () => {
     expect(content).toContain('sort -u');
     expect(content).toContain('for ISSUE in $ISSUES');
   });
+
+  it('should close the release milestone only when all milestone issues are closed', async () => {
+    const content = await readWorkflow();
+    expect(content).toContain('Close milestone if all issues closed');
+    expect(content).toContain('milestones?state=open&per_page=100');
+    expect(content).toContain('open_issues=$(gh api');
+    expect(content).toContain('gh api -X PATCH');
+    expect(content).toContain('-f state=closed');
+  });
 });
 
 // ---------------------------------------------------------------------------
