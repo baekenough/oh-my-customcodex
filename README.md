@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-49 agents. 118 skills. 22 rules. One command.
+49 agents. 119 skills. 22 rules. One command.
 
 ```bash
 npm install -g oh-my-customcodex && cd your-project && omcustomcodex init
@@ -134,7 +134,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (118)
+### Skills (119)
 
 | Category | Count | Includes |
 |----------|-------|----------|
@@ -147,7 +147,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 | Package | 3 | npm-publish, npm-version, npm-audit |
 | Optimization | 3 | optimize-analyze, optimize-bundle, optimize-report |
 | Security | 3 | adversarial-review, cve-triage, jinja2-prompts |
-| Other | 12 | codex-exec, claude-native, visual-ralph, visual-verdict, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely, and more |
+| Other | 13 | codex-exec, claude-native, gitlab, visual-ralph, visual-verdict, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely, and more |
 
 Skills use a 3-tier scope system: `core` (universal), `harness` (agent/skill maintenance), `package` (project-specific).
 
@@ -228,7 +228,7 @@ Key rules: R010 (orchestrator never writes files), R009 (parallel execution mand
 
 ---
 
-### Guides (47)
+### Guides (48)
 
 Reference documentation covering best practices, architecture decisions, and integration patterns. Located in `guides/` at project root, covering topics from agent design to CI/CD to observability.
 
@@ -287,8 +287,8 @@ your-project/
 │   ├── contexts/               # 4 shared context files
 │   └── ontology/               # Knowledge graph for RAG
 ├── .agents/
-│   └── skills/                 # 118 installed skill modules
-└── guides/                     # 47 reference documents
+│   └── skills/                 # 119 installed skill modules
+└── guides/                     # 48 reference documents
 ```
 
 ### Source Repository And Compatibility Surfaces

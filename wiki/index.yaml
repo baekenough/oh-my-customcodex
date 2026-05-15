@@ -3,8 +3,8 @@
 
 meta:
   updated: "2026-04-27"
-  total_pages: 258
-  total_sources: 231
+  total_pages: 266
+  total_sources: 238
 
 pages:
   architecture:
@@ -270,6 +270,9 @@ pages:
     - file: skills/gemini-exec.md
       title: "Gemini Exec"
       summary: "Execute Gemini CLI prompts and return results for multi-model workflows."
+    - file: skills/gitlab.md
+      title: "GitLab"
+      summary: "Work with GitLab projects, issues, merge requests, CI/CD pipelines, jobs, and repository metadata."
     - file: skills/go-backend-best-practices.md
       title: "Go Backend Best Practices"
       summary: "Go backend patterns from Uber style guide for production-grade services."
@@ -637,6 +640,9 @@ pages:
     - file: guides/git-worktree-workflow.md
       title: "Git Worktree Workflow Guide"
       summary: "Reference documentation for using Git worktrees to manage multiple branches simultaneously"
+    - file: guides/git-safety.md
+      title: "Git Safety Guide"
+      summary: "Reference documentation for destructive git command preflight, recovery, and release branch namespace guardrails"
     - file: guides/go-backend.md
       title: "Go Backend Guide"
       summary: "Reference documentation for Go backend service architecture, standard project layout"

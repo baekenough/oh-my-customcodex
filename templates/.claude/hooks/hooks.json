@@ -43,6 +43,16 @@
         "description": "Pause before git push to review changes"
       },
       {
+        "matcher": "tool == \"Bash\" && tool_input.command matches \"git (reset --hard|clean -f|clean -d|restore|checkout --|branch -D|push --force|push -f)\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/scripts/destructive-git-guard.sh"
+          }
+        ],
+        "description": "Warn on destructive git commands and print recovery guidance without blocking"
+      },
+      {
         "matcher": "tool == \"Write\" && tool_input.file_path matches \"\\\\.(md|txt)$\" && !(tool_input.file_path matches \"README\\\\.md|CLAUDE\\\\.md|AGENT\\\\.md|SKILL\\\\.md\")",
         "hooks": [
           {

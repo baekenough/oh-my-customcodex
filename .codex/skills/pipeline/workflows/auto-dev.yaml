@@ -131,6 +131,10 @@ steps:
          - Otherwise: semver bump (patch for bugfix, minor for features)
       2. Release notes via omcustom-release-notes skill
       3. Delegate to mgr-gitnerd:
+         - preflight: `git branch --list release --format='%(refname:short)'`
+           before creating `release/v*`; if a local `release` branch exists,
+           prove it is merged/backed up and prefer renaming it to
+           `releases-tracking` over deleting it
          - git tag + push
          - gh release create
       4. Close milestone

@@ -97,6 +97,12 @@ When working with `auto-tag.yml` (automatic tag creation on release PR merge):
 
 ### Troubleshooting
 
+If `release/vX.Y.Z` cannot be created because `refs/heads/release` exists:
+```bash
+git branch --list release --format='%(refname:short)'
+git branch -m release releases-tracking  # only after proving it is merged/backed up
+```
+
 If a tag already exists on remote (from a previous failed attempt):
 ```bash
 git push origin :refs/tags/vX.Y.Z   # delete remote tag
