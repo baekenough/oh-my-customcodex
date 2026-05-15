@@ -508,6 +508,38 @@ describe('Hooks Validation', () => {
     });
   });
 
+  describe('Destructive git guard', () => {
+    it('should register the destructive git advisory hook in PreToolUse', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+      const entries = data.hooks.PreToolUse ?? [];
+
+      const guardHook = entries.find((entry) =>
+        entry.hooks.some(
+          (hook) => hook.type === 'command' && hook.command.includes('destructive-git-guard.sh')
+        )
+      );
+
+      expect(guardHook).toBeDefined();
+      expect(guardHook?.matcher).toContain('tool == "Bash"');
+      expect(guardHook?.matcher).toContain('git reset --hard');
+      expect(guardHook?.description).toContain('destructive git');
+    });
+
+    it('should keep source and template destructive git hook registration in sync', async () => {
+      const source = JSON.parse(await readFile(SOURCE_HOOKS_FILE, 'utf-8')) as HooksStructure;
+      const template = JSON.parse(await readFile(HOOKS_FILE, 'utf-8')) as HooksStructure;
+      const findGuard = (data: HooksStructure) =>
+        (data.hooks.PreToolUse ?? []).find((entry) =>
+          entry.hooks.some(
+            (hook) => hook.type === 'command' && hook.command.includes('destructive-git-guard.sh')
+          )
+        );
+
+      expect(findGuard(source)).toEqual(findGuard(template));
+    });
+  });
+
   describe('Stop hook', () => {
     it('should reference stop-console-audit.sh script', async () => {
       const { parsed } = await loadHooksJson();

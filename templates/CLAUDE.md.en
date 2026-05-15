@@ -133,11 +133,11 @@ project/
 +-- AGENTS.md                    # Entry point
 +-- .codex/
 |   +-- agents/                  # Subagent definitions (49 files)
-|   +-- skills/                  # Skills (118 directories)
+|   +-- skills/                  # Skills (119 directories)
 |   +-- rules/                   # Global rules (22 files)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (4 files)
-+-- guides/                      # Reference docs (39 topics)
++-- guides/                      # Reference docs (40 topics)
 ```
 
 ## Orchestration

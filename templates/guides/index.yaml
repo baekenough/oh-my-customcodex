@@ -278,6 +278,12 @@ guides:
     source:
       type: internal
 
+  - name: git-safety
+    description: Destructive git command preflight, recovery, and release branch namespace guardrails
+    path: ./git-safety/
+    source:
+      type: internal
+
   # Architecture
   - name: skill-bundle-design
     description: Domain skill bundle design patterns for Author/Test/Troubleshoot tri-pattern

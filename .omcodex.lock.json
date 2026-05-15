@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.4.16",
-  "generatedAt": "2026-05-13T06:58:48.427Z",
-  "templateVersion": "0.4.16",
+  "generatorVersion": "0.5.0",
+  "generatedAt": "2026-05-14T23:59:30.796Z",
+  "templateVersion": "0.5.0",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -90,8 +90,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-safety.md": {
-      "templateHash": "863d542ff1088195cf3a504781328385ed13cfc6d1f7da5a84e5a2f938b3e750",
-      "size": 828,
+      "templateHash": "30931267fa33c7f6c274102cef730cc0669a66dc533a8a9705a4da14c248d5af",
+      "size": 2045,
       "component": "rules"
     },
     ".codex/rules/MUST-tool-identification.md": {
@@ -165,8 +165,8 @@
       "component": "agents"
     },
     ".codex/agents/mgr-sauron.md": {
-      "templateHash": "c8a574a947a72baccef699d25b3c8ca1b39068343ded96e54975d4df03f59cd6",
-      "size": 4822,
+      "templateHash": "6113b969f7be668a79d32d5f2d9bf331c19b03f6b507f96a6ea47b7c200fb89f",
+      "size": 4979,
       "component": "agents"
     },
     ".codex/agents/fe-svelte-agent.md": {
@@ -290,8 +290,8 @@
       "component": "agents"
     },
     ".codex/agents/mgr-gitnerd.md": {
-      "templateHash": "2cdde561d86976a44504d00805932906d5670436f3d373b44dd0d884efbf28ac",
-      "size": 1676,
+      "templateHash": "0692578dd4e3e92dfe1d3b5e30796485a27218659ec7a687806ed2db4eafa3ac",
+      "size": 2189,
       "component": "agents"
     },
     ".codex/agents/mgr-creator.md": {
@@ -565,8 +565,8 @@
       "component": "hooks"
     },
     ".codex/hooks/hooks.json": {
-      "templateHash": "ce0359df3d3917e94fa7daf64667f9e5ceaa4b39c4297dd56b95a00589b69604",
-      "size": 27191,
+      "templateHash": "be13ceb94b57c389d2821d7893f81d38799d9d60bba802d167c3d14b30af5692",
+      "size": 27633,
       "component": "hooks"
     },
     ".codex/contexts/ecomode.md": {
@@ -1105,8 +1105,8 @@
       "component": "guides"
     },
     "guides/index.yaml": {
-      "templateHash": "3995d2459c3735f987ddff806caf701294282ab3ba85e9d1de9ad646bd581f08",
-      "size": 8912,
+      "templateHash": "0ca1c6f9c591799faaaa155e97b36c51a932093ade8a6ce3bb2f544cfd5457f8",
+      "size": 9093,
       "component": "guides"
     },
     "guides/spark/README.md": {
@@ -1127,6 +1127,16 @@
     "guides/claude-code/15-version-compatibility.md": {
       "templateHash": "4b7f1a106e6417586f05c45a40e7acf372e04f9f0b45167708cda18aff8340e9",
       "size": 3737,
+      "component": "guides"
+    },
+    ".codex/hooks/scripts/destructive-git-guard.sh": {
+      "templateHash": "9bbbf3342be3a1761fb6815dc9f73604e169bb3c7a727410a6557d9261376e1a",
+      "size": 1884,
+      "component": "hooks"
+    },
+    "guides/git-safety/README.md": {
+      "templateHash": "f57db39f3699ba083dea1c374b82a6925ab3d2bfceb682aa6b305bd1ca0f17d0",
+      "size": 2475,
       "component": "guides"
     }
   }

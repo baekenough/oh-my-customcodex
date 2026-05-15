@@ -12,6 +12,7 @@ const HOOKS_JSON_PATH = resolve(import.meta.dir, '../../../templates/.claude/hoo
 const STAGE_BLOCKER_SCRIPT = join(SCRIPTS_DIR, 'stage-blocker.sh');
 const AGENT_MODE_GUARD_SCRIPT = join(SCRIPTS_DIR, 'agent-mode-guard.sh');
 const GIT_DELEGATION_GUARD_SCRIPT = join(SCRIPTS_DIR, 'git-delegation-guard.sh');
+const DESTRUCTIVE_GIT_GUARD_SCRIPT = join(SCRIPTS_DIR, 'destructive-git-guard.sh');
 const STOP_CONSOLE_AUDIT_SCRIPT = join(SCRIPTS_DIR, 'stop-console-audit.sh');
 const AGENT_TEAMS_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'agent-teams-advisor.sh');
 const CLAUDE_SENSITIVE_PATH_GUARD_SCRIPT = join(SCRIPTS_DIR, 'claude-sensitive-path-guard.sh');
@@ -107,6 +108,16 @@ function makeTaskInput(subagentType: string, prompt: string): string {
     tool_input: {
       subagent_type: subagentType,
       prompt,
+    },
+  });
+}
+
+/** Build a minimal Claude Code hook JSON payload for Bash tool calls. */
+function makeBashInput(command: string): string {
+  return JSON.stringify({
+    tool: 'Bash',
+    tool_input: {
+      command,
     },
   });
 }
@@ -592,6 +603,67 @@ describe('git-delegation-guard.sh', () => {
     // jq will produce errors on empty input but the script should still exit 0
     const result = await runHookScript(GIT_DELEGATION_GUARD_SCRIPT, '');
     expect(result.exitCode).toBe(0);
+  });
+});
+
+// -------------------------------------------------------------------
+// destructive-git-guard.sh
+// -------------------------------------------------------------------
+
+describe('destructive-git-guard.sh', () => {
+  it('should warn for git reset --hard', async () => {
+    const input = makeBashInput('git reset --hard origin/develop');
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('WARNING');
+    expect(result.stderr).toContain('git reset --hard');
+  });
+
+  it('should warn for git clean -fdx', async () => {
+    const input = makeBashInput('git clean -fdx');
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input);
+    expect(result.stderr).toContain('WARNING');
+    expect(result.stderr).toContain('git clean');
+  });
+
+  it('should warn for broad git restore', async () => {
+    const input = makeBashInput('git restore .');
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input);
+    expect(result.stderr).toContain('WARNING');
+    expect(result.stderr).toContain('git restore');
+  });
+
+  it('should warn for git branch -D and mention merged state', async () => {
+    const input = makeBashInput('git branch -D release');
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input);
+    expect(result.stderr).toContain('WARNING');
+    expect(result.stderr).toContain('merged');
+  });
+
+  it('should include reflog recovery guidance in destructive warnings', async () => {
+    const input = makeBashInput('git checkout -- .');
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input);
+    expect(result.stderr).toContain('git reflog');
+    expect(result.stderr).toContain('git status');
+  });
+
+  it('should not warn for read-only git commands', async () => {
+    const input = makeBashInput('git status --short');
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).not.toContain('WARNING');
+  });
+
+  it('should always pass through stdin to stdout', async () => {
+    const input = makeBashInput('git clean -fd');
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input);
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  it('should have valid bash syntax', async () => {
+    const result = await bashSyntaxCheck(DESTRUCTIVE_GIT_GUARD_SCRIPT);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe('');
   });
 });
 

@@ -134,8 +134,8 @@ project/
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (ecomode)
 +-- .agents/
-|   +-- skills/                  # Installed skills (118 directories)
-+-- guides/                      # Reference docs (26 topics)
+|   +-- skills/                  # Installed skills (119 directories)
++-- guides/                      # Reference docs (27 topics)
 ```
 
 ## Orchestration

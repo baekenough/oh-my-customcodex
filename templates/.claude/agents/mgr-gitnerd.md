@@ -46,8 +46,12 @@ Types: feat, fix, docs, style, refactor, test, chore
 
 - NEVER force push to main/master
 - NEVER reset --hard without confirmation
+- NEVER run `git clean -fd`, broad `git restore`, or `git checkout -- .` without preserving diffs and confirming the exact scope
+- NEVER delete branches with `git branch -D` until merge state and remote backup are checked
 - NEVER skip pre-commit hooks without reason
 - ALWAYS create new commits (avoid --amend unless requested)
+- BEFORE release branch creation, check for a local `release` branch that blocks the `release/v*` namespace; rename or remove it only after proving it is merged/backed up
+- AFTER unexpected destructive git output, inspect `git reflog`, `git status`, and `git diff` before any repair attempt
 
 ## Push Rules (R016)
 

@@ -51,7 +51,19 @@ steps:
     description: Multi-angle release quality verification
 
   - name: release
-    prompt: "Create release branch and pull request"
+    prompt: |
+      Create release branch and pull request.
+
+      Before creating `release/v*`, check whether a local branch named exactly
+      `release` exists. Git stores refs as files/directories, so
+      `refs/heads/release` blocks `refs/heads/release/vX.Y.Z`.
+
+      Required preflight:
+      - `git branch --list release --format='%(refname:short)'`
+      - If present, prove it is merged or backed up before renaming/removing it.
+      - Prefer `git branch -m release releases-tracking` when preservation is
+        needed; do not run `git branch -D release` without explicit approval.
+      - Re-run the branch-list check before `git switch -c release/vX.Y.Z`.
     description: Create release branch and pull request
 
   - name: publish
