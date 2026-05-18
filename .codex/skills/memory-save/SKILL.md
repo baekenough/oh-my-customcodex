@@ -1,6 +1,6 @@
 ---
 name: memory-save
-description: Save current session context to claude-mem
+description: Save current session context to native memory plus omx-memory or AgentMemory-compatible backends
 scope: core
 argument-hint: "[--tags <tags>] [--include-code]"
 disable-model-invocation: true
@@ -9,7 +9,7 @@ user-invocable: true
 
 # Memory Save Skill
 
-Save current session context to claude-mem for persistence across context compaction.
+Save current session context to native memory and the configured searchable MCP backend for persistence across context compaction. Prefer AgentMemory-compatible or `omx-memory` tools (`memory_add`, `observation_add`); fall back to legacy `claude-mem` only when that is the configured backend.
 
 ## Options
 
@@ -35,8 +35,10 @@ Save current session context to claude-mem for persistence across context compac
    ├── tags: [session, ...user_tags]
    └── created_at: {timestamp}
 
-3. Store in claude-mem
-   └── chroma_add_documents
+3. Store in configured backend
+   ├── Prefer memory_add for summaries
+   ├── Prefer observation_add for atomic learnings
+   └── Legacy fallback: chroma_add_documents
 
 4. Report result
 ```
@@ -112,7 +114,7 @@ Open Items:
   1. Refresh token implementation
      Status: In progress
 
-Saving to claude-mem...
+Saving to configured memory backend...
 
 Document content:
   ## Session Summary
@@ -126,3 +128,4 @@ Memory ID: mem_abc123
 ## Related
 
 - memory-recall - Search and recall memories
+- memory-management - Backend selection and migration safeguards

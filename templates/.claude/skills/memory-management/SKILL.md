@@ -1,13 +1,21 @@
 ---
 name: memory-management
-description: Memory persistence operations using claude-mem
+description: Memory persistence operations using native memory plus omx-memory or AgentMemory-compatible MCP backends
 scope: core
 user-invocable: false
 ---
 
 ## Purpose
 
-Provide memory persistence operations using claude-mem for session context survival across compactions.
+Provide memory persistence operations using native `MEMORY.md` first, then a searchable MCP backend for cross-session retrieval. Prefer an AgentMemory-compatible or `omx-memory` backend exposing `memory_search`, `memory_add`, and `observation_add`; use legacy `claude-mem` only as a fallback when that is the configured backend.
+
+## Backend Order
+
+1. Native auto-memory: compact durable facts in `MEMORY.md`.
+2. AgentMemory-compatible MCP or `omx-memory`: cross-session search, shared observations, and temporal recall.
+3. Legacy `claude-mem`: fallback only when the project still exposes Chroma tools.
+
+When both legacy `claude-mem` and an AgentMemory-compatible backend are active, warn about split-brain storage. Dual-write is allowed only during an explicit migration window.
 
 ## Operations
 
@@ -15,7 +23,7 @@ Provide memory persistence operations using claude-mem for session context survi
 
 ```yaml
 operation: save
-description: Store session context in claude-mem
+description: Store session context in the configured searchable memory backend
 steps:
   1. Collect session data:
      - Tasks completed
@@ -26,8 +34,10 @@ steps:
      - Add project tag: "my-project"
      - Add session ID: {date}-{uuid}
      - Add relevant tags
-  3. Store in claude-mem:
-     - Use chroma_add_documents
+  3. Store in configured backend:
+     - Prefer memory_add for session summaries
+     - Use observation_add for atomic behavioral or project observations
+     - Legacy fallback: chroma_add_documents
      - Include metadata
 ```
 
@@ -41,8 +51,9 @@ steps:
      - Always prefix with "my-project"
      - Add user-provided search terms
      - Include date for temporal searches
-  2. Search claude-mem:
-     - Use chroma_query_documents
+  2. Search configured backend:
+     - Prefer memory_search
+     - Legacy fallback: chroma_query_documents
      - Request top N results
   3. Format results:
      - Sort by relevance
@@ -56,8 +67,9 @@ steps:
 operation: get
 description: Retrieve specific memory by ID
 steps:
-  1. Use chroma_get_documents with ID
-  2. Return full document content
+  1. Prefer memory_read or memory_search by ID
+  2. Legacy fallback: chroma_get_documents with ID
+  3. Return full document content
 ```
 
 ## Query Patterns
@@ -66,17 +78,20 @@ steps:
 
 ```python
 # Always include project name
+memory_search({ query: "my-project {search_terms}", limit: 8 })
+
+# Legacy fallback
 chroma_query_documents(["my-project {search_terms}"])
 
 # Examples:
-chroma_query_documents(["my-project authentication flow"])
-chroma_query_documents(["my-project 2025-01-24 memory system"])
+memory_search({ query: "my-project authentication flow", limit: 5 })
+memory_search({ query: "my-project 2025-01-24 memory system", limit: 5 })
 ```
 
 ### Get by ID
 
 ```python
-# When you have a specific document ID
+# When you have a specific document ID and only legacy tools are available
 chroma_get_documents(ids=["document_id"])
 ```
 
@@ -194,3 +209,47 @@ recall_errors:
   - Connection failure: Return empty with warning
   - Invalid query: Help user reformulate
 ```
+
+## MemKraft Bridge (Optional)
+
+> External integration: [MemKraft](https://github.com/seojoonkim/memkraft) — zero-dependency compound memory for AI agents.
+> Install: `pipx install memkraft`
+
+### When to Use
+
+| Capability | Searchable MCP | MemKraft |
+|-----------|-----------|----------|
+| Session persistence | ✅ (Chroma) | ✅ (Markdown) |
+| Entity tracking | ❌ | ✅ (person/org/concept) |
+| Source attribution | ❌ | ✅ (`[Source: who, when, how]`) |
+| Auto-maintenance | ❌ | ✅ (Dream Cycle) |
+| CJK entity extraction | ❌ | ✅ (Korean/Chinese/Japanese) |
+| Offline search | ❌ | ✅ (stdlib difflib) |
+
+Use MemKraft when entity tracking or source attribution is needed. Use the configured AgentMemory-compatible or `omx-memory` backend for searchable session persistence.
+
+### Commands
+
+```bash
+# Extract entities from a document
+memkraft extract <file>
+
+# Get a brief on a topic
+memkraft brief <topic>
+
+# Run maintenance cycle (dedup, prune orphans)
+memkraft dream
+```
+
+### Integration with sys-memory-keeper
+
+At session end, sys-memory-keeper can optionally run MemKraft operations:
+
+1. `memkraft extract` on session summary → builds entity graph
+2. `memkraft dream` → prunes stale entries (run weekly, not every session)
+
+### Prerequisites
+
+- Python 3.9+
+- `pipx install memkraft`
+- No API keys required (offline-only)

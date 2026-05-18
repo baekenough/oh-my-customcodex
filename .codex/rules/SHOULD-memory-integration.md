@@ -5,9 +5,9 @@
 ## Architecture
 
 **Primary**: Native auto memory (`memory` field in agent frontmatter). No external dependencies.
-**Supplementary**: claude-mem MCP (optional, for cross-session search and temporal queries).
+**Supplementary**: AgentMemory-compatible MCP or `omx-memory` for cross-session searchable recall; legacy `claude-mem` is fallback only.
 
-Rule: If native auto memory can handle it, do NOT use claude-mem.
+Rule: If native auto memory can handle it, do NOT use a searchable MCP backend.
 
 ## Native Auto Memory
 
@@ -22,14 +22,22 @@ Agent frontmatter `memory: project|user|local` enables persistent memory:
 | `project` | `.codex/agent-memory/<name>/` | Yes |
 | `local` | `.codex/agent-memory-local/<name>/` | No |
 
-## When to Use claude-mem
+## When to Use Searchable MCP Memory
 
-| Scenario | Native | claude-mem |
+| Scenario | Native | AgentMemory-compatible / omx-memory |
 |----------|--------|------------|
 | Agent learns project patterns | Yes | |
 | Search across sessions | | Yes |
 | Temporal queries | | Yes |
 | Cross-agent sharing | | Yes |
+
+<!-- DETAIL: Backend Selection and Split-Brain Guard
+
+Prefer MCP tools named `memory_search`, `memory_add`, `observation_add`, and `memory_read`. Treat `chroma_query_documents`, `chroma_add_documents`, and `chroma_get_documents` as legacy `claude-mem` fallbacks.
+
+If both backend families are available, warn before writing. Dual-write is acceptable only during an explicit migration window; outside that window, choose one canonical searchable backend and record which one was used in the session summary.
+
+-->
 
 ## Best Practices
 
@@ -324,20 +332,21 @@ User signals session end
        2. Update native auto-memory (MEMORY.md)
        3. Return formatted summary to orchestrator
   → Orchestrator performs MCP saves directly:
-       1. claude-mem save (if available via ToolSearch)
+       1. searchable memory save (AgentMemory-compatible or omx-memory, if available via ToolSearch)
+       2. legacy claude-mem save only when it is the configured fallback
        (episodic-memory auto-indexes after session — no action needed)
   → Orchestrator confirms to user
 ```
 
 ### Responsibility Split
 
-MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inherited by subagents. Therefore:
+MCP tools (searchable memory backends, episodic-memory) are **orchestrator-scoped** and not inherited by subagents. Therefore:
 
 | Responsibility | Owner | Reason |
 |----------------|-------|--------|
 | Session summary collection | sys-memory-keeper | Domain expertise in memory formatting |
 | Native auto-memory (MEMORY.md) | sys-memory-keeper | Has Write access to memory directory |
-| claude-mem MCP save | Orchestrator | MCP tools only available at orchestrator level |
+| Searchable memory MCP save | Orchestrator | MCP tools only available at orchestrator level |
 | episodic-memory | Automatic | Conversations are auto-indexed after session ends — no manual action needed |
 
 ### Dual-System Save
@@ -345,13 +354,14 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 | System | Owner | Tool | Action | Required |
 |--------|-------|------|--------|----------|
 | Native auto-memory | sys-memory-keeper | Write | Update MEMORY.md with session learnings | Yes |
-| claude-mem | Orchestrator | `mcp__plugin_claude-mem_mcp-search__save_memory` | Save session summary with project, tasks, decisions | No (best-effort) |
+| AgentMemory-compatible / omx-memory | Orchestrator | `memory_add` or `observation_add` | Save session summary with project, tasks, decisions | No (best-effort) |
+| legacy claude-mem | Orchestrator | `chroma_add_documents` or compatible save wrapper | Fallback searchable save when no preferred backend exists | No (best-effort) |
 | episodic-memory | Automatic | (auto-indexed) | No action needed — conversations are indexed automatically after session ends | N/A |
 -->
 
 ### Session-End Self-Check (MANDATORY)
 
-(1) sys-memory-keeper updated MEMORY.md? (2) claude-mem save attempted? Both are required before confirming session-end to the user. See full self-check via Read tool.
+(1) sys-memory-keeper updated MEMORY.md? (2) searchable memory save attempted when a backend is available? Both are required before confirming session-end to the user. See full self-check via Read tool.
 
 <!-- DETAIL: Session-End Self-Check (MANDATORY)
 ```
@@ -362,7 +372,7 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 ║     YES → Continue                                               ║
 ║     NO  → Delegate to sys-memory-keeper first                    ║
 ║                                                                   ║
-║  2. Did I attempt claude-mem save?                               ║
+║  2. Did I attempt searchable memory save when available?         ║
 ║     YES → Continue (even if it failed)                           ║
 ║     NO  → ToolSearch + save now                                  ║
 ║                                                                   ║
@@ -379,5 +389,5 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 ### Failure Policy
 
 - MCP saves are **non-blocking**: memory failure MUST NOT prevent session from ending
-- If claude-mem unavailable: skip, log warning
+- If no searchable memory backend is available: skip, log warning
 - episodic-memory: no action needed (auto-indexed after session)

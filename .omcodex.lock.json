@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.5.0",
-  "generatedAt": "2026-05-15T15:55:33.419Z",
-  "templateVersion": "0.5.0",
+  "generatorVersion": "0.5.1",
+  "generatedAt": "2026-05-18T21:18:43.192Z",
+  "templateVersion": "0.5.1",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -100,8 +100,8 @@
       "component": "rules"
     },
     ".codex/rules/SHOULD-memory-integration.md": {
-      "templateHash": "a92539c7eb129e19e7068247d33efcd2279328c59c5d6eaccacb863dd102cf0e",
-      "size": 15972,
+      "templateHash": "dc64b6cc83f5840297b48c85113a35ba5a25bf620ddcd2ad34c45395a7ad8dfa",
+      "size": 16952,
       "component": "rules"
     },
     ".codex/rules/MUST-enforcement-policy.md": {
@@ -695,8 +695,8 @@
       "component": "guides"
     },
     "guides/claude-code/14-token-efficiency.md": {
-      "templateHash": "ca3482ab52df596f089c76ecde15f09139fab27a53fc071945f2a5ce71d17c4e",
-      "size": 2896,
+      "templateHash": "6387ef97952b05cf294835e444acb672cbd8bb638cb9d7cc0336a3ef598eab75",
+      "size": 3442,
       "component": "guides"
     },
     "guides/claude-code/09-guardrails.md": {
