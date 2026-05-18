@@ -85,6 +85,15 @@ If any GATE: block and suggest alternative.
 If any WARN: show warning, ask user to confirm.
 If only PASS/INFO: proceed automatically.
 
+### Guard 5: Review Graph Context Probe
+**Level**: INFO
+**Check**: If a code-review graph or CRG MCP server is available, query impact radius before selecting the expert:
+```text
+Preferred: get_impact_radius({ target })
+Fallback: get_minimal_context({ target, purpose: "dev-review" })
+```
+**Action**: Attach the returned affected files, owners, and dependency edges to the review prompt. If the CRG tools are unavailable or time out, continue with `rg`, `git diff`, and local file reads; CRG is advisory and must not block review.
+
 ## Parameters
 
 | Name | Type | Required | Description |
@@ -105,12 +114,13 @@ If only PASS/INFO: proceed automatically.
 ```
 0. Run pre-flight guards (see ## Pre-flight Guards)
 1. Detect language (or use --lang)
-2. Select appropriate expert agent
-3. Load language-specific skill
-4. Analyze code against best practices
-5. Generate review report
+2. Include CRG impact context when available
+3. Select appropriate expert agent
+4. Load language-specific skill
+5. Analyze code against best practices
+6. Generate review report
 ```
-6. **Artifact persistence** (optional): Review agent saves findings to:
+7. **Artifact persistence** (optional): Review agent saves findings to:
    ```
    .codex/outputs/sessions/{YYYY-MM-DD}/dev-review-{HHmmss}.md
 

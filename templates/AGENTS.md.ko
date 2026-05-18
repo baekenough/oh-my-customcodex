@@ -134,7 +134,7 @@ project/
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
 +-- .agents/
-|   +-- skills/                  # 설치된 스킬 (119 디렉토리)
+|   +-- skills/                  # 설치된 스킬 (123 디렉토리)
 +-- guides/                      # 레퍼런스 문서 (48 토픽)
 ```
 
@@ -226,6 +226,7 @@ Codex CLI의 Agent Teams 기능이 활성화되어 있으면 (`OMCODEX_AGENT_TEA
 | 서버 | 용도 |
 |------|------|
 | omx-memory | 세션 메모리 영속성 (Chroma 기반) |
+| semble | 대규모 저장소 탐색용 semantic code search MCP |
 | context7 | 라이브러리 문서 조회용 MCP 서버 (프로젝트 필요 시 설정) |
 
 ### 설치 명령어
@@ -234,6 +235,9 @@ Codex CLI의 Agent Teams 기능이 활성화되어 있으면 (`OMCODEX_AGENT_TEA
 # MCP 설정 (omx-memory)
 npm install -g omx-memory
 omx-memory setup
+
+# 선택: semantic code search
+uv tool install semble
 ```
 
 ### Claude Code 호환 참고

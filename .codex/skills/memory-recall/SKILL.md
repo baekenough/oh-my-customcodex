@@ -1,6 +1,6 @@
 ---
 name: memory-recall
-description: Search and recall memories from claude-mem
+description: Search and recall memories from native memory plus omx-memory or AgentMemory-compatible backends
 scope: core
 argument-hint: "<query> [--recent] [--limit <n>]"
 user-invocable: true
@@ -8,7 +8,7 @@ user-invocable: true
 
 # Memory Recall Skill
 
-Search and recall relevant memories from claude-mem using semantic search.
+Search and recall relevant memories from native `MEMORY.md` plus the configured searchable MCP backend. Prefer AgentMemory-compatible or `omx-memory` tools (`memory_search`, `memory_read`); fall back to legacy `claude-mem` Chroma tools only when those are the configured backend.
 
 ## Parameters
 
@@ -33,8 +33,9 @@ Search and recall relevant memories from claude-mem using semantic search.
    ├── Add user query terms
    └── Include date if specified
 
-2. Search claude-mem
-   └── chroma_query_documents
+2. Search configured backend
+   ├── Prefer memory_search
+   └── Legacy fallback: chroma_query_documents
 
 3. Format results
    ├── Sort by relevance score
@@ -170,3 +171,4 @@ Suggestions:
 ## Related
 
 - memory-save - Save current context
+- memory-management - Backend selection and split-brain safeguards

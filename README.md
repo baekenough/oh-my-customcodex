@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-49 agents. 119 skills. 22 rules. One command.
+49 agents. 123 skills. 22 rules. One command.
 
 ```bash
 npm install -g oh-my-customcodex && cd your-project && omcustomcodex init
@@ -134,7 +134,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (119)
+### Skills (123)
 
 | Category | Count | Includes |
 |----------|-------|----------|
@@ -287,7 +287,7 @@ your-project/
 │   ├── contexts/               # 4 shared context files
 │   └── ontology/               # Knowledge graph for RAG
 ├── .agents/
-│   └── skills/                 # 119 installed skill modules
+│   └── skills/                 # 123 installed skill modules
 └── guides/                     # 48 reference documents
 ```
 

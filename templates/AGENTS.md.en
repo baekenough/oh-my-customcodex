@@ -134,7 +134,7 @@ project/
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (ecomode)
 +-- .agents/
-|   +-- skills/                  # Installed skills (119 directories)
+|   +-- skills/                  # Installed skills (123 directories)
 +-- guides/                      # Reference docs (48 topics)
 ```
 
@@ -226,6 +226,7 @@ Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 | Server | Purpose |
 |--------|---------|
 | omx-memory | Session memory persistence (Chroma-based) |
+| semble | Semantic code search MCP for high-recall repository exploration |
 | context7 | Library documentation lookup MCP server when a project needs it |
 
 ### Setup Commands
@@ -234,6 +235,9 @@ Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 # MCP setup (omx-memory)
 npm install -g omx-memory
 omx-memory setup
+
+# Optional semantic code search
+uv tool install semble
 ```
 
 ### Claude Code Compatibility Note

@@ -133,7 +133,7 @@ project/
 +-- AGENTS.md                    # Entry point
 +-- .codex/
 |   +-- agents/                  # Subagent definitions (49 files)
-|   +-- skills/                  # Skills (119 directories)
+|   +-- skills/                  # Skills (123 directories)
 |   +-- rules/                   # Global rules (22 files)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (4 files)
@@ -240,6 +240,7 @@ Install in Claude Code via `/plugin install <name>`:
 | Server | Purpose |
 |--------|---------|
 | omx-memory | Session memory persistence |
+| semble | Semantic code search MCP for high-recall repository exploration |
 
 ### Claude Code Setup Commands
 
@@ -263,6 +264,9 @@ claude agents
 
 # MCP setup (omx-memory)
 omx memory doctor
+
+# Optional semantic code search
+uv tool install semble
 ```
 
 <!-- omcodex:git-workflow -->

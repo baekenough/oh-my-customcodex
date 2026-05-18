@@ -12,6 +12,16 @@ Review code from an attacker's perspective using STRIDE + OWASP frameworks.
 
 ## 4-Phase Review Process
 
+### Pre-flight: CRG Attack-Surface Probe
+If a code-review graph or CRG MCP server is available, use it before manual inspection:
+
+```text
+Preferred: query_graph({ target, focus: "trust-boundaries attack-surface data-flow" })
+Fallback: get_impact_radius({ target })
+```
+
+Use the result to seed trust-boundary, data-flow, and dependency-risk analysis. If CRG tools are unavailable, continue with local `rg`, route inspection, and dependency/file reads; CRG is advisory and must not block adversarial review.
+
 ### Phase 1: Trust Boundary Analysis
 Identify where trust transitions occur:
 - External input reaching internal logic without validation → **Tampering**

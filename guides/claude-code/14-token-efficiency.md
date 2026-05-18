@@ -22,12 +22,16 @@ Use R013 ecomode and existing runtime guards when you want to compress active-se
 
 This layer changes how the session behaves while work is running.
 
-## Layer 3: Tool-Specific Compression
+## Layer 3: Retrieval and Tool-Specific Compression
+
+Use semantic code search or graph retrieval before broad file reads when the problem is repository exploration. Prefer Semble when an indexed semantic MCP is connected, and prefer CRG/code-review-graph when the task needs impact radius or dependency context. Fall back to `rg` and targeted reads when those tools are unavailable.
 
 Use `playwright-compress` when the problem is not the whole session, but one extremely verbose browser tool result.
 
 This layer is intentionally narrow:
 
+- use Semble for high-recall code search over large repositories
+- use CRG for `get_minimal_context`, `get_impact_radius`, and trust-boundary graph queries
 - compress verbose Playwright MCP output after the tool succeeds
 - preserve `ref=` tokens and URLs for follow-up interaction
 - keep browser evidence actionable without keeping the full raw payload in context
@@ -64,6 +68,7 @@ Typical settings-level levers:
 |------|------------|
 | Protect cache value across pauses | Layer 1 |
 | Compress runtime behavior in large sessions | Layer 2 |
+| Reduce broad code-search reads | Layer 3 |
 | Compress one noisy browser interaction | Layer 3 |
 | Reduce baseline token spend from configuration | Layer 4 |
 
