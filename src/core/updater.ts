@@ -28,7 +28,7 @@ import {
   type Lockfile,
   readLockfile,
 } from './lockfile.js';
-import { installOmx, isOmxInstalled } from './omx-installer.js';
+import { assessOmxInstallation, installOmx, MINIMUM_OMX_VERSION } from './omx-installer.js';
 import { installRtk, isRtkInstalled } from './rtk-installer.js';
 
 /**
@@ -612,9 +612,18 @@ function checkAndInstallCodexAfterUpdate(): void {
  * Check if OMX CLI is installed after an update and install it if missing
  */
 function checkAndInstallOmxAfterUpdate(): void {
-  if (!isOmxInstalled()) {
+  const omx = assessOmxInstallation();
+
+  if (omx.status !== 'ready') {
     warn('update.omx_missing');
-    console.log(i18n.t('cli.update.omxMissing'));
+    if (omx.status === 'missing') {
+      console.log(i18n.t('cli.update.omxMissing'));
+    } else {
+      const versionDetail = omx.version ? ` (${omx.version})` : '';
+      console.log(
+        `OMX${versionDetail} does not meet the oh-my-codex v${MINIMUM_OMX_VERSION} baseline. Attempting upgrade...`
+      );
+    }
     const omxInstalled = installOmx();
     if (omxInstalled) {
       console.log(i18n.t('cli.update.omxInstalled'));

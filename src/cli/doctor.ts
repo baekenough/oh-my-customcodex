@@ -12,7 +12,7 @@ import { loadConfig } from '../core/config.js';
 import { checkFrameworkVersion } from '../core/doctor-framework.js';
 import { getComponentPath, getProviderLayout } from '../core/layout.js';
 import { computeFileHash, readLockfile } from '../core/lockfile.js';
-import { getOmxVersion, installOmx, isOmxInstalled } from '../core/omx-installer.js';
+import { assessOmxInstallation, installOmx, MINIMUM_OMX_VERSION } from '../core/omx-installer.js';
 import { getRtkVersion, installRtk, isRtkInstalled } from '../core/rtk-installer.js';
 import { checkSelfUpdate } from '../core/self-update.js';
 import { i18n } from '../i18n/index.js';
@@ -566,7 +566,9 @@ export async function checkCodex(): Promise<CheckResult> {
  * Check if OMX CLI is installed for the parent harness dependency
  */
 export async function checkOmx(): Promise<CheckResult> {
-  if (!isOmxInstalled()) {
+  const omx = assessOmxInstallation();
+
+  if (omx.status === 'missing') {
     return {
       name: 'OMX',
       status: 'warn',
@@ -575,11 +577,37 @@ export async function checkOmx(): Promise<CheckResult> {
     };
   }
 
-  const version = getOmxVersion();
+  if (omx.status === 'stale') {
+    return {
+      name: 'OMX',
+      status: 'warn',
+      message: `OMX stale (${omx.version ?? 'unknown version'}) — requires oh-my-codex v${MINIMUM_OMX_VERSION}+ with omx api`,
+      fixable: true,
+    };
+  }
+
+  if (omx.status === 'api-missing') {
+    return {
+      name: 'OMX',
+      status: 'warn',
+      message: `OMX missing required omx api command (${omx.version ?? 'unknown version'}) — install oh-my-codex v${MINIMUM_OMX_VERSION}+`,
+      fixable: true,
+    };
+  }
+
+  if (omx.status === 'unknown-version') {
+    return {
+      name: 'OMX',
+      status: 'warn',
+      message: `OMX version could not be verified — requires oh-my-codex v${MINIMUM_OMX_VERSION}+ with omx api`,
+      fixable: true,
+    };
+  }
+
   return {
     name: 'OMX',
     status: 'pass',
-    message: `OMX OK (${version ?? 'unknown version'})`,
+    message: `OMX OK (${omx.version ?? 'unknown version'}, omx api available)`,
     fixable: false,
   };
 }
@@ -764,7 +792,7 @@ export async function fixIssues(
   const fixedChecks: CheckResult[] = [];
 
   for (const check of checks) {
-    if (check.status !== 'fail' || !check.fixable) {
+    if (check.status === 'pass' || !check.fixable) {
       fixedChecks.push(check);
       continue;
     }
@@ -1018,7 +1046,7 @@ export async function doctorCommand(options: DoctorOptions = {}): Promise<Doctor
   // Apply fixes if requested
   let checks: CheckResult[] = checksWithUpdate;
   if (options.fix) {
-    const hasFixableIssues = checksWithUpdate.some((c) => c.status === 'fail' && c.fixable);
+    const hasFixableIssues = checksWithUpdate.some((c) => c.status !== 'pass' && c.fixable);
 
     if (hasFixableIssues) {
       console.log(i18n.t('cli.doctor.applyingFixes'));
