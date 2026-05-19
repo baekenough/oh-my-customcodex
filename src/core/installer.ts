@@ -43,7 +43,7 @@ import {
   type InstallComponent,
 } from './layout.js';
 import { generateAndWriteLockfileForDir } from './lockfile.js';
-import { installOmx, isOmxInstalled } from './omx-installer.js';
+import { assessOmxInstallation, installOmx, MINIMUM_OMX_VERSION } from './omx-installer.js';
 import { installRtk, isRtkInstalled } from './rtk-installer.js';
 import {
   getAgentDomain,
@@ -416,14 +416,17 @@ function installCodexIfNeeded(result: InstallResult): void {
  * Install OMX CLI if not already installed, adding warnings to result on failure
  */
 function installOmxIfNeeded(result: InstallResult): void {
-  if (!isOmxInstalled()) {
+  const omx = assessOmxInstallation();
+
+  if (omx.status !== 'ready') {
     info('install.omx_installing');
     const omxInstalled = installOmx();
     if (omxInstalled) {
       info('install.omx_success');
     } else {
+      const versionDetail = omx.version ? ` (found ${omx.version})` : '';
       result.warnings.push(
-        'OMX installation failed — install manually: npm install -g oh-my-codex'
+        `OMX installation/upgrade failed${versionDetail} — install oh-my-codex >= v${MINIMUM_OMX_VERSION} manually: npm install -g oh-my-codex@latest`
       );
     }
   } else {
