@@ -131,6 +131,10 @@
           },
           {
             "type": "command",
+            "command": "bash .codex/hooks/scripts/agent-capability-precheck.sh"
+          },
+          {
+            "type": "command",
             "command": "#!/bin/bash\ninput=$(cat)\nagent_type=$(echo \"$input\" | jq -r '.tool_input.subagent_type // \"unknown\"')\nmodel=$(echo \"$input\" | jq -r '.tool_input.model // \"inherit\"')\ndesc=$(echo \"$input\" | jq -r '.tool_input.description // \"\"' | head -c 40)\nresume=$(echo \"$input\" | jq -r '.tool_input.resume // empty')\nif [ -n \"$resume\" ]; then\n  echo \"─── [Resume] ${agent_type}:${model} | ${desc} ───\" >&2\nelse\n  echo \"─── [Spawn] ${agent_type}:${model} | ${desc} ───\" >&2\nfi\necho \"$input\""
           },
           {
@@ -254,6 +258,10 @@
           {
             "type": "command",
             "command": "bash .codex/hooks/scripts/auto-continue-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/scripts/session-reflection.sh"
           },
           {
             "type": "prompt",
@@ -554,6 +562,16 @@
           }
         ],
         "description": "Batch-save agent outcomes to eval-core DB on session end (advisory, exit 0)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/scripts/session-reflection.sh"
+          }
+        ],
+        "description": "Capture session-end reflection from transcript, background_tasks, and session_crons (advisory, exit 0)"
       },
       {
         "matcher": "*",

@@ -50,3 +50,4 @@ target/
 
 # OMX runtime state
 .omx/
+.codex/outputs/

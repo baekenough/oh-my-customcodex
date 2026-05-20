@@ -15,7 +15,13 @@
 #     "rate_limits": {                          (v2.1.80+, optional)
 #       "five_hour": { "used_percentage": 10, "resets_at": 1773979200 },
 #       "seven_day": { "used_percentage": 90, "resets_at": 1773979200 }
-#     }
+#     },
+#     "gh": {                                   (v2.1.145+, optional)
+#       "repo": "owner/repo",
+#       "pr_number": 160,
+#       "pr_state": "OPEN"
+#     },
+#     "agents": [ ... ]                         (v2.1.144+, optional)
 #   }
 
 # ---------------------------------------------------------------------------
@@ -61,14 +67,15 @@ fi
 
 # Debug logging for CTX investigation
 if [[ -n "${STATUSLINE_DEBUG}" ]]; then
-    printf '%s\n' "$json" >> "/tmp/.claude-statusline-debug-${PPID}.jsonl"
+    printf '%s\n' "$json" >> "/tmp/.codex-statusline-debug-${PPID}.jsonl"
 fi
 
 # ---------------------------------------------------------------------------
 # 4. Single jq call — extract all fields as TSV
-#    Fields: model_name, project_dir, ctx_pct, ctx_size, cost_usd, rl_5h_pct, rl_7d_pct, rl_5h_resets, rl_7d_resets
+#    Fields: model_name, project_dir, ctx_pct, ctx_size, cost_usd, rl_5h_pct, rl_7d_pct,
+#            rl_5h_resets, rl_7d_resets, gh_repo, gh_pr_number, gh_pr_state, agent_count
 # ---------------------------------------------------------------------------
-IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd rl_5h_pct rl_7d_pct rl_5h_resets rl_7d_resets <<< "$(
+IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd rl_5h_pct rl_7d_pct rl_5h_resets rl_7d_resets gh_repo gh_pr_number gh_pr_state agent_count <<< "$(
     printf '%s' "$json" | jq -r '[
         (.model.display_name // "unknown"),
         (.workspace.current_dir // ""),
@@ -78,14 +85,25 @@ IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd rl_5h_pct rl_
         (.rate_limits.five_hour.used_percentage // -1),
         (.rate_limits.seven_day.used_percentage // -1),
         (.rate_limits.five_hour.resets_at // -1),
-        (.rate_limits.seven_day.resets_at // -1)
+        (.rate_limits.seven_day.resets_at // -1),
+        (if (.gh.repo // "") == "" then "_" else .gh.repo end),
+        (if (.gh.pr_number // "") == "" then "_" else (.gh.pr_number | tostring) end),
+        (if (.gh.pr_state // "") == "" then "_" else .gh.pr_state end),
+        (if (.agents | type) == "array" then (.agents | length) else 0 end)
     ] | @tsv'
 )"
+
+[[ "$gh_repo" == "_" ]] && gh_repo=""
+[[ "$gh_pr_number" == "_" ]] && gh_pr_number=""
+[[ "$gh_pr_state" == "_" ]] && gh_pr_state=""
+if ! [[ "$agent_count" =~ ^[0-9]+$ ]]; then
+    agent_count=0
+fi
 
 # ---------------------------------------------------------------------------
 # 4b. Cost & context data bridge — write to temp file for hooks
 # ---------------------------------------------------------------------------
-COST_BRIDGE_FILE="/tmp/.claude-cost-${PPID}"
+COST_BRIDGE_FILE="/tmp/.codex-cost-${PPID}"
 _tmp="${COST_BRIDGE_FILE}.tmp.$$"
 printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$cost_usd" "$ctx_pct" "$(date +%s)" "$rl_5h_pct" "$rl_7d_pct" "$rl_5h_resets" "$rl_7d_resets" > "$_tmp" 2>/dev/null && mv -f "$_tmp" "$COST_BRIDGE_FILE" 2>/dev/null || true
 
@@ -232,7 +250,12 @@ fi
 # 8. PR number — cached by branch to avoid gh call on every refresh
 # ---------------------------------------------------------------------------
 pr_display=""
-if [[ -n "$git_branch" ]] && command -v gh >/dev/null 2>&1; then
+if [[ -n "$gh_pr_number" ]]; then
+    pr_display="PR #${gh_pr_number}"
+    if [[ -n "$gh_pr_state" && "$gh_pr_state" != "OPEN" ]]; then
+        pr_display="${pr_display} ${gh_pr_state}"
+    fi
+elif [[ -n "$git_branch" ]] && command -v gh >/dev/null 2>&1; then
     cache_file="/tmp/statusline-pr-${project_name}"
     cached_branch=""
     cached_pr=""
@@ -360,6 +383,12 @@ if [[ -n "$wl_display" ]]; then
     wl_segment=" | ${wl_color}${wl_display}${COLOR_RESET}"
 fi
 
+# Build the active agent count segment from statusline JSON when available.
+agent_segment=""
+if [[ "$agent_count" -gt 0 ]]; then
+    agent_segment=" | A:${agent_count}"
+fi
+
 # Build the RTK segment from the session-env bridge if available.
 rtk_segment=""
 env_status_file="/tmp/.codex-env-status-${PPID}"
@@ -380,22 +409,24 @@ if [[ -f "$env_status_file" ]]; then
 fi
 
 if [[ -n "$git_branch" ]]; then
-    printf "${cost_color}%s${COLOR_RESET} | %s | %s%s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
+    printf "${cost_color}%s${COLOR_RESET} | %s | %s%s%s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
         "$cost_display" \
         "$project_name" \
         "$branch_display" \
         "$pr_segment" \
         "$rl_segment" \
         "$wl_segment" \
+        "$agent_segment" \
         "$rtk_segment" \
         "$ctx_display"
 else
-    printf "${cost_color}%s${COLOR_RESET} | %s%s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
+    printf "${cost_color}%s${COLOR_RESET} | %s%s%s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
         "$cost_display" \
         "$project_name" \
         "$pr_segment" \
         "$rl_segment" \
         "$wl_segment" \
+        "$agent_segment" \
         "$rtk_segment" \
         "$ctx_display"
 fi

@@ -48,11 +48,11 @@ templates/
 |   +-- agents/                       # agent definitions (49 files)
 |   +-- skills/                       # skill modules (123 SKILL.md files)
 |   +-- rules/                        # global rules (22 files)
-|   +-- hooks/                        # hook registry and scripts (38 scripts)
+|   +-- hooks/                        # hook registry and scripts (40 scripts)
 |   +-- contexts/                     # context files
 |   +-- ontology/                     # ontology and routing metadata
 |   +-- schemas/                      # tool input schemas
-+-- guides/                           # reference docs (48 topics)
++-- guides/                           # reference docs (49 topics)
 ```
 
 ## Components
@@ -77,13 +77,13 @@ Reusable workflow and reference skill modules. During Codex installation these l
 
 Global agent behavior rules. During Codex installation these land under `.codex/rules/`.
 
-### Guides (48)
+### Guides (49)
 
 `templates/guides/*/`
 
 Reference documentation directories copied to installed projects as `guides/`.
 
-### Hooks (38)
+### Hooks (40)
 
 `templates/.claude/hooks/scripts/*.sh`
 

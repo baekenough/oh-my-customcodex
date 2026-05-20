@@ -11,9 +11,11 @@ const HOOKS_JSON_PATH = resolve(import.meta.dir, '../../../templates/.claude/hoo
 
 const STAGE_BLOCKER_SCRIPT = join(SCRIPTS_DIR, 'stage-blocker.sh');
 const AGENT_MODE_GUARD_SCRIPT = join(SCRIPTS_DIR, 'agent-mode-guard.sh');
+const AGENT_CAPABILITY_PRECHECK_SCRIPT = join(SCRIPTS_DIR, 'agent-capability-precheck.sh');
 const GIT_DELEGATION_GUARD_SCRIPT = join(SCRIPTS_DIR, 'git-delegation-guard.sh');
 const DESTRUCTIVE_GIT_GUARD_SCRIPT = join(SCRIPTS_DIR, 'destructive-git-guard.sh');
 const STOP_CONSOLE_AUDIT_SCRIPT = join(SCRIPTS_DIR, 'stop-console-audit.sh');
+const SESSION_REFLECTION_SCRIPT = join(SCRIPTS_DIR, 'session-reflection.sh');
 const AGENT_TEAMS_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'agent-teams-advisor.sh');
 const CLAUDE_SENSITIVE_PATH_GUARD_SCRIPT = join(SCRIPTS_DIR, 'claude-sensitive-path-guard.sh');
 const SOURCE_CLAUDE_SENSITIVE_PATH_GUARD_SCRIPT = join(
@@ -380,6 +382,62 @@ describe('stop-console-audit.sh', () => {
 });
 
 // -------------------------------------------------------------------
+// session-reflection.sh
+// -------------------------------------------------------------------
+
+describe('session-reflection.sh', () => {
+  it('records a reflection when a transcript path is provided', async () => {
+    const root = join(tmpdir(), `omcc-reflection-${Date.now()}`);
+    const transcript = join(root, 'session.jsonl');
+    await mkdir(root, { recursive: true });
+    await writeFile(
+      transcript,
+      [
+        '{"role":"assistant","content":"checking"}',
+        '{"type":"tool_use","name":"Bash"}',
+        '{"role":"assistant","content":"finished"}',
+      ].join('\n')
+    );
+
+    const input = makeStopInput({ session_id: 'reflection-test', transcript_path: transcript });
+    const result = await runHookScript(
+      SESSION_REFLECTION_SCRIPT,
+      input,
+      { OMCUSTOMCODEX_PROJECT_ROOT: root },
+      root
+    );
+    const reflectionDir = join(root, '.codex/outputs/reflections');
+    const reflectionCreated = existsSync(reflectionDir);
+
+    await rm(root, { recursive: true, force: true });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe(input);
+    expect(result.stderr).toContain('SessionReflection');
+    expect(reflectionCreated).toBe(true);
+  });
+
+  it('passes through without writing when reflection is disabled', async () => {
+    const root = join(tmpdir(), `omcc-reflection-off-${Date.now()}`);
+    await mkdir(root, { recursive: true });
+
+    const input = makeStopInput({ session_id: 'reflection-off' });
+    const result = await runHookScript(
+      SESSION_REFLECTION_SCRIPT,
+      input,
+      { OMCUSTOMCODEX_PROJECT_ROOT: root, OMCUSTOMCODEX_SESSION_REFLECTION: 'off' },
+      root
+    );
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe(input);
+    expect(existsSync(join(root, '.codex/outputs/reflections'))).toBe(false);
+
+    await rm(root, { recursive: true, force: true });
+  });
+});
+
+// -------------------------------------------------------------------
 // stage-blocker.sh
 // -------------------------------------------------------------------
 
@@ -466,6 +524,47 @@ describe('stage-blocker.sh', () => {
     await writeFile(STAGE_FILE, '  plan  \n');
     const result = await runHookScript(STAGE_BLOCKER_SCRIPT, '{}');
     expect(result.exitCode).toBe(2);
+  });
+});
+
+// -------------------------------------------------------------------
+// agent-capability-precheck.sh
+// -------------------------------------------------------------------
+
+describe('agent-capability-precheck.sh', () => {
+  const projectRoot = resolve(import.meta.dir, '../../..');
+
+  it('blocks Bash-required prompts for agents that disallow Bash', async () => {
+    const input = makeTaskInput(
+      'arch-documenter',
+      'Run gh issue view 1355 and summarize the result'
+    );
+    const result = await runHookScript(AGENT_CAPABILITY_PRECHECK_SCRIPT, input, {}, projectRoot);
+
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('Agent capability mismatch');
+    expect(result.stderr).toContain('arch-documenter');
+    expect(result.stderr).toContain('disallowedTools');
+  });
+
+  it('allows documentation-only prompts for agents that disallow Bash', async () => {
+    const input = makeTaskInput(
+      'arch-documenter',
+      'Write an ADR from the evidence already included in this prompt'
+    );
+    const result = await runHookScript(AGENT_CAPABILITY_PRECHECK_SCRIPT, input, {}, projectRoot);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe(input);
+    expect(result.stderr).toBe('');
+  });
+
+  it('allows command prompts for Bash-capable agents', async () => {
+    const input = makeTaskInput('mgr-gitnerd', 'Run git status and report the branch');
+    const result = await runHookScript(AGENT_CAPABILITY_PRECHECK_SCRIPT, input, {}, projectRoot);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe(input);
   });
 });
 
@@ -1523,9 +1622,11 @@ describe('file-change-validator.sh', () => {
 describe('Script file validation', () => {
   const EXPECTED_SCRIPTS = [
     'stage-blocker.sh',
+    'agent-capability-precheck.sh',
     'claude-sensitive-path-guard.sh',
     'git-delegation-guard.sh',
     'stop-console-audit.sh',
+    'session-reflection.sh',
     'agent-teams-advisor.sh',
     'session-env-check.sh',
     'stuck-detector.sh',

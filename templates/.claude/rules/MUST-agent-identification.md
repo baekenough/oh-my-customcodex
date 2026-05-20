@@ -9,61 +9,89 @@ Every response MUST start with agent identification:
 ```
 ┌─ Agent: {agent-name} ({agent-type})
 ├─ Skill: {skill-name} (if applicable)
-└─ Task: {brief-task-description}
+└─ Status: {current-action-or-verdict}
 ```
 
-Default (no specific agent): `┌─ Agent: claude (default)`
+Use `├─` for every intermediate metadata line. Only the final metadata line uses `└─`.
+
+Default (no specific agent): `┌─ Agent: Codex (default)`
 
 ## Simplified Format
 
-For brief responses: `[mgr-creator] Creating agent structure...`
-With skill: `[fe-vercel-agent → react-best-practices] Analyzing...`
+The full block is still required for brief user-facing responses. A one-line response may contain only the block plus one concise sentence, but it must not drop the block.
+
+Legacy bracket shorthand is allowed only inside internal logs or non-user-facing scratch output:
+
+```
+[mgr-creator] Creating agent structure...
+[fe-vercel-agent → react-best-practices] Analyzing...
+```
+
+## Short Response Discipline
+
+Short answers, diagnostics, status pings, and corrections are not exempt. If the response is visible to the user, start with the identity block even when the body is one sentence.
+
+Anti-pattern:
+
+```text
+확인했습니다.
+```
+
+Correct:
+
+```text
+┌─ Agent: Codex (default)
+├─ Skill: none
+└─ Status: 확인
+
+확인했습니다.
+```
 
 ## Routing & Skill Context
 
 When the orchestrator uses a routing skill, identification should reflect the active context:
 
 ```
-┌─ Agent: claude (secretary-routing)
+┌─ Agent: Codex (secretary-routing)
 ├─ Skill: secretary-routing
-└─ Task: route agent management request
+└─ Status: route agent management request
 ```
 
 | Context | Identification |
 |---------|---------------|
-| No routing active | `claude (default)` |
-| secretary-routing | `claude (secretary-routing)` |
-| dev-lead-routing | `claude (dev-lead-routing)` |
-| de-lead-routing | `claude (de-lead-routing)` |
-| qa-lead-routing | `claude (qa-lead-routing)` |
-| Skill invocation | `claude → {skill-name}` |
+| No routing active | `Codex (default)` |
+| secretary-routing | `Codex (secretary-routing)` |
+| dev-lead-routing | `Codex (dev-lead-routing)` |
+| de-lead-routing | `Codex (de-lead-routing)` |
+| qa-lead-routing | `Codex (qa-lead-routing)` |
+| Skill invocation | `Codex → {skill-name}` |
 
 ## Skill Invocation Format
 
 When the orchestrator invokes a skill via the Skill tool, the skill name MUST be integrated into the identification block — NOT displayed as a separate tool call.
 
 ```
-┌─ Agent: claude → {skill-name}
-└─ Task: {brief-task-description}
+┌─ Agent: Codex → {skill-name}
+└─ Status: {current-action-or-verdict}
 ```
 
 ### Common Violations
 
 ```
 Incorrect: Skill as separate display
-   ┌─ Agent: claude (default)
-   └─ Task: research topic analysis
+   ┌─ Agent: Codex (default)
+   └─ Status: research topic analysis
 
    Skill(research)    ← separate, disconnected
 
 Correct: Skill integrated into identification
-   ┌─ Agent: claude → research
-   └─ Task: research topic analysis
+   ┌─ Agent: Codex → research
+   └─ Status: research topic analysis
 
 Correct: With sub-skill
-   ┌─ Agent: claude → research
+   ┌─ Agent: Codex → research
    ├─ Skill: result-aggregation
-   └─ Task: aggregate team findings
+   └─ Status: aggregate team findings
 ```
 
 ## When to Display
@@ -72,6 +100,6 @@ Correct: With sub-skill
 |-----------|---------|
 | Agent-specific task | Full header |
 | Using skill | Include skill name |
-| General conversation | "claude (default)" |
+| General conversation | "Codex (default)" |
 | Long tasks | Show progress with agent context |
-| Skill invocation | Integrated `claude → {skill-name}` format |
+| Skill invocation | Integrated `Codex → {skill-name}` format |

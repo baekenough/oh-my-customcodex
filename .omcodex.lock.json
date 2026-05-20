@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "0.5.1",
-  "generatedAt": "2026-05-18T21:18:43.192Z",
+  "generatedAt": "2026-05-20T10:31:13.099Z",
   "templateVersion": "0.5.1",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
@@ -15,13 +15,13 @@
       "component": "rules"
     },
     ".codex/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "74bc663ffa6f0380b90164873fdb43b489c5e1e9feb812a176d445ca5185668b",
-      "size": 20945,
+      "templateHash": "e9db90dd5de59354362a3e86c06cf7f055c23bafba58d6ec71b79bb65b81e60b",
+      "size": 21929,
       "component": "rules"
     },
     ".codex/rules/MUST-intent-transparency.md": {
-      "templateHash": "1bf945db481ab7eb9fae0cfd69c81d993cd8e219b3d3d39465fd0918b4253ec4",
-      "size": 2790,
+      "templateHash": "31fe14e9b61051c8df0f01922cb5cf79a302edfdb68804d9640f14790f54d7ce",
+      "size": 3443,
       "component": "rules"
     },
     ".codex/rules/SHOULD-error-handling.md": {
@@ -45,8 +45,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-language-policy.md": {
-      "templateHash": "af52efd56311e2f33baeba86da46cd889c45d9e78e91b74cba9b7bb10150c843",
-      "size": 745,
+      "templateHash": "a5536dc735f150c2ca92b75b63939f40991b69e410c65ac516dfe8cd7b02351d",
+      "size": 1206,
       "component": "rules"
     },
     ".codex/rules/MUST-agent-design.md": {
@@ -55,8 +55,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-identification.md": {
-      "templateHash": "40c2a1a3bb04462926ae4690691ec133e9c915aeefc97ac4d3c69f93a4524359",
-      "size": 2250,
+      "templateHash": "11b756a4f73e75db5fddbbb42d2323118d0608592116ee10c32aad9034835acd",
+      "size": 2852,
       "component": "rules"
     },
     ".codex/rules/MUST-sync-verification.md": {
@@ -75,8 +75,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-continuous-improvement.md": {
-      "templateHash": "749c03159e0f4685444aa2fa58fa5d8167b976b80ded6328371cd4ee3e157484",
-      "size": 2850,
+      "templateHash": "7305e06be2cf2e725106866fcc50b2a5755ba90b8b774f5db9221eb1b515fd71",
+      "size": 3698,
       "component": "rules"
     },
     ".codex/rules/MUST-permissions.md": {
@@ -95,8 +95,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-tool-identification.md": {
-      "templateHash": "32bc22593cb794da5fdca5416a8832d3ac9026c129b38886c628a2da0b452c87",
-      "size": 2866,
+      "templateHash": "aec6cc7e8feedce4922d939916d346483ebf583d52c7262d4388709923c990ce",
+      "size": 3266,
       "component": "rules"
     },
     ".codex/rules/SHOULD-memory-integration.md": {
@@ -115,8 +115,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-completion-verification.md": {
-      "templateHash": "9aae499cf32ad1f2e2e532702e93949eb0048f7fc4de521a3225abf91ab1f65f",
-      "size": 6195,
+      "templateHash": "fd80101ed04272eac20dbd7654c08e9b871c843c6b0662aeb63ccd4bd43bb154",
+      "size": 7045,
       "component": "rules"
     },
     ".codex/agents/be-springboot-expert.md": {
@@ -220,8 +220,8 @@
       "component": "agents"
     },
     ".codex/agents/qa-engineer.md": {
-      "templateHash": "74f67a417153cc3070679a161d644c98f435e4a4e4f25d674fe267149eb95406",
-      "size": 1015,
+      "templateHash": "26f422c0682c5d784c798913286186454ccaac613e56957b0cf3fd85c1bc02e3",
+      "size": 1511,
       "component": "agents"
     },
     ".codex/agents/fe-vercel-agent.md": {
@@ -409,6 +409,11 @@
       "size": 1884,
       "component": "hooks"
     },
+    ".codex/hooks/scripts/session-reflection.sh": {
+      "templateHash": "9d787bd739a4e7834fff7601a71da0704fef39855baa1ba2a259d5fbe19d7909",
+      "size": 4502,
+      "component": "hooks"
+    },
     ".codex/hooks/scripts/user-prompt-preprocessor.sh": {
       "templateHash": "71a4e7fec6f830c7c12fbb00f8d1469a8dd92805f06495d31afa1a2ef88532cf",
       "size": 843,
@@ -420,8 +425,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/agent-mode-guard.sh": {
-      "templateHash": "611379356f55bbe87727410cca662b2666a7ed632245aaf2e1cd6d4ecf122744",
-      "size": 721,
+      "templateHash": "395d34911acabebf2b5fa6696bfdcc7544ac18990028411895d1c30f35df0939",
+      "size": 955,
       "component": "hooks"
     },
     ".codex/hooks/scripts/auto-dev-token-summary.sh": {
@@ -465,8 +470,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/git-delegation-guard.sh": {
-      "templateHash": "dfe568002b8620193a3ab495d20caefc6f6c4e15c16306579e1eceff05cf69ab",
-      "size": 1982,
+      "templateHash": "bcd441fd179544e27bf7e3c4cf3bc1a9b9cb02236f7407a4023741cd875a07b5",
+      "size": 2175,
       "component": "hooks"
     },
     ".codex/hooks/scripts/session-autofix-prompt.sh": {
@@ -524,6 +529,11 @@
       "size": 4677,
       "component": "hooks"
     },
+    ".codex/hooks/scripts/agent-capability-precheck.sh": {
+      "templateHash": "0d4c4d37db2376cb0001d47e3372593b399c93ba04f4743721f25c4244e09317",
+      "size": 3277,
+      "component": "hooks"
+    },
     ".codex/hooks/scripts/adaptive-harness-scan.sh": {
       "templateHash": "be8db0e38057cfa2e84947d54a2edf933509d940569758743725e4881b32596b",
       "size": 1699,
@@ -570,8 +580,8 @@
       "component": "hooks"
     },
     ".codex/hooks/hooks.json": {
-      "templateHash": "be13ceb94b57c389d2821d7893f81d38799d9d60bba802d167c3d14b30af5692",
-      "size": 27633,
+      "templateHash": "c5f136478a7f3a5f8586332f15a0d217fc0a4321e3e295b567f255df9c22720c",
+      "size": 28225,
       "component": "hooks"
     },
     ".codex/contexts/ecomode.md": {
@@ -655,8 +665,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "f6c1ad74ad02690e956307169029f3eba3b0f44d50902bd423ec4bf3363b876a",
-      "size": 9094,
+      "templateHash": "bbbc89bc55e519fb26e0560fc7ff0bb86d6c5966f9954a924bbd38496f9a455e",
+      "size": 11876,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {
@@ -934,6 +944,11 @@
       "size": 1628,
       "component": "guides"
     },
+    "guides/autonomous-challenge-lessons/README.md": {
+      "templateHash": "286194e3eab40cf492d783ec16d40aeaedc85b030b5d50e34f242632b799eac7",
+      "size": 2157,
+      "component": "guides"
+    },
     "guides/airflow/README.md": {
       "templateHash": "c4345a9499e91c8e11c6953969e6e7a3af613ff44ffd1409a61635b0fcf6a128",
       "size": 1936,
@@ -1120,8 +1135,8 @@
       "component": "guides"
     },
     "guides/index.yaml": {
-      "templateHash": "0ca1c6f9c591799faaaa155e97b36c51a932093ade8a6ce3bb2f544cfd5457f8",
-      "size": 9093,
+      "templateHash": "5ec611ba3140850617fb334781757d4b35ca0faa5ef91b34413e7d0a85d83d0b",
+      "size": 9347,
       "component": "guides"
     },
     "guides/spark/README.md": {

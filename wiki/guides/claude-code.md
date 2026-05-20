@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-05-15
+updated: 2026-05-20
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/15-version-compatibility.md
@@ -33,6 +33,30 @@ Covers Claude's advanced API features for building Claude Code-compatible applic
 ## Version Compatibility
 
 oh-my-customcodex keeps Claude compatibility guidance for installed templates while `.codex/**` and OMX remain the primary runtime surface.
+
+### v2.1.145 (2026-05-19)
+
+Source: upstream oh-my-customcode #1191, Codex port #1353.
+
+- Statusline JSON now carries structured GitHub fields such as `gh.repo`, `gh.pr_number`, and `gh.pr_state`.
+- The Codex port statusline now prefers those fields and falls back to cached `gh pr view` only when native fields are absent.
+- Empty GitHub statusline fields are normalized so Bash TSV parsing remains stable.
+
+### v2.1.144 (2026-05-18)
+
+Source: upstream oh-my-customcode #1187, Codex port #1349.
+
+- `claude agents --json` exposes structured background-agent state.
+- Statusline JSON `agents` arrays render as `A:N` when active agents exist.
+- Stop/SubagentStop hook input can include `background_tasks` and `session_crons`; `session-reflection.sh` records those fields.
+
+### v2.1.143 (2026-05-17)
+
+Source: upstream oh-my-customcode #1166, Codex port #1348.
+
+- Hook/session lifecycle payloads became richer for background work.
+- The compatibility template captures session-end evidence without blocking shutdown.
+- Codex-native `.codex/**` and OMX behavior remains primary; the release is documented as a Claude compatibility surface.
 
 ### v2.1.142 (2026-05-14)
 

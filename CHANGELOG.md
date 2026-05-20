@@ -10,10 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add pipeline label standards and template README documentation for the Codex distribution mapping.
 - Record Claude Code v2.1.142 compatibility impact and the upstream nested plan `.gitignore` limitation in source/template guides and wiki pages.
+- Record Claude Code v2.1.143, v2.1.144, and v2.1.145 compatibility impact for background task payloads, `claude agents --json`, and structured statusline GitHub fields.
+- Add advisory `session-reflection.sh` Stop/SubagentStop capture for transcripts, `background_tasks`, and `session_crons`.
+- Add systematic-debugging extended phase guides for timeline correlation, retry/cache/timeout false-fix audits, amplification detection, and fault injection.
+- Add an autonomous challenge lessons guide for ground-truth artifact checks, repeated failure discipline, parallel work chunking, and QA evidence quoting.
 
 ### Changed
 - Harden `auto-dev` with pre-triage git sync, stale issue-version warnings, milestone state checks, docs-only compression selection, and mandatory `bun test` baseline verification.
 - Teach `auto-tag.yml` to close a release milestone automatically when all linked issues are closed.
+- Prefer native statusline `gh.*` and `agents` JSON when available while preserving cached `gh pr view` fallback behavior.
+- Harden R000, R007, R008, R010, R015, R016, and R020 guidance with 합쇼체, short-response identification discipline, agent capability pre-checks, structured-question retry discipline, external repo pre-checks, and interrupt-aware completion verification.
+- Require `qa-engineer` to quote selectors, mappings, flags, and config keys from inspected code before citing them.
 
 ## [0.4.17] - 2026-05-14
 

@@ -1,7 +1,7 @@
 ---
 title: qa-engineer
 type: agent
-updated: 2026-04-12
+updated: 2026-05-20
 sources:
   - .codex/agents/qa-engineer.md
 related:
@@ -27,6 +27,8 @@ QA execution specialist that runs tests, identifies defects, classifies severity
 - **Effort**: medium
 - **Max Turns**: 20
 - **Limitations**: cannot modify source code in production branches
+- **Evidence rule**: selectors, test IDs, CLI flags, mappings, function names, and config keys must be read or grepped from target code before citation
+- **UI completion**: browser or screenshot evidence is required when a renderer is available; typecheck alone is not visual verification
 
 ## Supported Frameworks
 

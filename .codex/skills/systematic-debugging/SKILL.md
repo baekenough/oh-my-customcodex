@@ -27,6 +27,7 @@ user-invocable: false
 4. **한 번에 하나의 가설만 검증한다.**
 5. **수정 시 "while I'm here" 리팩터링을 금지한다.**
 6. **수정 시도가 3번 실패하면 추가 패치 전에 구조적 문제를 의심한다.**
+7. **retry/cache/timeout을 변경하기 전에 false-fix 가능성을 점검한다.**
 
 이 과정을 어기는 것은 디버깅 실패로 본다.
 
@@ -318,3 +319,14 @@ This skill includes reference documents for specific debugging techniques:
 - `condition-based-waiting.md` — Replacing arbitrary delays with condition-based polling
 - `find-polluter.sh` — Bisection script for finding test pollution sources
 - `condition-based-waiting-example.ts` — Complete implementation of condition-based waiting utilities
+
+## Extended Phases
+
+These phase guides are mandatory when the debugging shape matches the trigger:
+
+| Phase guide | Trigger | Gate |
+|-------------|---------|------|
+| `phases/timeline-correlation.md` | Incident timing, deployment timing, or config drift may explain the failure | Correlate event time against code, deploy, config, data, and dependency timelines before patching. |
+| `phases/retry-cache-timeout-audit.md` | Proposed fix changes retry, cache, timeout, pooling, or backoff behavior | Prove the change fixes the root cause rather than suppressing symptoms. |
+| `phases/amplification-detection.md` | Traffic spikes, retry storms, queue growth, or cascading failures are possible | Identify amplification loops before increasing capacity or broadening retries. |
+| `phases/fault-injection.md` | The fix claims resilience against external failure modes | Inject the fault in a bounded environment and verify predicted behavior. |

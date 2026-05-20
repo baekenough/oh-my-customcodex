@@ -13,6 +13,25 @@ Every tool call MUST be prefixed with agent and model identification:
 
 For parallel calls: list ALL identifications BEFORE the tool calls.
 
+## Short Response Discipline
+
+Brief diagnostics and quick checks are not exempt. If a visible response will be followed by a tool call, include the tool prefix first even when the natural-language update is one sentence.
+
+Anti-pattern:
+
+```text
+확인하겠습니다.
+<tool call>
+```
+
+Correct:
+
+```text
+[Codex][gpt-5.5] → Tool: Bash
+[Codex][gpt-5.5] → Target: git status --short
+<tool call>
+```
+
 ### Common Violations to Avoid
 
 ```

@@ -300,7 +300,7 @@ your-project/
 │   └── ontology/               # RAG용 지식 그래프
 ├── .agents/
 │   └── skills/                 # 123개 설치 스킬 모듈
-└── guides/                     # 41개 레퍼런스 문서
+└── guides/                     # 49개 레퍼런스 문서
 ```
 
 ### 소스 리포와 호환성 표면
