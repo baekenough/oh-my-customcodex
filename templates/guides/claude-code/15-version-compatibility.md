@@ -2,6 +2,42 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
+## v2.1.145
+
+Published: 2026-05-19.
+
+Source: upstream oh-my-customcode #1191, Codex port #1353.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Statusline input includes structured GitHub fields such as `gh.repo`, `gh.pr_number`, and `gh.pr_state` | Removes the need to call `gh pr view` on every refresh when Claude compatibility statusline JSON already carries PR context. | Ported. `statusline.sh` now prefers native `gh.*` fields and falls back to the cached `gh pr view` path only when they are absent. |
+| Additional statusline fields may be empty strings | Empty fields can collapse TSV parsing if not normalized. | Ported. Empty native GitHub fields are normalized before Bash reads them. |
+| Stability fixes for statusline and background sessions are additive | No Codex runtime change beyond template compatibility. | Keep `.codex/**` behavior primary and mirror compatibility docs. |
+
+## v2.1.144
+
+Published: 2026-05-18.
+
+Source: upstream oh-my-customcode #1187, Codex port #1349.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| `claude agents --json` exposes structured background-agent state | Claude compatibility statusline and monitoring can show active agent counts without parsing display text. | Ported. Statusline JSON `agents` arrays render as `A:N` when active agents exist. |
+| Stop/SubagentStop input can include `background_tasks` and `session_crons` | Session-end hooks can detect dangling background work and cron state. | Ported. `session-reflection.sh` records counts and summaries when those fields are present. |
+| Background-agent status handling became more reliable | Reduces false stale-agent diagnostics for Claude compatibility users. | Keep existing Codex/OMX agent tracking and treat Claude JSON as optional compatibility evidence. |
+
+## v2.1.143
+
+Published: 2026-05-17.
+
+Source: upstream oh-my-customcode #1166, Codex port #1348.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Hook/session lifecycle payloads became richer for background work | The compatibility template can capture more useful session-end evidence without blocking shutdown. | Ported through the advisory `session-reflection.sh` Stop/SubagentStop hook. |
+| Background session handling received additional fixes | Helps Claude compatibility workflows that run long-lived agents. | No Codex runtime change; document behavior and keep OMX-native orchestration as primary. |
+| Release-note changes are Claude-template oriented | The package must avoid redesigning Codex-native flow for Claude-only payload additions. | Mirror the compatibility guide and add tests that lock template/source docs together. |
+
 ## v2.1.142
 
 Published: 2026-05-14.

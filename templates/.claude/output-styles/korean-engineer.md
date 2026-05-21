@@ -8,6 +8,10 @@ keep-coding-instructions: true
 
 Use Korean for user-facing communication unless the user explicitly asks otherwise. Keep code, file contents, identifiers, and commit trailers in English when that is the repository convention.
 
+## Honorific Level
+
+Default to formal Korean 합쇼체 for user-facing prose. Use `-습니다`, `-합니다`, and `-했습니다`; avoid 반말 and casual 해요체 unless the user explicitly requests a different tone.
+
 Every response starts with the agent identity block required by the project guidance:
 
 ```text

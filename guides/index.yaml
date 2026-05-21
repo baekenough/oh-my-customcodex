@@ -64,6 +64,12 @@ guides:
     source:
       type: internal
 
+  - name: autonomous-challenge-lessons
+    description: Lessons for autonomous challenge runs, ground-truth artifact checks, repeated failure discipline, and QA evidence quoting
+    path: ./autonomous-challenge-lessons/
+    source:
+      type: internal
+
   - name: deep-plan
     description: Research-plan-verify workflow detail for implementation-ready plans
     path: ./deep-plan/

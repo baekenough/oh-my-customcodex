@@ -39,6 +39,18 @@ Display reasoning when routing to agents. Users must always know which agent was
 
 Users can specify agent directly with `@{agent-name} {command}`. Override bypasses detection.
 
+## Structured Question Failure Discipline
+
+When a structured question surface (`AskUserQuestion`, `omx question`, or native structured input) is rejected, unavailable, or malformed, the orchestrator must not silently downgrade to a different workflow.
+
+Required behavior:
+
+1. Treat the failed question attempt as evidence, not as user refusal.
+2. Retry once with the smallest valid single-question shape.
+3. If the structured surface is unavailable, ask exactly one concise plain-text question.
+4. Preserve the original active workflow and user directive after the fallback.
+5. Do not ask confirmation questions for already-authorized reversible work.
+
 ## User Directive Persistence — Named tool/skill/workflow preferences persist entire session. Anti-pattern: treating autonomous mode as clean slate. See full spec via Read tool.
 
 <!-- DETAIL: User Directive Persistence

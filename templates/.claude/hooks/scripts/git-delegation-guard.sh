@@ -9,13 +9,22 @@
 #   Pattern: /tmp/.codex-{purpose}-${PPID}
 #   See also: agent-teams-advisor.sh, context-budget-advisor.sh, stuck-detector.sh
 
-# Dependency check: exit silently if jq not available
-command -v jq >/dev/null 2>&1 || exit 0
-
 input=$(cat)
 
-agent_type=$(echo "$input" | jq -r '.tool_input.subagent_type // ""')
-prompt=$(echo "$input" | jq -r '.tool_input.prompt // ""')
+json_string_field() {
+  local jq_expr="$1"
+  local key="$2"
+
+  if command -v jq >/dev/null 2>&1; then
+    echo "$input" | jq -r "$jq_expr" 2>/dev/null
+    return
+  fi
+
+  echo "$input" | sed -nE "s/.*\"${key}\"[[:space:]]*:[[:space:]]*\"([^\"]*)\".*/\\1/p" | head -n 1
+}
+
+agent_type=$(json_string_field '.tool_input.subagent_type // ""' 'subagent_type')
+prompt=$(json_string_field '.tool_input.prompt // ""' 'prompt')
 
 # R010 violation tracking file (PPID-scoped for session persistence)
 VIOLATION_FILE="/tmp/.codex-r010-violations-${PPID}"

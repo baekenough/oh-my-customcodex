@@ -5,7 +5,7 @@
     "minimumVersion": "2.1.121",
     "protectedPathBypassVersion": "2.1.126"
   },
-  "lastUpdated": "2026-05-19T00:00:00.000Z",
+  "lastUpdated": "2026-05-20T00:00:00.000Z",
   "components": [
     {
       "name": "rules",
@@ -29,7 +29,7 @@
       "name": "guides",
       "path": "guides",
       "description": "Reference documentation",
-      "files": 48
+      "files": 49
     },
     {
       "name": "hooks",

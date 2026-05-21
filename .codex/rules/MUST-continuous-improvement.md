@@ -33,6 +33,7 @@ Update the relevant rule rather than just acknowledging the violation.
 | Process gap (workflow hole) | ✅ | ✅ | ✅ |
 | Repeatable system bug | — | ✅ | ✅ |
 | Agent selection failure (wrong agent routed) | — | ✅ | — |
+| External repository convention miss | ✅ | ✅ | ✅ |
 
 When CI failure, process gap, or repeatable system defect is found:
 1. Record feedback memory (defend current session)
@@ -43,10 +44,22 @@ When CI failure, process gap, or repeatable system defect is found:
 
 When repeating agent failures or suboptimal routing is detected:
 1. Record as feedback memory (immediate session defense)
-2. Run `/omcodex:adaptive-harness --learn` to update project profile with failure patterns
+2. Run `/omcustomcodex:adaptive-harness --learn` to update project profile with failure patterns
 3. Profile updates improve future agent selection and harness optimization
 
 This connects R016's continuous improvement loop with the adaptive-harness skill's learning capability.
+
+## External Repository Contribution Pre-Check
+
+Before creating or modifying assets for an external repository or upstream contribution target, inspect that repository's local contract before implementing:
+
+1. Read the nearest `AGENTS.md` or equivalent agent guidance.
+2. Read `CONTRIBUTING.md`, plugin/skill authoring docs, or project-specific creation guides when present.
+3. Identify required metadata enums, naming conventions, validation commands, and forbidden paths.
+4. Add the discovered constraints to the task plan before editing.
+5. If the repo lacks guidance, state that explicitly and use the smallest conventional change.
+
+Late discovery of contribution rules is a process defect. Record it as memory and an issue when the miss is repeatable or affected delivered work.
 
 ## Anti-Patterns — 4 patterns: "I'll update later", "one-time exception", "doesn't cover this", "finish task first". See table via Read tool.
 

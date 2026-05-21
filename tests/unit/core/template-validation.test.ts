@@ -594,18 +594,139 @@ describe('Template Validation', () => {
   });
 
   describe('Claude Code version compatibility guidance', () => {
-    it('mirrors the v2.1.139 and v2.1.140 compatibility guide into templates', async () => {
+    it('mirrors the v2.1.139 through v2.1.145 compatibility guide into templates', async () => {
       const projectRoot = resolve(import.meta.dir, '../../..');
       const guidePath = 'guides/claude-code/15-version-compatibility.md';
       const sourceGuide = await readFile(join(projectRoot, guidePath), 'utf-8');
       const templateGuide = await readFile(join(TEMPLATES_DIR, guidePath), 'utf-8');
 
       expect(templateGuide).toBe(sourceGuide);
-      expect(templateGuide).toContain('v2.1.139');
-      expect(templateGuide).toContain('v2.1.140');
+      for (const version of [
+        'v2.1.139',
+        'v2.1.140',
+        'v2.1.141',
+        'v2.1.142',
+        'v2.1.143',
+        'v2.1.144',
+        'v2.1.145',
+      ]) {
+        expect(templateGuide).toContain(version);
+      }
       expect(templateGuide).toContain('continueOnBlock');
       expect(templateGuide).toContain('args: string[]');
       expect(templateGuide).toContain('extraKnownMarketplaces');
+      expect(templateGuide).toContain('gh.pr_number');
+      expect(templateGuide).toContain('claude agents --json');
+      expect(templateGuide).toContain('background_tasks');
+      expect(templateGuide).toContain('session_crons');
+    });
+
+    it('mirrors statusline support for native GitHub and agent-count JSON', async () => {
+      const projectRoot = resolve(import.meta.dir, '../../..');
+      const sourceStatusline = await readFile(join(projectRoot, '.codex/statusline.sh'), 'utf-8');
+      const templateStatusline = await readFile(
+        join(TEMPLATES_DIR, '.claude/statusline.sh'),
+        'utf-8'
+      );
+
+      expect(templateStatusline).toBe(sourceStatusline);
+      expect(templateStatusline).toContain('.gh.pr_number');
+      expect(templateStatusline).toContain('.gh.pr_state');
+      expect(templateStatusline).toContain('.agents | type');
+      expect(templateStatusline).toContain(`A:\${agent_count}`);
+      expect(templateStatusline).toContain(`/tmp/.codex-cost-\${PPID}`);
+    });
+
+    it('mirrors systematic-debugging extended phases into templates', async () => {
+      const projectRoot = resolve(import.meta.dir, '../../..');
+      const skillPath = '.codex/skills/systematic-debugging/SKILL.md';
+      const templateSkillPath = '.claude/skills/systematic-debugging/SKILL.md';
+      const sourceSkill = await readFile(join(projectRoot, skillPath), 'utf-8');
+      const templateSkill = await readFile(join(TEMPLATES_DIR, templateSkillPath), 'utf-8');
+      const phaseFiles = [
+        'timeline-correlation.md',
+        'retry-cache-timeout-audit.md',
+        'amplification-detection.md',
+        'fault-injection.md',
+      ];
+
+      expect(templateSkill).toBe(sourceSkill);
+      expect(sourceSkill).toContain('retry/cache/timeout');
+      expect(sourceSkill).toContain('Extended Phases');
+
+      for (const file of phaseFiles) {
+        const sourcePhase = await readFile(
+          join(projectRoot, '.codex/skills/systematic-debugging/phases', file),
+          'utf-8'
+        );
+        const templatePhase = await readFile(
+          join(TEMPLATES_DIR, '.claude/skills/systematic-debugging/phases', file),
+          'utf-8'
+        );
+
+        expect(templatePhase).toBe(sourcePhase);
+      }
+    });
+
+    it('keeps formal Korean and completion rules mirrored into templates', async () => {
+      const projectRoot = resolve(import.meta.dir, '../../..');
+      const mirroredRules = [
+        'MUST-language-policy.md',
+        'MUST-agent-identification.md',
+        'MUST-tool-identification.md',
+        'MUST-orchestrator-coordination.md',
+        'MUST-intent-transparency.md',
+        'MUST-continuous-improvement.md',
+        'MUST-completion-verification.md',
+      ];
+
+      for (const ruleName of mirroredRules) {
+        const sourceRule = await readFile(join(projectRoot, '.codex/rules', ruleName), 'utf-8');
+        const templateRule = await readFile(
+          join(TEMPLATES_DIR, '.claude/rules', ruleName),
+          'utf-8'
+        );
+        expect(templateRule).toBe(sourceRule);
+      }
+
+      const languageRule = await readFile(
+        join(projectRoot, '.codex/rules/MUST-language-policy.md'),
+        'utf-8'
+      );
+      const outputStyle = await readFile(
+        join(TEMPLATES_DIR, '.claude/output-styles/korean-engineer.md'),
+        'utf-8'
+      );
+      const r010 = await readFile(
+        join(projectRoot, '.codex/rules/MUST-orchestrator-coordination.md'),
+        'utf-8'
+      );
+      const r020 = await readFile(
+        join(projectRoot, '.codex/rules/MUST-completion-verification.md'),
+        'utf-8'
+      );
+
+      expect(languageRule).toContain('합쇼체');
+      expect(outputStyle).toContain('합쇼체');
+      expect(r010).toContain('Agent Capability Pre-Check');
+      expect(r020).toContain('Interrupt Priority Re-Ordering');
+    });
+
+    it('keeps qa-engineer evidence requirements mirrored into templates', async () => {
+      const projectRoot = resolve(import.meta.dir, '../../..');
+      const sourceAgent = await readFile(
+        join(projectRoot, '.codex/agents/qa-engineer.md'),
+        'utf-8'
+      );
+      const templateAgent = await readFile(
+        join(TEMPLATES_DIR, '.claude/agents/qa-engineer.md'),
+        'utf-8'
+      );
+
+      expect(templateAgent).toBe(sourceAgent);
+      expect(sourceAgent).toContain('Evidence Requirements');
+      expect(sourceAgent).toContain('data-testid');
+      expect(sourceAgent).toContain('browser or screenshot evidence');
     });
   });
 
@@ -615,6 +736,7 @@ describe('Template Validation', () => {
         ['middleware-patterns', 'Lifecycle Mapping'],
         ['agent-harness-anatomy', 'Six Components'],
         ['harness-engineering', 'Eval-Driven Hill Climbing'],
+        ['autonomous-challenge-lessons', 'Start With Ground Truth'],
       ] as const;
 
       for (const [guideName, expectedText] of requiredGuides) {

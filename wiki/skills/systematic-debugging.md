@@ -1,7 +1,7 @@
 ---
 title: Systematic Debugging
 type: skill
-updated: 2026-04-12
+updated: 2026-05-20
 sources:
   - .codex/skills/systematic-debugging/SKILL.md
 related:
@@ -16,13 +16,23 @@ Structured debugging workflow for any bug, test failure, or unexpected behavior.
 
 ## Overview
 
-Provides a systematic 5-step debugging process: (1) Reproduce reliably, (2) Isolate the problem (binary search / bisect), (3) Understand the root cause (not just the symptom), (4) Fix the root cause, (5) Verify the fix doesn't regress. Documents assumptions at each step. Uses binary search for large codebases and git bisect for regressions. Prevents guess-and-check debugging.
+Provides a reproduce-first, root-cause-first debugging process. The current gate set requires blocker triage, explicit problem definition, reproduction or instrumentation, evidence gathering, a single falsifiable root-cause hypothesis, a failing guard, one targeted fix, and verification against the same path. It explicitly rejects guess-and-check patches and false fixes.
 
 ## Key Details
 
 - **Scope**: core
-- **User-invocable**: yes
-- **Effort**: not specified
+- **User-invocable**: no
+- **Hard gates**: 7, including the retry/cache/timeout false-fix audit
+- **Extended phases**: timeline correlation, retry/cache/timeout audit, amplification detection, fault injection
+
+## Extended Phase Guides
+
+| Guide | Use when |
+|-------|----------|
+| `phases/timeline-correlation.md` | Incident timing, deploy timing, config drift, or dependency events may explain the failure |
+| `phases/retry-cache-timeout-audit.md` | A proposed fix changes retry, cache, timeout, pooling, backoff, debounce, or rate limits |
+| `phases/amplification-detection.md` | Retries, queues, fan-out, background jobs, cron overlap, or pool exhaustion could cascade |
+| `phases/fault-injection.md` | A fix claims resilience against dependency failure, timeout, corrupt input, restart, or partial writes |
 
 ## Relationships
 
@@ -33,3 +43,4 @@ Provides a systematic 5-step debugging process: (1) Reproduce reliably, (2) Isol
 ## Sources
 
 - `.codex/skills/systematic-debugging/SKILL.md` — skill definition
+- `.codex/skills/systematic-debugging/phases/*.md` — mandatory phase guides for specific debugging shapes

@@ -166,6 +166,20 @@ Claude Code v2.1.141+ preserves the current permission mode when a session is de
 
 For this Codex port, native Codex/OMX subagents still follow the active Codex runtime tool policy. Claude compatibility prompts should keep delegated write authority explicit when a workflow relies on unattended edits, but v2.1.141+ no longer needs an extra `/bg` permission-mode workaround.
 
+## Agent Capability Pre-Check
+
+Before delegating work, compare the task requirements with the target agent frontmatter:
+
+| Requirement in prompt | Required frontmatter |
+|-----------------------|----------------------|
+| Shell, CLI, GitHub CLI, package manager, test, build, or script execution | `tools` includes `Bash` |
+| Any `gh`, `git`, `npm`, `bun`, `pnpm`, `yarn`, `python`, `node`, `curl`, `jq`, `make`, or `docker` command | `tools` includes `Bash`; `disallowedTools` does not include `Bash` |
+| Documentation-only synthesis from provided evidence | Bash is not required |
+
+Known limitation: `arch-documenter` has `disallowedTools: [Bash]`. Do not ask it to inspect GitHub issues, run shell commands, or collect command output. Pre-collect that evidence with a Bash-capable lane, then delegate the writing task.
+
+The `agent-capability-precheck.sh` hook blocks obvious mismatches so the orchestrator re-routes before spawning an agent that cannot execute the requested work.
+
 <!-- DETAIL: Autonomous Execution Mode
 
 ## Autonomous Execution Mode

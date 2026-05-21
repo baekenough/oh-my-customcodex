@@ -6,10 +6,21 @@
 
 set -euo pipefail
 
-command -v jq >/dev/null 2>&1 || exit 0
-
 input=$(cat)
-mode=$(echo "$input" | jq -r '.tool_input.mode // ""')
+
+json_string_field() {
+  local jq_expr="$1"
+  local key="$2"
+
+  if command -v jq >/dev/null 2>&1; then
+    echo "$input" | jq -r "$jq_expr" 2>/dev/null
+    return
+  fi
+
+  echo "$input" | sed -nE "s/.*\"${key}\"[[:space:]]*:[[:space:]]*\"([^\"]*)\".*/\\1/p" | head -n 1
+}
+
+mode=$(json_string_field '.tool_input.mode // ""' 'mode')
 
 if [ "$mode" != "bypassPermissions" ]; then
   echo "[Hook] BLOCKED: Agent/Task spawn missing required mode: \"bypassPermissions\"" >&2

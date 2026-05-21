@@ -12,6 +12,7 @@ Before declaring any task `[Done]`, verify completion against task-type-specific
 |-----------|-------------------------------------|
 | Release | All issues closed, version bumped, PR merged, GitHub Release created; **External automation verified**: `.github/workflows/` listed AND `gh run list --limit 10` checked for auto-publish workflows |
 | Implementation | Code compiles/passes lint, tests pass (if exist), no TODO markers left |
+| UI/Frontend | Screenshot or browser smoke evidence collected; text/layout does not overlap at target viewports |
 | Documentation | Links valid, counts accurate, cross-references updated |
 | Git Operations | Operation succeeded (check exit code), working tree clean |
 | Code Review | All findings addressed or explicitly deferred with justification |
@@ -70,7 +71,17 @@ Never accept "pre-existing" without direct base-branch evidence. A false "pre-ex
 | "Tests pass" | Only ran subset | Run full test suite |
 | "Waiting for manual publish" | External CI/CD auto-publishes on merge | Check `.github/workflows/` BEFORE assuming manual step |
 | "Subagent said pre-existing" | Claim not verified against base branch | Run test on base branch, compare directly |
+| "User interrupted, old plan still continued" | Newer user instruction has priority | Re-rank current work against the newest user message before continuing |
 -->
+
+## Interrupt Priority Re-Ordering
+
+When a user sends a new instruction while work is in progress, completion status must be re-evaluated against the newest message before any `[Done]` claim.
+
+1. If the new message conflicts with the old plan, stop or re-route the old plan.
+2. If the new message narrows scope, verify only the narrowed scope and report what was left out.
+3. If the new message adds a requirement, add it to the completion contract before closing.
+4. If no conflict exists, continue but explicitly preserve the new requirement in the next verification pass.
 
 ## Completion Contract Format — [Contract] + [Done] with criterion/evidence pairs. See template via Read tool.
 
