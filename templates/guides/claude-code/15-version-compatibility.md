@@ -2,6 +2,21 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
+## v2.1.146
+
+Published: 2026-05-21.
+
+Source: upstream oh-my-customcode #1205, Codex port #1364.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| `/simplify` was renamed to `/code-review` and accepts effort levels such as `/code-review high` | Native Claude command naming is now closer to review workflows, but this package still exposes its own `dev-review` skill. | No runtime rename. Keep user-facing docs clear that `dev-review` is the package skill and `/code-review` is the native Claude command. |
+| Auto mode no longer suppresses `AskUserQuestion` when the user or a skill explicitly relies on it | Ambiguity-gated compatibility workflows can ask explicit questions even in auto mode. | No Codex tool change. Keep `request_user_input`/question usage limited to genuinely branching cases. |
+| MCP `resources/list`, `resources/templates/list`, and `prompts/list` pagination was fixed | Large memory or ontology MCP servers are less likely to hide resources after page 1. | No package change; treat complete paginated MCP lists as more reliable evidence. |
+| `CLAUDE_CODE_SUBAGENT_MODEL` is forwarded to child processes in multi-agent sessions | Claude compatibility sessions with model env overrides now preserve child-process model intent. | No Codex model override. Codex-native child agents still follow repo model routing and inherited defaults. |
+| `/background` accepts skill-only or custom-slash-only input and background sessions preserve granted tool permissions | Long-running Claude compatibility sessions are less likely to stall on already granted permissions. | No Codex change. Keep permission expectations explicit in workflow prompts. |
+| Agent SDK streaming end-of-session exception was fixed | Agent SDK plugin experiments should be less noisy at stream completion. | Monitor only; no package change. |
+
 ## v2.1.145
 
 Published: 2026-05-19.

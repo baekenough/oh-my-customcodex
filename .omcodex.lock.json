@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "0.5.1",
-  "generatedAt": "2026-05-20T10:31:13.099Z",
+  "generatedAt": "2026-05-22T10:20:46.963Z",
   "templateVersion": "0.5.1",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
@@ -65,8 +65,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-teams.md": {
-      "templateHash": "e20dca80f4775e9cd906fa369b95e83296584f4475ce26778d5aa4da9aac2381",
-      "size": 15401,
+      "templateHash": "3ec067bcc9915759e12a6f5506f7768168fa3b92d1f2619ceef1ea57c24838c4",
+      "size": 15818,
       "component": "rules"
     },
     ".codex/rules/MAY-optimization.md": {
@@ -75,8 +75,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-continuous-improvement.md": {
-      "templateHash": "7305e06be2cf2e725106866fcc50b2a5755ba90b8b774f5db9221eb1b515fd71",
-      "size": 3698,
+      "templateHash": "3d4303d1e345ae0bfc5edc47e55af9673acb0a5a57150f7e8d7d8a68ff6f8774",
+      "size": 4010,
       "component": "rules"
     },
     ".codex/rules/MUST-permissions.md": {
@@ -100,8 +100,8 @@
       "component": "rules"
     },
     ".codex/rules/SHOULD-memory-integration.md": {
-      "templateHash": "dc64b6cc83f5840297b48c85113a35ba5a25bf620ddcd2ad34c45395a7ad8dfa",
-      "size": 16952,
+      "templateHash": "ba72cd0c5f364716723c7dfc0a3377c9f09789d01e1b19506bf103bff83bbc78",
+      "size": 17424,
       "component": "rules"
     },
     ".codex/rules/MUST-enforcement-policy.md": {
@@ -384,6 +384,11 @@
       "size": 1346,
       "component": "hooks"
     },
+    ".codex/hooks/scripts/plugin-cache-check.sh": {
+      "templateHash": "8b8e817d63f972ad35f21bf110fa1738a5ad4ab49378d9bc82803793d7dfe550",
+      "size": 1110,
+      "component": "hooks"
+    },
     ".codex/hooks/scripts/rule-deletion-guard.sh": {
       "templateHash": "123af252561c798c552763d8728cb6207d346d56ccfa1d8844a721ade4f77d2f",
       "size": 2366,
@@ -580,8 +585,8 @@
       "component": "hooks"
     },
     ".codex/hooks/hooks.json": {
-      "templateHash": "c5f136478a7f3a5f8586332f15a0d217fc0a4321e3e295b567f255df9c22720c",
-      "size": 28225,
+      "templateHash": "16cf3ea5d22e7087143cf50ac25961f331f23d1b508a394210ed6f007f2e01f0",
+      "size": 28522,
       "component": "hooks"
     },
     ".codex/contexts/ecomode.md": {
@@ -665,8 +670,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "bbbc89bc55e519fb26e0560fc7ff0bb86d6c5966f9954a924bbd38496f9a455e",
-      "size": 11876,
+      "templateHash": "a57e9dd7b709112617d2e7d62a21e1c6e2b0927c123f5afec7372eb2ba73b174",
+      "size": 13760,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {

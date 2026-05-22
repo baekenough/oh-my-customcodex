@@ -594,7 +594,7 @@ describe('Template Validation', () => {
   });
 
   describe('Claude Code version compatibility guidance', () => {
-    it('mirrors the v2.1.139 through v2.1.145 compatibility guide into templates', async () => {
+    it('mirrors the v2.1.139 through v2.1.146 compatibility guide into templates', async () => {
       const projectRoot = resolve(import.meta.dir, '../../..');
       const guidePath = 'guides/claude-code/15-version-compatibility.md';
       const sourceGuide = await readFile(join(projectRoot, guidePath), 'utf-8');
@@ -609,6 +609,7 @@ describe('Template Validation', () => {
         'v2.1.143',
         'v2.1.144',
         'v2.1.145',
+        'v2.1.146',
       ]) {
         expect(templateGuide).toContain(version);
       }
@@ -619,6 +620,7 @@ describe('Template Validation', () => {
       expect(templateGuide).toContain('claude agents --json');
       expect(templateGuide).toContain('background_tasks');
       expect(templateGuide).toContain('session_crons');
+      expect(templateGuide).toContain('CLAUDE_CODE_SUBAGENT_MODEL');
     });
 
     it('mirrors statusline support for native GitHub and agent-count JSON', async () => {

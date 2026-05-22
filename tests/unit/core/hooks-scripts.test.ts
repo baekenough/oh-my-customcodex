@@ -26,6 +26,7 @@ const SOURCE_SESSION_ENV_CHECK_SCRIPT = join(SOURCE_SCRIPTS_DIR, 'session-env-ch
 const STALE_TODO_SCANNER_SCRIPT = join(SCRIPTS_DIR, 'stale-todo-scanner.sh');
 const FEEDBACK_COLLECTOR_SCRIPT = join(SCRIPTS_DIR, 'feedback-collector.sh');
 const SKILL_EXTRACTOR_ANALYZER_SCRIPT = join(SCRIPTS_DIR, 'skill-extractor-analyzer.sh');
+const PLUGIN_CACHE_CHECK_SCRIPT = join(SCRIPTS_DIR, 'plugin-cache-check.sh');
 
 const STAGE_FILE = '/tmp/.codex-dev-stage';
 
@@ -1633,6 +1634,7 @@ describe('Script file validation', () => {
     'user-prompt-preprocessor.sh',
     'cwd-change-detector.sh',
     'file-change-validator.sh',
+    'plugin-cache-check.sh',
   ] as const;
 
   it('all expected scripts should exist in the templates directory', async () => {
@@ -1681,5 +1683,70 @@ describe('Script file validation', () => {
       expect(exitCode).toBe(0);
       expect(stderr).toBe('');
     }
+  });
+});
+
+describe('plugin-cache-check.sh', () => {
+  let tempHome: string;
+  let tempCache: string;
+
+  beforeEach(async () => {
+    tempHome = join(tmpdir(), `omx-plugin-cache-home-${Date.now()}-${Math.random()}`);
+    tempCache = join(tmpdir(), `omx-plugin-cache-${Date.now()}-${Math.random()}`);
+    await mkdir(tempHome, { recursive: true });
+    await mkdir(tempCache, { recursive: true });
+  });
+
+  afterEach(async () => {
+    await rm(tempHome, { recursive: true, force: true });
+    await rm(tempCache, { recursive: true, force: true });
+  });
+
+  it('passes stdin through and exits 0 when no plugin cache entries exist', async () => {
+    const input = JSON.stringify({ hook_event_name: 'SessionStart' });
+    const result = await runHookScript(PLUGIN_CACHE_CHECK_SCRIPT, input, {
+      HOME: tempHome,
+      CODEX_PLUGIN_CACHE: tempCache,
+      CLAUDE_PLUGIN_CACHE: join(tempHome, 'empty-claude-cache'),
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.stderr).toBe('');
+  });
+
+  it('warns about package directories missing node_modules without blocking the session', async () => {
+    const packageDir = join(tempCache, 'example-plugin');
+    await mkdir(packageDir, { recursive: true });
+    await writeFile(join(packageDir, 'package.json'), '{"name":"example-plugin"}\n');
+
+    const input = JSON.stringify({ hook_event_name: 'SessionStart' });
+    const result = await runHookScript(PLUGIN_CACHE_CHECK_SCRIPT, input, {
+      HOME: tempHome,
+      CODEX_PLUGIN_CACHE: tempCache,
+      CLAUDE_PLUGIN_CACHE: join(tempHome, 'empty-claude-cache'),
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.stderr).toContain('Plugin cache missing node_modules');
+    expect(result.stderr).toContain(packageDir);
+  });
+
+  it('does not warn when node_modules exists beside package.json', async () => {
+    const packageDir = join(tempCache, 'installed-plugin');
+    await mkdir(join(packageDir, 'node_modules'), { recursive: true });
+    await writeFile(join(packageDir, 'package.json'), '{"name":"installed-plugin"}\n');
+
+    const input = JSON.stringify({ hook_event_name: 'SessionStart' });
+    const result = await runHookScript(PLUGIN_CACHE_CHECK_SCRIPT, input, {
+      HOME: tempHome,
+      CODEX_PLUGIN_CACHE: tempCache,
+      CLAUDE_PLUGIN_CACHE: join(tempHome, 'empty-claude-cache'),
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.stderr).toBe('');
   });
 });
