@@ -12,14 +12,20 @@ export function extractReferencedIssueNumbers(text = '') {
   }
 
   const candidates = new Set();
+  const addCandidate = (rawIssueNumber) => {
+    const issueNumber = Number(rawIssueNumber);
+    if (Number.isSafeInteger(issueNumber) && issueNumber > 0) {
+      candidates.add(issueNumber);
+    }
+  };
   const sanitized = text.replace(/\bPR\s+#\d+\b/gi, '').replace(/\bpull request\s+#\d+\b/gi, '');
 
   for (const match of sanitized.matchAll(/#(\d+)\b/g)) {
-    candidates.add(Number(match[1]));
+    addCandidate(match[1]);
   }
 
   for (const match of sanitized.matchAll(/\/issues\/(\d+)\b/gi)) {
-    candidates.add(Number(match[1]));
+    addCandidate(match[1]);
   }
 
   return [...candidates].sort((left, right) => left - right);
