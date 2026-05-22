@@ -6,6 +6,16 @@ const USER_AGENT = 'oh-my-customcodex-release-sync';
 const MAX_RELEASE_NOTES_LENGTH = 6000;
 const MAX_ISSUE_BODY_LENGTH = 12000;
 
+class GitHubRequestError extends Error {
+  constructor({ method, path, status, statusText, responseBody }) {
+    super(`GitHub API ${method} ${path} failed: ${status} ${statusText}\n${responseBody}`);
+    this.name = 'GitHubRequestError';
+    this.method = method;
+    this.path = path;
+    this.status = status;
+  }
+}
+
 export function extractReferencedIssueNumbers(text = '') {
   if (!text.trim()) {
     return [];
@@ -110,12 +120,25 @@ async function githubRequest(path, { token, method = 'GET', body, apiBase = DEFA
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(
-      `GitHub API ${method} ${path} failed: ${response.status} ${response.statusText}\n${errorText}`
-    );
+    throw new GitHubRequestError({
+      method,
+      path,
+      status: response.status,
+      statusText: response.statusText,
+      responseBody: errorText,
+    });
   }
 
   return response.status === 204 ? null : response.json();
+}
+
+function isMissingUpstreamIssue(error, upstreamRepo, issueNumber) {
+  return (
+    error instanceof GitHubRequestError &&
+    error.method === 'GET' &&
+    error.status === 404 &&
+    error.path === `/repos/${upstreamRepo}/issues/${issueNumber}`
+  );
 }
 
 async function githubTextRequest(path, { token, apiBase = DEFAULT_API_BASE }) {
@@ -326,12 +349,23 @@ async function processRelease({
   const totals = { created: 0, planned: 0, skipped: 0 };
 
   for (const issueNumber of candidateIssueNumbers) {
-    const issue = await fetchIssue({
-      upstreamRepo,
-      issueNumber,
-      token,
-      apiBase,
-    });
+    let issue;
+    try {
+      issue = await fetchIssue({
+        upstreamRepo,
+        issueNumber,
+        token,
+        apiBase,
+      });
+    } catch (error) {
+      if (isMissingUpstreamIssue(error, upstreamRepo, issueNumber)) {
+        totals.skipped += 1;
+        logger.log(`Skipping #${issueNumber}: upstream issue was not found.`);
+        continue;
+      }
+
+      throw error;
+    }
 
     if (issue.pull_request) {
       totals.skipped += 1;
