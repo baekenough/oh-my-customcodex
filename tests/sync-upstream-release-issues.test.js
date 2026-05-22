@@ -21,6 +21,17 @@ test('extractReferencedIssueNumbers deduplicates refs and ignores explicit PR re
   assert.deepEqual(extractReferencedIssueNumbers(releaseNotes), [264, 328, 329]);
 });
 
+test('extractReferencedIssueNumbers ignores invalid zero issue references', () => {
+  const releaseNotes = `
+## What's Changed
+- Placeholder reference should not be queried (#0)
+- Placeholder URL should not be queried: https://github.com/baekenough/oh-my-customcode/issues/0
+- Valid follow-up (#1203)
+`;
+
+  assert.deepEqual(extractReferencedIssueNumbers(releaseNotes), [1203]);
+});
+
 test('marker helpers round-trip marker values', () => {
   const marker = buildUpstreamIssueMarker('baekenough/oh-my-customcode', 264);
   assert.equal(marker, '<!-- upstream-release-issue: baekenough/oh-my-customcode#264 -->');
