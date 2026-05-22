@@ -361,7 +361,7 @@ MCP tools (searchable memory backends, episodic-memory) are **orchestrator-scope
 
 ### Session-End Self-Check (MANDATORY)
 
-(1) sys-memory-keeper updated MEMORY.md? (2) searchable memory save attempted when a backend is available? Both are required before confirming session-end to the user. See full self-check via Read tool.
+(1) sys-memory-keeper updated MEMORY.md? (2) searchable memory save attempted when a backend is available? (3) If `omcustomcodex-feedback` skill is active, prompt user to trigger it? All three are required before confirming session-end to the user. See full self-check via Read tool.
 
 <!-- DETAIL: Session-End Self-Check (MANDATORY)
 ```
@@ -376,10 +376,15 @@ MCP tools (searchable memory backends, episodic-memory) are **orchestrator-scope
 ║     YES → Continue (even if it failed)                           ║
 ║     NO  → ToolSearch + save now                                  ║
 ║                                                                   ║
+║  3. Is omcustomcodex-feedback skill available in this project?   ║
+║     YES → Ask user: "이번 세션 피드백을 omcustomcodex-feedback로 ║
+║          기록하시겠습니까?" — accept skip                        ║
+║     NO  → Skip                                                    ║
+║                                                                   ║
 ║  Note: episodic-memory auto-indexes conversations after session  ║
 ║  ends. No manual action needed — do NOT search as "verification" ║
 ║                                                                   ║
-║  BOTH steps must be completed before confirming to user.         ║
+║  ALL applicable steps must be completed before confirming to user.║
 ║  "Attempted" means called the tool — failure is OK, skipping     ║
 ║  is NOT.                                                          ║
 ╚══════════════════════════════════════════════════════════════════╝
