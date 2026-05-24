@@ -127,6 +127,24 @@ async function countMdFiles(fullPath: string): Promise<number> {
   return entries.filter((e) => e.isFile() && e.name.endsWith('.md')).length;
 }
 
+async function listMarkdownFiles(fullPath: string, prefix = ''): Promise<string[]> {
+  const entries = await readdir(fullPath, { withFileTypes: true });
+  const files: string[] = [];
+
+  for (const entry of entries) {
+    const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+    const absolutePath = join(fullPath, entry.name);
+
+    if (entry.isDirectory()) {
+      files.push(...(await listMarkdownFiles(absolutePath, relativePath)));
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      files.push(relativePath);
+    }
+  }
+
+  return files;
+}
+
 async function countActualFiles(componentPath: string, componentName: string): Promise<number> {
   let fullPath = join(TEMPLATES_DIR, componentPath);
 
@@ -594,7 +612,7 @@ describe('Template Validation', () => {
   });
 
   describe('Claude Code version compatibility guidance', () => {
-    it('mirrors the v2.1.139 through v2.1.146 compatibility guide into templates', async () => {
+    it('mirrors the v2.1.139 through v2.1.150 compatibility guide into templates', async () => {
       const projectRoot = resolve(import.meta.dir, '../../..');
       const guidePath = 'guides/claude-code/15-version-compatibility.md';
       const sourceGuide = await readFile(join(projectRoot, guidePath), 'utf-8');
@@ -610,6 +628,10 @@ describe('Template Validation', () => {
         'v2.1.144',
         'v2.1.145',
         'v2.1.146',
+        'v2.1.147',
+        'v2.1.148',
+        'v2.1.149',
+        'v2.1.150',
       ]) {
         expect(templateGuide).toContain(version);
       }
@@ -621,6 +643,11 @@ describe('Template Validation', () => {
       expect(templateGuide).toContain('background_tasks');
       expect(templateGuide).toContain('session_crons');
       expect(templateGuide).toContain('CLAUDE_CODE_SUBAGENT_MODEL');
+      expect(templateGuide).toContain('CLAUDE_CODE_WORKFLOWS=1');
+      expect(templateGuide).toContain('exit code 127');
+      expect(templateGuide).toContain('allowAllClaudeAiMcps');
+      expect(templateGuide).toContain('Internal infrastructure improvements only');
+      expect(templateGuide).toContain('Do not add a dead `simplify` route');
     });
 
     it('mirrors statusline support for native GitHub and agent-count JSON', async () => {
@@ -680,6 +707,7 @@ describe('Template Validation', () => {
         'MUST-intent-transparency.md',
         'MUST-continuous-improvement.md',
         'MUST-completion-verification.md',
+        'MUST-sync-verification.md',
       ];
 
       for (const ruleName of mirroredRules) {
@@ -712,6 +740,15 @@ describe('Template Validation', () => {
       expect(outputStyle).toContain('합쇼체');
       expect(r010).toContain('Agent Capability Pre-Check');
       expect(r020).toContain('Interrupt Priority Re-Ordering');
+      expect(r020).toContain('Diagnostic Hypothesis Verification');
+      expect(r020).toContain('Test-Skip Is Not Completion');
+
+      const r017 = await readFile(
+        join(projectRoot, '.codex/rules/MUST-sync-verification.md'),
+        'utf-8'
+      );
+      expect(r017).toContain('Structural Migration Verification');
+      expect(r017).toContain('clean checkout or isolated worktree');
     });
 
     it('keeps qa-engineer evidence requirements mirrored into templates', async () => {
@@ -781,6 +818,22 @@ describe('Template Validation', () => {
       }
       return count;
     }
+
+    it('keeps wiki/index.yaml file entries aligned with wiki markdown pages', async () => {
+      const wikiDir = join(PROJECT_ROOT, 'wiki');
+      const indexYaml = await readFile(join(wikiDir, 'index.yaml'), 'utf-8');
+      const markdownFiles = (await listMarkdownFiles(wikiDir))
+        .filter((file) => file !== 'index.md' && file !== 'log.md')
+        .sort();
+      const indexedFiles = Array.from(indexYaml.matchAll(/^\s+- file: (.+)$/gm))
+        .map((match) => match[1])
+        .sort();
+      const totalPagesMatch = indexYaml.match(/^\s+total_pages:\s+(\d+)$/m);
+
+      expect(totalPagesMatch).not.toBeNull();
+      expect(Number(totalPagesMatch?.[1])).toBe(markdownFiles.length);
+      expect(indexedFiles).toEqual(markdownFiles);
+    });
 
     it('uses AGENTS.md as the repo entry file and documents the visible status block', async () => {
       const agentsMd = await readFile(join(PROJECT_ROOT, 'AGENTS.md'), 'utf-8');
