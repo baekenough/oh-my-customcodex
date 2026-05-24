@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.5.3",
-  "generatedAt": "2026-05-24T12:07:20.381Z",
-  "templateVersion": "0.5.3",
+  "generatorVersion": "0.5.4",
+  "generatedAt": "2026-05-24T14:15:31.147Z",
+  "templateVersion": "0.5.4",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -20,8 +20,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-intent-transparency.md": {
-      "templateHash": "7a3c7b10284437cd0ae914a9d2cd4e9d560c0a510e19ea62464d8622f6b7d2a7",
-      "size": 4123,
+      "templateHash": "07576c742520944cf6ffc8c6c038e6e3eb809246eed537510f8d7417f304a5bf",
+      "size": 5621,
       "component": "rules"
     },
     ".codex/rules/SHOULD-error-handling.md": {
@@ -30,8 +30,8 @@
       "component": "rules"
     },
     ".codex/rules/SHOULD-wiki-sync.md": {
-      "templateHash": "58c18c5fd19581cabf8e27e045d23504491657e99c1b57b2312e7ffd44e01713",
-      "size": 2686,
+      "templateHash": "64c718d182c383133b1695f6852982d016b02252d4e37335e66078cb2a816b3a",
+      "size": 2722,
       "component": "rules"
     },
     ".codex/rules/MUST-parallel-execution.md": {
@@ -75,8 +75,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-continuous-improvement.md": {
-      "templateHash": "3d4303d1e345ae0bfc5edc47e55af9673acb0a5a57150f7e8d7d8a68ff6f8774",
-      "size": 4010,
+      "templateHash": "1f0fcc0381b9df78aa811c7b2e6867f665f98b77cf39cc2f04b2b9fed85edcff",
+      "size": 4341,
       "component": "rules"
     },
     ".codex/rules/MUST-permissions.md": {
@@ -479,6 +479,11 @@
       "size": 2175,
       "component": "hooks"
     },
+    ".codex/hooks/scripts/r007-r008-drift-advisor.sh": {
+      "templateHash": "a1d080856e2b794b9fc445fb53dde284180a8d0f75202888624e8428f358b904",
+      "size": 3466,
+      "component": "hooks"
+    },
     ".codex/hooks/scripts/session-autofix-prompt.sh": {
       "templateHash": "7ca102c5cdf080d2c4f620dfcf3652e352ef8938794614b9bae3390085d64fd2",
       "size": 1048,
@@ -540,8 +545,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/adaptive-harness-scan.sh": {
-      "templateHash": "be8db0e38057cfa2e84947d54a2edf933509d940569758743725e4881b32596b",
-      "size": 1699,
+      "templateHash": "bf857f4acbba5ff0696014a5ebb999151afe78823d78efd8ed6ba831fbde53a8",
+      "size": 1717,
       "component": "hooks"
     },
     ".codex/hooks/scripts/cwd-change-detector.sh": {
@@ -585,8 +590,8 @@
       "component": "hooks"
     },
     ".codex/hooks/hooks.json": {
-      "templateHash": "16cf3ea5d22e7087143cf50ac25961f331f23d1b508a394210ed6f007f2e01f0",
-      "size": 28522,
+      "templateHash": "0692f65ffe380aa1ccaa49969ba69029e8c37c6fe24d4021f5c5274741d3e396",
+      "size": 28853,
       "component": "hooks"
     },
     ".codex/contexts/ecomode.md": {

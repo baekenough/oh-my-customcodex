@@ -40,6 +40,8 @@ When CI failure, process gap, or repeatable system defect is found:
 2. Register GitHub issue (trackable improvement item)
 3. Both required — memory alone is NOT sufficient for system-level defects
 
+> Auto-register directive: genuine defects and process gaps surfaced during release workflows, including `post-release-followup`, must be registered as GitHub issues automatically without asking for confirmation. Only code-changing immediate-action items require user confirmation. Pure cosmetic or subjective notes are excluded.
+
 ### Adaptive Harness Integration
 
 When repeating agent failures or suboptimal routing is detected:

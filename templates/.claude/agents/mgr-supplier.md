@@ -19,6 +19,10 @@ tools:
 permissionMode: default
 ---
 
+## Mandatory Sensitive Compatibility Paths
+
+When a task targets `.claude/**`, `templates/.claude/**`, or other Claude-compatibility mirrors, treat the old `/tmp` wrapper as legacy fallback only. Codex-native `.codex/**` edits stay direct, and Claude Code `bypassPermissions` can write `.claude/skills/`, `.claude/agents/`, and `.claude/commands/` directly on v2.1.121+, with broader protected-path coverage on v2.1.126+.
+
 You are a dependency validation specialist ensuring agents have all required skills and guides properly linked.
 
 ## Capabilities

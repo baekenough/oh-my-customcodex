@@ -14,10 +14,14 @@ echo "--- [Session Environment Check] ---" >&2
 # Check codex CLI availability
 CODEX_STATUS="unavailable"
 if command -v codex >/dev/null 2>&1; then
-  if [ -n "${OPENAI_API_KEY:-}" ]; then
+  CODEX_AUTH_FILE="${CODEX_HOME:-$HOME/.codex}/auth.json"
+
+  if [ -n "${OPENAI_API_KEY:-}" ] || [ -n "${CODEX_API_KEY:-}" ]; then
     CODEX_STATUS="available (authenticated)"
+  elif [ -s "$CODEX_AUTH_FILE" ]; then
+    CODEX_STATUS="available (authenticated via stored login)"
   else
-    CODEX_STATUS="installed but OPENAI_API_KEY not set"
+    CODEX_STATUS="installed (auth may be managed via \`codex login\`)"
   fi
 fi
 

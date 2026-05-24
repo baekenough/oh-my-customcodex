@@ -17,6 +17,7 @@ const DESTRUCTIVE_GIT_GUARD_SCRIPT = join(SCRIPTS_DIR, 'destructive-git-guard.sh
 const STOP_CONSOLE_AUDIT_SCRIPT = join(SCRIPTS_DIR, 'stop-console-audit.sh');
 const SESSION_REFLECTION_SCRIPT = join(SCRIPTS_DIR, 'session-reflection.sh');
 const AGENT_TEAMS_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'agent-teams-advisor.sh');
+const R007_R008_DRIFT_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'r007-r008-drift-advisor.sh');
 const CLAUDE_SENSITIVE_PATH_GUARD_SCRIPT = join(SCRIPTS_DIR, 'claude-sensitive-path-guard.sh');
 const SOURCE_CLAUDE_SENSITIVE_PATH_GUARD_SCRIPT = join(
   SOURCE_SCRIPTS_DIR,
@@ -1534,6 +1535,73 @@ describe('user-prompt-preprocessor.sh', () => {
 });
 
 // -------------------------------------------------------------------
+// r007-r008-drift-advisor.sh
+// -------------------------------------------------------------------
+
+describe('r007-r008-drift-advisor.sh', () => {
+  let tempTranscript: string;
+
+  beforeEach(async () => {
+    tempTranscript = join(tmpdir(), `r007-r008-transcript-${Date.now()}-${Math.random()}.jsonl`);
+  });
+
+  afterEach(async () => {
+    await rm(tempTranscript, { force: true });
+  });
+
+  it('should pass bash syntax check', async () => {
+    const { exitCode, stderr } = await bashSyntaxCheck(R007_R008_DRIFT_ADVISOR_SCRIPT);
+    expect(exitCode).toBe(0);
+    expect(stderr).toBe('');
+  });
+
+  it('should pass through input unchanged when no transcript is available', async () => {
+    const input = JSON.stringify({ session_id: 'missing-session' });
+    const result = await runHookScript(R007_R008_DRIFT_ADVISOR_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.stderr).toBe('');
+  });
+
+  it('should warn when the previous assistant turn lacks an R007 header', async () => {
+    const assistantTurn = JSON.stringify({
+      role: 'assistant',
+      content: [{ type: 'text', text: 'Working on it\n\nDetails follow.' }],
+    });
+    await writeFile(tempTranscript, `${assistantTurn}\n`);
+
+    const input = JSON.stringify({ session_id: 's1', transcript_path: tempTranscript });
+    const result = await runHookScript(R007_R008_DRIFT_ADVISOR_SCRIPT, input);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.stderr).toContain('R007/R008 Advisory');
+    expect(result.stderr).toContain('R007 header=1');
+  });
+
+  it('should stay quiet when the previous assistant turn has R007 and R008 identifiers', async () => {
+    const assistantTurn = JSON.stringify({
+      role: 'assistant',
+      content: [
+        {
+          type: 'text',
+          text: '┌─ Agent: Codex (default)\n└─ Status: checking\n\n[Codex][gpt-5.5] → Tool: Bash\n[Codex][gpt-5.5] → Target: git status',
+        },
+        { type: 'tool_use', name: 'Bash' },
+      ],
+    });
+    await writeFile(tempTranscript, `${assistantTurn}\n`);
+
+    const input = JSON.stringify({ session_id: 's2', transcript_path: tempTranscript });
+    const result = await runHookScript(R007_R008_DRIFT_ADVISOR_SCRIPT, input);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.stderr).toBe('');
+  });
+});
+
+// -------------------------------------------------------------------
 // cwd-change-detector.sh
 // -------------------------------------------------------------------
 
@@ -1629,6 +1697,7 @@ describe('Script file validation', () => {
     'stop-console-audit.sh',
     'session-reflection.sh',
     'agent-teams-advisor.sh',
+    'r007-r008-drift-advisor.sh',
     'session-env-check.sh',
     'stuck-detector.sh',
     'user-prompt-preprocessor.sh',

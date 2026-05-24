@@ -1,28 +1,30 @@
 ---
-title: Omcustom Feedback
+title: Omcodex Feedback
 type: skill
-updated: 2026-04-12
+updated: 2026-05-24
 sources:
-  - .codex/skills/omcustomcodex-feedback/SKILL.md
+  - .codex/skills/omcodex-feedback/SKILL.md
 related:
   - [[mgr-gitnerd]]
   - [[R016]]
 ---
 
-# Omcustom Feedback
+# Omcodex Feedback
 
 Submit user feedback as a GitHub Issue for tracking and improvement.
 
 ## Overview
 
-Collects user feedback (bug reports, feature requests, improvement suggestions) and creates a formatted GitHub Issue with appropriate labels. Guides the user through providing structured feedback: title, description, reproduction steps (for bugs), and expected behavior. Delegates issue creation to `mgr-gitnerd` via `gh issue create`. Supports the R016 continuous improvement workflow.
+Collects user feedback (bug reports, feature requests, improvement suggestions) and creates a formatted GitHub Issue with appropriate labels. The skill is invocable by both the user and the model so session-end retrospective workflows can draft feedback. Public issue creation still goes through the preview and confirmation gate.
 
 ## Key Details
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcustomcodex-feedback`
+- **Command**: `/omcustomcodex:feedback`
 - **Effort**: not specified
+- **Target repo**: `baekenough/oh-my-customcodex`
+- **Safety boundary**: model invocation can draft feedback, but cannot create a public issue without confirmation
 
 ## Relationships
 
@@ -32,4 +34,4 @@ Collects user feedback (bug reports, feature requests, improvement suggestions) 
 
 ## Sources
 
-- `.codex/skills/omcustomcodex-feedback/SKILL.md` — skill definition
+- `.codex/skills/omcodex-feedback/SKILL.md` — skill definition

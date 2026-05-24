@@ -11,6 +11,7 @@ oh-my-customcodex uses an **advisory-first enforcement model**. Most rules are e
 | Tier | Mechanism | Rules | Behavior |
 |------|-----------|-------|----------|
 | Hard Block | PreToolUse hook, exit 2 | stage-blocker, dev-server tmux, rule-deletion-guard | Prevents tool execution |
+| Conversation Block | PostToolUse hook, exit 2 + `continueOnBlock` | stuck-detector, context-budget-advisor, cost-cap-advisor | Feeds high-signal recovery guidance back to the model and continues the turn |
 | Soft Block | Stop hook prompt | R011 session-end saves | Auto-performs then approves |
 | Advisory | PostToolUse hooks | R007, R008, R009, R010, R018 | Warns via stderr, never blocks |
 | Prompt-based | AGENTS.md + rules/ + PostCompact | All MUST rules | Behavioral guidance in context |

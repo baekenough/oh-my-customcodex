@@ -1,7 +1,7 @@
 ---
 title: Post-Release Followup
 type: skill
-updated: 2026-04-12
+updated: 2026-05-24
 sources:
   - .codex/skills/post-release-followup/SKILL.md
 related:
@@ -16,13 +16,15 @@ Analyze release workflow findings and recommend follow-up actions — execute im
 
 ## Overview
 
-After PR creation in a release workflow, collects unaddressed findings from multiple sources (remaining open issues, deep-verify findings, triage deferred items, TODO markers in changed files, PR review feedback from omc_pr_analyzer). Deduplicates, categorizes by urgency, presents to user with action choices (execute now, register as issues, skip), then processes the choice. Interactive — requires user input.
+After PR creation in a release workflow, collects unaddressed findings from multiple sources (remaining open issues, deep-verify findings, triage deferred items, TODO markers in changed files, PR review feedback from omc_pr_analyzer). Deduplicates and categorizes by urgency. Genuine defects, process gaps, and coverage gaps are auto-registered as GitHub issues before any prompt; only code-changing immediate-action items require user input.
 
 ## Key Details
 
 - **Scope**: harness
 - **User-invocable**: no
 - **Effort**: medium
+- **Auto-register**: genuine defects/process gaps via `gh issue create --repo baekenough/oh-my-customcodex`
+- **Prompt boundary**: ask only for immediate code-changing follow-up actions
 
 ## Relationships
 

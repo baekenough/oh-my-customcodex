@@ -48,6 +48,16 @@ Build semantic query with project prefix + keywords + optional date. Search via 
 
 Always include project name. Use task-based, temporal, or topic-based queries. Avoid complex where filters (they fail in Chroma).
 
+## Native MEMORY.md Compaction
+
+Treat native auto-memory as an index, not a transcript. Keep the first 200 loaded lines compact enough for reliable prompt injection:
+
+1. Target roughly 100 active index lines when session history accumulates.
+2. Keep recent or currently active sessions inline; move older detail to topic/archive files.
+3. Preserve one-line release/session summaries inline with direct archive pointers.
+4. Keep individual index lines under about 200 characters when practical.
+5. Never delete memory detail solely for line budget; archive it and keep a searchable pointer.
+
 ## Config
 
 Provider: claude-mem | Collection: claude_memories | Archive: ~/.claude-mem/archives/

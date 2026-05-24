@@ -1,7 +1,7 @@
 ---
 title: Wiki
 type: skill
-updated: 2026-04-12
+updated: 2026-05-24
 sources:
   - .codex/skills/wiki/SKILL.md
 related:
@@ -23,6 +23,7 @@ Generates and maintains the `wiki/` directory by reading agent definitions, skil
 - **User-invocable**: yes
 - **Command**: `/wiki` (via skill invocation)
 - **Effort**: not specified
+- **Index policy**: `meta.total_pages` counts content pages below `wiki/*/` and excludes root navigation pages.
 
 ## Relationships
 

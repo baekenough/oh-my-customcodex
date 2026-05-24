@@ -65,7 +65,7 @@ for agent_type in "${!FAILURE_COUNTS[@]}"; do
     action_type="augment"
   fi
 
-  failure_rate=$(awk "BEGIN {printf \"%.2f\", $count/$total}")
+  failure_rate=$(awk "BEGIN {printf \"%.2f\", $count/$total}" 2>/dev/null || echo "0.00")
   description="Agent '${agent_type}' failed ${count}/${total} times (${failure_rate} failure rate) in session"
 
   escaped_agent_type=$(_sql_escape "$agent_type")

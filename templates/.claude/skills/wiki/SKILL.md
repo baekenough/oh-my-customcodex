@@ -306,6 +306,8 @@ pages:
       summary: Core design philosophy mapping software compilation to agent system
 ```
 
+`meta.total_pages` counts indexed content pages only. Exclude navigation and landing pages stored directly under `wiki/` such as `Home.md`, `_Sidebar.md`, and `Skills.md`; verification scripts compare `total_pages` against markdown files below `wiki/*/`.
+
 Advantages over markdown index:
 - Machine-parseable: LLMs and scripts can filter by category, search by title
 - Structured: each entry has file, title, summary as discrete fields
