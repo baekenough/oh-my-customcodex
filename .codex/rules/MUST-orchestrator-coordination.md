@@ -10,6 +10,40 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 
 **The orchestrator MUST NEVER directly write, edit, or create files. ALL file modifications MUST be delegated to appropriate subagents.**
 
+## Codex-Native Meta-File Boundary
+
+Treat orchestration meta-files as delegated surfaces, not direct-orchestrator edit targets. This includes:
+
+- `AGENTS.md`
+- `.codex/rules/*.md`
+- `.codex/skills/*/SKILL.md`
+- `templates/AGENTS.md.*`
+- `templates/.claude/rules/*.md`
+
+If the change touches routing policy, guide indexes, mirrored templates, or release-time instructions, delegate the edit to the specialist that owns the surface. `mgr-creator` handles new structure and path scaffolding; `arch-documenter` or `mgr-updater` can handle content sync.
+
+### Self-Check Before Editing Meta Files
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  BEFORE CHANGING A META FILE, ASK YOURSELF:                     ║
+║                                                                   ║
+║  1. Is the target AGENTS.md or under .codex/ / templates/?      ║
+║     YES → delegate; do not edit directly                         ║
+║                                                                   ║
+║  2. Is this a one-line policy, index, or routing tweak?         ║
+║     YES → still delegate; there are no small exceptions          ║
+║                                                                   ║
+║  3. Does the change need mirrored Codex + template updates?     ║
+║     YES → delegate the pair together, then verify parity         ║
+║                                                                   ║
+║  4. Am I calling it "temporary" or "debugging" to justify it?   ║
+║     YES → stop; meta-file edits are never direct from orchestrator ║
+║                                                                   ║
+║  If any answer points to a problem → route the edit first       ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
 <!-- DETAIL: Self-Check (Before File Modification)
 ```
 ╔══════════════════════════════════════════════════════════════════╗
@@ -146,6 +180,20 @@ Key violations to avoid (file writes, git commands, bundled operations — all m
    skill auto-discovery, frontmatter integrity).
 ```
 -->
+
+### Meta-File Examples
+
+```
+❌ WRONG: Main conversation edits AGENTS.md directly
+   Main conversation → Write("AGENTS.md", content)
+
+✓ CORRECT: Main conversation → Agent(mgr-creator) → update AGENTS.md and mirrored template files
+
+❌ WRONG: Main conversation patches .codex/rules/MUST-intent-transparency.md directly
+   Main conversation → Edit(".codex/rules/MUST-intent-transparency.md", content)
+
+✓ CORRECT: Main conversation → Agent(arch-documenter) → revise the rule text, then verify the mirrored template file
+```
 
 ## Historical Sensitive-Path Bypass
 
