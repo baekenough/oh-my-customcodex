@@ -63,6 +63,7 @@ Execute these steps to display available pipelines:
    - **Skill steps** (`skill: name`): Invoke via Skill tool — `Skill(skill: "{name}")`
    - **Prompt steps** (`prompt: text`): Execute the described action using appropriate agents/tools
    - **Foreach steps** (`foreach: collection`): Iterate over collection from previous step output
+   - **Parallel steps** (`parallel: [step1, step2]`): Execute contained steps concurrently using Agent tool. Each parallel step runs as an independent Agent. Max 4 concurrent per R009. Steps within a parallel block MUST be independent (no shared state, no sequential dependencies). Dependencies between parallel and non-parallel steps use `depends_on:` field.
    - **Permission mode**: When spawning agents, pass `mode: "bypassPermissions"` in the Agent tool call if the session uses bypassPermissions. Without explicit mode, CC defaults to `acceptEdits`.
 5. Report completion or failure
 
@@ -105,6 +106,49 @@ For release pipelines such as `auto-dev`, record an advisory token-spend estimat
 - Final report: print a phase table and total estimated tokens before the follow-up step
 
 If exact usage events are available from the runtime, prefer them and set `token_source: "runtime"`. Otherwise set `token_source: "estimated"`. Missing spend data must not block a release; it should be reported as an observability gap.
+
+## Parallel Execution
+
+Pipeline steps can be grouped for parallel execution:
+
+```yaml
+steps:
+  - name: phase-1
+    parallel:
+      - name: task-a
+        skill: skill-a
+        description: First independent task
+      - name: task-b
+        skill: skill-b
+        description: Second independent task
+  - name: phase-2
+    skill: next-step
+    depends_on: phase-1
+```
+
+### Parallel Rules
+
+- Max 4 concurrent steps per parallel block (R009 hard cap)
+- Steps within a parallel block MUST be independent
+- `depends_on` enforces ordering between blocks
+- Each parallel step is spawned as a separate Agent tool call in the SAME message
+- Preserve the session permission posture by forwarding `mode: "bypassPermissions"` when applicable
+- If any parallel step fails with `error: halt-and-report`, all remaining steps in the block are cancelled
+- State tracking records each parallel step individually
+
+### Parallel State Format
+
+```json
+{
+  "name": "phase-1",
+  "type": "parallel",
+  "status": "running",
+  "children": [
+    {"name": "task-a", "status": "completed", "duration_ms": 5000},
+    {"name": "task-b", "status": "running"}
+  ]
+}
+```
 
 ## Error Handling
 

@@ -13,14 +13,14 @@ if [ -f "$PROJECT_ROOT/.codex/skills/adaptive-harness/SKILL.md" ] && \
    grep -q "oh-my-customcodex" "$PROJECT_ROOT/AGENTS.md" 2>/dev/null; then
   # Only check if profile exists for the meta-project
   if [ ! -f "$PROFILE" ]; then
-    echo "[adaptive-harness] No project profile found. Run /omcodex:adaptive-harness --scan to generate." >&2
+    echo "[adaptive-harness] No project profile found. Run /omcustomcodex:adaptive-harness --scan to generate." >&2
   fi
   exit 0
 fi
 
 # For non-omcodex projects
 if [ ! -f "$PROFILE" ]; then
-  echo "[adaptive-harness] No project profile found. Run /omcodex:adaptive-harness --scan to auto-configure harness." >&2
+  echo "[adaptive-harness] No project profile found. Run /omcustomcodex:adaptive-harness --scan to auto-configure harness." >&2
   exit 0
 fi
 
@@ -39,7 +39,7 @@ for indicator in package.json go.mod Cargo.toml requirements.txt pyproject.toml 
 done
 
 if [ "$STALE" = true ]; then
-  echo "[adaptive-harness] Project profile may be stale. Consider running /omcodex:adaptive-harness --scan" >&2
+  echo "[adaptive-harness] Project profile may be stale. Consider running /omcustomcodex:adaptive-harness --scan" >&2
 fi
 
 exit 0

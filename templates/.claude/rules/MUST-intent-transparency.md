@@ -56,6 +56,23 @@ Reconfirm when:
 - the operation becomes history-rewriting or destructive (`--force`, rebase, reset, tag overwrite)
 - the user narrows or revokes the earlier approval
 
+## Destructive Operation Approval Persistence
+
+The Git Push Continuation pattern generalizes to repeated destructive operations within the same session when the user already gave explicit approval for the same category and target. Examples: `supabase db push`, `terraform apply`, `kubectl delete`, bulk file deletes, and database migrations.
+
+Scope: once the user explicitly approves category C against target T in a session, follow-up operations of the same C and same T do not require re-confirmation. Still emit an advisory warning. Different categories or targets require fresh confirmation.
+
+| Scenario | Behavior |
+|----------|----------|
+| First explicit approval for category C, target T | Proceed with advisory warning |
+| Follow-up in same session, same C + same T | Do not re-confirm |
+| Different category or target | Ask for fresh approval |
+| Runtime still prompts | Explain that model guidance cannot suppress platform permission prompts |
+
+R001-listed catastrophic git operations (`git reset --hard`, `git clean -fd`, `git push --force` to shared branches, `git branch -D` with unmerged commits) are excluded. They always require explicit per-invocation approval.
+
+Boundary: this rule governs model behavior only. It cannot suppress Codex/Claude runtime auto-mode permission prompts. For genuine prompt suppression on a repeated destructive command, surface the scoped settings/permission-rule workaround for the specific command instead of re-asking the same high-level question.
+
 ## Structured Question Failure Discipline
 
 When a structured question surface (`AskUserQuestion`, `omx question`, or native structured input) is rejected, unavailable, or malformed, the orchestrator must not silently downgrade to a different workflow.

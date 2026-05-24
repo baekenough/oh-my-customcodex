@@ -825,13 +825,15 @@ describe('Template Validation', () => {
       const markdownFiles = (await listMarkdownFiles(wikiDir))
         .filter((file) => file !== 'index.md' && file !== 'log.md')
         .sort();
+      const contentMarkdownFiles = markdownFiles.filter((file) => file.includes('/'));
       const indexedFiles = Array.from(indexYaml.matchAll(/^\s+- file: (.+)$/gm))
         .map((match) => match[1])
         .sort();
       const totalPagesMatch = indexYaml.match(/^\s+total_pages:\s+(\d+)$/m);
 
       expect(totalPagesMatch).not.toBeNull();
-      expect(Number(totalPagesMatch?.[1])).toBe(markdownFiles.length);
+      expect(Number(totalPagesMatch?.[1])).toBe(contentMarkdownFiles.length);
+      expect(markdownFiles.length).toBeGreaterThan(contentMarkdownFiles.length);
       expect(indexedFiles).toEqual(markdownFiles);
     });
 
@@ -1102,6 +1104,35 @@ describe('Template Validation', () => {
 
       expect(result.status).toBe(0);
       expect(result.stdout).toContain('OK: R006 fork list matches actual SKILL.md frontmatter');
+    });
+
+    it('template sync script enforces content drift and stray skill guards', async () => {
+      const scriptPath = join(PROJECT_ROOT, '.github/scripts/verify-template-sync.sh');
+      const content = await readFile(scriptPath, 'utf-8');
+      const syntax = spawnSync('bash', ['-n', scriptPath], {
+        cwd: PROJECT_ROOT,
+        encoding: 'utf-8',
+      });
+
+      expect(syntax.status).toBe(0);
+      expect(content).toContain('Content Drift Check');
+      expect(content).toContain('Stray skill root markdown file');
+      expect(content).toContain('templates/.claude/skills');
+      expect(content).toContain('source != template');
+    });
+
+    it('wiki sync script excludes navigation pages from total_pages', async () => {
+      const scriptPath = join(PROJECT_ROOT, '.github/scripts/verify-wiki-sync.sh');
+      const content = await readFile(scriptPath, 'utf-8');
+      const syntax = spawnSync('bash', ['-n', scriptPath], {
+        cwd: PROJECT_ROOT,
+        encoding: 'utf-8',
+      });
+
+      expect(syntax.status).toBe(0);
+      expect(content).toContain('Navigation/landing pages');
+      expect(content).toContain('find wiki -mindepth 2');
+      expect(content).toContain('/omcustomcodex:wiki');
     });
 
     it('customization guide uses workflows/ and /pipeline syntax instead of legacy pipeline commands', async () => {
