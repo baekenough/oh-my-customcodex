@@ -437,6 +437,41 @@ describe('installer', () => {
     });
   });
 
+  describe('tests/tsconfig.json installation', () => {
+    it('should install tests/tsconfig.json during init', async () => {
+      await install({ targetDir: tempDir, skipConfirm: true });
+      const testsConfigPath = join(tempDir, 'tests', 'tsconfig.json');
+      expect(await fileExists(testsConfigPath)).toBe(true);
+    });
+
+    it('should skip tests/tsconfig.json if already exists and no force', async () => {
+      await install({ targetDir: tempDir, skipConfirm: true });
+      const testsConfigPath = join(tempDir, 'tests', 'tsconfig.json');
+
+      const fs = await import('node:fs/promises');
+      await fs.writeFile(testsConfigPath, '{\n  "custom": true\n}\n', 'utf-8');
+
+      await install({ targetDir: tempDir, skipConfirm: true });
+
+      const content = await fs.readFile(testsConfigPath, 'utf-8');
+      expect(content).toContain('"custom"');
+    });
+
+    it('should overwrite tests/tsconfig.json with force option', async () => {
+      await install({ targetDir: tempDir, skipConfirm: true });
+      const testsConfigPath = join(tempDir, 'tests', 'tsconfig.json');
+
+      const fs = await import('node:fs/promises');
+      await fs.writeFile(testsConfigPath, '{\n  "custom": true\n}\n', 'utf-8');
+
+      await install({ targetDir: tempDir, force: true, skipConfirm: true });
+
+      const content = await fs.readFile(testsConfigPath, 'utf-8');
+      expect(content).not.toContain('"custom"');
+      expect(content).toContain('"extends": "../tsconfig.json"');
+    });
+  });
+
   describe('settings.local.json installation', () => {
     it('should create settings.local.json during init', async () => {
       await install({ targetDir: tempDir, skipConfirm: true });
@@ -741,6 +776,26 @@ describe('installer', () => {
       });
 
       // Install should still succeed even without statusline template
+      expect(result.success).toBe(true);
+
+      fileExistsSpy.mockRestore();
+    });
+
+    it('should skip gracefully when tests/tsconfig.json template is missing', async () => {
+      const originalFileExists = fsUtils.fileExists;
+      const fileExistsSpy = spyOn(fsUtils, 'fileExists').mockImplementation(async (path) => {
+        const pathStr = String(path);
+        if (pathStr.includes('templates') && pathStr.endsWith(join('tests', 'tsconfig.json'))) {
+          return false;
+        }
+        return originalFileExists(path);
+      });
+
+      const result = await install({
+        targetDir: tempDir,
+        skipConfirm: true,
+      });
+
       expect(result.success).toBe(true);
 
       fileExistsSpy.mockRestore();

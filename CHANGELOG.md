@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-05-24
+
+### Added
+- Add a packaged `templates/tests/tsconfig.json` and install it during `omcustomcodex init`, with regression coverage for preserve, force-overwrite, and missing-template paths.
+- Add Codex/OMX Agent Teams shutdown troubleshooting and background progress tracking guides, mirrored into install templates.
+
+### Changed
+- Strengthen R010/R015 source and template rules for delegated meta-file edits and same-session commit/push continuation.
+- Sync guide indexes, template guide counts, and package manifest metadata for the expanded 50-guide surface.
+
 ### Added
 - Add pipeline label standards and template README documentation for the Codex distribution mapping.
 - Record Claude Code v2.1.142 compatibility impact and the upstream nested plan `.gitignore` limitation in source/template guides and wiki pages.

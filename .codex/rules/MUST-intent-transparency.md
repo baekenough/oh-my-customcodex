@@ -39,6 +39,23 @@ Display reasoning when routing to agents. Users must always know which agent was
 
 Users can specify agent directly with `@{agent-name} {command}`. Override bypasses detection.
 
+## Git Push Continuation
+
+If the user has already explicitly authorized `commit` or `push` in this session, that authorization persists for follow-up work in the same branch and the same change family. Do not restart confirmation just because the next step is a related doc, rule, or mirror update.
+
+Continue without asking again when:
+
+- the branch is unchanged
+- the remote target is unchanged
+- the follow-up work is the same category as the earlier approved change
+
+Reconfirm when:
+
+- the branch changes
+- the remote changes
+- the operation becomes history-rewriting or destructive (`--force`, rebase, reset, tag overwrite)
+- the user narrows or revokes the earlier approval
+
 ## Structured Question Failure Discipline
 
 When a structured question surface (`AskUserQuestion`, `omx question`, or native structured input) is rejected, unavailable, or malformed, the orchestrator must not silently downgrade to a different workflow.

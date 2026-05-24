@@ -135,7 +135,7 @@ project/
 |   +-- contexts/                # Context files (ecomode)
 +-- .agents/
 |   +-- skills/                  # Installed skills (123 directories)
-+-- guides/                      # Reference docs (49 topics)
++-- guides/                      # Reference docs (50 topics)
 ```
 
 ## Orchestration

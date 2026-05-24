@@ -52,7 +52,7 @@ templates/
 |   +-- contexts/                     # context files
 |   +-- ontology/                     # ontology and routing metadata
 |   +-- schemas/                      # tool input schemas
-+-- guides/                           # reference docs (49 topics)
++-- guides/                           # reference docs (50 topics)
 ```
 
 ## Components
@@ -77,7 +77,7 @@ Reusable workflow and reference skill modules. During Codex installation these l
 
 Global agent behavior rules. During Codex installation these land under `.codex/rules/`.
 
-### Guides (49)
+### Guides (50)
 
 `templates/guides/*/`
 

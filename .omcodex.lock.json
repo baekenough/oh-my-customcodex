@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.5.1",
-  "generatedAt": "2026-05-22T10:20:46.963Z",
-  "templateVersion": "0.5.1",
+  "generatorVersion": "0.5.2",
+  "generatedAt": "2026-05-24T03:37:03.227Z",
+  "templateVersion": "0.5.2",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -15,13 +15,13 @@
       "component": "rules"
     },
     ".codex/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "e9db90dd5de59354362a3e86c06cf7f055c23bafba58d6ec71b79bb65b81e60b",
-      "size": 21929,
+      "templateHash": "b37c80b32e9e3912e76b31134408c3de002c15512aa5c36e077d2cdd2ba6707f",
+      "size": 24585,
       "component": "rules"
     },
     ".codex/rules/MUST-intent-transparency.md": {
-      "templateHash": "31fe14e9b61051c8df0f01922cb5cf79a302edfdb68804d9640f14790f54d7ce",
-      "size": 3443,
+      "templateHash": "7a3c7b10284437cd0ae914a9d2cd4e9d560c0a510e19ea62464d8622f6b7d2a7",
+      "size": 4123,
       "component": "rules"
     },
     ".codex/rules/SHOULD-error-handling.md": {
@@ -834,6 +834,11 @@
       "size": 4395,
       "component": "guides"
     },
+    "guides/claude-code-tracking.md": {
+      "templateHash": "9d2004a6f71c6498f1cf2e969c346b9cc4fae58f41507c0347e7884f85a10b92",
+      "size": 2300,
+      "component": "guides"
+    },
     "guides/typescript/type-system.md": {
       "templateHash": "02a3450c247f273d517cc19e2f3463d530fa85f90df787faaf628ac71c389749",
       "size": 3820,
@@ -967,6 +972,11 @@
     "guides/multi-model-routing/README.md": {
       "templateHash": "8614c9b9ac576cf4c56d8291b12bce96905c786f18227c60d39a5259aabafcb4",
       "size": 3592,
+      "component": "guides"
+    },
+    "guides/agent-teams/troubleshooting.md": {
+      "templateHash": "39f1425c8180c1ba5a892f1cc9872b07544ef1fcfb351c2ceae124a339322982",
+      "size": 2723,
       "component": "guides"
     },
     "guides/git-safety/README.md": {
@@ -1140,8 +1150,8 @@
       "component": "guides"
     },
     "guides/index.yaml": {
-      "templateHash": "5ec611ba3140850617fb334781757d4b35ca0faa5ef91b34413e7d0a85d83d0b",
-      "size": 9347,
+      "templateHash": "5ccc84c2497907f9a7028fe8510012ebe0c87ab53dff7610149386038da32076",
+      "size": 9742,
       "component": "guides"
     },
     "guides/spark/README.md": {

@@ -8,6 +8,18 @@ guides:
     source:
       type: internal
 
+  - name: agent-teams
+    description: Agent Teams shutdown and tmux fallback troubleshooting for Codex/OMX sessions
+    path: ./agent-teams/troubleshooting.md
+    source:
+      type: internal
+
+  - name: claude-code-tracking
+    description: Background agent progress tracking and stale-state handling for Codex/OMX sessions
+    path: ./claude-code-tracking.md
+    source:
+      type: internal
+
   # Frontend
   - name: claude-design
     description: Claude Design artifact handoff workflow — connecting Anthropic's conversational design tool outputs to Claude Code's fe-design-expert implementation pipeline
