@@ -7,6 +7,53 @@ meta:
   total_sources: 247
 
 pages:
+  navigation:
+    - file: Agents.md
+      title: "Agents"
+      summary: "GitHub Wiki navigation page for agent documentation."
+    - file: Built-in-Commands.md
+      title: "Built-in Commands"
+      summary: "GitHub Wiki navigation page for built-in command documentation."
+    - file: CLI-Reference.md
+      title: "CLI Reference"
+      summary: "GitHub Wiki reference page for command-line usage."
+    - file: Contributing.md
+      title: "Contributing"
+      summary: "GitHub Wiki contribution guide."
+    - file: Customization.md
+      title: "Customization"
+      summary: "GitHub Wiki guide for customizing the harness."
+    - file: Development.md
+      title: "Development"
+      summary: "GitHub Wiki development workflow guide."
+    - file: Guides.md
+      title: "Guides"
+      summary: "GitHub Wiki navigation page for guide documentation."
+    - file: Home.md
+      title: "Home"
+      summary: "GitHub Wiki home page."
+    - file: Project-Structure.md
+      title: "Project Structure"
+      summary: "GitHub Wiki project structure overview."
+    - file: Quick-Start.md
+      title: "Quick Start"
+      summary: "GitHub Wiki quick start guide."
+    - file: Rules.md
+      title: "Rules"
+      summary: "GitHub Wiki navigation page for rule documentation."
+    - file: Skills.md
+      title: "Skills"
+      summary: "GitHub Wiki navigation page for skill documentation."
+    - file: Sub-Agent-Model.md
+      title: "Sub-Agent Model"
+      summary: "GitHub Wiki explanation of the sub-agent model."
+    - file: _Footer.md
+      title: "Footer"
+      summary: "GitHub Wiki footer navigation."
+    - file: _Sidebar.md
+      title: "Sidebar"
+      summary: "GitHub Wiki sidebar navigation."
+
   architecture:
     - file: architecture/agent-taxonomy.md
       title: "Agent Taxonomy"
@@ -177,6 +224,9 @@ pages:
     - file: skills/action-validator.md
       title: "Action Validator"
       summary: "Pre-action boundary checking — validates agent tool calls against declared capabilities"
+    - file: skills/agent-eval-framework.md
+      title: "Agent Eval Framework"
+      summary: "Quantitative agent evaluation using correctness, step ratio, tool-call ratio, and latency ratio."
     - file: skills/adaptive-harness.md
       title: "Adaptive Harness"
       summary: "Auto-detect project context and optimize the oh-my-customcodex harness — deactivate unused agents/skills, suggest missing experts"
@@ -294,6 +344,9 @@ pages:
     - file: skills/help.md
       title: "Help"
       summary: "Show help information for commands, agents, and skills."
+    - file: skills/idea.md
+      title: "Idea"
+      summary: "Analyze natural-language ideas against the current codebase and produce issue-ready specs."
     - file: skills/impeccable-design.md
       title: "Impeccable Design"
       summary: "AI design language for production-ready UI systems."
@@ -357,25 +410,25 @@ pages:
     - file: skills/npm-version.md
       title: "NPM Version"
       summary: "Semantic version management for npm packages."
-    - file: skills/omcustomcodex-auto-improve.md
+    - file: skills/omcodex-auto-improve.md
       title: "Omcustom Auto-Improve"
       summary: "Apply verified improvement suggestions from the improve-report to the codebase"
-    - file: skills/omcustomcodex-feedback.md
+    - file: skills/omcodex-feedback.md
       title: "Omcustom Feedback"
       summary: "Submit user feedback as a GitHub Issue for tracking and improvement."
-    - file: skills/omcustomcodex-improve-report.md
+    - file: skills/omcodex-improve-report.md
       title: "Omcustom Improve Report"
       summary: "Read-only report of improvement status based on eval-core findings."
-    - file: skills/omcustomcodex-loop.md
+    - file: skills/omcodex-loop.md
       title: "Omcustom Loop"
       summary: "Prevent session idle during background agent execution by keeping the session active"
-    - file: skills/omcustomcodex-release-notes.md
+    - file: skills/omcodex-release-notes.md
       title: "Omcustom Release Notes"
       summary: "Generate structured release notes from git history and closed issues."
-    - file: skills/omcustomcodex-takeover.md
+    - file: skills/omcodex-takeover.md
       title: "Omcustom Takeover"
       summary: "Extract canonical spec from existing agents/skills — reverse-engineer the intended"
-    - file: skills/omcustomcodex-web.md
+    - file: skills/omcodex-web.md
       title: "Omcustom Web"
       summary: "Control and inspect the built-in Claude Code Web UI."
     - file: skills/optimize-analyze.md
@@ -441,6 +494,9 @@ pages:
     - file: skills/result-aggregation.md
       title: "Result Aggregation"
       summary: "Aggregate parallel agent results into a unified, deduplicated summary."
+    - file: skills/roundtable-debate.md
+      title: "Roundtable Debate"
+      summary: "Structured multi-agent debate for decisions where preserving dissent matters."
     - file: skills/rtk-exec.md
       title: "RTK Exec"
       summary: "Execute CLI commands through RTK proxy for token compression."
@@ -613,6 +669,9 @@ pages:
     - file: guides/agent-teams.md
       title: "Agent Teams Guide"
       summary: "Agent Teams shutdown, cleanup, and tmux fallback recovery guidance for Codex/OMX sessions"
+    - file: guides/agent-eval.md
+      title: "Agent Eval"
+      summary: "Correctness-first four-metric evaluation guidance for agent runs."
     - file: guides/alembic.md
       title: "Alembic Guide"
       summary: "Reference documentation for Alembic, the database migration framework for SQLAlchemy"
@@ -630,7 +689,7 @@ pages:
       summary: "External plugin for token cost optimization and session continuity — conflict resolution with R012/R013/R009/R010"
     - file: guides/claude-code.md
       title: "Claude Code Guide"
-      summary: "Claude Code compatibility guide with v2.1.143-v2.1.145 statusline, agent JSON, and background task impact"
+      summary: "Claude Code compatibility guide with v2.1.147-v2.1.150 Workflow, usage, sandbox, and no-op release impact"
     - file: guides/dbt.md
       title: "dbt Guide"
       summary: "Reference documentation for dbt (data build tool) SQL modeling and analytics engineering"
@@ -694,6 +753,9 @@ pages:
     - file: guides/middleware-patterns.md
       title: "Middleware Patterns Guide"
       summary: "Lifecycle middleware vocabulary mapped to Codex + OMX hooks, skills, and rules"
+    - file: guides/multi-agent-debate-patterns.md
+      title: "Multi-Agent Debate Patterns"
+      summary: "Guidance for consensus-seeking review and dissent-preserving multi-agent debate."
     - file: guides/postgres.md
       title: "PostgreSQL Guide"
       summary: "Reference documentation for pure PostgreSQL database administration, query optimization"
@@ -739,6 +801,9 @@ pages:
     - file: guides/worktree-lifecycle.md
       title: "Worktree Lifecycle Automation Guide"
       summary: "Three shell aliases (agent-spin, agent-merge, agent-clean) automating the full git worktree lifecycle for AI agent workflows"
+    - file: guides/multi-provider-exec.md
+      title: "Multi-Provider Exec Guide"
+      summary: "Unified reference for executing prompts through external LLM provider exec skills."
     - file: guides/multi-model-routing.md
       title: "Multi-Model Routing Guide"
       summary: "Role-based model selection strategy mapping task types to haiku/sonnet/opus tiers with escalation and project override patterns"

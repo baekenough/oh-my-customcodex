@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-05-20
+updated: 2026-05-24
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/15-version-compatibility.md
@@ -33,6 +33,46 @@ Covers Claude's advanced API features for building Claude Code-compatible applic
 ## Version Compatibility
 
 oh-my-customcodex keeps Claude compatibility guidance for installed templates while `.codex/**` and OMX remain the primary runtime surface.
+
+### v2.1.150 (2026-05-23)
+
+Source: upstream oh-my-customcode #1220, Codex port #1380.
+
+- Internal infrastructure improvements only; no Codex package or Claude-template runtime change was required.
+- The no-op review is recorded so release-monitor ports can close with explicit evidence.
+
+### v2.1.149 (2026-05-22)
+
+Source: upstream oh-my-customcode #1219, Codex port #1379.
+
+- `/usage` now breaks limit usage down by skills, subagents, plugins, and MCP servers; Codex reports still come from OMX status, trace, and local CLI evidence.
+- Git worktree sandbox allowlists now cover only shared `.git` state, reinforcing clean worktree boundaries for auto-dev sweeps.
+- Bash `find` and no-change planning regressions were fixed upstream, but Codex sessions should still prefer bounded `rg`/targeted scans and explicit `git status` checks.
+- Enterprise `allowAllClaudeAiMcps`, PowerShell permission fixes, diff scrolling, GFM checkboxes, and telemetry path diagnostics are documented as Claude compatibility surfaces.
+
+### v2.1.148 (2026-05-22)
+
+Source: upstream oh-my-customcode #1218, Codex port #1378.
+
+- Claude Code fixed the v2.1.147 Bash regression that returned exit code 127 for every command for some users.
+- Suspicious all-command `127` failures from Claude v2.1.147 should be treated as version/environment evidence before changing repository code.
+
+### v2.1.147 (2026-05-21)
+
+Source: upstream oh-my-customcode #1216 and #1222, Codex ports #1376 and #1381.
+
+- `Workflow` is a Claude-native deterministic multi-agent tool gated by `CLAUDE_CODE_WORKFLOWS=1`; it does not replace OMX `$pipeline`.
+- Pinned background sessions are more durable, but pinned Claude sessions are not evidence of active OMX work.
+- `/simplify` was renamed to `/code-review`; this package keeps `dev-review` for best-practice review and `dev-refactor` for cleanup/refactor, with no dead `simplify` route.
+- Auto-updater diagnostics, unknown slash-command errors, multi-`Agent(...)` plugin handling, sandbox hardening, and hook condition fixes are recorded as Claude-template compatibility notes.
+
+### v2.1.146 (2026-05-21)
+
+Source: upstream oh-my-customcode #1205, Codex port #1364.
+
+- `/simplify` was renamed to `/code-review` and accepts effort levels such as `/code-review high`.
+- The package still exposes `dev-review` as its own review skill; native `/code-review` is a Claude command, not a package skill rename.
+- MCP pagination, model env forwarding, background permission preservation, and Agent SDK stream completion fixes are documented as compatibility-only changes.
 
 ### v2.1.145 (2026-05-19)
 

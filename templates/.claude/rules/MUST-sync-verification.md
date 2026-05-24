@@ -35,9 +35,23 @@ Also run: mgr-claude-code-bible:verify (official spec compliance)
 | Missing pages | Source entities without wiki pages → run `/omcustomcodex:wiki` |
 | Stale pages | Source modification date newer than wiki `updated` field → run `/omcustomcodex:wiki ingest <path>` |
 | Broken cross-refs | Wiki links pointing to non-existent pages → run `/omcustomcodex:wiki lint` |
-| index.md accuracy | Wiki index page count matches actual page count |
+| wiki/index.yaml accuracy | Wiki index page count and indexed file entries match actual page files |
 
 Wiki verification is also enforced by CI (`.github/workflows/wiki-sync.yml`).
+
+### Structural Migration Verification
+
+Directory restructuring, template flattening, branch-strategy changes, generated-file relocation, and package-surface moves require a clean-checkout migration audit before they are considered complete.
+
+Required checks:
+
+1. Run the relevant verification from a clean checkout or isolated worktree, not only from a developer tree with untracked files.
+2. Confirm old paths are no longer referenced by CI, docs validators, template validators, install/init output, and release workflows.
+3. Confirm new paths are tracked by git and present in packaged templates or generated output where users will rely on them.
+4. Verify allowlists, `.gitignore`, and template sync checks do not hide missing files.
+5. Add or update regression tests that fail on the old path assumption.
+
+This section is specifically intended to catch migrations where local untracked files or stale CI path references make a release appear healthy while a clean checkout fails.
 
 ### Phase 4: Fix all discovered issues
 

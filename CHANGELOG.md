@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-05-24
+
+### Added
+- Record Claude Code v2.1.147-v2.1.150 compatibility decisions in source, templates, and wiki docs, including Workflow gating, `/simplify` to `/code-review` naming, Bash exit-127 triage, `/usage` diagnostics, worktree sandbox fixes, and the v2.1.150 no-op review.
+
+### Changed
+- Strengthen R020 with explicit Diagnostic Hypothesis Verification and Test-Skip Is Not Completion guidance, mirrored into Claude templates and wiki rules.
+- Strengthen R017 structural migration verification for clean-checkout path audits and `wiki/index.yaml` entry accuracy.
+- Refresh `wiki/index.yaml` so every wiki markdown page has a matching index entry and stale `omcustomcodex-*` skill paths point at the actual `omcodex-*` pages.
+
+### Fixed
+- Confirm no stale Codex-native `simplify` route is present while documenting the valid `dev-review` and `dev-refactor` split.
+- Confirm the referenced leftover `.claude/worktrees/agent-abf7468961dceb1fe` directory is absent from the current worktree and Git worktree list.
+
 ## [0.5.2] - 2026-05-24
 
 ### Added

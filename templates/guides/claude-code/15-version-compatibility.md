@@ -2,6 +2,62 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
+## v2.1.150
+
+Published: 2026-05-23.
+
+Source: upstream oh-my-customcode #1220, Codex port #1380.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Internal infrastructure improvements only | No user-facing Claude compatibility behavior changed for templates, agents, skills, hooks, or rules. | No package change. Record the no-op review so release-monitor ports can be closed with evidence instead of staying open. |
+
+## v2.1.149
+
+Published: 2026-05-22.
+
+Source: upstream oh-my-customcode #1219, Codex port #1379.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| `/usage` now breaks limit usage down by skills, subagents, plugins, and MCP servers | Useful diagnostic vocabulary for Claude compatibility sessions; Codex-native reporting still comes from OMX status, trace, and local CLI surfaces. | No runtime change. Keep cost and status reports source-specific instead of treating Claude `/usage` output as Codex evidence. |
+| `/diff` detail view supports keyboard scrolling and Markdown renders GFM task-list checkboxes | Improves Claude terminal UX for reviews and release notes. | No template change. Continue writing normal Markdown task lists; Claude now renders them more faithfully. |
+| Enterprise `allowAllClaudeAiMcps` can load claude.ai cloud MCP connectors next to managed MCP config | Only affects managed Claude enterprise workspaces. | Document as Claude-template compatibility only; Codex MCP routing remains configured through Codex/OMX config. |
+| PowerShell `cd` aliases, wildcard prefix rules, and stale directory-variable tracking were hardened | Permission-analysis fixes reduce Claude compatibility sandbox escapes. | No Codex shell-policy change. Do not copy PowerShell-specific assumptions into Codex Bash approvals. |
+| Git worktree sandbox allowlists now cover only the shared `.git` directory, not the whole main repo | Aligns with this repo's preference for isolated worktrees during auto-dev sweeps. | Keep release and issue-sweep work in clean worktrees and verify dirty-tree boundaries explicitly. |
+| Bash `find` no longer exhausts macOS file/vnode tables on large trees | Large repository scans are safer for Claude compatibility sessions. | Still prefer `rg`/targeted `find` in Codex sessions and keep scans bounded. |
+| `/ultraplan` and remote sessions no longer fail when there are no real uncommitted changes | Reduces false blockers for clean-tree planning. | No package change; continue verifying `git status` before declaring clean boundaries. |
+| `otelHeadersHelper` reports path-with-spaces failures in `/doctor` and debug logs | Helps diagnose local telemetry setup drift. | Keep hook and doctor guidance path-safe, especially under workspace paths that may contain spaces. |
+
+## v2.1.148
+
+Published: 2026-05-22.
+
+Source: upstream oh-my-customcode #1218, Codex port #1378.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Fixed a v2.1.147 regression where the Bash tool returned exit code 127 for every command for some users | Claude compatibility sessions on affected versions may have produced false command-not-found failures. | Treat suspicious all-command `127` reports from Claude v2.1.147 as environment/version evidence to verify before changing repo code. No Codex runtime change. |
+
+## v2.1.147
+
+Published: 2026-05-21.
+
+Source: upstream oh-my-customcode #1216 and #1222, Codex ports #1376 and #1381.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Added the `Workflow` tool for deterministic multi-agent orchestration, gated by `CLAUDE_CODE_WORKFLOWS=1` | This overlaps conceptually with OMX `$pipeline`, but it is a Claude-native tool surface. | Do not replace Codex/OMX pipeline routing with Claude Workflow. Mention the env gate when documenting Claude-template sessions. |
+| Pinned background sessions stay alive when idle, restart in place for updates, and are shed after non-pinned sessions under memory pressure | Claude compatibility background agents are more durable. | Keep Codex-native child-agent and OMX session lifecycle separate; pinned Claude sessions are not proof of active OMX work. |
+| `/simplify` was renamed to `/code-review`; it now reports correctness bugs at chosen effort levels and the old cleanup-and-fix behavior was removed | Potential naming confusion with this package's `dev-review` and `dev-refactor` skills. | Keep package commands as `dev-review` for best-practice review and `dev-refactor` for cleanup/refactor. Do not add a dead `simplify` route. |
+| REPL and Workflow sandboxes were hardened against prototype-pollution and thenable-based escapes | Security hardening applies to Claude runtime internals. | No package code change; keep security reviews focused on repo-owned hooks, scripts, and generated templates. |
+| Auto-updater retries transient network failures and reports specific error categories plus current version on update failure | Helps distinguish transient update problems from package regressions. | For publish/update triage, verify registry token, workflow logs, and current version before making permanent workflow edits. |
+| Large diff rendering and prompt-history duplicate handling improved | UX-only for Claude compatibility sessions. | No template change. |
+| Enterprise login restrictions are enforced against third-party-provider and API-key sessions | Managed Claude environments behave more consistently. | No Codex auth change. Treat enterprise login policy as external environment state. |
+| Headless/SDK unknown slash commands now show an error instead of silently doing nothing | Broken generated commands should be easier to detect. | Keep template command names explicit and test packaged command references. |
+| Plugin agents declaring multiple `Agent(...)` tool types no longer drop all but the last one | Compatibility templates with multi-agent tool declarations are safer. | Continue using canonical, explicit agent names in package docs and frontmatter. |
+| Hook `if` conditions such as `PowerShell(git push*)` were fixed to match as intended | Claude hook compatibility improved. | Keep Codex hook routing Bash-first unless a hook is explicitly PowerShell-specific. |
+
 ## v2.1.146
 
 Published: 2026-05-21.

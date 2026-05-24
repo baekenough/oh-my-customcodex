@@ -22,6 +22,36 @@ Before declaring any task `[Done]`, verify completion against task-type-specific
 
 Before [Done]: (1) Verify ACTUAL outcome not just attempt — "ran command" ≠ "succeeded". (2) Check task-type criteria above. (3) No unchecked items. (4) Would bet $100 it's complete.
 
+## Diagnostic Hypothesis Verification
+
+When a failure diagnosis would cause a permanent workflow, rule, template, or release-process change, the diagnosis must be treated as a hypothesis until it is directly verified.
+
+Required steps:
+
+1. Capture the concrete symptom and the proposed root cause separately.
+2. Gather direct evidence for the root cause from the authoritative source: command output, CI logs, registry response, source file, or API result.
+3. Test or falsify at least one plausible alternative when the change affects shared release or verification infrastructure.
+4. Record the verified cause in the commit, issue comment, or release note before merging the permanent change.
+
+Examples:
+
+| Hypothesis | Required evidence before changing shared workflow |
+|------------|---------------------------------------------------|
+| "npm publish failed because provenance is incompatible" | Registry error details showing provenance rejection, not just an initial `E403` |
+| "CI cannot find a file because it is generated locally" | Clean checkout result proving the file is untracked or absent |
+| "A test is flaky enough to skip" | Repeated-run evidence plus a tracked fix issue; skip alone is not completion |
+
+## Test-Skip Is Not Completion
+
+Skipping tests, lowering coverage thresholds, narrowing the test command, or marking suites as TODO may be a temporary containment step, but it never satisfies completion by itself.
+
+Before a task can be declared done after a test skip or threshold reduction:
+
+1. The underlying failure must have a linked issue, owner, and reproduction command.
+2. The skipped scope must be named precisely, not hidden behind a broad suite skip.
+3. The release or PR summary must state that verification is reduced.
+4. A follow-up must restore the test or remove the threshold reduction before the related work is considered fully complete.
+
 ## Optional: Quantitative Evidence
 
 For agent, skill, or workflow changes, completion evidence MAY include `agent-eval-framework` metrics:
