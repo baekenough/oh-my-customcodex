@@ -102,6 +102,18 @@ describe('list command', () => {
       expect(agents[0].type).toBe('backend');
     });
 
+    it('should classify exact-name coordination reviewers', async () => {
+      const agentsDir = join(tempDir, '.codex', 'agents');
+      await mkdir(agentsDir, { recursive: true });
+      await writeFile(join(agentsDir, 'scholastic.md'), '# Scholastic Reviewer');
+
+      const agents = await getAgents(tempDir);
+
+      expect(agents).toHaveLength(1);
+      expect(agents[0].name).toBe('scholastic');
+      expect(agents[0].type).toBe('coordination');
+    });
+
     it('should extract description from blockquote in markdown', async () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });

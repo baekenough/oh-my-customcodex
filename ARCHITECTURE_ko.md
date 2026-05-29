@@ -4,7 +4,7 @@
 
 ## 1. 시스템 개요
 
-oh-my-customcodex는 oh-my-customcode의 child package로, parent 하네스의 구조와 워크플로를 유지한 채 실행 표면만 GPT Codex + OMX로 옮긴 포트입니다. 현재 shipped template surface는 49개의 서브에이전트, 118개의 스킬, 22개의 거버넌스 규칙, 훅 시스템으로 구성됩니다. 핵심 철학은 그대로 유지됩니다: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."**
+oh-my-customcodex는 oh-my-customcode의 child package로, parent 하네스의 구조와 워크플로를 유지한 채 실행 표면만 GPT Codex + OMX로 옮긴 포트입니다. 현재 shipped template surface는 50개의 서브에이전트, 118개의 스킬, 22개의 거버넌스 규칙, 훅 시스템으로 구성됩니다. 핵심 철학은 그대로 유지됩니다: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."**
 
 현재 패키지 식별자: npm `oh-my-customcodex`, GitHub Packages `@baekenough/oh-my-customcodex`, CLI `omcodex`
 
@@ -58,7 +58,7 @@ oh-my-customcode parent가 정의한 컴파일 메타포를 oh-my-customcodex도
 | R020 | MUST | 완료 검증 | 작업 완료 선언 전 task-type-specific 검증 |
 | R021 | MUST | Enforcement Policy | Advisory-first 시행 모델, 강화 승격 기준 |
 
-### 3.2 에이전트 분류 (49개)
+### 3.2 에이전트 분류 (50개)
 
 | 카테고리 | 수량 | 에이전트 |
 |----------|------|----------|
@@ -75,7 +75,8 @@ oh-my-customcode parent가 정의한 컴파일 메타포를 oh-my-customcodex도
 | 매니저 | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | 시스템 | 3 | sys-memory-keeper, sys-naggy, tracker-checkpoint |
 | 보조 | 2 | slack-cli-expert, wiki-curator |
-| **합계** | **49** | |
+| Review/Reasoning | 1 | scholastic |
+| **합계** | **50** | |
 
 ### 3.3 스킬 카탈로그 (118개)
 

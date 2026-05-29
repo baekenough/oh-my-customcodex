@@ -1,5 +1,5 @@
 {
-  "version": "0.5.6",
+  "version": "0.5.7",
   "requiresCC": ">=2.1.121",
   "claudeCode": {
     "minimumVersion": "2.1.121",
@@ -17,7 +17,7 @@
       "name": "agents",
       "path": ".codex/agents",
       "description": "AI agent definitions (flat .md files with prefixes)",
-      "files": 49
+      "files": 50
     },
     {
       "name": "skills",

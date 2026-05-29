@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-49 agents. 123 skills. 22 rules. One command.
+50 agents. 123 skills. 22 rules. One command.
 
 ```bash
 npm install -g oh-my-customcodex && cd your-project && omcustomcodex init
@@ -112,7 +112,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-### Agents (49)
+### Agents (50)
 
 | Category | Count | Agents |
 |----------|-------|--------|
@@ -129,6 +129,7 @@ Agent(arch-documenter):haiku      ┘
 | Managers | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | System | 3 | sys-memory-keeper, sys-naggy, tracker-checkpoint |
 | Auxiliary | 2 | slack-cli, wiki-curator |
+| Review/Reasoning | 1 | scholastic |
 
 Each agent declares its tools, model, memory scope, and limitations in YAML frontmatter. Tool budgets are enforced per agent type for accuracy.
 
@@ -279,7 +280,7 @@ omcustomcodex serve-stop            # Stop Web UI
 your-project/
 ├── AGENTS.md                   # Entry point
 ├── .codex/
-│   ├── agents/                 # 49 agent definitions
+│   ├── agents/                 # 50 agent definitions
 │   ├── rules/                  # 22 governance rules (R000-R021)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas

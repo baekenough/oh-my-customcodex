@@ -35,6 +35,9 @@ classes:
   ManagerAgent:
     agents: [mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible]
     description: "System management agents"
+  CoordinationAgent:
+    agents: [scholastic]
+    description: "Reasoning, critique, and coordination specialists"
   SystemAgent:
     agents: [sys-memory-keeper, sys-naggy, tracker-checkpoint]
     description: "System utility agents"
@@ -556,3 +559,15 @@ agents:
     summary: "Pipeline checkpoint tracker for resumable DAG and pipeline state"
     keywords: [pipeline, checkpoint, resume, dag, state, tracker]
     file_patterns: ["/tmp/.codex-pipeline-*.json", "/tmp/.codex-dag-*.json"]
+
+  scholastic:
+    class: CoordinationAgent
+    description: "Ontology-first reasoning reviewer for category mistakes, hidden assumptions, modality separation, scholastic critique, and minimal-repair proposals."
+    model: sonnet
+    memory: project
+    effort: high
+    skills: []
+    tools: [Read, Grep, Glob]
+    summary: "Scholastic reviewer for ontology checks, modality separation, and minimal argument repair"
+    keywords: [scholastic, ontology, category-mistake, modality, assumptions, critique, reasoning]
+    file_patterns: ["*.md", "*.txt"]

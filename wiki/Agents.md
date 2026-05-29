@@ -1,6 +1,6 @@
 # Agents
 
-oh-my-customcodex includes **33 specialized agents** organized by category.
+oh-my-customcodex includes **50 specialized agents** organized by category.
 
 | Category | Count | Agents |
 |----------|-------|--------|
@@ -14,6 +14,7 @@ oh-my-customcodex includes **33 specialized agents** organized by category.
 | **Architecture** | 2 | arch-documenter, arch-speckit-agent |
 | **Infrastructure** | 2 | infra-docker-expert, infra-aws-expert |
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
+| **Review/Reasoning** | 1 | scholastic |
 
 ---
 

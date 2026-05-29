@@ -17,6 +17,7 @@ Reference snapshot for the oh-my-customcodex agent catalog. The live shipped sur
 | SW Architect | Architecture and documentation | Architecture and documentation |
 | Infra Engineer | Infrastructure and DevOps | Infrastructure and DevOps |
 | QA Team | Quality assurance roles | Quality assurance |
+| Review/Reasoning | Ontology-first critique | Reasoning validation and argument review |
 
 ## Orchestrator Agents
 
@@ -333,6 +334,19 @@ System agents provide core functionality.
 - Test automation
 - Test frameworks
 - Bug reporting
+
+
+## Review / Reasoning Agents
+
+### scholastic
+
+**Role**: Ontology-first reasoning reviewer for category mistakes, hidden assumptions, modality separation, scholastic critique, and minimal-repair proposals.
+
+- Defines terms before evaluating an argument
+- Checks whether a claim fails categorically or empirically
+- Separates possibility, necessity, actuality, obligation, and capability claims
+- Produces structured premise → reasoning → conclusion reviews
+- Proposes the smallest ontology-safe repair when a claim fails
 
 ## Tutor Agents
 

@@ -444,6 +444,21 @@ describe('Template Validation', () => {
   });
 
   describe('Agent frontmatter', () => {
+    it('packages Scholastic as a mirrored ontology reviewer agent', async () => {
+      const projectRoot = resolve(import.meta.dir, '../../..');
+      const agentPath = '.codex/agents/scholastic.md';
+      const templateAgentPath = '.claude/agents/scholastic.md';
+      const sourceAgent = await readFile(join(projectRoot, agentPath), 'utf-8');
+      const templateAgent = await readFile(join(TEMPLATES_DIR, templateAgentPath), 'utf-8');
+      const reference = await readFile(join(projectRoot, 'docs/reference/agents.md'), 'utf-8');
+
+      expect(templateAgent).toBe(sourceAgent);
+      expect(sourceAgent).toContain('name: scholastic');
+      expect(sourceAgent).toContain('Ontology-first reasoning reviewer');
+      expect(reference).toContain('### scholastic');
+      expect(reference).toContain('category mistakes');
+    });
+
     it('every agent .md file should have valid YAML frontmatter', async () => {
       const agentsDir = join(TEMPLATES_DIR, '.claude/agents');
       const agentFiles = (await readdir(agentsDir, { withFileTypes: true }))

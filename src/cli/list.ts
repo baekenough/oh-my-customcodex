@@ -121,8 +121,23 @@ function parseYamlMetadata(content: string): Record<string, string> {
  * Official format: {root}/agents/{prefix}-{name}.md
  * Prefixes: lang-, be-, fe-, tool-, db-, arch-, infra-, qa-, mgr-, sys-, tutor-
  */
+function translateListMessage(
+  key: string,
+  options: Record<string, string | number>,
+  fallback: string
+): string {
+  const translated = i18n.t(key, options);
+  return translated && translated !== key ? translated : fallback;
+}
+
 function extractAgentTypeFromFilename(filename: string): string {
   const name = basename(filename, '.md');
+  const exactNameMap: Record<string, string> = {
+    scholastic: 'coordination',
+  };
+
+  if (exactNameMap[name]) return exactNameMap[name];
+
   const prefixMap: Record<string, string> = {
     lang: 'language',
     be: 'backend',
@@ -543,13 +558,19 @@ export async function getRules(
  */
 export function formatAsTable(components: ComponentInfo[], type: ListType): void {
   if (components.length === 0) {
-    console.log(i18n.t('cli.list.empty', { type }));
+    console.log(translateListMessage('cli.list.empty', { type }, `No ${type} found.`));
     return;
   }
 
   // Print header
   console.log('');
-  console.log(i18n.t('cli.list.header', { type, count: components.length }));
+  console.log(
+    translateListMessage(
+      'cli.list.header',
+      { type, count: components.length },
+      `${type} (${components.length} installed)`
+    )
+  );
   console.log('\u2500'.repeat(80));
 
   // Calculate column widths
@@ -574,7 +595,13 @@ export function formatAsTable(components: ComponentInfo[], type: ListType): void
   }
 
   console.log('\u2500'.repeat(80));
-  console.log(i18n.t('cli.list.total', { count: components.length, type }));
+  console.log(
+    translateListMessage(
+      'cli.list.total',
+      { count: components.length, type },
+      `Total: ${components.length} ${type}`
+    )
+  );
   console.log('');
 }
 
@@ -585,7 +612,7 @@ export function formatAsTable(components: ComponentInfo[], type: ListType): void
  */
 export function formatAsSimple(components: ComponentInfo[], type: ListType): void {
   if (components.length === 0) {
-    console.log(i18n.t('cli.list.empty', { type }));
+    console.log(translateListMessage('cli.list.empty', { type }, `No ${type} found.`));
     return;
   }
 

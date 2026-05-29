@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.5.6",
-  "generatedAt": "2026-05-29T11:28:58.407Z",
-  "templateVersion": "0.5.6",
+  "generatorVersion": "0.5.7",
+  "generatedAt": "2026-05-29T11:56:17.449Z",
+  "templateVersion": "0.5.7",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -302,6 +302,11 @@
     ".codex/agents/qa-writer.md": {
       "templateHash": "41114d5cfa0dff10b0bac2aa48d8428f6390e0ec882d4ee347ab4ac0eea7d17e",
       "size": 908,
+      "component": "agents"
+    },
+    ".codex/agents/scholastic.md": {
+      "templateHash": "48b49c569a41877492a75d078b3b9d394787981b5ce611a9aab6599777ccfbde",
+      "size": 2291,
       "component": "agents"
     },
     ".codex/agents/db-supabase-expert.md": {
@@ -620,8 +625,8 @@
       "component": "contexts"
     },
     ".codex/ontology/agents.yaml": {
-      "templateHash": "764531b3847cdf4bcd23d475c29532217da127734504809a2db7506f57c30c16",
-      "size": 29233,
+      "templateHash": "5dacc675be95b5e629f142f94b0d1d53ec8357576afe522b734ebbaeab090b8e",
+      "size": 29901,
       "component": "ontology"
     },
     ".codex/ontology/skills.yaml": {

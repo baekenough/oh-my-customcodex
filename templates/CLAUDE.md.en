@@ -132,7 +132,7 @@ NO EXCEPTIONS. NO EXCUSES.
 project/
 +-- AGENTS.md                    # Entry point
 +-- .codex/
-|   +-- agents/                  # Subagent definitions (49 files)
+|   +-- agents/                  # Subagent definitions (50 files)
 |   +-- skills/                  # Skills (123 directories)
 |   +-- rules/                   # Global rules (22 files)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
@@ -178,7 +178,8 @@ This is the core oh-my-customcodex philosophy: **"No expert? CREATE one, connect
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | System | 3 | sys-memory-keeper, sys-naggy, tracker-checkpoint |
 | Auxiliary | 2 | slack-cli-expert, wiki-curator |
-| **Total** | **49** | |
+| Review/Reasoning | 1 | scholastic |
+| **Total** | **50** | |
 
 ## Agent Teams (MUST when enabled)
 
