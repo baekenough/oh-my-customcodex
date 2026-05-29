@@ -14,7 +14,7 @@ related:
 
 # Agent Taxonomy
 
-49 agents are organized into 13 functional categories. Each agent is a specialist "build artifact" that composes skills into a focused domain expert with a specific model, toolset, and memory scope.
+50 agents are organized into 14 functional categories. Each agent is a specialist "build artifact" that composes skills into a focused domain expert with a specific model, toolset, and memory scope.
 
 ## Overview
 

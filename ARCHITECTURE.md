@@ -4,7 +4,7 @@
 
 ## 1. System Overview
 
-oh-my-customcodex is the Codex + OMX native child package of oh-my-customcode. It preserves the parent harness model, workflow intent, and package structure while retargeting the execution surface from Claude Code native to GPT Codex + OMX. The current shipped template surface includes 49 pre-built subagents, 118 skills, 22 governing rules, and a comprehensive hook system. The core philosophy remains: **"No expert? CREATE one, connect knowledge, and USE it."**
+oh-my-customcodex is the Codex + OMX native child package of oh-my-customcode. It preserves the parent harness model, workflow intent, and package structure while retargeting the execution surface from Claude Code native to GPT Codex + OMX. The current shipped template surface includes 50 pre-built subagents, 118 skills, 22 governing rules, and a comprehensive hook system. The core philosophy remains: **"No expert? CREATE one, connect knowledge, and USE it."**
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
@@ -68,7 +68,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 | R020 | MUST | Completion Verification | Task-type-specific verification before declaring [Done] |
 | R021 | MUST | Enforcement Policy | Advisory-first enforcement model, promotion criteria |
 
-### 3.2 Agent Taxonomy (49 agents)
+### 3.2 Agent Taxonomy (50 agents)
 
 | Category | Count | Agents |
 |----------|-------|--------|
@@ -85,7 +85,8 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | System | 3 | sys-memory-keeper, sys-naggy, tracker-checkpoint |
 | Auxiliary | 2 | slack-cli-expert, wiki-curator |
-| **Total** | **49** | |
+| Review/Reasoning | 1 | scholastic |
+| **Total** | **50** | |
 
 Each agent is defined in the source tree (`.codex/agents/{name}.md`) and compiled into the installed Codex runtime surface. YAML frontmatter specifies model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
 

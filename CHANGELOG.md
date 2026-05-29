@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.7] - 2026-05-29
+
+### Added
+- Add the Scholastic ontology reviewer agent from Yeachan-Heo/oh-my-codex v0.18.3 for #1410, mirrored into source/templates, ontology metadata, reference docs, wiki docs, and template validation coverage.
+- Record v0.5.7 auto-dev triage dispositions for #1402-#1415, explicitly deferring upstream runtime features that lack a repo-owned implementation surface.
+
+### Changed
+- Bump release metadata from 0.5.6 to 0.5.7 and refresh packaged agent counts for the 50-agent surface.
+
 ## [0.5.6] - 2026-05-29
 
 ### Added

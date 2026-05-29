@@ -45,7 +45,7 @@ templates/
 +-- manifest.json                     # packaged component metadata
 +-- workflows/                        # project-level pipeline definitions
 +-- .claude/
-|   +-- agents/                       # agent definitions (49 files)
+|   +-- agents/                       # agent definitions (50 files)
 |   +-- skills/                       # skill modules (123 SKILL.md files)
 |   +-- rules/                        # global rules (22 files)
 |   +-- hooks/                        # hook registry and scripts (40 scripts)
@@ -59,7 +59,7 @@ templates/
 
 The counts below should stay aligned with `templates/manifest.json`, README component headings, and CI template validation.
 
-### Agents (49)
+### Agents (50)
 
 `templates/.claude/agents/*.md`
 
