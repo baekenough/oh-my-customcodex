@@ -41,6 +41,20 @@ Examples:
 | "CI cannot find a file because it is generated locally" | Clean checkout result proving the file is untracked or absent |
 | "A test is flaky enough to skip" | Repeated-run evidence plus a tracked fix issue; skip alone is not completion |
 
+### Variant: Parallel Read + Permanent-Change Dispatch
+
+Diagnostic reads and permanent-change dispatches are sequentially dependent. Do not batch diagnostic `Read`/log inspection with issue creation, fix delegation, workflow edits, rule edits, template edits, or release-process changes in the same parallel batch when the write depends on the diagnostic result.
+
+Parallel batches return results together, so a same-batch permanent dispatch proves the hypothesis was treated as confirmed before the evidence was read. R009 parallel execution applies only to independent work; diagnosis → permanent change is not independent.
+
+| Forbidden | Required |
+|-----------|----------|
+| File `Read` plus an issue or fix instruction based on that file in one parallel batch | Run the diagnostic read first, inspect the result, then dispatch permanent changes in a later step |
+| Log inspection in parallel with an issue stating "the cause is X" | Confirm the log evidence before creating or updating the issue |
+| Hypothesis-driven workflow/rule/template edits before the authoritative evidence returns | Treat the root cause as unverified until the evidence is available |
+
+Example: do not diagnose `triage-dispatch.yml` from memory, create an issue, and delegate a fix in the same parallel call before reading the workflow. If the read later shows a different root cause, the issue, PR, and commit trail become correction debt even when the eventual code direction is acceptable.
+
 ## Test-Skip Is Not Completion
 
 Skipping tests, lowering coverage thresholds, narrowing the test command, or marking suites as TODO may be a temporary containment step, but it never satisfies completion by itself.
