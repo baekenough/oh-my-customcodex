@@ -292,29 +292,29 @@ skills:
 
   memory-management:
     class: MemorySkill
-    description: "Memory persistence operations using claude-mem"
+    description: "Memory persistence operations using native memory plus omx-memory"
     user_invocable: false
     model_invocable: true
-    summary: "Provide memory persistence operations using claude-mem for session context"
-    keywords: [memory, claude-mem, persistence, session, context]
+    summary: "Provide memory persistence operations using native memory and approved searchable backends for session context"
+    keywords: [memory, omx-memory, persistence, session, context]
     rule_references: [R011]
 
   memory-recall:
     class: MemorySkill
-    description: "Search and recall memories from claude-mem"
+    description: "Search and recall memories from native memory plus omx-memory"
     user_invocable: true
     model_invocable: true
-    summary: "Search and recall relevant memories from claude-mem using semantic search"
-    keywords: [memory, recall, search, semantic, claude-mem]
+    summary: "Search and recall relevant memories from approved searchable backends"
+    keywords: [memory, recall, search, semantic, omx-memory]
     rule_references: [R011]
 
   memory-save:
     class: MemorySkill
-    description: "Save current session context to claude-mem"
+    description: "Save current session context to native memory plus omx-memory"
     user_invocable: true
     model_invocable: false
-    summary: "Save current session context to claude-mem for persistence across compaction"
-    keywords: [memory, save, session, context, claude-mem]
+    summary: "Save current session context to native memory and approved searchable backends"
+    keywords: [memory, save, session, context, omx-memory]
     rule_references: [R011]
 
   monitoring-setup:

@@ -1,4 +1,4 @@
-export type MemorySource = 'native' | 'claude-mem' | 'episodic-memory' | (string & {});
+export type MemorySource = 'native' | 'searchable-memory' | 'omx-memory' | 'episodic-memory' | (string & {});
 export type MemoryScope = 'user' | 'project' | 'local';
 export type MemoryKind = 'behavior' | 'decision' | 'fact' | 'summary' | 'task' | 'artifact';
 export type MemorySensitivity = 'public' | 'project' | 'sensitive' | 'secret';

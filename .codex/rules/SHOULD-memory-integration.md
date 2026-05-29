@@ -5,7 +5,7 @@
 ## Architecture
 
 **Primary**: Native auto memory (`memory` field in agent frontmatter). No external dependencies.
-**Supplementary**: AgentMemory-compatible MCP or `omx-memory` for cross-session searchable recall; legacy `claude-mem` is fallback only.
+**Supplementary**: `omx-memory` or another AgentMemory-compatible MCP for cross-session searchable recall. Deprecated Chroma-based memory backends are not used in this project.
 
 Rule: If native auto memory can handle it, do NOT use a searchable MCP backend.
 
@@ -33,7 +33,7 @@ Agent frontmatter `memory: project|user|local` enables persistent memory:
 
 <!-- DETAIL: Backend Selection and Split-Brain Guard
 
-Prefer MCP tools named `memory_search`, `memory_add`, `observation_add`, and `memory_read`. Treat `chroma_query_documents`, `chroma_add_documents`, and `chroma_get_documents` as legacy `claude-mem` fallbacks.
+Prefer MCP tools named `memory_search`, `memory_add`, `observation_add`, and `memory_read`. Do not call deprecated Chroma memory tools or wrappers in this project.
 
 If both backend families are available, warn before writing. Dual-write is acceptable only during an explicit migration window; outside that window, choose one canonical searchable backend and record which one was used in the session summary.
 
@@ -332,8 +332,8 @@ User signals session end
        2. Update native auto-memory (MEMORY.md)
        3. Return formatted summary to orchestrator
   → Orchestrator performs MCP saves directly:
-       1. searchable memory save (AgentMemory-compatible or omx-memory, if available via ToolSearch)
-       2. legacy claude-mem save only when it is the configured fallback
+       1. searchable memory save (omx-memory or AgentMemory-compatible backend, if available via ToolSearch)
+       2. deprecated Chroma memory backends are skipped by project policy
        (episodic-memory auto-indexes after session — no action needed)
   → Orchestrator confirms to user
 ```
@@ -355,7 +355,6 @@ MCP tools (searchable memory backends, episodic-memory) are **orchestrator-scope
 |--------|-------|------|--------|----------|
 | Native auto-memory | sys-memory-keeper | Write | Update MEMORY.md with session learnings | Yes |
 | AgentMemory-compatible / omx-memory | Orchestrator | `memory_add` or `observation_add` | Save session summary with project, tasks, decisions | No (best-effort) |
-| legacy claude-mem | Orchestrator | `chroma_add_documents` or compatible save wrapper | Fallback searchable save when no preferred backend exists | No (best-effort) |
 | episodic-memory | Automatic | (auto-indexed) | No action needed — conversations are indexed automatically after session ends | N/A |
 -->
 

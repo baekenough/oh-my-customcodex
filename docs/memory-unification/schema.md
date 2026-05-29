@@ -1,13 +1,13 @@
 # Memory Unification Schema
 
-The memory unification layer normalizes records from native `MEMORY.md`, claude-mem, episodic-memory, and future project memory stores into one append-friendly shape.
+The memory unification layer normalizes records from native `MEMORY.md`, approved searchable memory backends, episodic-memory, and future project memory stores into one append-friendly shape.
 
 ## `MemoryRecord`
 
 | Field | Required | Description |
 | --- | --- | --- |
 | `id` | yes | Stable source-local id when available, otherwise a generated content hash. |
-| `source` | yes | `native`, `claude-mem`, `episodic-memory`, or a future adapter id. |
+| `source` | yes | `native`, `searchable-memory`, `omx-memory`, `episodic-memory`, or a future adapter id. |
 | `scope` | yes | `user`, `project`, or `local`. |
 | `kind` | yes | `behavior`, `decision`, `fact`, `summary`, `task`, or `artifact`. |
 | `content` | yes | Human-readable normalized memory text. |

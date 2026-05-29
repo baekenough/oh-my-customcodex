@@ -7,15 +7,14 @@ user-invocable: false
 
 ## Purpose
 
-Provide memory persistence operations using native `MEMORY.md` first, then a searchable MCP backend for cross-session retrieval. Prefer an AgentMemory-compatible or `omx-memory` backend exposing `memory_search`, `memory_add`, and `observation_add`; use legacy `claude-mem` only as a fallback when that is the configured backend.
+Provide memory persistence operations using native `MEMORY.md` first, then a searchable MCP backend for cross-session retrieval. Prefer `omx-memory` or another AgentMemory-compatible backend exposing `memory_search`, `memory_add`, and `observation_add`. Deprecated Chroma memory backends are not used in this project.
 
 ## Backend Order
 
 1. Native auto-memory: compact durable facts in `MEMORY.md`.
-2. AgentMemory-compatible MCP or `omx-memory`: cross-session search, shared observations, and temporal recall.
-3. Legacy `claude-mem`: fallback only when the project still exposes Chroma tools.
+2. `omx-memory` or AgentMemory-compatible MCP: cross-session search, shared observations, and temporal recall.
 
-When both legacy `claude-mem` and an AgentMemory-compatible backend are active, warn about split-brain storage. Dual-write is allowed only during an explicit migration window.
+If multiple searchable backends are active, choose the configured canonical backend and record it in the session summary. Do not dual-write unless a migration window is explicitly documented.
 
 ## Operations
 
@@ -37,7 +36,6 @@ steps:
   3. Store in configured backend:
      - Prefer memory_add for session summaries
      - Use observation_add for atomic behavioral or project observations
-     - Legacy fallback: chroma_add_documents
      - Include metadata
 ```
 
@@ -53,7 +51,6 @@ steps:
      - Include date for temporal searches
   2. Search configured backend:
      - Prefer memory_search
-     - Legacy fallback: chroma_query_documents
      - Request top N results
   3. Format results:
      - Sort by relevance
@@ -68,7 +65,7 @@ operation: get
 description: Retrieve specific memory by ID
 steps:
   1. Prefer memory_read or memory_search by ID
-  2. Legacy fallback: chroma_get_documents with ID
+  2. Fall back to `memory_search` with the ID when direct read is unavailable
   3. Return full document content
 ```
 
@@ -80,8 +77,6 @@ steps:
 # Always include project name
 memory_search({ query: "my-project {search_terms}", limit: 8 })
 
-# Legacy fallback
-chroma_query_documents(["my-project {search_terms}"])
 
 # Examples:
 memory_search({ query: "my-project authentication flow", limit: 5 })
@@ -91,8 +86,8 @@ memory_search({ query: "my-project 2025-01-24 memory system", limit: 5 })
 ### Get by ID
 
 ```python
-# When you have a specific document ID and only legacy tools are available
-chroma_get_documents(ids=["document_id"])
+# When you have a specific document ID
+memory_read({ id: "document_id" })
 ```
 
 ## Document Format
@@ -219,7 +214,7 @@ recall_errors:
 
 | Capability | Searchable MCP | MemKraft |
 |-----------|-----------|----------|
-| Session persistence | ✅ (Chroma) | ✅ (Markdown) |
+| Session persistence | ✅ (approved searchable backend) | ✅ (Markdown) |
 | Entity tracking | ❌ | ✅ (person/org/concept) |
 | Source attribution | ❌ | ✅ (`[Source: who, when, how]`) |
 | Auto-maintenance | ❌ | ✅ (Dream Cycle) |

@@ -1,7 +1,7 @@
 ---
 title: Memory Recall
 type: skill
-updated: 2026-04-12
+updated: 2026-05-29
 sources:
   - .codex/skills/memory-recall/SKILL.md
 related:
@@ -13,11 +13,11 @@ related:
 
 # Memory Recall
 
-Search and recall memories from claude-mem using semantic search.
+Search and recall memories from native memory plus approved searchable MCP backends.
 
 ## Overview
 
-Searches claude-mem for relevant memories using semantic queries. Default bias favors recall over precision — cast a wide net, filter later. Supports `--recent` (latest memories), `--limit` (result count), `--date` (filter by date), and `--verbose` (full content). Always prefixes queries with the project name for proper scoping.
+Searches native `MEMORY.md` and configured `memory_search`/`memory_read` tools for relevant memories using semantic queries. Default bias favors recall over precision — cast a wide net, filter later. Supports `--recent`, `--limit`, `--date`, and `--verbose`. Always prefixes queries with the project name for proper scoping.
 
 ## Key Details
 

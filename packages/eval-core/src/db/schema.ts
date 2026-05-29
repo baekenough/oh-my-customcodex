@@ -137,7 +137,7 @@ export const sessionFeedback = sqliteTable('session_feedback', {
 
 export const memoryRecords = sqliteTable('memory_records', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  source: text('source').notNull(), // native | claude-mem | episodic-memory | future adapter id
+  source: text('source').notNull(), // native | searchable-memory | omx-memory | episodic-memory | future adapter id
   sourceId: text('source_id'),
   scope: text('scope').notNull(), // user | project | local
   kind: text('kind').notNull(), // behavior | decision | fact | summary | task | artifact

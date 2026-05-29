@@ -1,38 +1,25 @@
 ---
-title: AgentMemory Migration Guide
+title: External Memory Migration Retired
 type: guide
 updated: 2026-05-29
 sources:
   - guides/agentmemory-migration/measure-step-zero.md
   - guides/agentmemory-migration/phase-1-coexist.md
 related:
-  - [[memory-management]]
-  - [[memory-recall]]
-  - [[memory-save]]
+  - [[memory-workflow]]
+  - [[R011]]
 ---
 
-# AgentMemory Migration Guide
+# External Memory Migration Retired
 
-Reference documentation for measuring claude-mem usage and running the first AgentMemory coexistence phase safely.
+Reference documentation for the retired AgentMemory coexistence path. The active policy is native auto-memory first with optional `omx-memory`/AgentMemory-compatible searchable backends only when configured.
 
 ## Overview
 
-This guide documents the staged migration path from claude-mem toward AgentMemory without destructive changes. It starts with a measurement step that validates actual skill usage, then defines a coexistence phase where both memory backends can operate while migration evidence is gathered.
+The old measurement and coexistence rollout has been retired. Do not install, measure, or invoke deprecated Chroma plugin memory tooling. Keep durable facts in native `MEMORY.md`; use `memory_search`, `memory_read`, `memory_add`, and `observation_add` only from approved searchable memory backends.
 
-## Key Topics
+## Use This Guide For
 
-- measuring claude-mem skill usage before making migration decisions
-- comparing usage frequency against disposal or replacement thresholds
-- installing AgentMemory as an optional parallel backend
-- keeping claude-mem data and skills intact during the COEXIST phase
-- deferring adapter activation and destructive asset handling until evidence supports a later switch
-
-## Relationships
-
-- **Related skills**: [[memory-management]], [[memory-recall]], [[memory-save]]
-- **See also**: [[memory-workflow]]
-
-## Sources
-
-- `guides/agentmemory-migration/measure-step-zero.md` — pre-migration measurement plan and interpretation thresholds
-- `guides/agentmemory-migration/phase-1-coexist.md` — week 1-2 coexistence policy and AgentMemory setup notes
+- understanding why the previous coexistence path is no longer active
+- confirming session-end memory saves use native memory and approved searchable tools
+- checking that rules, skills, and templates no longer document deprecated memory plugin fallback behavior

@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.5.7",
-  "generatedAt": "2026-05-29T11:56:17.449Z",
-  "templateVersion": "0.5.7",
+  "generatorVersion": "0.5.8",
+  "generatedAt": "2026-05-29T18:36:24.086Z",
+  "templateVersion": "0.5.8",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -100,8 +100,8 @@
       "component": "rules"
     },
     ".codex/rules/SHOULD-memory-integration.md": {
-      "templateHash": "ba72cd0c5f364716723c7dfc0a3377c9f09789d01e1b19506bf103bff83bbc78",
-      "size": 17424,
+      "templateHash": "420e8419f73965d8c228acdd0d293b9b1119d4f56c25b3b7452718e85188c6f9",
+      "size": 17260,
       "component": "rules"
     },
     ".codex/rules/MUST-enforcement-policy.md": {
@@ -135,8 +135,8 @@
       "component": "agents"
     },
     ".codex/agents/arch-speckit-agent.md": {
-      "templateHash": "1598f374e2e844c4f491450be7ff2c58f89a5f2191c24f86c8fb4d3294aa6725",
-      "size": 2668,
+      "templateHash": "9ad3c6c30ecf49bfa4fc4ccc7879aeba4e23eabe0c898645478f7e91bc892413",
+      "size": 2694,
       "component": "agents"
     },
     ".codex/agents/lang-rust-expert.md": {
@@ -350,8 +350,8 @@
       "component": "agents"
     },
     ".codex/agents/sys-memory-keeper.md": {
-      "templateHash": "726a57895dece4213d2f904535c2953313f9e87cfcfc6aa8aab2ca9c86ee532c",
-      "size": 5895,
+      "templateHash": "ec6667bb078396e063116a766e46ef71ae20e8ac5e2509d2137ea765f4c745d4",
+      "size": 6334,
       "component": "agents"
     },
     ".codex/agents/infra-aws-expert.md": {
@@ -625,13 +625,13 @@
       "component": "contexts"
     },
     ".codex/ontology/agents.yaml": {
-      "templateHash": "5dacc675be95b5e629f142f94b0d1d53ec8357576afe522b734ebbaeab090b8e",
-      "size": 29901,
+      "templateHash": "cb2577749d47ea7d3a895cc725b0737a963d0a6461a08cefcf87d67f8e1dd083",
+      "size": 29926,
       "component": "ontology"
     },
     ".codex/ontology/skills.yaml": {
-      "templateHash": "2fa02bd2e8d68de5876fb1c019e9597558738ce665fdeda5ee6884ac5dedcfce",
-      "size": 24101,
+      "templateHash": "e8c24a3eb0dde84006c3568483ae20af7439c2adbe52aa04feeda7f5b6594bb3",
+      "size": 24192,
       "component": "ontology"
     },
     "guides/java21/java-style-guide.md": {
@@ -840,13 +840,13 @@
       "component": "guides"
     },
     "guides/agentmemory-migration/phase-1-coexist.md": {
-      "templateHash": "05cd4d505999f64043c8dd6ae986f495c912b559fe0683c7bf3b3617919c95d6",
-      "size": 8099,
+      "templateHash": "282bafbdc788d63d4816c0f6fda6f061d968e9a98735e988e39b24bb2a5a6c69",
+      "size": 1432,
       "component": "guides"
     },
     "guides/agentmemory-migration/measure-step-zero.md": {
-      "templateHash": "cc69bd307cf538a583a66d8a160a5908a8cbfddf7b169d55db774bb2ec46ef52",
-      "size": 4838,
+      "templateHash": "0036008b99d2190644332330e044d5d07277e9a8580d3cf653b56beb58495254",
+      "size": 1194,
       "component": "guides"
     },
     "guides/skill-bundle-design/README.md": {
@@ -1170,8 +1170,8 @@
       "component": "guides"
     },
     "guides/index.yaml": {
-      "templateHash": "c70c2cd143f9db67b597a9bf02996eb55fb7cd713086f14830d931fd1e600035",
-      "size": 9952,
+      "templateHash": "7654a2b9b6e89c3e8c4c539ae0283561501c35c0ad5b1bd1a68820ac1f3c71ce",
+      "size": 9976,
       "component": "guides"
     },
     "guides/spark/README.md": {

@@ -8,7 +8,7 @@ user-invocable: true
 
 # Memory Recall Skill
 
-Search and recall relevant memories from native `MEMORY.md` plus the configured searchable MCP backend. Prefer AgentMemory-compatible or `omx-memory` tools (`memory_search`, `memory_read`); fall back to legacy `claude-mem` Chroma tools only when those are the configured backend.
+Search and recall relevant memories from native `MEMORY.md` plus the configured searchable MCP backend. Prefer `omx-memory` or AgentMemory-compatible tools (`memory_search`, `memory_read`). Deprecated Chroma memory backends are not used in this project.
 
 ## Parameters
 
@@ -35,7 +35,7 @@ Search and recall relevant memories from native `MEMORY.md` plus the configured 
 
 2. Search configured backend
    ├── Prefer memory_search
-   └── Legacy fallback: chroma_query_documents
+   └── Report backend unavailable when no approved memory MCP is configured
 
 3. Format results
    ├── Sort by relevance score

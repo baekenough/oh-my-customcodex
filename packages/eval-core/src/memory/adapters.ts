@@ -10,9 +10,9 @@ interface RawExternalMemory {
   updatedAt?: string;
 }
 
-export function fromClaudeMem(records: RawExternalMemory[]): MemoryRecordInput[] {
+export function fromSearchableMemory(records: RawExternalMemory[], source = 'searchable-memory'): MemoryRecordInput[] {
   return records.map((record) => ({
-    source: 'claude-mem',
+    source,
     sourceId: record.id,
     content: record.content ?? record.text ?? record.document ?? '',
     scope: readScope(record.metadata),

@@ -1,7 +1,7 @@
 ---
 title: Memory Management
 type: skill
-updated: 2026-04-12
+updated: 2026-05-29
 sources:
   - .codex/skills/memory-management/SKILL.md
 related:
@@ -13,11 +13,11 @@ related:
 
 # Memory Management
 
-Memory persistence operations using claude-mem for session context survival.
+Memory persistence operations using native memory plus approved searchable MCP backends.
 
 ## Overview
 
-Provides save, recall, and get operations for claude-mem (Chroma-based vector store). Save collects session data (tasks, decisions, open items), formats with metadata, and stores via `chroma_add_documents`. Recall performs semantic search prefixed with project name. Get retrieves by document ID. Used internally by `sys-memory-keeper`. Always prefix queries with project name for accurate retrieval.
+Provides save, recall, and get operations for native `MEMORY.md` and optional `omx-memory`/AgentMemory-compatible backends. Save collects session data and stores it through `memory_add` or `observation_add` when available. Recall performs semantic search through `memory_search`/`memory_read` and always scopes queries by project. Deprecated Chroma plugin tooling is not used.
 
 ## Key Details
 
