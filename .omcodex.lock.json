@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.5.4",
-  "generatedAt": "2026-05-24T14:15:31.147Z",
-  "templateVersion": "0.5.4",
+  "generatorVersion": "0.5.5",
+  "generatedAt": "2026-05-29T08:12:31.040Z",
+  "templateVersion": "0.5.5",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -834,6 +834,16 @@
       "size": 3965,
       "component": "guides"
     },
+    "guides/agentmemory-migration/phase-1-coexist.md": {
+      "templateHash": "05cd4d505999f64043c8dd6ae986f495c912b559fe0683c7bf3b3617919c95d6",
+      "size": 8099,
+      "component": "guides"
+    },
+    "guides/agentmemory-migration/measure-step-zero.md": {
+      "templateHash": "cc69bd307cf538a583a66d8a160a5908a8cbfddf7b169d55db774bb2ec46ef52",
+      "size": 4838,
+      "component": "guides"
+    },
     "guides/skill-bundle-design/README.md": {
       "templateHash": "20ca82c81c26b4cd8c22ddd94e312b0f0e2de666ae5982b9b402ef23b718ad74",
       "size": 4395,
@@ -1155,8 +1165,8 @@
       "component": "guides"
     },
     "guides/index.yaml": {
-      "templateHash": "5ccc84c2497907f9a7028fe8510012ebe0c87ab53dff7610149386038da32076",
-      "size": 9742,
+      "templateHash": "c70c2cd143f9db67b597a9bf02996eb55fb7cd713086f14830d931fd1e600035",
+      "size": 9952,
       "component": "guides"
     },
     "guides/spark/README.md": {

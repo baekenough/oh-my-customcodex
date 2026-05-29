@@ -43,7 +43,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_REPO: ${{ github.repository }}
-          UPSTREAM_REPO: baekenough/oh-my-customcode
+          UPSTREAM_REPOS: openai/codex,Yeachan-Heo/oh-my-codex,baekenough/oh-my-customcode
+          CREATE_RELEASE_UPDATE_ISSUES: true
+          UPSTREAM_RELEASE_WINDOW_DAYS: 14
+          UPSTREAM_INCLUDE_PRERELEASES: false
           WORKFLOW_RELEASE_TAG: ${{ inputs.release_tag }}
           WORKFLOW_DRY_RUN: ${{ inputs.dry_run }}
           DISPATCH_RELEASE_TAG: ${{ github.event.client_payload.release_tag }}

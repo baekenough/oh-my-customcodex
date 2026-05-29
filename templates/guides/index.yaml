@@ -3,7 +3,7 @@
 guides:
   # Internal
   - name: claude-code
-    description: Codex + OMX and agent development guide
+    description: Claude Code and agent development guide
     path: ./claude-code/
     source:
       type: internal
@@ -21,6 +21,12 @@ guides:
       type: internal
 
   # Frontend
+  - name: claude-design
+    description: Claude Design artifact handoff workflow — connecting Anthropic's conversational design tool outputs to Claude Code's fe-design-expert implementation pipeline
+    path: ./claude-design/
+    source:
+      type: internal
+
   - name: impeccable-design
     description: AI design language reference — typography, color, motion, and UX writing for production-grade UI
     path: ./impeccable-design/
@@ -70,6 +76,12 @@ guides:
     source:
       type: internal
 
+  - name: autonomous-challenge-lessons
+    description: Lessons for autonomous challenge runs, ground-truth artifact checks, repeated failure discipline, and QA evidence quoting
+    path: ./autonomous-challenge-lessons/
+    source:
+      type: internal
+
   - name: deep-plan
     description: Research-plan-verify workflow detail for implementation-ready plans
     path: ./deep-plan/
@@ -94,6 +106,12 @@ guides:
     source:
       type: internal
 
+  - name: agentmemory-migration
+    description: AgentMemory migration measurement and COEXIST rollout guide for replacing legacy claude-mem
+    path: ./agentmemory-migration/
+    source:
+      type: internal
+
   # Languages
   - name: golang
     description: Go language reference from Effective Go
@@ -103,21 +121,13 @@ guides:
       origin: go.dev
       url: https://go.dev/doc/effective_go
 
-  - name: java21
-    description: Java 21 language reference and modern feature documentation
-    path: ./java21/
-    source:
-      type: external
-      origin: docs.oracle.com
-      url: https://docs.oracle.com/en/java/javase/21/
-
   - name: java
-    description: Java 25 LTS language reference and modern feature documentation
+    description: Java language reference and modern feature documentation
     path: ./java/
     source:
       type: external
       origin: docs.oracle.com
-      url: https://docs.oracle.com/en/java/javase/25/
+      url: https://docs.oracle.com/en/java/javase/21/
 
   - name: python
     description: Python reference from PEP 8 and PEP 20

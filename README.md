@@ -228,7 +228,7 @@ Key rules: R010 (orchestrator never writes files), R009 (parallel execution mand
 
 ---
 
-### Guides (50)
+### Guides (51)
 
 Reference documentation covering best practices, architecture decisions, and integration patterns. Located in `guides/` at project root, covering topics from agent design to CI/CD to observability.
 
@@ -288,7 +288,7 @@ your-project/
 │   └── ontology/               # Knowledge graph for RAG
 ├── .agents/
 │   └── skills/                 # 123 installed skill modules
-└── guides/                     # 50 reference documents
+└── guides/                     # 51 reference documents
 ```
 
 ### Source Repository And Compatibility Surfaces

@@ -137,7 +137,7 @@ project/
 |   +-- rules/                   # Global rules (22 files)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (4 files)
-+-- guides/                      # Reference docs (50 topics)
++-- guides/                      # Reference docs (51 topics)
 ```
 
 ## Orchestration
