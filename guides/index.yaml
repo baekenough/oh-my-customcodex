@@ -106,6 +106,12 @@ guides:
     source:
       type: internal
 
+  - name: agentmemory-migration
+    description: AgentMemory migration measurement and COEXIST rollout guide for replacing legacy claude-mem
+    path: ./agentmemory-migration/
+    source:
+      type: internal
+
   # Languages
   - name: golang
     description: Go language reference from Effective Go

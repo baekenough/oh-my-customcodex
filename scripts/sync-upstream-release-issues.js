@@ -2,6 +2,7 @@ import { pathToFileURL } from 'node:url';
 
 const DEFAULT_API_BASE = 'https://api.github.com';
 const DEFAULT_UPSTREAM_REPO = 'baekenough/oh-my-customcode';
+const DEFAULT_UPSTREAM_REPOS = ['openai/codex', 'Yeachan-Heo/oh-my-codex', DEFAULT_UPSTREAM_REPO];
 const USER_AGENT = 'oh-my-customcodex-release-sync';
 const MAX_RELEASE_NOTES_LENGTH = 6000;
 const MAX_ISSUE_BODY_LENGTH = 12000;
@@ -28,7 +29,10 @@ export function extractReferencedIssueNumbers(text = '') {
       candidates.add(issueNumber);
     }
   };
-  const sanitized = text.replace(/\bPR\s+#\d+\b/gi, '').replace(/\bpull request\s+#\d+\b/gi, '');
+  const sanitized = text
+    .replace(/\bPR\s+#\d+\b/gi, '')
+    .replace(/\bpull request\s+#\d+\b/gi, '')
+    .replace(/\bin\s+#\d+\b/gi, '');
 
   for (const match of sanitized.matchAll(/#(\d+)\b/g)) {
     addCandidate(match[1]);
@@ -41,12 +45,47 @@ export function extractReferencedIssueNumbers(text = '') {
   return [...candidates].sort((left, right) => left - right);
 }
 
+export function extractExplicitIssueNumbers(text = '') {
+  if (!text.trim()) {
+    return [];
+  }
+
+  const candidates = new Set();
+  const addCandidate = (rawIssueNumber) => {
+    const issueNumber = Number(rawIssueNumber);
+    if (Number.isSafeInteger(issueNumber) && issueNumber > 0) {
+      candidates.add(issueNumber);
+    }
+  };
+
+  for (const match of text.matchAll(
+    /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|refs?|references?)\s+#(\d+)\b/gi
+  )) {
+    addCandidate(match[1]);
+  }
+
+  for (const match of text.matchAll(/\/issues\/(\d+)\b/gi)) {
+    addCandidate(match[1]);
+  }
+
+  return [...candidates].sort((left, right) => left - right);
+}
+
 export function buildUpstreamIssueMarker(upstreamRepo, issueNumber) {
   return `<!-- upstream-release-issue: ${upstreamRepo}#${issueNumber} -->`;
 }
 
 export function extractUpstreamIssueMarker(body = '') {
   const match = body.match(/<!--\s*upstream-release-issue:\s*([^\s]+)\s*-->/i);
+  return match ? match[1] : null;
+}
+
+export function buildUpstreamReleaseMarker(upstreamRepo, releaseTag) {
+  return `<!-- upstream-release: ${upstreamRepo}@${releaseTag} -->`;
+}
+
+export function extractUpstreamReleaseMarker(body = '') {
+  const match = body.match(/<!--\s*upstream-release:\s*([^\s]+)\s*-->/i);
   return match ? match[1] : null;
 }
 
@@ -103,6 +142,29 @@ ${releaseNotes}
 
 ## Porting Note
 This issue was auto-created because the upstream release referenced this issue. Track the Codex-native port here.`,
+  };
+}
+
+export function buildReleaseUpdatePayload({ upstreamRepo, release }) {
+  const marker = buildUpstreamReleaseMarker(upstreamRepo, release.tag_name);
+  const releaseNotes = truncate(release.body || '(no release notes)', MAX_RELEASE_NOTES_LENGTH);
+  const releaseTitle = release.name?.trim() || release.tag_name;
+
+  return {
+    title: `[${upstreamRepo}] Track upstream release ${release.tag_name}`,
+    body: `${marker}
+
+## Upstream Release
+- Repository: \`${upstreamRepo}\`
+- Release: [${releaseTitle}](${release.html_url})
+- Tag: \`${release.tag_name}\`
+- Published: \`${release.published_at || release.created_at || 'unknown'}\`
+
+## Release Notes
+${releaseNotes}
+
+## Porting Note
+This issue was auto-created because a dependency upstream published a release without referenced GitHub issues in its release notes or changelog. Review the release and decide whether oh-my-customcodex needs compatibility updates.`,
   };
 }
 
@@ -164,7 +226,33 @@ async function githubTextRequest(path, { token, apiBase = DEFAULT_API_BASE }) {
   return response.text();
 }
 
-async function listReleases({ upstreamRepo, token, releaseTag, apiBase }) {
+function isInsideReleaseWindow(release, releaseWindowDays, now = new Date()) {
+  if (!releaseWindowDays || releaseWindowDays <= 0) {
+    return true;
+  }
+
+  const timestamp = release.published_at || release.created_at;
+  if (!timestamp) {
+    return true;
+  }
+
+  const publishedAt = new Date(timestamp);
+  if (Number.isNaN(publishedAt.valueOf())) {
+    return true;
+  }
+
+  const windowMs = releaseWindowDays * 24 * 60 * 60 * 1000;
+  return now.valueOf() - publishedAt.valueOf() <= windowMs;
+}
+
+async function listReleases({
+  upstreamRepo,
+  token,
+  releaseTag,
+  releaseWindowDays,
+  includePrereleases,
+  apiBase,
+}) {
   if (releaseTag) {
     const release = await githubRequest(
       `/repos/${upstreamRepo}/releases/tags/${encodeURIComponent(releaseTag)}`,
@@ -183,6 +271,8 @@ async function listReleases({ upstreamRepo, token, releaseTag, apiBase }) {
 
   return releases
     .filter((release) => !release.draft)
+    .filter((release) => includePrereleases || !release.prerelease)
+    .filter((release) => isInsideReleaseWindow(release, releaseWindowDays))
     .sort(
       (left, right) =>
         new Date(left.published_at || left.created_at) -
@@ -203,16 +293,7 @@ async function listExistingMarkers({ targetRepo, token, apiBase }) {
       }
     );
 
-    for (const item of items) {
-      if (item.pull_request) {
-        continue;
-      }
-
-      const marker = extractUpstreamIssueMarker(item.body || '');
-      if (marker) {
-        markers.add(marker);
-      }
-    }
+    addMarkersFromIssueList(markers, items);
 
     if (items.length < 100) {
       break;
@@ -222,6 +303,23 @@ async function listExistingMarkers({ targetRepo, token, apiBase }) {
   }
 
   return markers;
+}
+
+function addMarkersFromIssueList(markers, items) {
+  for (const item of items) {
+    if (item.pull_request) {
+      continue;
+    }
+
+    addMarkerIfPresent(markers, extractUpstreamIssueMarker(item.body || ''));
+    addMarkerIfPresent(markers, extractUpstreamReleaseMarker(item.body || ''));
+  }
+}
+
+function addMarkerIfPresent(markers, marker) {
+  if (marker) {
+    markers.add(marker);
+  }
 }
 
 async function fetchChangelog({ upstreamRepo, token, apiBase }) {
@@ -251,19 +349,46 @@ function toBoolean(value) {
   return String(value).toLowerCase() === 'true';
 }
 
-function getRunConfig(env) {
+function toDefaultTrueBoolean(value) {
+  return String(value ?? 'true').toLowerCase() !== 'false';
+}
+
+function toPositiveNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : 0;
+}
+
+function parseRepoList(value) {
+  return String(value || '')
+    .split(',')
+    .map((repo) => repo.trim())
+    .filter(Boolean);
+}
+
+export function getRunConfig(env) {
   const token = env.GITHUB_TOKEN;
   const targetRepo = env.TARGET_REPO || env.GITHUB_REPOSITORY;
-  const upstreamRepo = env.UPSTREAM_REPO || DEFAULT_UPSTREAM_REPO;
+  const upstreamRepos =
+    parseRepoList(env.UPSTREAM_REPOS).length > 0
+      ? parseRepoList(env.UPSTREAM_REPOS)
+      : env.UPSTREAM_REPO
+        ? [env.UPSTREAM_REPO]
+        : DEFAULT_UPSTREAM_REPOS;
   const releaseTag = env.RELEASE_TAG || '';
   const dryRun = toBoolean(env.DRY_RUN || 'false');
+  const createReleaseUpdateIssues = toDefaultTrueBoolean(env.CREATE_RELEASE_UPDATE_ISSUES);
+  const releaseWindowDays = toPositiveNumber(env.UPSTREAM_RELEASE_WINDOW_DAYS || '0');
+  const includePrereleases = toBoolean(env.UPSTREAM_INCLUDE_PRERELEASES || 'false');
 
   return {
     token,
     targetRepo,
-    upstreamRepo,
+    upstreamRepos,
     releaseTag,
     dryRun,
+    createReleaseUpdateIssues,
+    releaseWindowDays,
+    includePrereleases,
   };
 }
 
@@ -277,11 +402,16 @@ function validateRunConfig({ token, targetRepo }) {
   }
 }
 
-function getCandidateIssueNumbersForRelease(release, changelogText) {
+function shouldUseBroadIssueRefs(upstreamRepo) {
+  return !['openai/codex', 'Yeachan-Heo/oh-my-codex'].includes(upstreamRepo);
+}
+
+function getCandidateIssueNumbersForRelease(release, changelogText, upstreamRepo) {
   const changelogSection = extractChangelogSection(changelogText, release.tag_name);
-  return extractReferencedIssueNumbers(
-    [release.name || '', release.body || '', changelogSection].join('\n')
-  );
+  const candidateText = [release.name || '', release.body || '', changelogSection].join('\n');
+  return shouldUseBroadIssueRefs(upstreamRepo)
+    ? extractReferencedIssueNumbers(candidateText)
+    : extractExplicitIssueNumbers(candidateText);
 }
 
 async function createOrPlanIssue({
@@ -324,6 +454,44 @@ async function createOrPlanIssue({
   return { created: 1, planned: 0, skipped: 0 };
 }
 
+async function createOrPlanReleaseUpdateIssue({
+  dryRun,
+  targetRepo,
+  token,
+  upstreamRepo,
+  release,
+  existingMarkers,
+  apiBase,
+  logger,
+}) {
+  const marker = `${upstreamRepo}@${release.tag_name}`;
+  if (existingMarkers.has(marker)) {
+    logger.log(`Skipping ${release.tag_name}: release already tracked.`);
+    return { created: 0, planned: 0, skipped: 1 };
+  }
+
+  const payload = buildReleaseUpdatePayload({
+    upstreamRepo,
+    release,
+  });
+
+  if (dryRun) {
+    logger.log(`[dry-run] Would create release update issue: ${payload.title}`);
+    existingMarkers.add(marker);
+    return { created: 0, planned: 1, skipped: 0 };
+  }
+
+  const createdIssue = await createIssue({
+    targetRepo,
+    token,
+    payload,
+    apiBase,
+  });
+  logger.log(`Created release update issue #${createdIssue.number}: ${createdIssue.html_url}`);
+  existingMarkers.add(marker);
+  return { created: 1, planned: 0, skipped: 0 };
+}
+
 async function processRelease({
   release,
   changelogText,
@@ -331,14 +499,32 @@ async function processRelease({
   targetRepo,
   token,
   dryRun,
+  createReleaseUpdateIssues,
   existingMarkers,
   apiBase,
   logger,
 }) {
-  const candidateIssueNumbers = getCandidateIssueNumbersForRelease(release, changelogText);
+  const candidateIssueNumbers = getCandidateIssueNumbersForRelease(
+    release,
+    changelogText,
+    upstreamRepo
+  );
 
   if (candidateIssueNumbers.length === 0) {
     logger.log(`Release ${release.tag_name} has no referenced issues.`);
+    if (createReleaseUpdateIssues) {
+      return createOrPlanReleaseUpdateIssue({
+        dryRun,
+        targetRepo,
+        token,
+        upstreamRepo,
+        release,
+        existingMarkers,
+        apiBase,
+        logger,
+      });
+    }
+
     return { created: 0, planned: 0, skipped: 0 };
   }
 
@@ -347,6 +533,7 @@ async function processRelease({
   );
 
   const totals = { created: 0, planned: 0, skipped: 0 };
+  let sawNonPullIssue = false;
 
   for (const issueNumber of candidateIssueNumbers) {
     let issue;
@@ -373,6 +560,7 @@ async function processRelease({
       continue;
     }
 
+    sawNonPullIssue = true;
     const result = await createOrPlanIssue({
       dryRun,
       targetRepo,
@@ -380,6 +568,22 @@ async function processRelease({
       upstreamRepo,
       release,
       issue,
+      existingMarkers,
+      apiBase,
+      logger,
+    });
+    totals.created += result.created;
+    totals.planned += result.planned;
+    totals.skipped += result.skipped;
+  }
+
+  if (!sawNonPullIssue && createReleaseUpdateIssues) {
+    const result = await createOrPlanReleaseUpdateIssue({
+      dryRun,
+      targetRepo,
+      token,
+      upstreamRepo,
+      release,
       existingMarkers,
       apiBase,
       logger,
@@ -397,33 +601,25 @@ export async function run({
   logger = console,
   apiBase = DEFAULT_API_BASE,
 } = {}) {
-  const { token, targetRepo, upstreamRepo, releaseTag, dryRun } = getRunConfig(env);
+  const {
+    token,
+    targetRepo,
+    upstreamRepos,
+    releaseTag,
+    dryRun,
+    createReleaseUpdateIssues,
+    releaseWindowDays,
+    includePrereleases,
+  } = getRunConfig(env);
 
   validateRunConfig({ token, targetRepo });
 
   logger.log(
-    `Syncing upstream releases from ${upstreamRepo} into ${targetRepo}${releaseTag ? ` for ${releaseTag}` : ''}.`
+    `Syncing upstream releases from ${upstreamRepos.join(', ')} into ${targetRepo}${releaseTag ? ` for ${releaseTag}` : ''}.`
   );
-
-  const releases = await listReleases({
-    upstreamRepo,
-    token,
-    releaseTag,
-    apiBase,
-  });
-
-  if (releases.length === 0) {
-    logger.log('No releases to process.');
-    return { created: 0, skipped: 0, scannedReleases: 0 };
-  }
 
   const existingMarkers = await listExistingMarkers({
     targetRepo,
-    token,
-    apiBase,
-  });
-  const changelogText = await fetchChangelog({
-    upstreamRepo,
     token,
     apiBase,
   });
@@ -431,32 +627,58 @@ export async function run({
   let created = 0;
   let planned = 0;
   let skipped = 0;
+  let scannedReleases = 0;
 
-  for (const release of releases) {
-    const totals = await processRelease({
-      release,
-      changelogText,
+  for (const upstreamRepo of upstreamRepos) {
+    const releases = await listReleases({
       upstreamRepo,
-      targetRepo,
       token,
-      dryRun,
-      existingMarkers,
+      releaseTag,
+      releaseWindowDays,
+      includePrereleases,
       apiBase,
-      logger,
     });
-    created += totals.created;
-    planned += totals.planned;
-    skipped += totals.skipped;
+
+    if (releases.length === 0) {
+      logger.log(`No releases to process for ${upstreamRepo}.`);
+      continue;
+    }
+
+    const changelogText = await fetchChangelog({
+      upstreamRepo,
+      token,
+      apiBase,
+    });
+
+    for (const release of releases) {
+      const totals = await processRelease({
+        release,
+        changelogText,
+        upstreamRepo,
+        targetRepo,
+        token,
+        dryRun,
+        createReleaseUpdateIssues,
+        existingMarkers,
+        apiBase,
+        logger,
+      });
+      created += totals.created;
+      planned += totals.planned;
+      skipped += totals.skipped;
+    }
+
+    scannedReleases += releases.length;
   }
 
   logger.log(
-    `Done. ${dryRun ? `Planned ${planned}` : `Created ${created}`} issue(s), skipped ${skipped} item(s), scanned ${releases.length} release(s).`
+    `Done. ${dryRun ? `Planned ${planned}` : `Created ${created}`} issue(s), skipped ${skipped} item(s), scanned ${scannedReleases} release(s).`
   );
   return {
     created,
     planned,
     skipped,
-    scannedReleases: releases.length,
+    scannedReleases,
   };
 }
 

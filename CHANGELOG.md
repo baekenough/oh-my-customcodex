@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-05-29
+
+### Added
+- Add AgentMemory migration guides for the #1400 measure and COEXIST rollout, and register the guide surface in the guide index.
+
+### Fixed
+- Monitor `openai/codex` and `Yeachan-Heo/oh-my-codex` upstream releases in the release issue sync workflow.
+- Create release-update tracking issues when dependency releases contain no explicit issue references, while ignoring generated PR inventory references and prereleases by default.
+
+
 ## [0.5.3] - 2026-05-24
 
 ### Added
