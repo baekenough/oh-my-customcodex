@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-05-24
+updated: 2026-05-29
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/15-version-compatibility.md
@@ -33,6 +33,47 @@ Covers Claude's advanced API features for building Claude Code-compatible applic
 ## Version Compatibility
 
 oh-my-customcodex keeps Claude compatibility guidance for installed templates while `.codex/**` and OMX remain the primary runtime surface.
+
+### v2.1.156 (2026-05-29)
+
+Source: upstream oh-my-customcode #1245, Codex port #1420.
+
+- Fixed Opus 4.8 thinking-block API errors; prefer v2.1.156 over v2.1.154 for Claude Opus 4.8 compatibility testing.
+- No Codex runtime change is required; `.codex/**` and OMX model routing remain primary.
+- v2.1.155 had no public release.
+
+### v2.1.154 (2026-05-28)
+
+Source: upstream oh-my-customcode #1244, Codex port #1419.
+
+- Opus 4.8 and the `opus48` alias are Claude-template compatibility vocabulary, not Codex model-routing changes.
+- Dynamic Workflows reached GA; keep OMX `$pipeline`, `$team`, and Codex subagents as the primary orchestration surfaces.
+- Lean system prompt defaults changed and `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE` was deprecated for new guidance.
+- v2.1.155 had no public release.
+
+### v2.1.153 (2026-05-28)
+
+Source: upstream oh-my-customcode #1243, Codex port #1418.
+
+- Statusline scripts can use `COLUMNS` and `LINES` when Claude provides terminal dimensions, while preserving fallbacks.
+- Marketplace plugin source config supports `skipLfs`; document it as Claude marketplace compatibility only.
+- `claude agents` autocomplete improved without changing packaged agent definitions.
+
+### v2.1.152 (2026-05-27)
+
+Source: upstream oh-my-customcode #1242, Codex port #1417.
+
+- Skill frontmatter supports `disallowed-tools`; Codex rule surfaces still enforce `.codex/**` policy.
+- `/reload-skills` and `SessionStart reloadSkills` reload Claude skill state without changing Codex runtime behavior.
+- v2.1.151 had no public release.
+
+### Known Platform Issues: Agent tool malformed parsing
+
+Source: upstream oh-my-customcode #1241, Codex port #1416.
+
+- Long or special-character-heavy Claude `Agent` delegation prompts can intermittently report `malformed` because of platform serialization.
+- This is not an oh-my-customcodex defect and does not affect Codex-native subagent dispatch.
+- Workaround: keep delegation prompts shorter, move large evidence into files, avoid dense shell quoting/backticks/repeated colons in the prompt, and retry with a smaller prompt.
 
 ### v2.1.150 (2026-05-23)
 

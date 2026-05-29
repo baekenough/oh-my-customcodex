@@ -2,6 +2,67 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
+## v2.1.156
+
+Published: 2026-05-29.
+
+Source: upstream oh-my-customcode #1245, Codex port #1420.
+
+Note: v2.1.155 had no public release.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Fixed Opus 4.8 thinking-block API errors | Claude compatibility sessions using the v2.1.154 Opus 4.8 surface are more stable. Codex-native model routing is unchanged. | No package change. Prefer v2.1.156 over v2.1.154 when testing Claude Opus 4.8 compatibility. |
+
+## v2.1.154
+
+Published: 2026-05-28.
+
+Source: upstream oh-my-customcode #1244, Codex port #1419.
+
+Note: v2.1.155 had no public release.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Opus 4.8 and the `opus48` alias were introduced | Relevant to Claude-template agent model notes only; Codex-native child agents still follow the OMX model contract. | Document as compatibility vocabulary. Do not replace Codex model routing with Claude alias behavior. |
+| Dynamic Workflows reached general availability | Conceptually overlaps with OMX workflows, but remains a Claude-native orchestration surface. | Keep OMX `$pipeline`, `$team`, and Codex subagents primary. Mention Dynamic Workflows only in Claude compatibility guidance. |
+| Lean system prompt defaults and Fast Mode override deprecation were announced | Claude compatibility sessions may see changed prompt weight and deprecation of `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE` after 2026-06-01. | No template change; avoid relying on the deprecated override for new guidance. |
+
+## v2.1.153
+
+Published: 2026-05-28.
+
+Source: upstream oh-my-customcode #1243, Codex port #1418.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Statusline environment now includes `COLUMNS` and `LINES` | Claude-template statusline scripts can size output with terminal dimensions when available. | No Codex statusline change required; keep fallbacks for missing env values. |
+| Marketplace plugin sources support `skipLfs` | Helpful for Claude plugin installs that should avoid Git LFS assets. | Document as Claude marketplace compatibility only. |
+| `claude agents` autocomplete improved | Improves Claude CLI UX without changing packaged agent definitions. | No package change. |
+
+## v2.1.152
+
+Published: 2026-05-27.
+
+Source: upstream oh-my-customcode #1242, Codex port #1417.
+
+Note: v2.1.151 had no public release.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Skill frontmatter supports `disallowed-tools` | Useful Claude-template metadata for constraining tools; Codex rule surfaces still enforce `.codex/**` policy. | No package migration. Preserve explicit tool-policy rules instead of relying solely on Claude frontmatter. |
+| `/reload-skills` and `SessionStart reloadSkills` reload skill state | Helps Claude compatibility sessions pick up skill edits without restart. | No Codex runtime change; keep installed templates deterministic and test mirrored files. |
+
+## Known Platform Issues
+
+### Agent tool malformed parsing on long / special-character prompts
+
+Source: upstream oh-my-customcode #1241, Codex port #1416.
+
+| Issue | Impact on oh-my-customcodex | Workaround |
+|-------|------------------------------|------------|
+| Agent tool malformed parsing can occur when delegation prompts are very long or contain heavy special characters such as backticks, repeated colons, or shell-variable syntax. | This is a Claude Code platform serialization issue, not an oh-my-customcodex defect. Codex-native subagent dispatch is unaffected. | Keep Claude `Agent` prompts shorter, move large evidence into files, avoid dense shell quoting in delegation text, and retry with a smaller prompt when `malformed` appears. |
+
 ## v2.1.150
 
 Published: 2026-05-23.

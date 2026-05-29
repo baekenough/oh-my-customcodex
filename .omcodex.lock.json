@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.5.5",
-  "generatedAt": "2026-05-29T08:12:31.040Z",
-  "templateVersion": "0.5.5",
+  "generatorVersion": "0.5.6",
+  "generatedAt": "2026-05-29T11:28:58.407Z",
+  "templateVersion": "0.5.6",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -115,8 +115,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-completion-verification.md": {
-      "templateHash": "db8aef04c857eb3503f5dd361f95b5927838b95b33d01451fd8dd91f48a61a10",
-      "size": 8925,
+      "templateHash": "4f7266c62ec564a933043811b2c6cd3db98ce873c5f498772e0e45b68e113f32",
+      "size": 10400,
       "component": "rules"
     },
     ".codex/agents/be-springboot-expert.md": {
@@ -675,8 +675,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "a811c81ba5cd4203fa8e9fff1ed030f0b8611b98c7c03dd12b33a2f57feb3469",
-      "size": 20087,
+      "templateHash": "b73cf8acdd71a498d8d39d6681ed29a15159543e4b3f59709861eb03212db000",
+      "size": 23915,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {

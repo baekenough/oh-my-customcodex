@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.6] - 2026-05-29
+
+### Added
+- Document Claude Code v2.1.152-v2.1.156 compatibility across source guides, install templates, and wiki parity for #1417, #1418, #1419, #1420, and #1421.
+- Document the Agent tool malformed parsing platform workaround for long or special-character-heavy delegation prompts for #1416.
+- Add the R020 Parallel Read + Permanent-Change Dispatch guard to prevent hypothesis-dependent permanent changes from being batched with diagnostic reads for #1423.
+
+### Changed
+- Replace the stale external Airflow DAG issue triage workflow with an in-repo triage acknowledgment workflow for #1422.
+
 ## [0.5.5] - 2026-05-29
 
 ### Added

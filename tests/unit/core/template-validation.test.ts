@@ -612,7 +612,7 @@ describe('Template Validation', () => {
   });
 
   describe('Claude Code version compatibility guidance', () => {
-    it('mirrors the v2.1.139 through v2.1.150 compatibility guide into templates', async () => {
+    it('mirrors the v2.1.139 through v2.1.156 compatibility guide into templates', async () => {
       const projectRoot = resolve(import.meta.dir, '../../..');
       const guidePath = 'guides/claude-code/15-version-compatibility.md';
       const sourceGuide = await readFile(join(projectRoot, guidePath), 'utf-8');
@@ -632,6 +632,10 @@ describe('Template Validation', () => {
         'v2.1.148',
         'v2.1.149',
         'v2.1.150',
+        'v2.1.152',
+        'v2.1.153',
+        'v2.1.154',
+        'v2.1.156',
       ]) {
         expect(templateGuide).toContain(version);
       }
@@ -648,6 +652,13 @@ describe('Template Validation', () => {
       expect(templateGuide).toContain('allowAllClaudeAiMcps');
       expect(templateGuide).toContain('Internal infrastructure improvements only');
       expect(templateGuide).toContain('Do not add a dead `simplify` route');
+      expect(templateGuide).toContain('disallowed-tools');
+      expect(templateGuide).toContain('reloadSkills');
+      expect(templateGuide).toContain('COLUMNS');
+      expect(templateGuide).toContain('skipLfs');
+      expect(templateGuide).toContain('Opus 4.8');
+      expect(templateGuide).toContain('Dynamic Workflows');
+      expect(templateGuide).toContain('Agent tool malformed parsing');
     });
 
     it('mirrors statusline support for native GitHub and agent-count JSON', async () => {
@@ -742,6 +753,7 @@ describe('Template Validation', () => {
       expect(r020).toContain('Interrupt Priority Re-Ordering');
       expect(r020).toContain('Diagnostic Hypothesis Verification');
       expect(r020).toContain('Test-Skip Is Not Completion');
+      expect(r020).toContain('Parallel Read + Permanent-Change Dispatch');
 
       const r017 = await readFile(
         join(projectRoot, '.codex/rules/MUST-sync-verification.md'),
