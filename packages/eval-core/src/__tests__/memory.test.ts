@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { Database } from 'bun:sqlite';
-import { aggregateMemoryRecords, fromClaudeMem, fromNativeMemoryMarkdown, persistMemoryRecords } from '../memory/index.js';
+import { aggregateMemoryRecords, fromSearchableMemory, fromNativeMemoryMarkdown, persistMemoryRecords } from '../memory/index.js';
 
 function createMemoryDb(): Database {
   const db = new Database(':memory:');
@@ -44,8 +44,8 @@ describe('memory unification', () => {
     expect(records[0].content).toBe('Keep release evidence concise.');
   });
 
-  it('normalizes claude-mem and native markdown records', () => {
-    const external = fromClaudeMem([
+  it('normalizes searchable backend and native markdown records', () => {
+    const external = fromSearchableMemory([
       {
         id: 'mem-1',
         content: 'Prefer isolated worktrees for dirty release runs.',
@@ -60,7 +60,7 @@ describe('memory unification', () => {
     const records = aggregateMemoryRecords([...external, ...native]);
 
     expect(records).toHaveLength(2);
-    expect(records.map((record) => record.source).sort()).toEqual(['claude-mem', 'native']);
+    expect(records.map((record) => record.source).sort()).toEqual(['native', 'searchable-memory']);
   });
 
   it('persists unique memory records and skips duplicates', () => {

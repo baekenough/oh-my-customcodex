@@ -421,7 +421,7 @@ MCP tools are orchestrator-scoped — subagents cannot access them.
 
 | System | Tool | Use Case |
 |--------|------|----------|
-| claude-mem | `mcp__plugin_claude-mem_mcp-search__save_memory` | Cross-session search, temporal queries |
+| Approved searchable memory MCP | `memory_search`, `memory_read`, `memory_add`, `observation_add` | Cross-session search, temporal queries |
 
 Episodic-memory auto-indexes conversations after session end — no manual action is needed. Use native auto-memory first; fall back to MCP only for cross-session search or temporal queries.
 

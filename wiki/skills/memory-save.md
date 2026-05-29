@@ -1,7 +1,7 @@
 ---
 title: Memory Save
 type: skill
-updated: 2026-04-12
+updated: 2026-05-29
 sources:
   - .codex/skills/memory-save/SKILL.md
 related:
@@ -13,11 +13,11 @@ related:
 
 # Memory Save
 
-Save current session context to claude-mem for persistence across context compaction.
+Save current session context to native memory plus an approved searchable backend when configured.
 
 ## Overview
 
-Collects the current session's completed tasks, decisions, and open items, then stores them in claude-mem with project metadata and optional user-specified tags. Supports `--tags`, `--include-code`, `--summary`, and `--verbose` options. Model invocation is disabled — runs as a direct skill execution. Returns the saved memory ID.
+Collects the current session's completed tasks, decisions, and open items, then stores them through native memory and optional `memory_add`/`observation_add` tools with project metadata and user-specified tags. Supports `--tags`, `--include-code`, `--summary`, and `--verbose` options. Model invocation is disabled — runs as a direct skill execution.
 
 ## Key Details
 

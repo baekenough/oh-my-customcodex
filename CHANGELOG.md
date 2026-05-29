@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.8] - 2026-05-30
+
+### Changed
+- Remove deprecated memory-plugin backend references from memory agents, skills, R011 guidance, templates, wiki pages, and eval-core adapters for #1426; native memory and approved searchable MCP backends remain the supported paths.
+- Rename the eval-core memory adapter helper to the backend-neutral `fromSearchableMemory` API.
+
+
 ## [0.5.7] - 2026-05-29
 
 ### Added
@@ -387,7 +394,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.22.1] - 2026-03-08
 
 ### Fixed
-- Fixed MCP tool name references in sys-memory-keeper agent — session-end saves now correctly invoke `mcp__plugin_claude-mem_mcp-search__save_memory` and `mcp__plugin_episodic-memory_episodic-memory__search`
+- Fixed MCP tool name references in sys-memory-keeper agent — session-end saves now correctly invoke approved searchable-memory save and episodic-memory search tools
 - Updated R011 (SHOULD-memory-integration) rule with correct tool names
 
 ## [0.22.0] - 2026-03-08

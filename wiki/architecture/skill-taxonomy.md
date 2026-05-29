@@ -68,7 +68,7 @@ Multi-step process orchestration:
 
 ### Memory and Session Skills
 - `memory-management` — MEMORY.md operations
-- `memory-save` — claude-mem persistence
+- `memory-save` — native plus approved searchable memory persistence
 - `memory-recall` — memory search and retrieval
 
 ### Utility Skills

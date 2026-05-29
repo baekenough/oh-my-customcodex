@@ -39,7 +39,7 @@ classes:
     agents: [scholastic]
     description: "Reasoning, critique, and coordination specialists"
   SystemAgent:
-    agents: [sys-memory-keeper, sys-naggy]
+    agents: [sys-memory-keeper, sys-naggy, tracker-checkpoint]
     description: "System utility agents"
 
 # Agent instances
@@ -526,14 +526,14 @@ agents:
 
   sys-memory-keeper:
     class: SystemAgent
-    description: "Use when you need to manage session memory persistence using claude-mem, save context before compaction, restore context on session start, or query past memories"
+    description: "Use when you need to manage session memory persistence using native memory plus omx-memory, save context before compaction, restore context on session start, or query past memories"
     model: sonnet
     memory: project
     effort: medium
     skills: [memory-management, memory-save, memory-recall]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
-    summary: "Session memory manager for context persistence with claude-mem"
-    keywords: [memory, persistence, claude-mem, context, session, recall, chroma, semantic-search]
+    summary: "Session memory manager for native memory and approved searchable persistence"
+    keywords: [memory, persistence, omx-memory, context, session, recall, semantic-search]
     file_patterns: []
 
   sys-naggy:
@@ -547,6 +547,18 @@ agents:
     summary: "Task tracker with proactive reminders for TODO management"
     keywords: [todo, tasks, reminders, tracking, deadlines, project-momentum]
     file_patterns: ["TODO.md", "*.todo"]
+
+  tracker-checkpoint:
+    class: SystemAgent
+    description: "Use when pipeline or DAG execution needs checkpoint persistence, state transition validation, or resume-after-failure support"
+    model: sonnet
+    memory: project
+    effort: medium
+    skills: [dag-orchestration, pipeline-guards]
+    tools: [Read, Write, Edit, Grep, Glob, Bash]
+    summary: "Pipeline checkpoint tracker for resumable DAG and pipeline state"
+    keywords: [pipeline, checkpoint, resume, dag, state, tracker]
+    file_patterns: ["/tmp/.codex-pipeline-*.json", "/tmp/.codex-dag-*.json"]
 
   scholastic:
     class: CoordinationAgent

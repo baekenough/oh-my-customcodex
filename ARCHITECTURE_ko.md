@@ -342,7 +342,7 @@ MCP 도구는 오케스트레이터 스코프이며, 서브에이전트는 접�
 
 | 시스템 | 도구 | 사용 사례 |
 |--------|------|-----------|
-| claude-mem | `mcp__plugin_claude-mem_mcp-search__save_memory` | 교차 세션 검색, 시간 기반 쿼리 |
+| 승인된 검색형 메모리 MCP | `memory_search`, `memory_read`, `memory_add`, `observation_add` | 교차 세션 검색, 시간 기반 쿼리 |
 
 네이티브 자동 메모리를 우선 사용하고, 교차 세션 검색 또는 시간 기반 쿼리가 필요한 경우에만 MCP를 사용합니다.
 

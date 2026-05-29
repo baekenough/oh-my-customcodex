@@ -382,13 +382,13 @@ pages:
       summary: "Selective manifest-driven installation profiles for oh-my-customcodex assets."
     - file: skills/memory-management.md
       title: "Memory Management"
-      summary: "Memory persistence operations using claude-mem for session context survival."
+      summary: "Memory persistence operations using native memory plus approved searchable backends."
     - file: skills/memory-recall.md
       title: "Memory Recall"
-      summary: "Search and recall memories from claude-mem using semantic search."
+      summary: "Search and recall memories from native memory plus approved searchable backends."
     - file: skills/memory-save.md
       title: "Memory Save"
-      summary: "Save current session context to claude-mem for persistence across context compaction"
+      summary: "Save current session context to native memory plus approved searchable backends"
     - file: skills/model-escalation.md
       title: "Model Escalation"
       summary: "Advisory model escalation based on task outcome tracking."
@@ -674,7 +674,7 @@ pages:
       summary: "Agent Teams shutdown, cleanup, and tmux fallback recovery guidance for Codex/OMX sessions"
     - file: guides/agentmemory-migration.md
       title: "AgentMemory Migration Guide"
-      summary: "Measurement-first AgentMemory migration guidance for claude-mem usage baselining and coexistence rollout"
+      summary: "Retired external memory migration guidance for native-memory-first policy"
     - file: guides/agent-eval.md
       title: "Agent Eval"
       summary: "Correctness-first four-metric evaluation guidance for agent runs."

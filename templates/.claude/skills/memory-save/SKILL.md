@@ -9,7 +9,7 @@ user-invocable: true
 
 # Memory Save Skill
 
-Save current session context to native memory and the configured searchable MCP backend for persistence across context compaction. Prefer AgentMemory-compatible or `omx-memory` tools (`memory_add`, `observation_add`); fall back to legacy `claude-mem` only when that is the configured backend.
+Save current session context to native memory and the configured searchable MCP backend for persistence across context compaction. Prefer `omx-memory` or AgentMemory-compatible tools (`memory_add`, `observation_add`). Deprecated Chroma memory backends are not used in this project.
 
 ## Options
 
@@ -38,7 +38,7 @@ Save current session context to native memory and the configured searchable MCP 
 3. Store in configured backend
    ├── Prefer memory_add for summaries
    ├── Prefer observation_add for atomic learnings
-   └── Legacy fallback: chroma_add_documents
+   └── Skip searchable save when no approved backend is configured
 
 4. Report result
 ```

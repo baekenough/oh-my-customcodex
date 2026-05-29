@@ -17,7 +17,7 @@ Session memory management specialist for saving/restoring context across compact
 
 `sys-memory-keeper` runs at session end to ensure context survives compaction. Its workflow: (1) collect session summary (tasks, decisions, open items), (2) extract user behavior patterns with confidence levels, (3) update native auto-memory MEMORY.md, (4) aggregate agent performance metrics, (5) update user model (skill preferences, correction patterns, expertise profile), and (6) return formatted summary to orchestrator for MCP persistence.
 
-Important: MCP tools (claude-mem, episodic-memory) are orchestrator-scoped — `sys-memory-keeper` only handles MEMORY.md; the orchestrator handles MCP saves directly after receiving the summary.
+Important: searchable MCP tools and episodic-memory are orchestrator-scoped — `sys-memory-keeper` only handles MEMORY.md; the orchestrator handles MCP saves directly after receiving the summary.
 
 Native MEMORY.md should remain an index, not a transcript. When session/release history approaches the loaded 200-line budget, keep recent active context inline, move older detail to topic/archive files, retain one-line summaries with archive pointers, and avoid deleting detail solely for line count.
 

@@ -107,7 +107,7 @@ guides:
       type: internal
 
   - name: agentmemory-migration
-    description: AgentMemory migration measurement and COEXIST rollout guide for replacing legacy claude-mem
+    description: Retired external memory migration guide documenting native-memory-only policy and approved searchable backend usage
     path: ./agentmemory-migration/
     source:
       type: internal
