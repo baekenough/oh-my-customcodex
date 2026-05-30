@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-50개 에이전트. 123개 스킬. 22개 규칙. 명령어 하나.
+50개 에이전트. 120개 스킬. 22개 규칙. 명령어 하나.
 
 > **v0.1.7** — token-efficiency-audit 스킬, 토큰 효율 3계층 가이드, cc-token-saver/CLI flags cross-reference 추가
 
@@ -150,7 +150,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (123개)
+## 스킬 (120개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
@@ -163,11 +163,11 @@ Agent(arch-documenter):haiku      ┘
 | 패키지 | 3 | npm-publish, npm-version, npm-audit |
 | 최적화 | 3 | optimize-analyze, optimize-bundle, optimize-report |
 | 보안 | 3 | adversarial-review, cve-triage, jinja2-prompts |
-| 기타 | 13 | codex-exec, claude-native, gitlab, visual-ralph, visual-verdict, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely 외 |
+| 기타 | 10 | claude-native, gitlab, visual-ralph, visual-verdict, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely 외 |
 
 스킬은 3-tier scope 시스템을 사용합니다: `core` (범용), `harness` (에이전트/스킬 관리), `package` (프로젝트 특화).
 
-`context:fork` 상한이 12로 확장되었습니다 (현재 11개 활성). 라우팅 스킬은 Codex가 활성화된 경우 자동으로 codex-exec에 위임합니다.
+`context:fork` 상한이 12로 확장되었습니다 (현재 11개 활성). 라우팅 스킬은 기본적으로 전문 에이전트/RTK 경로를 사용하며, `openai/codex-plugin-cc`가 명시적으로 설치 및 요청된 경우에만 Codex 상호운용을 사용합니다.
 
 ---
 
@@ -300,7 +300,7 @@ your-project/
 │   ├── contexts/               # 4개 공유 컨텍스트 파일
 │   └── ontology/               # RAG용 지식 그래프
 ├── .agents/
-│   └── skills/                 # 123개 설치 스킬 모듈
+│   └── skills/                 # 120개 설치 스킬 모듈
 └── guides/                     # 49개 레퍼런스 문서
 ```
 

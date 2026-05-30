@@ -112,7 +112,6 @@ NO EXCEPTIONS. NO EXCUSES.
 | `/omcustomcodex:npm-version` | Manage semantic versions |
 | `/omcustomcodex:npm-audit` | Audit dependencies |
 | `/omcustomcodex-release-notes` | Generate release notes from git history |
-| `/codex-exec` | Execute Codex CLI prompts |
 | `/optimize-analyze` | Analyze bundle and performance |
 | `/optimize-bundle` | Optimize bundle size |
 | `/optimize-report` | Generate optimization report |
@@ -133,7 +132,7 @@ project/
 +-- AGENTS.md                    # Entry point
 +-- .codex/
 |   +-- agents/                  # Subagent definitions (50 files)
-|   +-- skills/                  # Skills (123 directories)
+|   +-- skills/                  # Skills (120 directories)
 |   +-- rules/                   # Global rules (22 files)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (4 files)

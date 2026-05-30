@@ -12,7 +12,7 @@ version: 1.0.0
 
 ## Purpose
 
-Run a bounded debate when convergence would hide useful disagreement. Unlike `agora`, which drives toward consensus, this workflow preserves minority positions and requires explicit justification before dismissing them.
+Run a bounded debate when convergence would hide useful disagreement. Use this workflow when debate should preserve minority positions and require explicit justification before dismissing them.
 
 ## When To Use
 
@@ -54,11 +54,10 @@ Hard cap: two debate rounds. If the decision still depends on missing facts, sto
 {adopt | defer | reject | gather-more-evidence}
 ```
 
-## Relationship To Agora
+## Relationship To Other Review Workflows
 
 | Workflow | Goal | Best For |
 |----------|------|----------|
-| `agora` | adversarial consensus | release gates, spec approval |
 | `roundtable-debate` | dissent preservation | ambiguous strategy, architectural tradeoffs |
 
-Use `agora --anti-groupthink` when you need consensus plus explicit dissent handling.
+Use `roundtable-debate` when current guidance needs adversarial review plus explicit dissent handling.

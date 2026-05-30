@@ -6,7 +6,7 @@ sources:
   - .codex/skills/peer-messaging/SKILL.md
 related:
   - [[R018]]
-  - [[agora]]
+  - [[roundtable-debate]]
   - [[research]]
 ---
 
@@ -27,7 +27,7 @@ Enables communication between separate Claude Code processes (cross-session) via
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[agora]], [[research]]
+- **Related skills**: [[roundtable-debate]], [[research]]
 - **See also**: [[R018]]
 
 ## Sources

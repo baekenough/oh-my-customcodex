@@ -99,7 +99,7 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 **슬래시 커맨드 / 사용자 직접 호출 스킬**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustomcodex:goal, omcodex-release-notes, omcodex-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, pipeline, improve-report, omcodex-feedback, omcodex-web, omcodex-loop, sdd-dev, harness-synthesizer, idea
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustomcodex:goal, omcodex-release-notes, omcodex-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, pipeline, improve-report, omcodex-feedback, omcodex-web, omcodex-loop, sdd-dev, harness-synthesizer, idea
 
 **시스템 / 내부 스킬**
 
@@ -248,7 +248,7 @@ Agent Teams 멤버는 서브에이전트를 스폰할 수 있습니다 (R010 예
 배치 2: T5(통합 광역), T6(통합 심층), T7(비교 광역), T8(비교 심층)
 배치 3: T9(혁신 광역), T10(혁신 심층)
 
-Phase 2: 교차 검증 (2--5 라운드, opus + codex-exec)
+Phase 2: 교차 검증 (2--5 라운드, opus + 선택적 플러그인 기반 검토)
 Phase 3: 종합 (opus) -> ADOPT / ADAPT / AVOID 분류
 Phase 4: 구조화된 리포트 + GitHub 이슈 생성
 ```

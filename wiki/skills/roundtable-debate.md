@@ -5,7 +5,7 @@ updated: 2026-04-27
 sources:
   - .codex/skills/roundtable-debate/SKILL.md
 related:
-  - [[agora]]
+  - [[multi-model-verification]]
 ---
 
 # Roundtable Debate

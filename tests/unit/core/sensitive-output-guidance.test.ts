@@ -18,12 +18,11 @@ const TEMPLATE_MANIFEST = join(ROOT, 'templates/manifest.json');
 const VERSION_AWARE_COMPATIBILITY_FILES = [
   '.codex/agents/mgr-creator.md',
   '.codex/agents/mgr-updater.md',
-  '.codex/skills/agora/SKILL.md',
+  '.codex/skills/roundtable-debate/SKILL.md',
   '.codex/skills/pipeline/workflows/auto-dev.yaml',
   'workflows/auto-dev.yaml',
   'templates/workflows/auto-dev.yaml',
 ];
-const CODEX_EXEC_SKILL = join(ROOT, '.codex/skills/codex-exec/SKILL.md');
 
 async function collectMarkdownFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -110,12 +109,6 @@ describe('sensitive output guidance', () => {
       expect(/(?:historical|legacy) fallback/.test(content)).toBe(true);
       expect(content).not.toContain('Sensitive-path artifact protocol (mandatory)');
     }
-  });
-
-  it('removes the codex-exec /tmp status-file boilerplate', async () => {
-    const content = await readFile(CODEX_EXEC_SKILL, 'utf-8');
-    expect(content).toContain('command -v codex');
-    expect(content).not.toContain('/tmp/.codex-env-status-*');
   });
 
   it('tracks minimum Claude Code compatibility metadata in package and manifest', async () => {

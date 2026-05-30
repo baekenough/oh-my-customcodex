@@ -104,24 +104,17 @@ Check if Agent Teams is available (`OMCODEX_AGENT_TEAMS=1` or TeamCreate/SendMes
 | Cross-layer debugging (FE + BE + DB) | Agent Teams |
 | Simple file search/validation | Task Tool |
 
-### Step 2: Codex-Exec Hybrid (Implementation Tasks)
+### Step 2: External Interop Guidance (Implementation Tasks)
 For **new file creation**, **boilerplate**, or **test code generation**:
 
-1. Check `/tmp/.codex-env-status-*` for codex, gemini, and rtk availability
-2. If codex available AND task involves new file creation → automatically delegate to `/codex-exec` for scaffolding:
-   - Display: `[Codex Hybrid] Delegating to codex-exec...`
-   - codex-exec generates initial code (strength: fast generation)
-   - Selected Claude expert reviews and refines codex output (strength: reasoning, quality)
-3. If codex unavailable but gemini available → delegate to `/gemini-exec` for scaffolding:
-   - Display: `[Gemini Hybrid] Delegating to gemini-exec...`
-   - gemini-exec generates initial code
-   - Selected Claude expert reviews and refines output
-4. If RTK available (`RTK=available` in env status) → optionally wrap Claude expert output through RTK to reduce token consumption by 60-90%:
+1. Use the selected expert agent as the default implementation path.
+2. If the native Claude Code plugin `openai/codex-plugin-cc` is explicitly installed and requested, it may provide Codex interop for scaffolding before expert review.
+3. If RTK is available (`RTK=available` in env status), optionally wrap expert output through `rtk-exec` to reduce token consumption by 60-90%:
    - Display: `[RTK Proxy] Token optimization active via rtk-exec`
    - RTK acts as a transparent proxy — no change to expert selection
-5. If none available → display `[External CLI] Unavailable — proceeding with {expert} directly` and use Claude expert directly
+4. Otherwise display `[External CLI] Not requested — proceeding with {expert} directly` and use the expert directly.
 
-**Suitable**: New file creation, boilerplate, scaffolding, test code
+**Suitable for optional plugin interop**: New file creation, boilerplate, scaffolding, test code
 **Unsuitable**: Existing code modification, architecture decisions, bug fixes
 
 ### Step 3: Expert Agent Selection

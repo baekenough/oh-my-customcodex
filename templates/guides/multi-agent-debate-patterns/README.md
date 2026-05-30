@@ -4,7 +4,7 @@
 
 | Pattern | Goal | Use When |
 |---------|------|----------|
-| `agora` | Reach adversarial consensus | Release gates, design approval, high-risk specs |
+| `roundtable-debate` | Preserve dissent while reaching a bounded decision | Release gates, design approval, high-risk specs with minority risks |
 | `roundtable-debate` | Preserve dissent | Strategy choices, tradeoffs, ambiguous product or architecture decisions |
 
 ## Failure Modes

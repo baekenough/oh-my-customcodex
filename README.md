@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-50 agents. 123 skills. 22 rules. One command.
+50 agents. 120 skills. 22 rules. One command.
 
 ```bash
 npm install -g oh-my-customcodex && cd your-project && omcustomcodex init
@@ -135,7 +135,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (123)
+### Skills (120)
 
 | Category | Count | Includes |
 |----------|-------|----------|
@@ -148,7 +148,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 | Package | 3 | npm-publish, npm-version, npm-audit |
 | Optimization | 3 | optimize-analyze, optimize-bundle, optimize-report |
 | Security | 3 | adversarial-review, cve-triage, jinja2-prompts |
-| Other | 13 | codex-exec, claude-native, gitlab, visual-ralph, visual-verdict, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely, and more |
+| Other | 10 | claude-native, gitlab, visual-ralph, visual-verdict, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely, and more |
 
 Skills use a 3-tier scope system: `core` (universal), `harness` (agent/skill maintenance), `package` (project-specific).
 
@@ -288,7 +288,7 @@ your-project/
 │   ├── contexts/               # 4 shared context files
 │   └── ontology/               # Knowledge graph for RAG
 ├── .agents/
-│   └── skills/                 # 123 installed skill modules
+│   └── skills/                 # 120 installed skill modules
 └── guides/                     # 51 reference documents
 ```
 

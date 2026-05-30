@@ -262,14 +262,12 @@ english:
 ```
 Research intent detected (confidence >= 70%)
     ↓
-Check Codex CLI availability
-    ├─ Available (codex binary + OPENAI_API_KEY)
-    │   → Use codex-exec skill with --effort xhigh
-    │   → Prompt: "Research and analyze: {user_request}"
-    │   → Returns: structured findings for orchestrator
-    └─ Unavailable
-        → Fall back to Claude's WebFetch/WebSearch
-        → Orchestrator handles directly or via general-purpose agent
+Use the research workflow or researcher/expert agents
+    ├─ Native Claude Code plugin `openai/codex-plugin-cc` explicitly installed/requested
+    │   → Optional Codex interop may assist analysis
+    └─ Otherwise
+        → Use existing expert agents, researcher, WebFetch/WebSearch, or RTK paths
+        → Orchestrator handles directly or via specialist agent
 ```
 
 ### Confidence Scoring
@@ -288,6 +286,6 @@ Check Codex CLI availability
 ├── Input: "{user input}"
 ├── Workflow: research-workflow
 ├── Confidence: {percentage}%
-├── Method: codex-exec (xhigh) | WebFetch fallback
+├── Method: research workflow | researcher/expert agent | optional Codex plugin when requested
 └── Reason: {explanation}
 ```

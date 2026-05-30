@@ -93,15 +93,12 @@ A PreToolUse hook in `.codex/hooks/hooks.json` checks this marker and blocks Wri
 └── Output: Implementation complete
 ```
 
-**Codex-Exec Hybrid Option**: When entering Stage 3:
-1. Check `/tmp/.codex-env-status-*` for codex CLI availability
-2. If available AND task involves new file creation → automatically delegate scaffolding to `/codex-exec`:
-   - Display: `[Codex Hybrid] Delegating scaffolding to codex-exec...`
-   - codex-exec generates initial code (strength: fast generation)
-   - Claude expert reviews and refines codex output (strength: reasoning, quality)
-3. If unavailable → display `[Codex] Unavailable — proceeding with Claude experts directly` and proceed with standard implementation via Claude experts
+**Optional Codex Plugin Interop**: When entering Stage 3:
+1. Use domain expert agents as the default implementation path.
+2. If the native Claude Code plugin `openai/codex-plugin-cc` is explicitly installed and requested, it may provide Codex interop for new-file scaffolding before expert review.
+3. Otherwise display `[Codex Plugin] Not requested — proceeding with expert agents directly` and proceed with standard implementation.
 
-Suitable for codex hybrid: new files, boilerplate, test stubs, scaffolding
+Suitable for optional plugin interop: new files, boilerplate, test stubs, scaffolding
 Not suitable: modifying existing code, architecture-dependent changes
 
 **Exit criteria**: All planned files created/modified, tests written.
@@ -157,7 +154,7 @@ The stage marker file (`/tmp/.codex-dev-stage`) is read by a PreToolUse hook tha
 For complex tasks, Agent Teams is **preferred** when available (R018):
 - Plan: architect agent
 - Verify: reviewer agent(s) — multi-model-verification via Agent Teams
-- Implement: domain expert agent (+ codex-exec hybrid if available)
+- Implement: domain expert agent (+ optional `openai/codex-plugin-cc` interop only when explicitly installed/requested)
 - Compound: QA agent
 
 When Agent Teams is enabled AND task involves 3+ agents or review→fix cycles, using Agent Teams is MANDATORY per R018.

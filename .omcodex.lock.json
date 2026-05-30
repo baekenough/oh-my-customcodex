@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.5.8",
-  "generatedAt": "2026-05-29T18:36:24.086Z",
-  "templateVersion": "0.5.8",
+  "generatorVersion": "0.5.9",
+  "generatedAt": "2026-05-30T05:02:20.677Z",
+  "templateVersion": "0.5.9",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "ab7e8d06735652b3a3b19473162bc2bdefc65676deed91e0420f919cc5496fe9",
@@ -65,8 +65,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-teams.md": {
-      "templateHash": "3ec067bcc9915759e12a6f5506f7768168fa3b92d1f2619ceef1ea57c24838c4",
-      "size": 15818,
+      "templateHash": "3d9eb8880dafba1a05ead752f9af9ba6edd6823b190078a90b86bbb1da765c7c",
+      "size": 8149,
       "component": "rules"
     },
     ".codex/rules/MAY-optimization.md": {
@@ -495,8 +495,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/agent-teams-advisor.sh": {
-      "templateHash": "e965a0ccf7368052ae5b640cd1ba317329bb72c13f65894305cb5300bce3e8d8",
-      "size": 2852,
+      "templateHash": "6b0b3f2b53001b741a4475696cff4458e5efe73bddcc81da0d24ae4b0f5ccb24",
+      "size": 3265,
       "component": "hooks"
     },
     ".codex/hooks/scripts/stuck-detector.sh": {
@@ -1070,8 +1070,8 @@
       "component": "guides"
     },
     "guides/multi-provider-exec/README.md": {
-      "templateHash": "c48979ca975232b2f42fcefaf000ee981e5f9cd08959c3ed7475a5179b958101",
-      "size": 3437,
+      "templateHash": "cc6f2e47ef2d53f1a9d0922835130021f2d5cf43a1abce51799d0257f917ae3e",
+      "size": 781,
       "component": "guides"
     },
     "guides/aws/well-architected.md": {
@@ -1160,8 +1160,8 @@
       "component": "guides"
     },
     "guides/multi-agent-debate-patterns/README.md": {
-      "templateHash": "08b86f425d7417d9f5e1a90f0198078b243033122940623d0a56a8eb124edf23",
-      "size": 1015,
+      "templateHash": "74215074255f1f15869b84d4875ee2924bbb077f33768db811f73d456f965a40",
+      "size": 1070,
       "component": "guides"
     },
     "guides/multi-agent-debate-patterns/index.yaml": {
