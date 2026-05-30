@@ -167,17 +167,8 @@ Batch 3: T9, T10            (Innovation)
 
 Before starting verification rounds, check codex availability:
 
-```bash
-# Run this check once before Phase 2 begins
-which codex &>/dev/null && [ -n "$OPENAI_API_KEY" ]
-# Exit 0 → codex available: enable dual-model verification (opus + codex)
-# Exit 1 → codex unavailable: display notice and proceed with opus-only
 ```
-
-If unavailable, display: `[Phase 2] Codex unavailable — opus-only verification`
-
-```
-Team findings ──→ opus 4.6 verification ──→ codex-exec xhigh verification (if available)
+Team findings ──→ opus 4.6 verification ──→ optional plugin-assisted verification
        │                                              │
        └── Contradiction detected? ── YES ──→ Round N+1
                                       NO  ──→ Consensus reached → Phase 3
@@ -185,8 +176,7 @@ Team findings ──→ opus 4.6 verification ──→ codex-exec xhigh verific
 
 Each round:
 1. **opus 4.6**: Deep reasoning verification — checks logical consistency, identifies gaps, challenges assumptions
-2. **codex-exec xhigh** (when available): Independent code-level verification — validates technical claims, tests feasibility
-   - If unavailable: display `[Phase 2] Round {N}: Codex unavailable, proceeding with opus verification only`
+2. **Optional Codex interop**: Use native Claude Code plugin `openai/codex-plugin-cc` only when explicitly installed/requested; otherwise use researcher or RTK-backed local evidence gathering.
 3. **Contradiction resolution**: Reconcile divergent findings between teams and verifiers
 4. **Convergence check**: All major claims verified with no outstanding contradictions → proceed
 
@@ -319,16 +309,11 @@ Round N:
           - Internal consistency (breadth ↔ depth alignment)
           - Cross-domain consistency (security ↔ architecture)
           - Evidence quality (claims without backing)
-  Step 2: codex-exec validates technical claims (when available):
-          a. Invoke: /codex-exec with findings from all teams
-          b. Prompt:  "Validate technical claims: {findings}.
-                       Check code patterns, benchmark reproducibility,
-                       dependency resolution."
-          c. Effort:  --effort xhigh
-          d. Parse:   contradictions → merge with opus findings
-          e. On timeout/error: log "[Phase 2] Round {N}: codex-exec error — {reason},
-                                continuing with opus results only"
-     If unavailable: log "[Phase 2] Round {N}: Codex unavailable, proceeding with opus verification only"
+  Step 2: Optional plugin-assisted validation (only if `openai/codex-plugin-cc` is explicitly installed/requested):
+          a. Validate technical claims against code patterns, benchmark reproducibility,
+             and dependency resolution.
+          b. Parse contradictions → merge with opus findings.
+          c. On unavailable plugin or error: log "[Phase 2] Round {N}: optional Codex interop unavailable — continuing with opus/researcher results".
   Step 3: Compile contradiction list
           - 0 contradictions → CONVERGED
           - >0 contradictions → feedback to relevant teams → Round N+1
@@ -410,7 +395,7 @@ This advisory is informational only and does not block execution.
 
 | Scenario | Fallback |
 |----------|----------|
-| codex-exec unavailable | opus-only verification (still min 2 rounds) |
+| Optional Codex plugin unavailable | opus/researcher verification (still min 2 rounds) |
 | Agent Teams unavailable | Standard Agent tool with R009 batching |
 | Partial team failure | Synthesize from available results, note gaps in report |
 | GitHub issue creation fails | Output report to conversation only |

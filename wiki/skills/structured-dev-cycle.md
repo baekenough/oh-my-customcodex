@@ -17,7 +17,7 @@ related:
 
 ## Overview
 
-Enforces a disciplined 6-stage cycle: Plan (Read-only) → Verify Plan → Implement (all tools) → Verify Implementation → Compound testing → Done. Stage transitions are enforced via a `/tmp/.claude-dev-stage` marker file checked by PreToolUse hooks. Recommends opus for planning stages, sonnet for implementation, haiku for Done. Supports Codex hybrid in Stage 3 and Agent Teams for complex tasks (R018). Full cycle for 10+ file changes; abbreviated for smaller tasks.
+Enforces a disciplined 6-stage cycle: Plan (Read-only) → Verify Plan → Implement (all tools) → Verify Implementation → Compound testing → Done. Stage transitions are enforced via a `/tmp/.claude-dev-stage` marker file checked by PreToolUse hooks. Recommends opus for planning stages, sonnet for implementation, haiku for Done. Supports optional `openai/codex-plugin-cc` interop only when explicitly installed/requested, and Agent Teams for complex tasks (R018). Full cycle for 10+ file changes; abbreviated for smaller tasks.
 
 ## Key Details
 
@@ -29,7 +29,7 @@ Enforces a disciplined 6-stage cycle: Plan (Read-only) → Verify Plan → Imple
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[deep-plan]], [[multi-model-verification]], [[reasoning-sandwich]], [[codex-exec]]
+- **Related skills**: [[deep-plan]], [[multi-model-verification]], [[reasoning-sandwich]]
 - **See also**: [[R018]], [[R009]], [[R010]]
 
 ## Sources

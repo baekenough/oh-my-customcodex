@@ -46,7 +46,7 @@ templates/
 +-- workflows/                        # project-level pipeline definitions
 +-- .claude/
 |   +-- agents/                       # agent definitions (50 files)
-|   +-- skills/                       # skill modules (123 SKILL.md files)
+|   +-- skills/                       # skill modules (120 SKILL.md files)
 |   +-- rules/                        # global rules (22 files)
 |   +-- hooks/                        # hook registry and scripts (40 scripts)
 |   +-- contexts/                     # context files
@@ -65,7 +65,7 @@ The counts below should stay aligned with `templates/manifest.json`, README comp
 
 Flat agent definition files. During Codex installation these land under `.codex/agents/`.
 
-### Skills (123)
+### Skills (120)
 
 `templates/.claude/skills/*/SKILL.md`
 

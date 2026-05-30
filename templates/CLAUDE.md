@@ -102,7 +102,7 @@ oh-my-customcodex로 구동됩니다.
 | 개발 | `/omcustomcodex:goal`, `/dev-review`, `/dev-refactor`, `/sdd-dev`, `/structured-dev-cycle` | 목표 실행, 코드 리뷰, 리팩토링, SDD |
 | 검증 | `/omcustomcodex:sauron-watch`, `/deep-verify`, `/adversarial-review` | R017 검증, 릴리즈 품질, 보안 리뷰 |
 | 릴리즈 | `/pipeline auto-dev`, `/omcustomcodex-release-notes`, `/release-plan` | 자동 개발, 릴리즈 노트 |
-| 리서치 | `/research`, `/scout`, `/deep-plan`, `/omcustomcodex:agora` | 병렬 분석, URL 평가, 연구 계획 |
+| 리서치 | `/research`, `/scout`, `/deep-plan`, `/roundtable-debate` | 병렬 분석, URL 평가, 토론형 검증 |
 | 메모리 | `/memory-save`, `/memory-recall` | 세션 메모리 관리 |
 | 시스템 | `/token-efficiency-audit`, `/pre-generation-arch-check`, `/omcustomcodex:lists`, `/omcustomcodex:status`, `/omcustomcodex:help` | 토큰 효율/아키텍처 감사, 전체 목록, 상태, 도움말 |
 
@@ -119,7 +119,7 @@ project/
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
 +-- .agents/
-|   +-- skills/                  # 스킬 (123 디렉토리)
+|   +-- skills/                  # 스킬 (120 디렉토리)
 +-- guides/                      # 레퍼런스 문서 (51 토픽)
 ```
 

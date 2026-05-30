@@ -57,7 +57,8 @@ echo "$COUNT" > "$COUNTER_FILE"
 if [ "$BATCH_ISSUES" -ge 3 ] && [ "$COUNT" -eq 1 ]; then
   echo "" >&2
   echo "--- [R018 Advisor] Batch context detected (${BATCH_ISSUES} issues) ---" >&2
-  echo "  RECOMMENDATION: Use Agent Teams (TeamCreate) for this batch." >&2
+  echo "  RECOMMENDATION: Use Agent Teams (TeamCreate) for this batch unless work is a mechanical disjoint-file refactor with explicit write scopes." >&2
+  echo "  VERIFY DONE WITH: git diff/status, rg/grep, scripts/tests; team task status is advisory only." >&2
   echo "  Current: Agent(${agent_type}) -- ${prompt_preview}" >&2
   echo "-----------------------------------------------------------" >&2
 elif [ "$COUNT" -ge 2 ]; then
@@ -67,6 +68,8 @@ elif [ "$COUNT" -ge 2 ]; then
   echo "    * 3+ agents needed for this work" >&2
   echo "    * Review -> fix -> re-review cycle exists" >&2
   echo "    * Agents need shared state or coordination" >&2
+  echo "  NOTE: For mechanical disjoint-file refactors, bounded standalone agents may avoid Team runtime overhead." >&2
+  echo "  VERIFY DONE WITH: git diff/status, rg/grep, scripts/tests; task status alone is not proof." >&2
   echo "  Current: Agent(${agent_type}) -- ${prompt_preview}" >&2
   echo "-----------------------------------------------------------" >&2
 fi

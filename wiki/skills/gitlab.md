@@ -7,7 +7,6 @@ sources:
 related:
   - [[github]]
   - [[mgr-gitnerd]]
-  - [[codex-exec]]
 ---
 
 # GitLab
@@ -28,7 +27,7 @@ Provides a GitLab workflow surface for repository triage and operational tasks. 
 ## Relationships
 
 - **Used by agents**: [[mgr-gitnerd]]
-- **Related skills**: [[github]], [[codex-exec]]
+- **Related skills**: [[github]], [[mgr-gitnerd]]
 - **See also**: [[R001]]
 
 ## Sources

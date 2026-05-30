@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.9] - 2026-05-30
+
+### Changed
+- Retire the packaged Codex/Gemini wrapper and Agora skills for #1429; current guidance now uses expert agents, RTK/researcher paths, `roundtable-debate`, and the official `openai/codex-plugin-cc` interop path only when explicitly installed/requested.
+- Validate programmatic documentation in PR CI via `docs-validate`/`validate-docs` for #1428 so phantom command regressions are caught before merge.
+- Harden R018 Agent Teams guidance for #1430 and #1431 with non-interactive evidence collection, status checks, zsh reserved-variable safety, disjoint-file parallel-agent fallback, and prompt-size optimization.
+
 ## [0.5.8] - 2026-05-30
 
 ### Changed

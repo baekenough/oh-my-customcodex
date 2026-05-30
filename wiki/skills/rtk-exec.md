@@ -5,8 +5,6 @@ updated: 2026-04-12
 sources:
   - .codex/skills/rtk-exec/SKILL.md
 related:
-  - [[codex-exec]]
-  - [[gemini-exec]]
 ---
 
 # RTK Exec
@@ -27,7 +25,7 @@ Wraps CLI command execution through an RTK (Reduce Token Kit) proxy that compres
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[codex-exec]], [[gemini-exec]]
+- **Related skills**: [[R005]], [[R013]]
 - **See also**: [[R005]], [[R013]]
 
 ## Sources

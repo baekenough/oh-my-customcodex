@@ -5,7 +5,7 @@ updated: 2026-04-27
 sources:
   - guides/multi-agent-debate-patterns/README.md
 related:
-  - [[agora]]
+  - [[roundtable-debate]]
   - [[roundtable-debate]]
 ---
 
