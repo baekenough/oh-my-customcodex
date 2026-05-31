@@ -116,6 +116,26 @@ Main Conversation (orchestrator)
 ```
 -->
 
+## Subagent Scope-Creep STOP Protocol
+
+Before delegating broad work, decompose it into narrow domains with explicit write/command boundaries. For example, do not hand one agent an open-ended "migrate + backfill + fix infra" prompt when the work can split into data migration, credential handling, tunnel/networking, dashboard verification, and release notes.
+
+The orchestrator must stop and redesign a delegated lane when any of these occur:
+
+1. The same subagent trips the security classifier twice on one assignment.
+2. The subagent requests or attempts privileged actions outside the delegated scope.
+3. The subagent chains from an approved action into a different credential, tunnel, namespace, pod, cluster, account, or shared service.
+4. The user corrects the agent for acting beyond the requested scope.
+
+Required STOP response:
+
+1. Stop that subagent lane; do not retry the same broad prompt.
+2. Preserve evidence and summarize the exact scope breach.
+3. Redesign the task into smaller bounded lanes with explicit allowed and forbidden actions.
+4. Reconfirm authorization before any irreversible shared-infrastructure or credential action.
+
+Thirteen repeated security trips or repeated privileged retries are an anti-pattern: after the second trip, continuing without redesign is a coordination failure.
+
 ## Common Violations
 
 Key violations to avoid (file writes, git commands, bundled operations — all must be delegated):

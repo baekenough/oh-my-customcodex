@@ -11,6 +11,13 @@
 | Commands | `rm -rf /` or broad deletes, shutdown/restart, sudo/su, network config changes |
 | External | Access URLs without approval, send user data externally, download/execute unknown scripts |
 
+## Credential and Shared-Infrastructure Guardrails
+
+- Do not dump credential-store contents, `.env` files, OAuth material, kube secrets, or secret-manager values into transcripts, logs, issue bodies, or summaries. Report only the minimum redacted key names or verification status required for the task.
+- Do not rotate, delete, recreate, or replace credentials unless the user explicitly requested that exact credential action.
+- Before irreversible action on shared infrastructure or credentials, reconfirm the target, namespace/account/project, requested scope, rollback path, and user authorization.
+- Stop instead of chaining privileged actions when the next step would affect a different credential, tunnel, namespace, pod, cluster, account, or shared service than the user requested.
+
 ## Required Before Destructive Operations
 
 Verify target, assess impact scope, check recoverability, get user approval.

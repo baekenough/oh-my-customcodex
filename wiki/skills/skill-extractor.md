@@ -1,35 +1,40 @@
 ---
 title: Skill Extractor
 type: skill
-updated: 2026-04-12
+updated: 2026-06-01
 sources:
   - .codex/skills/skill-extractor/SKILL.md
 related:
   - [[mgr-creator]]
+  - [[R006]]
+  - [[R020]]
   - [[R016]]
 ---
 
 # Skill Extractor
 
-Analyze task trajectories to propose reusable SKILL.md candidates from successful patterns.
+Analyze recurring task trajectories and evidence to propose reusable workflow packaging candidates.
 
 ## Overview
 
-Reads task outcome data (`/tmp/.claude-task-outcomes-$PPID`), groups by `(agent_type, skill)` pattern, and proposes new SKILL.md candidates for patterns with ≥3 successes and ≥80% success rate. Presents confidence-ranked proposals (low/medium/high) and delegates approved skill creation to `mgr-creator`. Never auto-creates without user approval. A Stop hook (`skill-extractor-analyzer.sh`) provides lightweight pre-analysis.
+Collects evidence from recent session outcomes (`/tmp/.codex-task-outcomes-$PPID`), memory/session summaries, rollout or release summaries, optional Chronicle/history integrations, and the existing skills/agents inventory. It builds an evidence-first shortlist before proposing any reusable artifact.
+
+Each shortlist entry records the workflow, evidence and dates, frequency/confidence, recommended form (`Skill`, `Custom subagent`, `Automation`, or `Skip`), duplicate/overlap check, why, and why-not. Approved `Skill` or `Custom subagent` work is delegated to `mgr-creator`; deterministic `Automation` candidates are handed off as scoped implementation recommendations. Nothing is created without explicit user approval.
 
 ## Key Details
 
 - **Scope**: core
 - **User-invocable**: yes
 - **Command**: `/skill-extractor`
-- **Effort**: not specified
-- **Argument hint**: `[--threshold <n>] [--dry-run]`
+- **Argument hint**: `[--threshold <n>] [--dry-run] [--all]`
+- **Default threshold**: 3 source-attributed evidence points
+- **Guardrails**: user approval, duplicate/overlap checks, R006 responsibility boundaries, and R020 verification evidence
 
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[mgr-creator]], [[skills-sh-search]]
-- **See also**: [[R016]], [[R006]]
+- **Related skills**: [[mgr-creator]], [[skills-sh-search]], [[memory-recall]], [[memory-management]]
+- **See also**: [[R016]], [[R006]], [[R020]]
 
 ## Sources
 
