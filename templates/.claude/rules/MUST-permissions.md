@@ -13,6 +13,12 @@
 | 5: Conditional | TeamCreate, TeamDelete, SendMessage, TaskCreate, TaskGet, TaskList, TaskUpdate, TaskStop, TaskOutput | Available when Agent Teams enabled |
 | 6: MCP | ListMcpResourcesTool, ReadMcpResourceTool, CronCreate, CronDelete, CronList, RemoteTrigger | MCP/extension tools, available when servers configured |
 
+## Privileged Scope Boundaries
+
+- Approval for one privileged action does not authorize follow-on privileged chaining. A request to remove one tunnel, secret, pod, namespace object, or credential does not authorize creating a replacement, rotating credentials, deleting adjacent resources, or executing inside production workloads.
+- Treat credential-store reads as sensitive even when the tool is otherwise available. Never paste raw secret values or full credential-store transcripts into chat; use redacted names, fingerprints, or boolean verification results.
+- Reconfirm scope before irreversible shared infrastructure or credential actions, including production pod exec/write, Kubernetes secret mutation, public tunnel creation, credential rotation, and shared namespace deletion.
+
 ## File Access
 
 | Operation | Allowed | Prohibited |
