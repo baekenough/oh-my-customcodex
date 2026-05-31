@@ -22,6 +22,18 @@ Before declaring any task `[Done]`, verify completion against task-type-specific
 
 Before [Done]: (1) Verify ACTUAL outcome not just attempt — "ran command" ≠ "succeeded". (2) Check task-type criteria above. (3) No unchecked items. (4) Would bet $100 it's complete.
 
+## Workflow Prompt and Verifier Ground Truth
+
+When a workflow delegates to `agent()` or equivalent subagent calls, complete the full prompt string before the call. Do not append guardrails, fact sheets, or critical constraints to the returned value after the agent has already run.
+
+Verifier lanes must receive the ground-truth sources needed to check cross-cutting claims, especially external URLs, cluster DNS/service names, credentials metadata, release facts, and infrastructure identifiers. A verifier cannot validate a fact that was never provided and is not present in the inspected source.
+
+## Read-Before-Characterize Diagnostics
+
+Do not characterize logs, traces, or diagnostics as an "error loop", "root cause", "flaky test", or similar conclusion before reading the relevant evidence. First capture the observed symptom, then inspect the authoritative log/output/source, then label the failure mode.
+
+For large or noisy logs, read a representative targeted slice before making permanent workflow, rule, template, or release-process changes. If the initial characterization changes after reading, report the correction explicitly.
+
 ## Diagnostic Hypothesis Verification
 
 When a failure diagnosis would cause a permanent workflow, rule, template, or release-process change, the diagnosis must be treated as a hypothesis until it is directly verified.

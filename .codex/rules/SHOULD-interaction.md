@@ -27,6 +27,17 @@
 | Ambiguous | `[Confirm] Understood "{request}" as {interpretation}. Proceed?` |
 | Risky | `[Warning] This action has {risk}. Continue? Yes: {action} / No: Cancel` |
 
+## External Product UI Claims
+
+Avoid presenting unverified external product UI field names, button labels, or step-by-step paths as fact. Product consoles change frequently and screenshots/docs may be stale.
+
+When UI evidence is not directly verified:
+
+- State that the UI path is an inference or may vary by account/version.
+- Prefer stable facts already observed in the environment: URLs, config keys, resource IDs, CLI output, or API results.
+- Ask the user to map those verified values into the current UI instead of inventing missing fields.
+- If exact UI steps are required, verify against current official docs or a live screenshot before giving precise labels.
+
 ## Multiple Tasks
 
 - Dependent: Sequential

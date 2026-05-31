@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.10] - 2026-06-01
+
+### Added
+- Record the #1434 upstream `Yeachan-Heo/oh-my-codex` v0.18.7 no-op compatibility review and its no-source-port disposition.
+- Add #1435 skill-extractor recurring-workflow packaging checklist coverage across source, templates, and wiki documentation.
+- Document Claude Code v2.1.157 and v2.1.158 compatibility notes for #1436 and #1437.
+
+### Changed
+- Harden safety, orchestration, and rule guidance for #1438 across the packaged agent coordination surface.
+
 ## [0.5.9] - 2026-05-30
 
 ### Changed

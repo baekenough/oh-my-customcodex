@@ -2,6 +2,30 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
+## v2.1.158
+
+Published: 2026-05-30.
+
+Source: upstream oh-my-customcode #1264, Codex port #1436.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Auto mode is available on Bedrock, Vertex, and Foundry for Opus 4.7 and Opus 4.8 via `CLAUDE_CODE_ENABLE_AUTO_MODE=1` | Claude compatibility sessions can opt into provider-backed auto mode for those Opus surfaces. Codex-native model routing and approval policy are unchanged. | Document as Claude provider compatibility only. Do not infer Codex auto-mode behavior from this env var. |
+
+## v2.1.157
+
+Published: 2026-05-29.
+
+Source: upstream oh-my-customcode #1265, Codex port #1437.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Plugins under `.claude/skills` auto-load, `claude plugin init <name>` scaffolds plugins there, and `/plugin` has argument autocomplete | Useful for Claude compatibility plugin setup. Codex-native skills remain under `.codex/skills`, `.agents/skills`, and OMX skill roots. | Keep `.codex/OMX` primary. Mention `.claude/skills` only when documenting Claude plugin compatibility. |
+| `claude agents` honors the `agent` field in `settings.json`, with `--agent <name>` as an override | Claude dispatched sessions can inherit a configured default agent unless explicitly overridden. | Do not mirror this into Codex routing. Codex native subagents still follow prompt routing, role metadata, and explicit delegation. |
+| `EnterWorktree` can switch between Claude-managed worktrees mid-session, and Claude-managed worktrees are left unlocked for `git worktree remove`/`prune` cleanup | Claude worktree lifecycle is more flexible and less likely to leave locked cleanup blockers. | Keep auto-dev work in clean worktrees, verify `git status`, and do not treat Claude-managed worktree state as OMX state. |
+| `tool_decision` telemetry can include `tool_parameters` such as Bash commands and MCP/skill names when `OTEL_LOG_TOOL_DETAILS=1` | Telemetry may contain more detailed operational data, including command and tool-parameter strings. | Treat logs as potentially sensitive. Avoid exporting transcripts or telemetry that may expose secrets, credentials, or privileged commands. |
+| Background/session fixes cover parked subagents, leaked background shells, orphaned `.claude/worktrees`, resume state, date after sleep/wake, fullscreen picker cleanup, current linked worktree return, image placeholders, network prompts, and tmux clipboard behavior | Reduces false blockers and stale-state surprises in Claude compatibility sessions. | No Codex runtime change. Continue using OMX state, Codex worktree checks, and direct command evidence for Codex-native completion claims. |
+
 ## v2.1.156
 
 Published: 2026-05-29.
