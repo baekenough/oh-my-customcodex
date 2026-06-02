@@ -157,7 +157,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           ISSUES=$(printf '%s\n' "$PR_BODY" \
-            | grep -oiE '(Closes|Fixes|Resolves)([[:space:]]+#[0-9]+)+' \
+            | grep -oiE '(Closes|Fixes|Resolves)[[:space:]]+#[0-9]+([[:space:],;]+#[0-9]+)*' \
             | grep -oE '#[0-9]+' \
             | tr -d '#' \
             | sort -u)

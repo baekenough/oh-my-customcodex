@@ -8,8 +8,10 @@
  */
 
 import { describe, expect, it } from 'bun:test';
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { spawn } from 'node:child_process';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 
 const AUTO_TAG_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/auto-tag.yml');
 
@@ -19,6 +21,42 @@ const AUTO_TAG_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/a
 
 async function readWorkflow(): Promise<string> {
   return readFile(AUTO_TAG_WORKFLOW, 'utf-8');
+}
+
+async function extractIssuesLikeWorkflow(body: string): Promise<string[]> {
+  const dir = await mkdtemp(join(tmpdir(), 'auto-tag-'));
+  const bodyFile = join(dir, 'body.txt');
+  try {
+    await writeFile(bodyFile, body);
+    const script = `cat "$1" \
+      | grep -oiE '(Closes|Fixes|Resolves)[[:space:]]+#[0-9]+([[:space:],;]+#[0-9]+)*' \
+      | grep -oE '#[0-9]+' \
+      | tr -d '#' \
+      | sort -u`;
+    return await new Promise((resolvePromise, reject) => {
+      const child = spawn('bash', ['-lc', script, 'bash', bodyFile], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      let stdout = '';
+      let stderr = '';
+      child.stdout.on('data', (chunk) => {
+        stdout += chunk;
+      });
+      child.stderr.on('data', (chunk) => {
+        stderr += chunk;
+      });
+      child.on('error', reject);
+      child.on('close', (code) => {
+        if (code && code !== 1) {
+          reject(new Error(`extract failed with ${code}: ${stderr}`));
+          return;
+        }
+        resolvePromise(stdout.split('\n').filter(Boolean));
+      });
+    });
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -316,7 +354,9 @@ describe('auto-tag.yml — tag creation', () => {
 describe('auto-tag.yml — linked issue closure', () => {
   it('should close multiple issue references from one closing keyword', async () => {
     const content = await readWorkflow();
-    expect(content).toContain("'(Closes|Fixes|Resolves)([[:space:]]+#[0-9]+)+'");
+    expect(content).toContain(
+      "'(Closes|Fixes|Resolves)[[:space:]]+#[0-9]+([[:space:],;]+#[0-9]+)*'"
+    );
     expect(content).toContain("grep -oE '#[0-9]+'");
     expect(content).toContain("tr -d '#'");
   });
@@ -325,6 +365,16 @@ describe('auto-tag.yml — linked issue closure', () => {
     const content = await readWorkflow();
     expect(content).toContain('sort -u');
     expect(content).toContain('for ISSUE in $ISSUES');
+  });
+
+  it('should extract all comma-separated issue references from one closing keyword', async () => {
+    await expect(
+      extractIssuesLikeWorkflow('Release notes\n\nCloses #1268, #1269, #1271\n')
+    ).resolves.toEqual(['1268', '1269', '1271']);
+  });
+
+  it('should extract all whitespace-separated issue references from one closing keyword', async () => {
+    await expect(extractIssuesLikeWorkflow('Fixes #1 #2 #3\n')).resolves.toEqual(['1', '2', '3']);
   });
 
   it('should close the release milestone only when all milestone issues are closed', async () => {
