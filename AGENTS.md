@@ -7,6 +7,7 @@
 - Repo-local response contract:
   - Start responses with an agent identification block.
   - If no skill is active, still show `Agent` and `Status`.
+  - Match the user's language for all progress updates and final reports. If the user writes in Korean, respond in Korean unless quoting commands, code, logs, or required proper nouns.
   - Prefer this visible format:
 
     ```text
