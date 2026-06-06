@@ -30,15 +30,21 @@ Before writing/editing multiple files:
 1. Are files independent? → YES: spawn parallel agents
 2. Using Write/Edit sequentially for 2+ files? → parallelize instead
 3. Specialized agent available? → Use it (not general-purpose)
-4. Agent Teams available? → **Check R018 criteria before spawning 2+ agents**
+4. Agent Teams available? → **Check R018 criteria before spawning 2+ agents; announce 3+ agent gate result**
 5. Running agent stalled (2x+ duration)? → Spawn independent follow-up tasks immediately
+6. Parallel dispatch announced? → put all announced tool calls in the same message
 
 ### Common Violations to Avoid
 
+<!-- DETAIL: Common Violations Short Examples
 ```
 ❌ WRONG: Write(file1.kt) → Write(file2.kt) → ... (sequential)
 ✓ CORRECT: Agent(agent1→file1.kt) + Agent(agent2→file2.kt) + ... (same message, parallel)
+
+❌ WRONG: Announce "milestone 생성 + 구조 확인 병렬" but dispatch only one tool; run the other next turn (announce-execution mismatch)
+✓ CORRECT: When announcing N parallel tools, include ALL N tool calls in the SAME message as the announcement
 ```
+-->
 
 <!-- DETAIL: Full violation examples (4 pairs)
 ❌ WRONG: Writing files one by one
@@ -57,6 +63,10 @@ Before writing/editing multiple files:
 -->
 
 > **Agent Teams partial spawn** → See R018 (MUST-agent-teams.md) "Spawn Completeness Check".
+
+<!-- DETAIL: v2.1.161 compatibility
+Claude Code parallel tool calls in a single batch are independent — one failed Bash command no longer cancels sibling calls. This lowers the safety cost of R009 announce-execution consistency for independent work.
+-->
 
 ## Execution Rules
 

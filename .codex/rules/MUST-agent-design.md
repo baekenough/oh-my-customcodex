@@ -75,6 +75,17 @@ disableSkillShellExecution: true  # Disable inline shell execution in skills (v2
 Agent frontmatter `hooks:` fire when the agent runs as a main-thread agent via `--agent` flag in v2.1.116+. Hook JSON output `terminalSequence` field for desktop notifications, window title changes, and terminal bells without controlling terminal added in v2.1.141+. `claude agents --cwd <path>` for directory-scoped session lists added in v2.1.141+. Background agents launched via `/bg` preserve current permission mode in v2.1.141+. `CLAUDE_CODE_PLUGIN_PREFER_HTTPS` and `ANTHROPIC_WORKSPACE_ID` environment variables added in v2.1.141+ for HTTPS plugin clones and workspace-scoped federation.
 -->
 
+<!-- DETAIL: Claude Compatibility Notes for Packaged `.claude` Templates
+This Codex port ships `.claude` compatibility templates. When updating those templates, account for recent Claude Code behavior even though the active runtime surface is Codex/OMX:
+
+- v2.1.159: no user-facing template action required (internal infrastructure release).
+- v2.1.160: `acceptEdits` prompts for build-tool config writes; grep/egrep/fgrep of a single file can satisfy read-before-edit in Claude Code, but Codex agents should still follow the active Codex read/edit policy.
+- v2.1.161: independent parallel tool calls no longer cancel siblings when one Bash call fails; this supports R009 same-message batching for independent work.
+- v2.1.162: `claude agents --json` includes waiting/blocker metadata and explicit `--tools Grep/Glob` behavior is fixed; compatibility prompts may use those fields when diagnosing stuck Claude sessions.
+- v2.1.163: managed `requiredMinimumVersion`/`requiredMaximumVersion`, `/plugin list`, Stop/SubagentStop `hookSpecificOutput.additionalContext`, and skill command literal `\$` escaping are available. Hook/skill template changes should preserve these affordances.
+- v2.1.165: bug-fix/reliability release; no local template change required beyond compatibility confirmation.
+-->
+
 ## Hook Event Types
 
 27 event types documented: SessionStart, UserPromptSubmit, PreToolUse, PermissionRequest, PermissionDenied, PostToolUse, PostToolUseFailure, Notification, SubagentStart, SubagentStop, TaskCreated, TaskCompleted, Stop, StopFailure, TeammateIdle, InstructionsLoaded, ConfigChange, CwdChanged, FileChanged, WorktreeCreate, WorktreeRemove, PreCompact, PostCompact, Elicitation, ElicitationResult, PostMessage, SessionEnd. 4 handler types: command, prompt, http, agent. See full reference table via Read tool.

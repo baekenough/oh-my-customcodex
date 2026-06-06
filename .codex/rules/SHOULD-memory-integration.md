@@ -285,6 +285,30 @@ User Model data feeds into intent-detection (R015) and routing skill confidence 
 
 -->
 
+<!-- DETAIL: Attention-Weight Memory Tiering
+> Origin: #1450 (Dual-Brain scout:internalize partial port — attention-weight tiering only)
+
+Memory entries are managed across two orthogonal axes: confidence and attention weight. Confidence answers “how verified is this?”; attention weight answers “how frequently/recently should this be loaded?”.
+
+| Axis | Tag example | Meaning |
+|------|-------------|---------|
+| Confidence | `[confidence: high/medium/low]` | Verification level |
+| Attention Weight | `[tier: hot/warm/cold/archived]` | Loading priority and recency/frequency |
+
+### 4-tier policy
+
+| Tier | Meaning | Handling |
+|------|---------|----------|
+| Hot | Active current-session patterns | Keep near the top of MEMORY.md / active recall |
+| Warm | Recently relevant patterns | Keep in MEMORY.md after Hot entries |
+| Cold | Rarely referenced but still useful | Move to an archive/index when memory budget is tight |
+| Archived | Long-inactive or superseded | Keep only an index/reference unless explicitly recalled |
+
+Promotion happens when an entry is referenced or re-verified. Demotion happens during session-end memory maintenance when an entry has not been referenced across recent sessions. `[permanent]` entries are exempt from automatic demotion.
+
+Budget rule: when approaching the MEMORY.md 200-line prompt budget, prune/archive Cold entries first, then low-confidence Warm entries. Hot entries should remain available unless contradicted by evidence.
+-->
+
 ## Mid-Session Immediate Save
 
 Save memory IMMEDIATELY upon surprising discovery — do not defer to session end.

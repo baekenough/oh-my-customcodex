@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.5.13",
-  "generatedAt": "2026-06-06T04:49:01.519Z",
-  "templateVersion": "0.5.13",
+  "generatorVersion": "0.5.14",
+  "generatedAt": "2026-06-06T05:48:42.717Z",
+  "templateVersion": "0.5.14",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e6118ddadc11e28e10de7321eea1551a9df51355bac4b7fafa63f02e0118a68b",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "c0ca0426f234e7859f8f372d287f1103313a28759c15d6a449e589c44ead8b90",
-      "size": 26613,
+      "templateHash": "d75e8027b087e8488effd47c539190937fa1ce70ec5930616f0a60bfe4eb4137",
+      "size": 26819,
       "component": "rules"
     },
     ".codex/rules/MUST-intent-transparency.md": {
@@ -35,8 +35,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-parallel-execution.md": {
-      "templateHash": "80348744a85decb1904d823de4c810755545f1abc171ff72935ed0361b4f7537",
-      "size": 7849,
+      "templateHash": "af6927bbea99a7efbcd4e7b90b2106b766a21368dbf0efab6424325dd4968b6e",
+      "size": 8529,
       "component": "rules"
     },
     ".codex/rules/SHOULD-ecomode.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-design.md": {
-      "templateHash": "f2b9fb69b55db01e16d097889f4ff29a524e5f85497fc4c2ca5aae5068403052",
-      "size": 24978,
+      "templateHash": "1e381519c8a6411a712d232b7a3174122ccd2f04adacbcc7669452f6eda57e59",
+      "size": 26275,
       "component": "rules"
     },
     ".codex/rules/MUST-agent-identification.md": {
@@ -65,8 +65,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-teams.md": {
-      "templateHash": "3d9eb8880dafba1a05ead752f9af9ba6edd6823b190078a90b86bbb1da765c7c",
-      "size": 8149,
+      "templateHash": "e16121ca5c210b41ba7f9944c0d4e7b2465e4cf09ccb4f661bf35476077506d9",
+      "size": 8936,
       "component": "rules"
     },
     ".codex/rules/MAY-optimization.md": {
@@ -100,8 +100,8 @@
       "component": "rules"
     },
     ".codex/rules/SHOULD-memory-integration.md": {
-      "templateHash": "420e8419f73965d8c228acdd0d293b9b1119d4f56c25b3b7452718e85188c6f9",
-      "size": 17260,
+      "templateHash": "9894c0af344f9ee40379696a28e0d128fee11257f0362dcbb9b95f8312f2a774",
+      "size": 18747,
       "component": "rules"
     },
     ".codex/rules/MUST-enforcement-policy.md": {
@@ -595,7 +595,7 @@
       "component": "hooks"
     },
     ".codex/hooks/hooks.json": {
-      "templateHash": "0692f65ffe380aa1ccaa49969ba69029e8c37c6fe24d4021f5c5274741d3e396",
+      "templateHash": "2e9cd9eee40db0f1ee84f5329c44c11b6e959916bb915d9aba59eb40ebb52ac4",
       "size": 28853,
       "component": "hooks"
     },

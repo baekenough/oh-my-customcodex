@@ -300,7 +300,7 @@ your-project/
 │   ├── contexts/               # 4개 공유 컨텍스트 파일
 │   └── ontology/               # RAG용 지식 그래프
 ├── .agents/
-│   └── skills/                 # 120개 설치 스킬 모듈
+│   └── skills/                 # 121개 설치 스킬 모듈
 └── guides/                     # 49개 레퍼런스 문서
 ```
 

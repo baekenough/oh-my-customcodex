@@ -48,6 +48,20 @@ Quick rule: explicit user preference for plain subagents wins. Otherwise use Tea
 7. Otherwise, use Agent Teams when collaboration or shared state has material value.
 -->
 
+## Gate Transparency
+
+For 3+ agent dispatches, announce the R018 gate result before spawning (Agent Tool fallback reason or Agent Teams choice).
+
+<!-- DETAIL: Gate Transparency
+When the R018 gate resolves to standalone Agent Tool for a 3+ agent dispatch (for example mechanical disjoint-file editing with no review loop), announce the gate result in one line before spawning: `R018 gate: 3 disjoint-file domains, no review loop → Agent Tool fallback`. Silently selecting Agent Tool on a 3+ agent batch loses the gate-evaluation audit trail.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 3+ 에이전트 병렬 스폰 announce에 게이트 평가 결과 누락 | 스폰 전 한 줄로 Agent Tool 폴백 사유 또는 Agent Teams 선택 사유 명시 |
+
+Origin: #1464.
+-->
+
 ## Spawn Completeness
 
 Spawn all members for a parallel team slice in one message; partial/sequential spawning needs correction.

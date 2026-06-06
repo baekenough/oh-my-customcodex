@@ -261,6 +261,7 @@ steps:
          - git tag + push
          - gh release create
       4. Close milestone
+         - After closing a milestone, verify by milestone number (not title-only search) and retry once before reporting missing.
       5. Close verify-ready issues with "Fixed in v{version}"
          Label needs-review issues as "Deferred from v{version}"
 
