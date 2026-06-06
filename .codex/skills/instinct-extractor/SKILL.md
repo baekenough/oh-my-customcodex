@@ -41,6 +41,17 @@ Find repeated operator or agent behavior that should become a rule, skill, guide
 4. Assign confidence and cite concrete files, commits, or artifacts.
 5. Emit proposals only; do not create new rules or skills without an explicit follow-up task.
 
+## Selection Discipline
+
+Before emitting a reusable-asset proposal, apply these filters:
+
+- **Duplicate check**: search existing skills, rules, guides, hooks, and memory entries for equivalent behavior. Prefer extending the existing asset.
+- **Skip filter**: explicitly skip ambiguous, sensitive, one-off, or ownership-unclear candidates.
+- **Stable interface check**: require stable trigger, input, output, and verification evidence before recommending a skill.
+- **Frequency check**: one occurrence is memory/issue material; two direct repetitions can enter a shortlist; three or more direct repetitions or explicit user confirmation can justify promotion.
+
+When a candidate is skipped, include the skip reason so future extraction runs do not re-open the same weak proposal without new evidence.
+
 ## Output
 
 ```text

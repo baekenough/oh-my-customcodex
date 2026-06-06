@@ -408,8 +408,20 @@ if [[ -f "$env_status_file" ]]; then
     fi
 fi
 
+extra_segment=""
+if [[ -n "${STATUSLINE_EXTRA_PROVIDERS:-}" ]]; then
+    IFS=':' read -r -a extra_providers <<< "$STATUSLINE_EXTRA_PROVIDERS"
+    for provider in "${extra_providers[@]}"; do
+        [[ -n "$provider" && -x "$provider" ]] || continue
+        provider_output="$("$provider" </dev/null 2>/dev/null | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+        if [[ -n "$provider_output" ]]; then
+            extra_segment="${extra_segment} | ${provider_output}"
+        fi
+    done
+fi
+
 if [[ -n "$git_branch" ]]; then
-    printf "${cost_color}%s${COLOR_RESET} | %s | %s%s%s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
+    printf "${cost_color}%s${COLOR_RESET} | %s | %s%s%s%s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
         "$cost_display" \
         "$project_name" \
         "$branch_display" \
@@ -418,9 +430,10 @@ if [[ -n "$git_branch" ]]; then
         "$wl_segment" \
         "$agent_segment" \
         "$rtk_segment" \
+        "$extra_segment" \
         "$ctx_display"
 else
-    printf "${cost_color}%s${COLOR_RESET} | %s%s%s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
+    printf "${cost_color}%s${COLOR_RESET} | %s%s%s%s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
         "$cost_display" \
         "$project_name" \
         "$pr_segment" \
@@ -428,5 +441,6 @@ else
         "$wl_segment" \
         "$agent_segment" \
         "$rtk_segment" \
+        "$extra_segment" \
         "$ctx_display"
 fi

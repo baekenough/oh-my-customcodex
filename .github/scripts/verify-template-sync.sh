@@ -190,6 +190,8 @@ check_content_dir ".codex/rules" "templates/.claude/rules" "*.md" "rules"
 check_content_dir ".codex/agents" "templates/.claude/agents" "*.md" "agents"
 check_content_dir ".codex/hooks/scripts" "templates/.claude/hooks/scripts" "*.sh" "hooks/scripts"
 check_content_file ".codex/hooks/hooks.json" "templates/.claude/hooks/hooks.json" "hooks/hooks.json"
+check_content_file ".codex/statusline.sh" "templates/.claude/statusline.sh" "statusline.sh"
+check_content_dir "workflows" "templates/workflows" "*.yaml" "workflow yaml"
 
 while IFS= read -r src_skill; do
   skill_name=$(basename "$(dirname "$src_skill")")
@@ -207,7 +209,7 @@ if [ "$content_drift" -gt 0 ]; then
   echo "::error::$content_drift content drift(s) detected between .codex/ and templates/.claude/"
   errors=$((errors + content_drift))
 else
-  echo "[OK] Content drift check: rules, agents, hooks, and skills are in sync"
+  echo "[OK] Content drift check: rules, agents, hooks, statusline, workflow yaml, and skills are in sync"
 fi
 
 if [ "$errors" -gt 0 ]; then

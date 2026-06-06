@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.5.11",
-  "generatedAt": "2026-06-02T14:13:40.588Z",
-  "templateVersion": "0.5.11",
+  "generatorVersion": "0.5.13",
+  "generatedAt": "2026-06-06T04:49:01.519Z",
+  "templateVersion": "0.5.13",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e6118ddadc11e28e10de7321eea1551a9df51355bac4b7fafa63f02e0118a68b",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "b6851016a5f7e741e4de8aaee074fc74c126d938792f5f992d58e8ac80884d7d",
-      "size": 25898,
+      "templateHash": "c0ca0426f234e7859f8f372d287f1103313a28759c15d6a449e589c44ead8b90",
+      "size": 26613,
       "component": "rules"
     },
     ".codex/rules/MUST-intent-transparency.md": {
@@ -75,8 +75,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-continuous-improvement.md": {
-      "templateHash": "1f0fcc0381b9df78aa811c7b2e6867f665f98b77cf39cc2f04b2b9fed85edcff",
-      "size": 4341,
+      "templateHash": "9eb6b22d1fef645c5be412901faba5200cde07b71d4c46916300d6526e11cd27",
+      "size": 5098,
       "component": "rules"
     },
     ".codex/rules/MUST-permissions.md": {
@@ -115,8 +115,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-completion-verification.md": {
-      "templateHash": "5dc0f871fe19fa3721f861a968a2cc768920364ad41ea13c0546ea135bd87b4d",
-      "size": 11543,
+      "templateHash": "308097247642a506ccff4dac9409e5a3f1bb02bb59ca9bc25688a57b8fc436e3",
+      "size": 13150,
       "component": "rules"
     },
     ".codex/agents/be-springboot-expert.md": {

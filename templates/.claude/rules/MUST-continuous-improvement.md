@@ -51,6 +51,18 @@ When repeating agent failures or suboptimal routing is detected:
 
 This connects R016's continuous improvement loop with the adaptive-harness skill's learning capability.
 
+## Skill Promotion Threshold
+
+Promote a recurring workflow into a skill only when the evidence is strong enough to justify a durable interface.
+
+| Evidence | Action |
+|----------|--------|
+| One clear occurrence | Record memory or issue; do not create a skill by default |
+| Two direct successful repetitions with stable inputs/outputs | Candidate for `skill-extractor` Phase 1 shortlist |
+| Three or more direct repetitions, or two repetitions plus explicit user confirmation | Confirmed promotion candidate |
+
+Before creating a new skill, verify the candidate is not already covered by an existing skill, rule, guide, hook, or lightweight memory entry. Ambiguous, sensitive, one-off, or ownership-unclear candidates are explicitly skipped with a reason.
+
 ## External Repository Contribution Pre-Check
 
 Before creating or modifying assets for an external repository or upstream contribution target, inspect that repository's local contract before implementing:

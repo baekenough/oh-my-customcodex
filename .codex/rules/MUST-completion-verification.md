@@ -67,6 +67,29 @@ Parallel batches return results together, so a same-batch permanent dispatch pro
 
 Example: do not diagnose `triage-dispatch.yml` from memory, create an issue, and delegate a fix in the same parallel call before reading the workflow. If the read later shows a different root cause, the issue, PR, and commit trail become correction debt even when the eventual code direction is acceptable.
 
+## Degraded-Output Re-Verification Gate
+
+When tool output shows provider instability, buffering, truncation, duplicated chunks, `529`, timeout recovery, or `(no result)` while a permanent action is being considered, treat the current read as degraded. Do not characterize corruption, missing files, stale state, release failure, or data loss from that single degraded read.
+
+Before destructive recovery, issue creation, rule/workflow/template edits, release publication, or fix delegation based on degraded output:
+
+1. Re-read the authoritative source with a deterministic command or API call.
+2. Use a second narrow check that can falsify the failure hypothesis, such as `grep -c`, `sort -u`, `git status`, `git show`, `gh api`, or a direct file diff.
+3. Record whether the first read was degraded and whether the re-check confirmed or corrected the hypothesis.
+
+If the deterministic re-check cannot run, halt or reduce the action to a non-destructive diagnostic note.
+
+## Workflow Script Sanity Check
+
+Before invoking or registering generated workflow code, run a Tier-1 sanity pass:
+
+1. Search for unresolved placeholders, malformed identifiers, and known dead-line patterns.
+2. Assemble the exact script body before execution; do not concatenate facts or guardrails after the call starts.
+3. Run the language parser or the narrowest no-side-effect syntax check available.
+4. If syntax validation is unavailable, read the generated body back and perform a focused self-review before launch.
+
+This check is mandatory for workflow scripts that will run automation, mutate GitHub state, or gate a release.
+
 ## Test-Skip Is Not Completion
 
 Skipping tests, lowering coverage thresholds, narrowing the test command, or marking suites as TODO may be a temporary containment step, but it never satisfies completion by itself.

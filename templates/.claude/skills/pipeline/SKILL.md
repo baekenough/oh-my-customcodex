@@ -24,6 +24,14 @@ source:
 
 ## Behavior
 
+## Workflow File Locations
+
+`workflows/*.yaml` is the Codex pipeline invocation surface used by `/pipeline <name>` in this repository. `templates/workflows/*.yaml` is its packaged template mirror and must remain content-identical.
+
+`.codex/skills/pipeline/workflows/*.yaml` is a skill-local reference copy retained for compatibility with older skill bundles and detailed examples. It is not the primary repo-root invocation surface unless a runtime explicitly resolves workflows relative to this skill directory.
+
+When changing pipeline behavior, update the active repo-root workflow first, update its template mirror in the same change, and then update skill-local reference copies when they describe the same behavior.
+
 ### List Mode (no arguments or --list flag)
 
 Execute these steps to display available pipelines:

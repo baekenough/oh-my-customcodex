@@ -18,6 +18,8 @@ Used by `scope-selection` to include or exclude issues and by `implement` for li
 | `claude-code-release` | Claude compatibility release trigger | INCLUDE (preferred) |
 | `documentation` | Documentation-only scope | INCLUDE (preferred for docs-only release) |
 | `enhancement-yaml-only` | YAML/config-only scope change | INCLUDE (eligible for docs-only compression) |
+| `feedback` | Session feedback or retrospective follow-up | INCLUDE for low-risk rule/skill/doc scope |
+| `improvement` | Process or harness improvement | INCLUDE for low-risk rule/skill/doc scope |
 
 ## Selection Rule
 
@@ -43,6 +45,13 @@ An issue is eligible for `docs-only` compression mode if its labels include at l
 If all scoped issues are compression-eligible and scope size is 3 or fewer, the pipeline may use
 `compression_mode=docs-only` and replace heavyweight triage, planning, and verification spawns with
 direct manifest summaries plus a local self-review checklist.
+
+An issue is eligible for `lite` compression mode if its labels or triage evidence show a low-risk
+documentation, release-monitor, feedback, improvement, enhancement, YAML/config-only, or rule/skill text
+change. `lite` mode requires scope size 5 or fewer and must still run verify-build.
+
+Do not add or change labels solely to qualify for a compression tier. If triage label changes affect
+compression eligibility, report that fact in the compression-mode decision.
 
 ## Lifecycle Labels
 

@@ -122,13 +122,22 @@ steps:
 
   - name: compression-mode-eval
     prompt: |
-      Evaluate whether this pipeline run qualifies for docs-only compression mode.
+      Evaluate whether this pipeline run qualifies for compression mode.
 
       Reference: .codex/skills/pipeline/labels.md — "Compression Eligibility" section.
 
       Conditions for compression_mode=docs-only:
       1. Scope size is 3 or fewer issues.
       2. All scoped issues have labels intersecting {documentation, automated, codex-release, oh-my-codex-release, claude-code-release, enhancement-yaml-only}.
+
+      Conditions for compression_mode=lite:
+      1. Scope size is 5 or fewer issues.
+      2. All scoped issues are documentation, automated release-monitor, feedback, improvement, enhancement, YAML/config-only, or low-risk rule/skill text.
+      3. No scoped issue requires TypeScript runtime behavior, package dependency changes, migration, or security-sensitive logic.
+
+      Gate transparency:
+      - Do not add or change labels solely to qualify for docs-only or lite mode.
+      - If labels were changed during triage and affect compression eligibility, state that fact in the mode decision.
 
       If both conditions match:
       - Set compression_mode=docs-only.
@@ -138,13 +147,19 @@ steps:
       - Deep-verify step: skip deep-verify skill; perform self-review checklist instead.
       - Log: "[compression-mode] docs-only compression activated (scope={n}, all docs/yaml labels)".
 
+      If lite conditions match:
+      - Set compression_mode=lite.
+      - Keep a concise implementation plan and local self-review.
+      - Still run verify-build.
+      - Log: "[compression-mode] lite compression activated (scope={n}, low-risk docs/rules/skills)".
+
       Otherwise:
       - Set compression_mode=standard.
       - Execute all pipeline steps normally with full skill spawns.
       - Log: "[compression-mode] standard mode (scope={n}, mixed labels or large scope)".
 
       Output compression_mode as pipeline state for downstream steps.
-    description: "Evaluate docs-only compression eligibility; set compression_mode state"
+    description: "Evaluate compression eligibility; set compression_mode state"
     depends_on: scope-selection
 
   - name: triage
@@ -191,6 +206,10 @@ steps:
   - name: verify-build
     prompt: |
       Project-specific build + test verification.
+
+      Scope-change re-entry guard:
+      - If a scoped issue is added or materially changed after verify-build starts, reset this phase and re-run the full verify-build gate for the new aggregate scope.
+      - Do not proceed to release from a verify-build result collected before the latest scoped implementation change.
 
       For Node/Bun projects (this repo):
       1. bun install — verify lockfile sync (halt on lockfile drift)

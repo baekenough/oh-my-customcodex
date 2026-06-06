@@ -248,6 +248,19 @@ Known limitation: `arch-documenter` has `disallowedTools: [Bash]`. Do not ask it
 
 The `agent-capability-precheck.sh` hook blocks obvious mismatches so the orchestrator re-routes before spawning an agent that cannot execute the requested work.
 
+### Delegated Path Existence Pre-Check
+
+Before putting concrete file paths in a delegated prompt, verify those paths exist or explicitly mark them as new files. A tool-capability match is insufficient when the prompt names a path.
+
+Required check:
+
+1. Use `rg --files`, `find`, `ls`, or the repository index to prove each existing path.
+2. If a path is missing, locate the current equivalent before delegating.
+3. Include only verified paths in the prompt, or say `create new file: <path>` when creation is intended.
+4. For multi-copy assets, verify all source/template mirrors before assigning the edit.
+
+Do not rely on the delegate to repair stale path guesses in shared workflow, rule, guide, or release tasks.
+
 <!-- DETAIL: Autonomous Execution Mode
 
 ## Autonomous Execution Mode
