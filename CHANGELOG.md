@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.13] - 2026-06-06
+
+### Added
+- Add statusline external provider merging through `STATUSLINE_EXTRA_PROVIDERS` and guard statusline/workflow template drift in `verify-template-sync.sh` for #1448 and #1455.
+- Add the missing `templates/workflows/eraser.yaml` mirror so workflow YAML drift is caught consistently.
+
+### Changed
+- Harden auto-dev compression guidance with `lite` mode transparency and verify-build re-entry after mid-run scope changes for #1468.
+- Strengthen R016, R020, and R010 guidance for skill-promotion thresholds, degraded-output re-verification, workflow script sanity checks, and delegated path existence checks for #1440, #1441, and #1442.
+
 ## [0.5.10] - 2026-06-01
 
 ### Added

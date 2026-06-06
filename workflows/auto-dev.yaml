@@ -60,13 +60,24 @@ steps:
   - name: compression-mode-eval
     depends_on: scope-selection
     prompt: |
-      Evaluate docs-only compression mode.
+      Evaluate compression mode.
 
       Use `compression_mode=docs-only` only when:
       - scope size is 3 or fewer issues
       - every scoped issue has at least one of documentation, automated, codex-release, oh-my-codex-release, claude-code-release, or enhancement-yaml-only
 
-      In docs-only mode, replace heavyweight triage/plan/deep-plan/deep-verify spawns with direct summaries plus local self-review. Otherwise use standard mode.
+      Use `compression_mode=lite` only when:
+      - scope size is 5 or fewer issues
+      - every scoped issue is documentation, automated release-monitor, feedback, improvement, enhancement, YAML/config-only, or low-risk rule/skill text
+      - no scoped issue requires TypeScript runtime behavior, package dependency changes, migration, or security-sensitive logic
+
+      Gate transparency:
+      - Do not add or change labels solely to qualify for docs-only or lite mode.
+      - If labels were changed during triage and affect compression eligibility, state that fact in the mode decision.
+
+      In docs-only mode, replace heavyweight triage/plan/deep-plan/deep-verify spawns with direct summaries plus local self-review.
+      In lite mode, keep a concise implementation plan and local self-review, but still run verify-build.
+      Otherwise use standard mode.
       Output the selected compression_mode for downstream steps.
     description: Evaluate docs-only compression eligibility
 
@@ -99,6 +110,10 @@ steps:
     depends_on: implement
     prompt: |
       Project-specific build + test verification.
+
+      Scope-change re-entry guard:
+      - If a scoped issue is added or materially changed after verify-build starts, reset this phase and re-run the full verify-build gate for the new aggregate scope.
+      - Do not proceed to release from a verify-build result collected before the latest scoped implementation change.
 
       For Node/Bun projects:
       1. Run `bun install` and halt on lockfile drift.
