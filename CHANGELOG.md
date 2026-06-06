@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.14] - 2026-06-06
+
+### Added
+- Add the Codex-port `homework` skill with opt-in session-end activation and `omcustomcodex:feedback` confirmation-gate routing for #1467.
+- Add R011 attention-weight memory tiering guidance from the Dual-Brain scout internalization for #1450.
+- Record Claude Code v2.1.159-v2.1.165 compatibility notes for packaged `.claude` templates for #1449, #1451, #1461, #1465, #1469, and #1470.
+
+### Changed
+- Harden scout/research quantitative fact handling, pre-flight execution, and context-budget file-absent reporting for #1452 and #1466.
+- Strengthen R009/R010/R018 and auto-dev release guidance for announce-execution consistency, multi-copy content checks, Agent Teams gate transparency, and milestone verification for #1456, #1460, and #1464.
+
+### Fixed
+- Correct the RTK auto-intercept hook description from R015 to R013 in source and template hooks for #1471.
+
 ## [0.5.13] - 2026-06-06
 
 ### Added

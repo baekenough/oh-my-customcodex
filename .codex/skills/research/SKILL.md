@@ -117,6 +117,8 @@ fi
 
 **Action**: `[Pre-flight] WARN: Context usage at {pct}%. 10-team research typically adds 30-40% context. Consider /compact before proceeding, or results may be truncated.`
 
+> **File-absent branch (#1466)**: `$CONTEXT_FILE`가 존재하지 않으면 입력이 측정 불가하다 — `PASS (context budget unmeasured — file absent)`로 보고하고 WARN을 내지 않는다. 파일을 읽지 않고 WARN 상태를 특성화하지 않는다(R020 Read-Before-Characterize). WARN은 파일이 존재하고 `context_pct > 40`일 때만 emit한다.
+
 ### Display Format
 
 ```
@@ -223,6 +225,10 @@ Sensitive-path compatibility note: when delegated work touches `.claude/outputs/
 | Orchestrator only | Main conversation manages all phases (R010) |
 | Ecomode | Auto-activate for team result aggregation (R013) |
 | Intent display | Show research plan before execution (R015) |
+
+## External Quantitative-Fact Source Tagging
+
+Research teams that collect concrete quantitative claims (benchmark numbers, table values, metrics) via WebFetch must tag them in synthesis/report output as `WebFetch-derived (unverified)` unless independently verified from a primary source such as the PDF/original paper. Multiple teams fetching the same URL can share the same WebFetch cache artifact, so agreement across those fetches is not independent ground-truth. Do not write exact load-bearing numbers into persistent issues/artifacts as fact without primary-source verification or an explicit unverified tag (R020, R023).
 
 ## Retrieval-Reasoning Separation
 
@@ -482,3 +488,5 @@ Agent(
 | dag-orchestration | Phase sequencing follows DAG pattern |
 | result-aggregation | Team results formatted per aggregation skill |
 | multi-model-verification | Phase 2 uses multi-model verification pattern |
+
+When spawning agents via the Agent tool during this skill execution, always pass `mode: "bypassPermissions"` when the session uses bypass permissions. The Agent tool default (`acceptEdits`) can cause permission prompts during unattended execution.

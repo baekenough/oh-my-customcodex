@@ -2,7 +2,7 @@
 name: scout
 description: Analyze external URL to evaluate fit with oh-my-customcodex project and auto-create GitHub issue with verdict
 scope: core
-version: 1.0.0
+version: 1.0.1
 user-invocable: true
 argument-hint: "<url>"
 ---
@@ -33,6 +33,15 @@ Sensitive-path compatibility note: if this skill delegates work that touches `.c
 
 ## Pre-flight Guards
 
+### Pre-flight Execution Checklist (MANDATORY before Phase 1)
+
+**Both guards MUST be executed before entering Phase 1.** Skipping either guard is a workflow violation.
+
+- [ ] Guard 1: URL Validity check passed (abort if invalid)
+- [ ] Guard 2: Duplicate Scout check passed (warn and confirm if duplicate found)
+
+Proceed to Phase 1 only after both checkboxes are satisfied.
+
 ### Guard 1: URL Validity (GATE)
 
 Before any work, validate the URL:
@@ -56,6 +65,8 @@ gh issue list --state all --label "scout:internalize,scout:integrate,scout:skip"
 
 If found: `[Pre-flight] WARN: Similar URL already scouted in issue #N. Proceed anyway? [Y/n]`
 
+> **Why mandatory?** Guard 2 생략으로 인해 동일 도메인 중복 scout 이슈가 생성된 사례 발생. 중복 triage 낭비를 방지하기 위해 Pre-flight 체크리스트로 승격.
+
 ## Display Format
 
 Before execution, show the plan:
@@ -71,6 +82,8 @@ Before execution, show the plan:
 실행하시겠습니까? [Y/n]
 ```
 
+> **암묵 승인 시 필수**: "되면 /scout으로 보고", "실행해줘" 등 묵시적 승인인 경우에도 위 plan 요약을 **반드시 1줄 이상 표시한 뒤 진행**한다. plan 표시 없이 바로 Phase 1으로 진입하지 않는다.
+
 ## Workflow
 
 ### Phase 1: Fetch & Summarize
@@ -81,6 +94,8 @@ Before execution, show the plan:
    - Key technology / methodology
    - Approach and principles
 3. If fetch fails — report error, abort
+
+> **External quantitative-fact source tagging** (#1466): WebFetch가 산출한 구체적 정량 주장(benchmark 수치, table 값, metric)은 이슈 본문에 `WebFetch-derived (unverified)`로 태깅한다 — 검증된 사실로 제시하지 않는다. WebFetch 캐시/요약은 독립 ground-truth가 아니므로, load-bearing 수치는 primary PDF/원문으로 1회 검증하거나 명시적으로 unverified로 표기한다. (R020 Read-Before-Characterize, R023 Verifier Ground-Truth)
 
 ### Phase 2: Load Project Philosophy
 
@@ -96,7 +111,7 @@ Before execution, show the plan:
 
 Spawn 1 sonnet agent with the following analysis prompt.
 
-> **Permission Mode**: When spawning the analysis agent, pass `mode: "bypassPermissions"` in the Agent tool call if the session uses bypassPermissions. Without explicit mode, CC defaults to `acceptEdits`.
+> **MUST**: When spawning the analysis agent, pass `mode: "bypassPermissions"` in the Agent tool call if the session uses bypassPermissions. Without explicit mode, CC defaults to `acceptEdits` and may interrupt unattended execution.
 
 **Inputs**:
 - Fetched content summary (Phase 1)
@@ -146,6 +161,8 @@ Return a structured verdict:
 **Output**: Structured verdict with rationale.
 
 ### Phase 4: Issue Creation
+
+> **NOTE**: Phase 4 is normally handled by the orchestrator with `gh issue create`. If issue creation is delegated to an agent, that Agent tool call also MUST include `mode: "bypassPermissions"` when the session uses bypass permissions.
 
 1. Ensure scout labels exist (defensive, idempotent):
 ```bash

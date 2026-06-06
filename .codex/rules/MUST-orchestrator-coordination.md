@@ -257,7 +257,7 @@ Required check:
 1. Use `rg --files`, `find`, `ls`, or the repository index to prove each existing path.
 2. If a path is missing, locate the current equivalent before delegating.
 3. Include only verified paths in the prompt, or say `create new file: <path>` when creation is intended.
-4. For multi-copy assets, verify all source/template mirrors before assigning the edit.
+4. For multi-copy assets, verify all source/template mirrors before assigning the edit. If the copies are expected to match, check content identity (`cmp`, checksum, or `diff -q`) before delegation; if they intentionally differ, document the canonical source and drift rationale in the prompt.
 
 Do not rely on the delegate to repair stale path guesses in shared workflow, rule, guide, or release tasks.
 
