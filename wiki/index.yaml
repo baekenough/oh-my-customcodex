@@ -3,7 +3,7 @@
 
 meta:
   updated: "2026-05-30"
-  total_pages: 256
+  total_pages: 257
   total_sources: 243
 
 pages:
@@ -338,6 +338,9 @@ pages:
     - file: skills/help.md
       title: "Help"
       summary: "Show help information for commands, agents, and skills."
+    - file: skills/homework.md
+      title: "Homework"
+      summary: "Session retrospective workflow for explicit opt-in improvement capture."
     - file: skills/idea.md
       title: "Idea"
       summary: "Analyze natural-language ideas against the current codebase and produce issue-ready specs."
