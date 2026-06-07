@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.15] - 2026-06-08
+
+### Changed
+- Port auto-dev compression guidance from upstream release monitors for #1475 and #1476: converged artifact substitution is now explicit, lite-mode skill replacement requires justification, and no-structural-surface deep-verify can use deterministic self-checks.
+
 ## [0.5.14] - 2026-06-06
 
 ### Added

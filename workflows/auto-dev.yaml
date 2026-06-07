@@ -74,9 +74,20 @@ steps:
       Gate transparency:
       - Do not add or change labels solely to qualify for docs-only or lite mode.
       - If labels were changed during triage and affect compression eligibility, state that fact in the mode decision.
+      - Whenever a skill stage is replaced by integrated analysis, log a concrete justification:
+        `[compression-mode] lite — skill stage replaced by integrated analysis; scope={n}; low-risk evidence={issue_refs}`.
+      - If the justification cannot be stated concretely, do not compress that stage; run the full skill.
+
+      Cross-tier pre-existing converged artifact substitution:
+      - A triage, plan, deep-plan, or deep-verify step may be satisfied by an existing converged research/plan/verification artifact instead of a fresh skill spawn, even in standard mode.
+      - The artifact must explicitly cover the scoped issue domain, be current for the release scope, and provide output equivalent to the skipped step.
+      - This substitution never applies to implement, verify-build, release, publish, or CI/publish verification.
+      - Log the artifact path or URL and why it is equivalent before substituting.
 
       In docs-only mode, replace heavyweight triage/plan/deep-plan/deep-verify spawns with direct summaries plus local self-review.
       In lite mode, keep a concise implementation plan and local self-review, but still run verify-build.
+      In lite mode deep-verify, if the change set has no structural surface (for example workflow-YAML/docs-only with no agent/skill/guide/rule frontmatter changes), the R017/deep-verify spawn may be skipped and replaced by deterministic self-checks: template parity, multi-copy checksum, YAML parse, and the normal verify-build gate. Log:
+        `[compression-mode] lite deep-verify — R017 spawn skipped (no structural surface); deterministic self-check only`.
       Otherwise use standard mode.
       Output the selected compression_mode for downstream steps.
     description: Evaluate docs-only compression eligibility
@@ -130,7 +141,7 @@ steps:
   - name: verify
     depends_on: verify-build
     skill: deep-verify
-    description: Multi-angle release quality verification; self-review checklist only if compression_mode=docs-only
+    description: Multi-angle release quality verification; self-review checklist if compression_mode=docs-only, or deterministic self-check in lite mode when no structural surface changed
 
   - name: release
     depends_on: verify

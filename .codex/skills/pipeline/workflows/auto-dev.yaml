@@ -151,7 +151,18 @@ steps:
       - Set compression_mode=lite.
       - Keep a concise implementation plan and local self-review.
       - Still run verify-build.
+      - MANDATORY justification log when replacing a skill stage with integrated analysis:
+        "[compression-mode] lite — skill stage replaced by integrated analysis; scope={n}; low-risk evidence={issue_refs}".
+      - If the justification cannot be stated concretely, do not compress that stage; run the full skill.
+      - For lite deep-verify, if the change set has no structural surface (for example workflow-YAML/docs-only with no agent/skill/guide/rule frontmatter changes), the R017/deep-verify spawn may be skipped and replaced by deterministic self-checks: template parity, multi-copy checksum, YAML parse, and the normal verify-build gate. Log:
+        "[compression-mode] lite deep-verify — R017 spawn skipped (no structural surface); deterministic self-check only".
       - Log: "[compression-mode] lite compression activated (scope={n}, low-risk docs/rules/skills)".
+
+      Cross-tier pre-existing converged artifact substitution:
+      - A triage, plan, deep-plan, or deep-verify step may be satisfied by an existing converged research/plan/verification artifact instead of a fresh skill spawn, even in standard mode.
+      - The artifact must explicitly cover the scoped issue domain, be current for the release scope, and provide output equivalent to the skipped step.
+      - This substitution never applies to implement, verify-build, release, publish, or CI/publish verification.
+      - Log the artifact path or URL and why it is equivalent before substituting.
 
       Otherwise:
       - Set compression_mode=standard.
@@ -238,7 +249,7 @@ steps:
 
   - name: deep-verify
     skill: deep-verify
-    description: "Multi-angle release quality verification — self-review checklist only if compression_mode=docs-only"
+    description: "Multi-angle release quality verification — self-review checklist if compression_mode=docs-only, or deterministic self-check in lite mode when no structural surface changed"
     depends_on: verify-build
 
   - name: release
