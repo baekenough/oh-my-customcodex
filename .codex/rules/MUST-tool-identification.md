@@ -50,6 +50,18 @@ Incorrect parallel: tool_call(url1), tool_call(url2), tool_call(cmd) — no iden
 Correct parallel: list ALL [agent][model] → Tool/Fetching/Running lines FIRST, then all tool_calls
 -->
 
+
+### Required-Parameter Completeness Check
+
+R008 prefix(announce)와 실제 도구 호출은 분리된 단계다. prefix를 출력한 뒤 호출 payload에서 도구 스키마상 required 파라미터를 누락하면 호출이 실패하거나 빈 동작이 된다. 호출 직전, prefix 존재뿐 아니라 required 파라미터가 모두 채워졌는지 확인한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| `[agent][model] → Tool: AskUserQuestion` prefix만 출력하고 `questions` 파라미터 없이/빈 배열로 호출 | prefix + `questions` 배열(최소 1개) 모두 채워 호출 |
+| announce 후 payload의 required 필드 누락 (announce-payload separation gap) | announce와 동일 메시지에서 required 필드 완비 호출 |
+
+Cross-reference: R020 (action-completeness precondition — invoke 전에 required 파라미터 확인). Reference issue: #1487 / upstream #1324 (AskUserQuestion `questions` 누락 재발 방지).
+
 ## Models
 
 | Model | Use |
@@ -99,6 +111,31 @@ matches the spawn announcement:
   [1] lang-golang-expert:sonnet → Go code review
   [2] lang-python-expert:sonnet → Python code review
 ```
+
+## Tier-3 Interaction Tool Prefix (MANDATORY)
+
+R008 "every tool call" applies to Tier-3 interaction tools too — not only file/exec tools. Applying the `[agent][model] → Tool:` prefix to Bash/Read/Agent while omitting it on `AskUserQuestion`, `TodoWrite`, `EnterPlanMode`, `ExitPlanMode`, `request_user_input`, or equivalent structured-question tools is a violation.
+
+| Tool | R008 prefix required? |
+|------|----------------------|
+| AskUserQuestion / `request_user_input` / structured question | YES — `[agent][model] → Tool: AskUserQuestion` or equivalent before the call |
+| TodoWrite / `update_plan` | YES |
+| EnterPlanMode / ExitPlanMode | YES |
+| Skill | NO separate R008 prefix — identified via the R007 integrated header instead |
+
+Skill invocation is the one exception: it is identified through the R007 integrated identification block (`┌─ Agent: {agent} → {skill-name}`), not a standalone R008 tool prefix.
+
+Reference issue: #1486 / upstream #1321 (AskUserQuestion prefix omission); complements #1487 required-payload completeness.
+
+## Multi-Turn Self-Check
+
+도구 호출 전 매번 확인한다:
+
+1. 이 호출 위에 `[agent-name][model] → Tool: <tool-name>` 라인이 있는가?
+2. agent-name과 model이 현재 컨텍스트와 일치하는가?
+3. 이 호출에 도구 스키마상 required 파라미터가 모두 채워져 있는가? 예: AskUserQuestion/request_user_input 계열은 `questions` 배열이 비어 있지 않아야 한다. prefix(announce)만 출력하고 실제 호출 payload의 required 필드를 누락하면 안 된다.
+
+체크 실패 시 즉시 prefix/필수 파라미터를 보완한 후 호출.
 
 ## Example
 

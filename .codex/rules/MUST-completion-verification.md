@@ -162,6 +162,10 @@ When a user sends a new instruction while work is in progress, completion status
 3. If the new message adds a requirement, add it to the completion contract before closing.
 4. If no conflict exists, continue but explicitly preserve the new requirement in the next verification pass.
 
+### Tool-Call Payload Completeness
+
+도구 호출의 required 파라미터는 invoke 전에 확인한다(완료 선언 후가 아니라 호출 시점의 전제조건). announce(prefix)만 출력하고 payload의 required 필드를 누락하는 패턴은 R008 "Required-Parameter Completeness Check"가 canonical owner다. Reference: #1487 / upstream #1324.
+
 ## Completion Contract Format — [Contract] + [Done] with criterion/evidence pairs. See template via Read tool.
 
 <!-- DETAIL: Completion Contract Format
