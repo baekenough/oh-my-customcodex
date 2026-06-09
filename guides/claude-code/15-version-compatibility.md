@@ -2,6 +2,39 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
+## v2.1.168
+
+Published: 2026-06-07.
+
+Source: upstream oh-my-customcode #1315, Codex port #1479.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Bug-fix/reliability release after the v2.1.166 compatibility surface | No new repo-owned template, agent, skill, hook, or rule behavior was identified beyond the v2.1.166 notes. | Record as compatibility-confirmed; do not add speculative runtime behavior. |
+
+## v2.1.167
+
+Published: 2026-06-07.
+
+Source: upstream oh-my-customcode #1313, Codex port #1479.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Bug-fix/reliability release after the v2.1.166 compatibility surface | No new repo-owned template, agent, skill, hook, or rule behavior was identified beyond the v2.1.166 notes. | Record as compatibility-confirmed; do not add speculative runtime behavior. |
+
+## v2.1.166
+
+Published: 2026-06-07.
+
+Source: upstream oh-my-customcode #1314/#1316, Codex port #1479.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Deny rules support glob patterns in the tool-name position, including `"*"` to deny all tools; allow-rule globs remain limited to MCP tool-name globs | Relevant to Claude compatibility settings and permission debugging. Codex/OMX sandboxing remains the active runtime boundary for this package. | Port R002 compatibility note; do not treat Claude settings globs as Codex policy. |
+| `fallbackModel` supports up to three ordered fallback models and `--fallback-model` applies to interactive sessions | Useful Claude platform availability failover. It is distinct from per-agent `model:` metadata, the `model-escalation` skill, and Codex-native model routing. | Port R006 note; keep Codex child agents on the OMX model contract and `reasoning_effort`. |
+| `MAX_THINKING_TOKENS=0`, `--thinking disabled`, and per-model thinking toggles can disable default thinking | Claude compatibility sessions can reduce thinking overhead for low-effort work. | Document as Claude-only compatibility; do not infer Codex reasoning behavior. |
+| Cross-session relayed `SendMessage` no longer carries user authority; relayed permission requests are refused and auto mode blocks them | Hardens peer-relay workflows against privilege escalation between Claude sessions. Intra-session Agent Teams are unaffected. | Port R018 note and keep privileged actions scoped to the receiving session. |
+
 ## v2.1.158
 
 Published: 2026-05-30.

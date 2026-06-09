@@ -137,6 +137,12 @@ project/
 +-- guides/                      # Reference docs (51 topics)
 ```
 
+## OMX Command Routing
+
+- `omx explore` is deprecated and must not be recommended for new repository lookup work. Use normal Codex repository inspection tools/subagents for file, symbol, pattern, relationship, and implementation discovery.
+- `USE_OMX_EXPLORE_CMD` is compatibility-only for legacy callers; truthy values do not make `omx explore` preferred.
+- Use `omx sparkshell -- <command>` only when the operator explicitly wants shell-native read-only evidence, bounded verification, or a tmux-pane summary.
+
 ## Orchestration
 
 Orchestration is handled by routing skills in the main conversation:

@@ -39,6 +39,10 @@ If both backend families are available, warn before writing. Dual-write is accep
 
 -->
 
+<!-- DETAIL: Safety Feedback Memory
+When a session exposes a safety-relevant correction (credential handling, destructive git blast radius, privileged-scope chaining, or permission-boundary mistakes), write the durable lesson with confidence metadata instead of leaving it only in chat. Record what was verified, what behavior should change, and the source issue/session when available. Do not store secrets or raw credential material in memory.
+-->
+
 ## Best Practices
 
 - Consult memory before starting work

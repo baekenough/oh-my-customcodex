@@ -613,6 +613,50 @@ export async function checkOmx(): Promise<CheckResult> {
 }
 
 /**
+ * Check configured OMX model lane routing hints.
+ *
+ * This diagnostic is intentionally observational: OMX owns the runtime model
+ * contract, while oh-my-customcodex surfaces obvious lane drift in doctor output.
+ */
+export function checkOmxModelRouting(): CheckResult {
+  const frontierModel = process.env.OMX_DEFAULT_FRONTIER_MODEL?.trim() || null;
+  const sparkModel =
+    process.env.OMX_DEFAULT_SPARK_MODEL?.trim() || process.env.OMX_SPARK_MODEL?.trim() || null;
+  const usingLegacySpark = !process.env.OMX_DEFAULT_SPARK_MODEL?.trim() && Boolean(sparkModel);
+
+  if (!frontierModel && !sparkModel) {
+    return {
+      name: 'OMX model lanes',
+      status: 'pass',
+      message: 'OMX model lane routing uses runtime defaults (no explicit env override)',
+      fixable: false,
+    };
+  }
+
+  const details = [
+    `frontier=${frontierModel ?? 'runtime-default'}`,
+    `spark=${sparkModel ?? 'runtime-default'}`,
+  ];
+
+  if (usingLegacySpark) {
+    details.push('legacy OMX_SPARK_MODEL detected; prefer OMX_DEFAULT_SPARK_MODEL');
+  }
+
+  const sameExplicitLane =
+    frontierModel !== null && sparkModel !== null && frontierModel === sparkModel;
+
+  return {
+    name: 'OMX model lanes',
+    status: sameExplicitLane ? 'warn' : 'pass',
+    message: sameExplicitLane
+      ? `OMX Spark/model lane routing uses the same explicit model for frontier and spark (${frontierModel})`
+      : 'OMX Spark/model lane routing overrides detected',
+    fixable: false,
+    details,
+  };
+}
+
+/**
  * Check if contexts directory exists
  * @param targetDir - Target directory
  * @returns Check result
@@ -1003,6 +1047,7 @@ async function runAllChecks(
     checkRtk(),
     checkCodex(),
     checkOmx(),
+    checkOmxModelRouting(),
   ]);
 
   // Framework version drift check (always runs when the harness rc file exists)

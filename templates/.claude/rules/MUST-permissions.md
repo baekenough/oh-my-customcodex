@@ -42,6 +42,19 @@ Current guidance:
 - For `.claude/**` or `templates/.claude/**`, direct writes are acceptable when the target Claude Code runtime is new enough and the session is running with `bypassPermissions`.
 - Treat the old `/tmp/{skill}-{timestamp}.md` wrapper flow as a historical fallback only for older Claude Code versions, non-bypass sessions, or interactive runs that still surface a protected-path prompt.
 
+
+## Deny Rule Glob Patterns (Claude Code v2.1.166+)
+
+Claude Code compatibility templates may rely on v2.1.166+ deny-rule glob behavior:
+
+| Position | Glob support |
+|----------|-------------|
+| Deny rule tool-name | Supported; `"*"` denies all tools |
+| Allow rule tool-name | MCP tool-name globs only; non-MCP globs are rejected |
+| Unknown tool in deny rule | Startup warning |
+
+Use `"*"` deny rules only for Claude compatibility settings that intentionally enforce deny-by-default, then add explicit allow rules. This is separate from Codex/OMX sandbox policy and the advisory tool-tier table above.
+
 ## Permission Request Format
 
 ```
