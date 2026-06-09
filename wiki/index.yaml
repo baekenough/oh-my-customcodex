@@ -3,8 +3,8 @@
 
 meta:
   updated: "2026-05-30"
-  total_pages: 257
-  total_sources: 243
+  total_pages: 258
+  total_sources: 244
 
 pages:
   navigation:
@@ -690,6 +690,9 @@ pages:
     - file: guides/claude-code.md
       title: "Claude Code Guide"
       summary: "Claude Code compatibility guide with v2.1.147-v2.1.150 Workflow, usage, sandbox, and no-op release impact"
+    - file: guides/openai-codex.md
+      title: "OpenAI Codex Compatibility Guide"
+      summary: "OpenAI Codex release-note impact decisions for Codex/OMX runtime compatibility"
     - file: guides/dbt.md
       title: "dbt Guide"
       summary: "Reference documentation for dbt (data build tool) SQL modeling and analytics engineering"

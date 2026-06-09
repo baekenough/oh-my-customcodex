@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.5.16",
-  "generatedAt": "2026-06-09T08:14:38.512Z",
-  "templateVersion": "0.5.16",
+  "generatorVersion": "0.5.17",
+  "generatedAt": "2026-06-09T08:39:52.996Z",
+  "templateVersion": "0.5.17",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e6118ddadc11e28e10de7321eea1551a9df51355bac4b7fafa63f02e0118a68b",
@@ -739,6 +739,16 @@
       "size": 3949,
       "component": "guides"
     },
+    "guides/openai-codex/01-version-compatibility.md": {
+      "templateHash": "714716ff3f596dbeaab6238ea4d29ab9574fdfb23c4230a82faa53cad9e53f55",
+      "size": 2529,
+      "component": "guides"
+    },
+    "guides/openai-codex/index.yaml": {
+      "templateHash": "6fa60e7459d375bb45fe05ca4bade7307ae60b211f98ced1903b1a6999a8fbd6",
+      "size": 226,
+      "component": "guides"
+    },
     "guides/docker/compose-best-practices.md": {
       "templateHash": "12a4687fbcf67715224604bbac326b76a7418b17dc515d5fbb808f2374192378",
       "size": 4407,
@@ -1170,8 +1180,8 @@
       "component": "guides"
     },
     "guides/index.yaml": {
-      "templateHash": "7654a2b9b6e89c3e8c4c539ae0283561501c35c0ad5b1bd1a68820ac1f3c71ce",
-      "size": 9976,
+      "templateHash": "951fd9ee3d2cd7594e121c0527a37102536ef08294518b4de76a3d682a41851b",
+      "size": 10144,
       "component": "guides"
     },
     "guides/spark/README.md": {

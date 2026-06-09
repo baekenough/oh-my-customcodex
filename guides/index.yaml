@@ -20,6 +20,12 @@ guides:
     source:
       type: internal
 
+  - name: openai-codex
+    description: OpenAI Codex release compatibility decisions for Codex/OMX sessions
+    path: ./openai-codex/
+    source:
+      type: internal
+
   # Frontend
   - name: claude-design
     description: Claude Design artifact handoff workflow — connecting Anthropic's conversational design tool outputs to Claude Code's fe-design-expert implementation pipeline

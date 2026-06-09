@@ -61,4 +61,19 @@ describe('release.yml — publish safeguards', () => {
     expect(publishIndex).toBeGreaterThan(checkNpmVersionIndex);
     expect(content).toContain('run: bash .github/scripts/verify-version-sync.sh');
   });
+
+  it('should fail release publish when CHANGELOG lacks the tagged version section', async () => {
+    const content = await readWorkflow();
+
+    expect(content).toContain(
+      'CHANGELOG.md not found. Release PRs must promote changelog entries before tagging.'
+    );
+    expect(content).toContain('No changelog entry found for version $' + '{VERSION}.');
+    expect(content).toContain(
+      "Add a '## [$" +
+        "{VERSION}] - YYYY-MM-DD' section to CHANGELOG.md before creating the release tag."
+    );
+    expect(content).toContain('generate_release_notes: false');
+    expect(content).not.toContain('Will use auto-generated release notes');
+  });
 });

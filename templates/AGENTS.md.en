@@ -134,7 +134,7 @@ project/
 |   +-- contexts/                # Context files (ecomode)
 +-- .agents/
 |   +-- skills/                  # Installed skills (120 directories)
-+-- guides/                      # Reference docs (51 topics)
++-- guides/                      # Reference docs (52 topics)
 ```
 
 ## OMX Command Routing

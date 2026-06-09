@@ -1264,4 +1264,33 @@ describe('Template Validation', () => {
       expect(pipelineSpec).not.toContain('/pipeline --dir');
     });
   });
+  it('should include OpenAI Codex compatibility guide in source and template mirrors', async () => {
+    const source = await readFile(
+      join(PROJECT_ROOT, 'guides/openai-codex/01-version-compatibility.md'),
+      'utf-8'
+    );
+    const template = await readFile(
+      join(TEMPLATES_DIR, 'guides/openai-codex/01-version-compatibility.md'),
+      'utf-8'
+    );
+
+    expect(template).toBe(source);
+    expect(source).toContain('rust-v0.138.0');
+    expect(source).toContain('/app');
+    expect(source).toContain('model-advertised effort ordering');
+    expect(source).toContain('AGENTS.md');
+    expect(source).toContain('#1481');
+  });
+
+  it('should require auto-dev release changelog promotion before tagging', async () => {
+    const workflow = await readFile(join(PROJECT_ROOT, 'workflows/auto-dev.yaml'), 'utf-8');
+    const templateWorkflow = await readFile(
+      join(TEMPLATES_DIR, 'workflows/auto-dev.yaml'),
+      'utf-8'
+    );
+
+    expect(templateWorkflow).toBe(workflow);
+    expect(workflow).toContain('Promote `CHANGELOG.md` before the release PR/tag');
+    expect(workflow).toContain('instead of relying on GitHub auto-generated release notes');
+  });
 });
