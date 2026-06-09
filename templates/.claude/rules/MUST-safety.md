@@ -37,6 +37,22 @@ Treat these commands as destructive even when they look like routine cleanup:
 
 Advisory hooks may warn on these patterns, but warnings do not replace the approval and preservation requirements.
 
+
+### Pre-Delegation Blast-Radius Enumeration
+
+Before delegating any destructive git command from the table above, enumerate the exact discard targets and present them for explicit approval. Do not delegate destructive operations from a paraphrase such as "discard local changes" without showing what will be lost.
+
+Required evidence before delegation:
+
+| Scope | Command |
+|-------|---------|
+| Modified/staged tracked files | `git status --short` |
+| Uncommitted diff size | `git diff --stat` and `git diff --stat --cached` |
+| Stash contents, when relevant | `git stash show --stat` |
+| Untracked files at risk, for clean | `git clean -nd` |
+
+Prefer non-destructive alternatives such as `git stash` when the user's goal can be met without permanent loss.
+
 ## On Violation
 
 1. Stop all operations

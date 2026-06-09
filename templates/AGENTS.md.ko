@@ -137,6 +137,12 @@ project/
 +-- guides/                      # 레퍼런스 문서 (51 토픽)
 ```
 
+## OMX 명령 라우팅
+
+- `omx explore`는 deprecated 상태이며 새 저장소 조회 작업에 권장하지 않습니다. 파일, 심볼, 패턴, 관계, 구현 탐색에는 일반 Codex 저장소 검사 도구/서브에이전트를 사용합니다.
+- `USE_OMX_EXPLORE_CMD`는 레거시 호출자 호환용일 뿐이며 truthy 값이어도 `omx explore`가 선호 경로가 되지 않습니다.
+- `omx sparkshell -- <command>`는 사용자가 shell-native 읽기 전용 근거, 제한된 검증, tmux-pane 요약을 명시적으로 원할 때만 사용합니다.
+
 ## 오케스트레이션
 
 오케스트레이션은 메인 대화의 라우팅 스킬로 처리됩니다:

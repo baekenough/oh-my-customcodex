@@ -234,3 +234,59 @@ describe('doctor OMX baseline checks', () => {
     expect(result.message).toContain('omx api available');
   });
 });
+
+describe('doctor OMX model lane diagnostics', () => {
+  const originalFrontier = process.env.OMX_DEFAULT_FRONTIER_MODEL;
+  const originalSpark = process.env.OMX_DEFAULT_SPARK_MODEL;
+  const originalLegacySpark = process.env.OMX_SPARK_MODEL;
+
+  afterEach(() => {
+    if (originalFrontier === undefined) delete process.env.OMX_DEFAULT_FRONTIER_MODEL;
+    else process.env.OMX_DEFAULT_FRONTIER_MODEL = originalFrontier;
+    if (originalSpark === undefined) delete process.env.OMX_DEFAULT_SPARK_MODEL;
+    else process.env.OMX_DEFAULT_SPARK_MODEL = originalSpark;
+    if (originalLegacySpark === undefined) delete process.env.OMX_SPARK_MODEL;
+    else process.env.OMX_SPARK_MODEL = originalLegacySpark;
+    mock.restore();
+  });
+
+  it('reports runtime defaults when model lane env overrides are absent', async () => {
+    delete process.env.OMX_DEFAULT_FRONTIER_MODEL;
+    delete process.env.OMX_DEFAULT_SPARK_MODEL;
+    delete process.env.OMX_SPARK_MODEL;
+
+    const { checkOmxModelRouting } = await import('../../../src/cli/doctor.js');
+    const result = checkOmxModelRouting();
+
+    expect(result.status).toBe('pass');
+    expect(result.message).toContain('runtime defaults');
+  });
+
+  it('warns when frontier and spark lanes are explicitly collapsed to one model', async () => {
+    process.env.OMX_DEFAULT_FRONTIER_MODEL = 'gpt-5.5';
+    process.env.OMX_DEFAULT_SPARK_MODEL = 'gpt-5.5';
+    delete process.env.OMX_SPARK_MODEL;
+
+    const { checkOmxModelRouting } = await import('../../../src/cli/doctor.js');
+    const result = checkOmxModelRouting();
+
+    expect(result.status).toBe('warn');
+    expect(result.message).toContain('Spark/model lane routing');
+    expect(result.details).toContain('frontier=gpt-5.5');
+    expect(result.details).toContain('spark=gpt-5.5');
+  });
+
+  it('reports legacy spark env compatibility without failing doctor', async () => {
+    process.env.OMX_DEFAULT_FRONTIER_MODEL = 'gpt-5.5';
+    delete process.env.OMX_DEFAULT_SPARK_MODEL;
+    process.env.OMX_SPARK_MODEL = 'gpt-5.3-codex-spark';
+
+    const { checkOmxModelRouting } = await import('../../../src/cli/doctor.js');
+    const result = checkOmxModelRouting();
+
+    expect(result.status).toBe('pass');
+    expect(result.details).toContain(
+      'legacy OMX_SPARK_MODEL detected; prefer OMX_DEFAULT_SPARK_MODEL'
+    );
+  });
+});

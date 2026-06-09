@@ -606,6 +606,18 @@ describe('Template Validation', () => {
   });
 
   describe('Codex init guidance', () => {
+    it('keeps deprecated omx explore out of preferred generated guidance', async () => {
+      const agentsKo = await readFile(join(TEMPLATES_DIR, 'AGENTS.md.ko'), 'utf-8');
+      const agentsEn = await readFile(join(TEMPLATES_DIR, 'AGENTS.md.en'), 'utf-8');
+
+      for (const content of [agentsKo, agentsEn]) {
+        expect(content).toContain('omx explore');
+        expect(content).toContain('deprecated');
+        expect(content).toContain('USE_OMX_EXPLORE_CMD');
+        expect(content).toContain('omx sparkshell -- <command>');
+      }
+    });
+
     it('does not present Claude Code plugins as required Codex init steps', async () => {
       const initSource = await readFile(
         resolve(import.meta.dir, '../../../src/cli/init.ts'),
@@ -627,7 +639,7 @@ describe('Template Validation', () => {
   });
 
   describe('Claude Code version compatibility guidance', () => {
-    it('mirrors the v2.1.139 through v2.1.156 compatibility guide into templates', async () => {
+    it('mirrors the v2.1.139 through v2.1.168 compatibility guide into templates', async () => {
       const projectRoot = resolve(import.meta.dir, '../../..');
       const guidePath = 'guides/claude-code/15-version-compatibility.md';
       const sourceGuide = await readFile(join(projectRoot, guidePath), 'utf-8');
@@ -651,6 +663,11 @@ describe('Template Validation', () => {
         'v2.1.153',
         'v2.1.154',
         'v2.1.156',
+        'v2.1.157',
+        'v2.1.158',
+        'v2.1.166',
+        'v2.1.167',
+        'v2.1.168',
       ]) {
         expect(templateGuide).toContain(version);
       }
@@ -673,6 +690,10 @@ describe('Template Validation', () => {
       expect(templateGuide).toContain('skipLfs');
       expect(templateGuide).toContain('Opus 4.8');
       expect(templateGuide).toContain('Dynamic Workflows');
+      expect(templateGuide).toContain('fallbackModel');
+      expect(templateGuide).toContain('MAX_THINKING_TOKENS=0');
+      expect(templateGuide).toContain('Cross-session relayed `SendMessage`');
+      expect(templateGuide).toContain('deny all tools');
       expect(templateGuide).toContain('Agent tool malformed parsing');
     });
 
@@ -726,6 +747,12 @@ describe('Template Validation', () => {
     it('keeps formal Korean and completion rules mirrored into templates', async () => {
       const projectRoot = resolve(import.meta.dir, '../../..');
       const mirroredRules = [
+        'MUST-permissions.md',
+        'MUST-agent-design.md',
+        'MUST-agent-teams.md',
+        'MUST-safety.md',
+        'MAY-optimization.md',
+        'SHOULD-memory-integration.md',
         'MUST-language-policy.md',
         'MUST-agent-identification.md',
         'MUST-tool-identification.md',
@@ -769,6 +796,35 @@ describe('Template Validation', () => {
       expect(r020).toContain('Diagnostic Hypothesis Verification');
       expect(r020).toContain('Test-Skip Is Not Completion');
       expect(r020).toContain('Parallel Read + Permanent-Change Dispatch');
+
+      const permissionsRule = await readFile(
+        join(projectRoot, '.codex/rules/MUST-permissions.md'),
+        'utf-8'
+      );
+      const agentDesignRule = await readFile(
+        join(projectRoot, '.codex/rules/MUST-agent-design.md'),
+        'utf-8'
+      );
+      const agentTeamsRule = await readFile(
+        join(projectRoot, '.codex/rules/MUST-agent-teams.md'),
+        'utf-8'
+      );
+      const safetyRule = await readFile(join(projectRoot, '.codex/rules/MUST-safety.md'), 'utf-8');
+      const optimizationRule = await readFile(
+        join(projectRoot, '.codex/rules/MAY-optimization.md'),
+        'utf-8'
+      );
+      const memoryRule = await readFile(
+        join(projectRoot, '.codex/rules/SHOULD-memory-integration.md'),
+        'utf-8'
+      );
+
+      expect(permissionsRule).toContain('Deny Rule Glob Patterns');
+      expect(agentDesignRule).toContain('Fallback Models and Thinking Toggle');
+      expect(agentTeamsRule).toContain('Cross-Session Relay Authority Hardening');
+      expect(safetyRule).toContain('Pre-Delegation Blast-Radius Enumeration');
+      expect(optimizationRule).toContain('Measure-Before-Adopt Gate');
+      expect(memoryRule).toContain('Safety Feedback Memory');
 
       const r017 = await readFile(
         join(projectRoot, '.codex/rules/MUST-sync-verification.md'),

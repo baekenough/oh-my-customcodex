@@ -33,6 +33,10 @@ When enabled and criteria match, Agent Teams is required.
 
 Do not confuse these mechanisms.
 
+<!-- DETAIL: Cross-Session Relay Authority Hardening (Claude Code v2.1.166+)
+Claude Code v2.1.166+ no longer propagates user authority through cross-session relays: permission requests relayed from another session are refused, and auto mode blocks them. A relayed message from session A cannot grant session B permissions the user did not authorize in session B. This hardens `send_message` / peer relay against privilege escalation. Intra-session Agent Teams `SendMessage` is unaffected, but privileged actions still require authority in the receiving session.
+-->
+
 ## Self-Check Before Agent Tool
 
 Quick rule: explicit user preference for plain subagents wins. Otherwise use Teams for 3+ agents, review cycles, shared state, complex debugging, dynamic creation, or multi-issue batches; use Agent Tool for 1-2 simple tasks, sequential scaffolding, or mechanical disjoint-file batches with explicit scopes.

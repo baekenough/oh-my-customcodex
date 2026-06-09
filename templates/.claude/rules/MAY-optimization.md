@@ -4,6 +4,8 @@
 
 ## Efficiency
 
+> **Tool availability note**: On first exploration, do not assume a specific tool surface is available without confirming the current session's tool set. Prefer the available native repository inspection tools; fall back to bounded shell `find`/`grep`/`rg` when higher-level glob/search tools are unavailable.
+
 | Strategy | When | Example |
 |----------|------|---------|
 | Parallel | 3+ independent I/O tasks | Read multiple files simultaneously |
@@ -42,6 +44,11 @@ Inspired by [ouroboros PR #353](https://github.com/Q00/ouroboros/pull/353) capab
 | Repetitive tasks, clear bottleneck, measurable gain | One-time tasks, already fast, complexity > benefit |
 
 Readability > Optimization. No optimization without measurement.
+
+
+### Measure-Before-Adopt Gate
+
+For new workflow heuristics, TIDE-style discovery shortcuts, or routing optimizations, measure before adoption. A small proof-of-concept that fails its confidence gate should be recorded as deferred rather than promoted into default guidance. Future adoption needs a broader multi-session corpus or deterministic benchmark evidence, not a single-session impression.
 
 ## Context Optimization via HTML Comments (v2.1.72+)
 

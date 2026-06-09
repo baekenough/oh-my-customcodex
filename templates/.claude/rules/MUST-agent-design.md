@@ -27,6 +27,10 @@ tools: [Read, Write, ...]  # Allowed tools
 
 Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M token context window.
 
+<!-- DETAIL: Fallback Models and Thinking Toggle (Claude Code v2.1.166+)
+Claude compatibility settings can declare up to three `fallbackModel` entries tried in order when the primary Claude model is overloaded or unavailable. `--fallback-model` also applies to interactive Claude sessions. Treat this as platform availability failover, not Codex-native model routing or outcome-based escalation. Claude Code v2.1.166+ also supports disabling default thinking with `MAX_THINKING_TOKENS=0`, `--thinking disabled`, or the per-model thinking toggle. Codex-native agents continue to use the OMX model contract and `reasoning_effort` routing.
+-->
+
 ### Optional Frontmatter
 
 Key optional fields: `memory`, `effort`, `skills`, `soul`, `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations`, `domain`, `disableSkillShellExecution`. Supported since CC v2.1.63+. See full optional frontmatter via Read tool.
@@ -83,7 +87,7 @@ This Codex port ships `.claude` compatibility templates. When updating those tem
 - v2.1.161: independent parallel tool calls no longer cancel siblings when one Bash call fails; this supports R009 same-message batching for independent work.
 - v2.1.162: `claude agents --json` includes waiting/blocker metadata and explicit `--tools Grep/Glob` behavior is fixed; compatibility prompts may use those fields when diagnosing stuck Claude sessions.
 - v2.1.163: managed `requiredMinimumVersion`/`requiredMaximumVersion`, `/plugin list`, Stop/SubagentStop `hookSpecificOutput.additionalContext`, and skill command literal `\$` escaping are available. Hook/skill template changes should preserve these affordances.
-- v2.1.165: bug-fix/reliability release; no local template change required beyond compatibility confirmation.
+- v2.1.165: bug-fix/reliability release; no local template change required beyond compatibility confirmation. v2.1.166: fallbackModel availability failover and thinking-disable controls are Claude compatibility settings, not Codex/OMX routing. v2.1.167/v2.1.168: bug-fix-only compatibility confirmation.
 -->
 
 ## Hook Event Types
