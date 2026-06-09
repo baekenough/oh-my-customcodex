@@ -74,8 +74,9 @@ Agent identification in responses:
 
 Tool usage identification:
 
-- Every tool call must be prefixed with agent
-- Format: `[agent-name] -> Tool: <tool-name>`
+- Every tool call must be prefixed with agent/model identification
+- Format: `[agent-name][model] → Tool: <tool-name>`
+- Required tool payload fields must be complete before invocation
 - Clear tracking of operations
 
 ### MUST-parallel-execution

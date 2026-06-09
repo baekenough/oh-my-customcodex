@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.18] - 2026-06-09
+
+### Changed
+- Port upstream v0.175.0/v0.176.0 rule hardening for #1486 and #1487: R008 now covers Tier-3 interaction-tool prefixes plus required-parameter payload completeness, R009 requires output-token budgeting for structured LLM batches, and R020 cross-references tool-call payload completeness.
+
 ## [0.5.17] - 2026-06-09
 
 ### Added

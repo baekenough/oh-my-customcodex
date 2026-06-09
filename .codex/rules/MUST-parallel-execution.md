@@ -34,6 +34,19 @@ Before writing/editing multiple files:
 5. Running agent stalled (2x+ duration)? → Spawn independent follow-up tasks immediately
 6. Parallel dispatch announced? → put all announced tool calls in the same message
 
+### LLM Batch Output Token Budget
+
+For N-item structured LLM batches, pre-compute output tokens and chunk variable-size lists (default ≤40 items); raising `max_tokens` alone is not enough. Reference: #1486 / upstream #1321 and #1320.
+
+<!-- DETAIL: LLM Batch Output Token Budget
+The giant-prompt heuristic governs input tokens. The symmetric output-side rule: when a single LLM call processes N items (scoring/classifying/extracting) and must emit structured output (for example JSON) per item, pre-compute the output budget = N × per-item output tokens before the call. Exceeding `max_tokens` truncates the response mid-structure, so the call can appear to succeed while JSON parsing fails.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Single batch call over a variable-size list with a fixed small `max_tokens` | Chunk into bounded batches (default ≤40 items), constrain per-item output length, and set `max_tokens` to fit one chunk |
+| Raising `max_tokens` alone | Insufficient — it only defers the failure as the list grows. Chunking is the invariant fix. |
+-->
+
 ### Common Violations to Avoid
 
 <!-- DETAIL: Common Violations Short Examples
