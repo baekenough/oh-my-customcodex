@@ -103,6 +103,16 @@
         "description": "Block Bash/Write/Edit writes into .claude/ sensitive paths before Claude Code permission prompts fire"
       },
       {
+        "matcher": "tool == \"Bash\" && tool_input.command matches \"(^|[[:space:];&|])(status|path|argv)[[:space:]]*=\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/scripts/shell-reserved-var-advisor.sh"
+          }
+        ],
+        "description": "Warn on zsh/bash reserved variable assignments such as status=, path=, or argv= before shell execution (R020/#1491)"
+      },
+      {
         "matcher": "tool == \"Bash\"",
         "hooks": [
           {
