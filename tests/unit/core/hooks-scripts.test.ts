@@ -28,6 +28,7 @@ const STALE_TODO_SCANNER_SCRIPT = join(SCRIPTS_DIR, 'stale-todo-scanner.sh');
 const FEEDBACK_COLLECTOR_SCRIPT = join(SCRIPTS_DIR, 'feedback-collector.sh');
 const SKILL_EXTRACTOR_ANALYZER_SCRIPT = join(SCRIPTS_DIR, 'skill-extractor-analyzer.sh');
 const PLUGIN_CACHE_CHECK_SCRIPT = join(SCRIPTS_DIR, 'plugin-cache-check.sh');
+const SHELL_RESERVED_VAR_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'shell-reserved-var-advisor.sh');
 
 const STAGE_FILE = '/tmp/.codex-dev-stage';
 
@@ -704,6 +705,41 @@ describe('git-delegation-guard.sh', () => {
     // jq will produce errors on empty input but the script should still exit 0
     const result = await runHookScript(GIT_DELEGATION_GUARD_SCRIPT, '');
     expect(result.exitCode).toBe(0);
+  });
+});
+
+// -------------------------------------------------------------------
+// shell-reserved-var-advisor.sh
+// -------------------------------------------------------------------
+
+describe('shell-reserved-var-advisor.sh', () => {
+  it('warns for zsh reserved status assignment in Bash snippets', async () => {
+    const input = makeBashInput(
+      'run_json=$(gh run view 1 --json status); status=$(echo "$run_json" | jq -r .status)'
+    );
+    const result = await runHookScript(SHELL_RESERVED_VAR_ADVISOR_SCRIPT, input);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.stderr).toContain('reserved shell variable assignment');
+    expect(result.stderr).toContain('run_status');
+  });
+
+  it('does not warn for safe replacement variable names', async () => {
+    const input = makeBashInput(
+      'run_status=$(echo "$run_json" | jq -r .status); cmd_path=/tmp/out; args="--json"'
+    );
+    const result = await runHookScript(SHELL_RESERVED_VAR_ADVISOR_SCRIPT, input);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.stderr).not.toContain('reserved shell variable assignment');
+  });
+
+  it('has valid bash syntax', async () => {
+    const result = await bashSyntaxCheck(SHELL_RESERVED_VAR_ADVISOR_SCRIPT);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe('');
   });
 });
 
@@ -1704,6 +1740,7 @@ describe('Script file validation', () => {
     'cwd-change-detector.sh',
     'file-change-validator.sh',
     'plugin-cache-check.sh',
+    'shell-reserved-var-advisor.sh',
   ] as const;
 
   it('all expected scripts should exist in the templates directory', async () => {

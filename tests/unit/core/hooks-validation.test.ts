@@ -508,6 +508,40 @@ describe('Hooks Validation', () => {
     });
   });
 
+  describe('Shell reserved variable advisor', () => {
+    it('should register the shell reserved-variable advisor in PreToolUse', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+      const entries = data.hooks.PreToolUse ?? [];
+
+      const advisorHook = entries.find((entry) =>
+        entry.hooks.some(
+          (hook) =>
+            hook.type === 'command' && hook.command.includes('shell-reserved-var-advisor.sh')
+        )
+      );
+
+      expect(advisorHook).toBeDefined();
+      expect(advisorHook?.matcher).toContain('tool == "Bash"');
+      expect(advisorHook?.matcher).toContain('status|path|argv');
+      expect(advisorHook?.description).toContain('reserved variable');
+    });
+
+    it('should keep source and template shell reserved-variable advisor registration in sync', async () => {
+      const source = JSON.parse(await readFile(SOURCE_HOOKS_FILE, 'utf-8')) as HooksStructure;
+      const template = JSON.parse(await readFile(HOOKS_FILE, 'utf-8')) as HooksStructure;
+      const findAdvisor = (data: HooksStructure) =>
+        (data.hooks.PreToolUse ?? []).find((entry) =>
+          entry.hooks.some(
+            (hook) =>
+              hook.type === 'command' && hook.command.includes('shell-reserved-var-advisor.sh')
+          )
+        );
+
+      expect(findAdvisor(source)).toEqual(findAdvisor(template));
+    });
+  });
+
   describe('Destructive git guard', () => {
     it('should register the destructive git advisory hook in PreToolUse', async () => {
       const { parsed } = await loadHooksJson();

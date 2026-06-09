@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.20] - 2026-06-09
+
+### Added
+- Add a Bash PreToolUse reserved-variable advisor for #1491 so shell snippets that assign zsh/bash special names like `status`, `path`, or `argv` produce an immediate warning with safer replacements.
+
 ## [0.5.19] - 2026-06-09
 
 ### Changed

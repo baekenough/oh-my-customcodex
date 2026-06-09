@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.5.19",
-  "generatedAt": "2026-06-09T10:51:09.883Z",
-  "templateVersion": "0.5.19",
+  "generatorVersion": "0.5.20",
+  "generatedAt": "2026-06-09T11:06:57.984Z",
+  "templateVersion": "0.5.20",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e6118ddadc11e28e10de7321eea1551a9df51355bac4b7fafa63f02e0118a68b",
@@ -459,6 +459,11 @@
       "size": 2275,
       "component": "hooks"
     },
+    ".codex/hooks/scripts/shell-reserved-var-advisor.sh": {
+      "templateHash": "e40e0fcaa211b1db0ead6a533dc42b95f7aafe41e73862267bf102c0b24c1ee8",
+      "size": 1025,
+      "component": "hooks"
+    },
     ".codex/hooks/scripts/secret-filter.sh": {
       "templateHash": "f9e002664ef091328d059e2dcf703eb30929f47ff59e81fdddd201f24783ab1f",
       "size": 2904,
@@ -595,8 +600,8 @@
       "component": "hooks"
     },
     ".codex/hooks/hooks.json": {
-      "templateHash": "2e9cd9eee40db0f1ee84f5329c44c11b6e959916bb915d9aba59eb40ebb52ac4",
-      "size": 28853,
+      "templateHash": "82380747501959f192c6cef316fa66524461637ead8dcfbc47fcd9ea5299cb4b",
+      "size": 29300,
       "component": "hooks"
     },
     ".codex/contexts/ecomode.md": {
