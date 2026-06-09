@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.17] - 2026-06-09
+
+### Added
+- Document OpenAI Codex rust-v0.138.0 compatibility impact for #1481, including Desktop handoff, local image path hints, reasoning effort ordering, app-server token usage, plugin JSON, and AGENTS.md loading behavior.
+
+### Changed
+- Harden the auto-dev and release workflow changelog gate for #1484 so release PRs promote `CHANGELOG.md` before tags are published.
+
+## [0.5.16] - 2026-06-09
+
+### Added
+- Document Claude Code v2.1.166-v2.1.168 compatibility notes for #1479, including deny-rule globs, fallback model boundaries, thinking toggles, and no-op bugfix confirmations.
+- Add `omcustomcodex doctor` diagnostics for OMX frontier/spark model lane drift and legacy `OMX_SPARK_MODEL` compatibility for #1482.
+
+### Changed
+- Keep generated AGENTS guidance explicit that `omx explore` is deprecated and `omx sparkshell` is opt-in read-only evidence tooling for #1482.
+- Port upstream rule hardening from #1474 across source/template rules, including destructive-git blast-radius enumeration, measure-before-adopt guidance, and safety-feedback memory notes.
+
 ## [0.5.15] - 2026-06-08
 
 ### Changed

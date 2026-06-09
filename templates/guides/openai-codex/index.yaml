@@ -1,0 +1,7 @@
+# OpenAI Codex Guide Index
+
+documents:
+  - name: version-compatibility
+    title: Version compatibility
+    description: OpenAI Codex release-note impact decisions for oh-my-customcodex
+    path: ./01-version-compatibility.md

@@ -261,6 +261,10 @@ steps:
          - Otherwise: semver bump (patch for bugfix, minor for features)
          - For npm projects: update `package.json` and `templates/manifest.json`
            to the chosen version in the same commit before tag creation.
+         - Promote `CHANGELOG.md` before tag creation: move non-empty
+           `## [Unreleased]` entries into `## [VERSION] - YYYY-MM-DD`,
+           re-create an empty `## [Unreleased]`, and add a concise summary
+           instead of relying on GitHub auto-generated release notes.
          - Run `bash .github/scripts/verify-version-sync.sh` after the bump and
            before tag or PR creation.
       2. Release notes via omcustomcodex-release-notes skill
