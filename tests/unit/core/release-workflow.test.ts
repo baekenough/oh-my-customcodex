@@ -62,6 +62,18 @@ describe('release.yml — publish safeguards', () => {
     expect(content).toContain('run: bash .github/scripts/verify-version-sync.sh');
   });
 
+  it('should retry transient npm provenance Rekor publish failures before failing', async () => {
+    const content = await readWorkflow();
+
+    expect(content).toContain('MAX_PUBLISH_ATTEMPTS=3');
+    expect(content).toContain('TLOG_CREATE_ENTRY_ERROR');
+    expect(content).toContain('rekor\\.sigstore\\.dev');
+    expect(content).toContain('Invalid response body.*aborted');
+    expect(content).toContain('npm provenance/Rekor transient publish failure detected');
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal GitHub Actions bash snippet assertion
+    expect(content).toContain('publish_exit=${PIPESTATUS[0]}');
+  });
+
   it('should fail release publish when CHANGELOG lacks the tagged version section', async () => {
     const content = await readWorkflow();
 

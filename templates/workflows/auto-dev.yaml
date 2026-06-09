@@ -126,6 +126,11 @@ steps:
       - If a scoped issue is added or materially changed after verify-build starts, reset this phase and re-run the full verify-build gate for the new aggregate scope.
       - Do not proceed to release from a verify-build result collected before the latest scoped implementation change.
 
+      Shell execution discipline:
+      - Run compound verification commands under `set -euo pipefail` so lint, typecheck, tests, and build halt on the first failed gate.
+      - Do not rely on `set -o pipefail` alone for sequential verification chains.
+      - Avoid reserved shell variable names in polling or status snippets (`status`, `path`, `argv`); use `run_status`, `cmd_path`, or `args` instead.
+
       For Node/Bun projects:
       1. Run `bun install` and halt on lockfile drift.
       2. Run `bun run lint` when available.

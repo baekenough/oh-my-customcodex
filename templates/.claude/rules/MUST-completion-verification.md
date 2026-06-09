@@ -85,8 +85,10 @@ Before invoking or registering generated workflow code, run a Tier-1 sanity pass
 
 1. Search for unresolved placeholders, malformed identifiers, and known dead-line patterns.
 2. Assemble the exact script body before execution; do not concatenate facts or guardrails after the call starts.
-3. Run the language parser or the narrowest no-side-effect syntax check available.
-4. If syntax validation is unavailable, read the generated body back and perform a focused self-review before launch.
+3. For compound shell verification or release gates, start the script with `set -euo pipefail`; `set -o pipefail` alone does not stop later sequential gates after an earlier command fails.
+4. For zsh/bash snippets, avoid reserved or special variable names such as `status`, `path`, and `argv`; use `run_status`, `cmd_path`, `args`, or similarly specific names.
+5. Run the language parser or the narrowest no-side-effect syntax check available.
+6. If syntax validation is unavailable, read the generated body back and perform a focused self-review before launch.
 
 This check is mandatory for workflow scripts that will run automation, mutate GitHub state, or gate a release.
 

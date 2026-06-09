@@ -1119,6 +1119,8 @@ describe('Template Validation', () => {
         expect(content).toContain('labels.md');
         expect(content).toContain('milestone');
         expect(content).toContain('compression_mode');
+        expect(content).toContain('set -euo pipefail');
+        expect(content).toContain('reserved shell variable names');
         expect(content).toContain('bun test');
         expect(content).toContain('baseline');
       }

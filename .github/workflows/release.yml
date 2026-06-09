@@ -309,16 +309,44 @@ jobs:
       # Publish to npm (skip if already exists)
       - name: Publish to npm
         if: steps.npm_check.outputs.exists == 'false'
+        shell: bash
         run: |
-          npm publish --ignore-scripts --provenance --access public 2>&1 || {
-            EXIT_CODE=$?
-            # Check if failure is due to version already existing (race condition with local publish)
-            if npm view oh-my-customcodex@${{ steps.npm_check.outputs.version }} version 2>/dev/null; then
-              echo "::notice::Version ${{ steps.npm_check.outputs.version }} was published externally (race condition). Continuing."
-            else
-              exit $EXIT_CODE
+          set -euo pipefail
+
+          VERSION="${{ steps.npm_check.outputs.version }}"
+          MAX_PUBLISH_ATTEMPTS=3
+
+          for ((attempt=1; attempt<=MAX_PUBLISH_ATTEMPTS; attempt++)); do
+            log_file=$(mktemp)
+            echo "::group::npm publish attempt ${attempt}/${MAX_PUBLISH_ATTEMPTS}"
+            set +e
+            npm publish --ignore-scripts --provenance --access public 2>&1 | tee "${log_file}"
+            publish_exit=${PIPESTATUS[0]}
+            set -e
+            echo "::endgroup::"
+
+            if [ "${publish_exit}" -eq 0 ]; then
+              rm -f "${log_file}"
+              exit 0
             fi
-          }
+
+            # Check if failure is due to version already existing (race condition with local publish)
+            if npm view oh-my-customcodex@${VERSION} version 2>/dev/null; then
+              echo "::notice::Version ${VERSION} was published externally (race condition). Continuing."
+              rm -f "${log_file}"
+              exit 0
+            fi
+
+            if grep -qE 'TLOG_CREATE_ENTRY_ERROR|rekor\.sigstore\.dev|Invalid response body.*aborted' "${log_file}" && [ "${attempt}" -lt "${MAX_PUBLISH_ATTEMPTS}" ]; then
+              echo "::warning::npm provenance/Rekor transient publish failure detected; retrying after 30 seconds."
+              rm -f "${log_file}"
+              sleep 30
+              continue
+            fi
+
+            rm -f "${log_file}"
+            exit "${publish_exit}"
+          done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
