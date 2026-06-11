@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.21] - 2026-06-11
+
+### Added
+- Add R023 verification-ladder guidance and wiki coverage for #1502, including deterministic-first safety-signal rule authoring checks.
+
+### Changed
+- Port the current upstream rule, skill, workflow, and Claude compatibility guardrails for #1501-#1506, including metadata-only infra diagnostics, interrupt/cancellation precedence, Agent Teams transparency scope, memory pollution checks, PATCH-preferred auto-dev release policy, and Claude v2.1.170 Fable/transcript notes.
+- Harden update-command tests so full-suite self-update re-exec mocks cannot pollute non-reexec exit-code assertions.
+
+### Fixed
+- Allow explicit CLI self-update checks to accept live cross-major npm versions for #1507 while continuing to reject implausible fresh cached versions.
+
 ## [0.5.20] - 2026-06-09
 
 ### Added

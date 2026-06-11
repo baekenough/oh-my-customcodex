@@ -3,7 +3,7 @@
 
 meta:
   updated: "2026-05-30"
-  total_pages: 258
+  total_pages: 259
   total_sources: 244
 
 pages:
@@ -655,6 +655,9 @@ pages:
     - file: rules/r022.md
       title: "R022: Wiki Sync Rules"
       summary: "When agents, skills, rules, or guides change, corresponding wiki pages should be updated"
+    - file: rules/r023.md
+      title: "R023: Verification Ladder Rules"
+      summary: "Verification should run as a cost/speed ladder: deterministic checks, cheap LLM review, expensive LLM review, then human review"
 
   guides:
     - file: guides/airflow.md

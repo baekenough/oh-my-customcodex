@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-50 agents. 121 skills. 22 rules. One command.
+50 agents. 121 skills. 23 rules. One command.
 
 ```bash
 npm install -g oh-my-customcodex && cd your-project && omcustomcodex init
@@ -217,15 +217,15 @@ All commands are invoked inside the oh-my-customcodex GPT Codex + OMX session.
 
 ---
 
-### Rules (22)
+### Rules (23)
 
 | Priority | Count | Purpose |
 |----------|-------|---------|
 | **MUST** | 14 | Safety, permissions, agent design, identification, orchestration, verification, completion, enforcement |
-| **SHOULD** | 6 | Interaction, error handling, memory, HUD, ecomode, ontology routing |
+| **SHOULD** | 7 | Interaction, error handling, memory, HUD, ecomode, ontology routing, verification ladder |
 | **MAY** | 1 | Optimization |
 
-Key rules: R010 (orchestrator never writes files), R009 (parallel execution mandatory), R017 (sauron verification before push), R020 (completion verification before declaring done), R021 (advisory-first enforcement model).
+Key rules: R010 (orchestrator never writes files), R009 (parallel execution mandatory), R017 (sauron verification before push), R020 (completion verification before declaring done), R021 (advisory-first enforcement model), R023 (verification ladder).
 
 ---
 
@@ -281,7 +281,7 @@ your-project/
 ├── AGENTS.md                   # Entry point
 ├── .codex/
 │   ├── agents/                 # 50 agent definitions
-│   ├── rules/                  # 22 governance rules (R000-R021)
+│   ├── rules/                  # 23 governance rules (R000-R023)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas
 │   ├── specs/                  # Extracted canonical specs

@@ -239,6 +239,10 @@ steps:
          - If current FAIL count <= baseline: continue with advisory log "X failures (baseline {n}, delta {d})".
       5. Build verification (if package has build script)
 
+      Documentation/template validation:
+      - For local or CI docs validation, run `bun run .github/scripts/validate-docs.ts --programmatic-only` (or the repo's equivalent validate-docs command with `--programmatic-only`) before assuming a validation failure is an authentication failure.
+      - Treat interactive/auth-dependent validate-docs output as inconclusive until the programmatic-only path has been tried.
+
       For Python/Go/Docker/static-site projects: auto-detect and run equivalent checks.
 
       Halt conditions:
@@ -262,8 +266,13 @@ steps:
       Create a GitHub Release.
 
       1. Version:
-         - No existing tags → v0.1.0
-         - Otherwise: semver bump (patch for bugfix, minor for features)
+         - Version decision (semver) — PATCH-PREFERRED policy from v1.0.0 onward:
+           * No existing tags → v0.1.0.
+           * Previous tag exists → default to patch. When in doubt, patch; do not reflexively bump minor for rule/doc/skill/config/wiki/workflow edits.
+           * patch (DEFAULT): bugfixes, hardening, rule/doc/skill/config/wiki/workflow changes, compatibility notes, and release-process guardrails.
+           * minor: only a genuinely new user-facing capability, such as a new skill/agent/command adding visible surface, not a refinement of an existing one.
+           * major: breaking changes to user-facing contracts (CLI flags, public skill/command names, public API) or a deliberate milestone declaration such as v1.0.0.
+           * If a previous tag is ahead of the source version, use the next available skip-version.
          - For npm projects: update `package.json` and `templates/manifest.json`
            to the chosen version in the same commit before tag creation.
          - Promote `CHANGELOG.md` before tag creation: move non-empty

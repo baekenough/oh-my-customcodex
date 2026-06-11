@@ -22,6 +22,20 @@ Agent frontmatter `memory: project|user|local` enables persistent memory:
 | `project` | `.codex/agent-memory/<name>/` | Yes |
 | `local` | `.codex/agent-memory-local/<name>/` | No |
 
+<!--
+DETAIL: Project memory root guard
+
+## Subagent `memory: project` Source-Tree Pollution Guard
+
+A subagent working from a subdirectory must not create nested `.codex/agent-memory/` or `.claude/agent-memory/` directories inside source packages.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Accept nested `src/**/.codex/agent-memory/` or `src/**/.claude/agent-memory/` created by a worker | Verify memory writes land at project-root `.codex/` (or template-root `.claude/` for compatibility) and remove nested memory directories before commit |
+
+Before committing subagent work, check for nested memory pollution with a targeted search such as `find . \\( -path '*/src/*/.codex/agent-memory' -o -path '*/src/*/.claude/agent-memory' \\) -print`.
+-->
+
 ## When to Use Searchable MCP Memory
 
 | Scenario | Native | AgentMemory-compatible / omx-memory |

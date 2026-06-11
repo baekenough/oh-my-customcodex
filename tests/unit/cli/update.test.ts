@@ -9,6 +9,8 @@ describe('update command', () => {
   let tempDir: string;
   let originalCwd: string;
   let originalExit: typeof process.exit;
+  let originalOmcodexSkipSelfUpdate: string | undefined;
+  let originalOmcustomSkipSelfUpdate: string | undefined;
   let exitCode: number | undefined;
 
   // Console spies
@@ -23,6 +25,15 @@ describe('update command', () => {
 
     // Initialize i18n for tests that assert on log content
     await initI18n('en');
+
+    // Default update-command tests exercise external project updates, not the
+    // CLI package re-exec path. Guard self-update by default so leaked
+    // self-update module mocks or a newer npm version cannot call process.exit(0)
+    // and pollute "no error exit" assertions in full-suite runs.
+    originalOmcodexSkipSelfUpdate = process.env.OMCODEX_SKIP_SELF_UPDATE;
+    originalOmcustomSkipSelfUpdate = process.env.OMCUSTOM_SKIP_SELF_UPDATE;
+    process.env.OMCODEX_SKIP_SELF_UPDATE = 'true';
+    process.env.OMCUSTOM_SKIP_SELF_UPDATE = 'true';
 
     // Spy on process.exit
     originalExit = process.exit;
@@ -44,6 +55,18 @@ describe('update command', () => {
 
     // Restore process.exit
     process.exit = originalExit;
+
+    // Restore self-update guard env vars
+    if (originalOmcodexSkipSelfUpdate === undefined) {
+      delete process.env.OMCODEX_SKIP_SELF_UPDATE;
+    } else {
+      process.env.OMCODEX_SKIP_SELF_UPDATE = originalOmcodexSkipSelfUpdate;
+    }
+    if (originalOmcustomSkipSelfUpdate === undefined) {
+      delete process.env.OMCUSTOM_SKIP_SELF_UPDATE;
+    } else {
+      process.env.OMCUSTOM_SKIP_SELF_UPDATE = originalOmcustomSkipSelfUpdate;
+    }
 
     // Restore console methods
     consoleLogSpy.mockRestore();
@@ -1660,6 +1683,7 @@ describe('update command', () => {
     beforeEach(() => {
       originalEnv = { ...process.env };
       // Ensure re-exec guard is NOT set by default
+      delete process.env.OMCODEX_SKIP_SELF_UPDATE;
       delete process.env.OMCUSTOM_SKIP_SELF_UPDATE;
     });
 
@@ -1862,6 +1886,9 @@ describe('update command', () => {
 
   describe('exitWithChildStatus signal handling (#867)', () => {
     it('should exit 128+15 (143) when child terminated by SIGTERM (#867)', async () => {
+      delete process.env.OMCODEX_SKIP_SELF_UPDATE;
+      delete process.env.OMCUSTOM_SKIP_SELF_UPDATE;
+
       const spawnSyncMock = mock(() => ({
         status: null,
         signal: 'SIGTERM' as NodeJS.Signals,
@@ -1919,6 +1946,8 @@ describe('update command', () => {
     });
 
     it('should warn and skip re-exec when process.argv[1] is empty (#867)', async () => {
+      delete process.env.OMCODEX_SKIP_SELF_UPDATE;
+      delete process.env.OMCUSTOM_SKIP_SELF_UPDATE;
       process.argv = ['node'];
 
       const spawnSyncMock = mock(() => ({ status: 0, pid: 999, signal: null }));
@@ -1974,6 +2003,7 @@ describe('update command', () => {
 
     beforeEach(() => {
       originalEnv = { ...process.env };
+      delete process.env.OMCODEX_SKIP_SELF_UPDATE;
       delete process.env.OMCUSTOM_SKIP_SELF_UPDATE;
     });
 

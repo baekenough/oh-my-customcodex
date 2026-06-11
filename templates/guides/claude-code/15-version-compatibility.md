@@ -2,6 +2,17 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
+## v2.1.170
+
+Published: 2026-06-10.
+
+Source: upstream oh-my-customcode #1352/#1354, Codex port #1504.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Claude Fable 5 is available through the `fable` alias (`claude-fable-5`) | Useful only for packaged Claude compatibility sessions needing mythos-class reasoning; Codex-native subagents continue to use the OMX model contract and `reasoning_effort`. | Document in R006 as Claude-compatibility metadata. Do not change Codex routing defaults. |
+| VS Code integrated-terminal sessions save transcripts correctly and show them in `--resume` | Improves Claude-template workflows that depend on transcript replay, including imported `homework`/retrospective flows. | Prefer Claude Code v2.1.170+ when testing Claude compatibility transcript-dependent skills. No Codex runtime change. |
+
 ## v2.1.168
 
 Published: 2026-06-07.

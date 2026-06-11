@@ -210,6 +210,19 @@ When announcing a parallel dispatch in prose text (not the Agent tool call itsel
 The list form mirrors the tool-call `[N]` prefix pattern and scales better to 3+ concurrent agents.
 -->
 
+<!--
+DETAIL: Parallel Feature Integration Gate
+
+## Parallel Feature Integration Gate
+
+When parallel feature agents edit interdependent code, isolated passes are not enough: run aggregate build plus runtime/smoke verification on the merged worktree before declaring done.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Accept each subagent's isolated pass as release-ready | Re-run aggregate verification on the merged worktree |
+| Skip runtime smoke because every file-domain lane passed | Smoke the integrated feature path or device/browser/app surface |
+-->
+
 ## Result Aggregation
 
 ```

@@ -124,6 +124,14 @@ rules:
     priority: SHOULD
     scope: all
 
+  # Verification Ladder - SHOULD
+  - id: R023
+    name: verification-ladder
+    title: Verification Ladder Rules
+    path: ./SHOULD-verification-ladder.md
+    priority: SHOULD
+    scope: all
+
   # Agent Teams - MUST (Conditional)
   - id: R018
     name: agent-teams

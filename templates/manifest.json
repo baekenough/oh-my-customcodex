@@ -1,17 +1,17 @@
 {
-  "version": "0.5.20",
+  "version": "0.5.21",
   "requiresCC": ">=2.1.121",
   "claudeCode": {
     "minimumVersion": "2.1.121",
     "protectedPathBypassVersion": "2.1.126"
   },
-  "lastUpdated": "2026-06-06T00:00:00.000Z",
+  "lastUpdated": "2026-06-11T00:00:00.000Z",
   "components": [
     {
       "name": "rules",
       "path": ".codex/rules",
       "description": "Agent behavior rules and guidelines",
-      "files": 22
+      "files": 23
     },
     {
       "name": "agents",

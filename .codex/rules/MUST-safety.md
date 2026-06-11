@@ -17,6 +17,23 @@
 - Do not rotate, delete, recreate, or replace credentials unless the user explicitly requested that exact credential action.
 - Before irreversible action on shared infrastructure or credentials, reconfirm the target, namespace/account/project, requested scope, rollback path, and user authorization.
 - Stop instead of chaining privileged actions when the next step would affect a different credential, tunnel, namespace, pod, cluster, account, or shared service than the user requested.
+- When a credential/token is needed, ask for the specific value or file before running blind discovery scans (`env | grep`, repo-wide token greps, credential-store dumps). If a classifier blocks a credential action once while a standing user-deny is active, switch to a user-runs command and do not retry by another mechanism.
+
+### Standing User-Deny + Classifier Block
+
+When the user has a standing "do not touch X" constraint and a safety classifier blocks an action on X once, immediately switch to a user-runs command/instruction path. Do not retry the blocked edit, scan, or credential action via another mechanism.
+
+### Infra-Diagnostic File Checks — Metadata, Not Contents
+
+When diagnosing infrastructure or health issues, file checks must stay metadata-only: `ls -la` for existence, size, permissions, and mtime. Do not `cat .env`, inspect credential JSON keys, or read secret contents into the transcript just to confirm configuration exists.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| `cat .env` / inspect OAuth or credential keys during a health diagnosis | `ls -la .env` or request the exact value from the user if genuinely needed |
+
+### Infra/Resource Deletion Blast Radius
+
+Before deleting shared infrastructure resources (tunnels, DNS records, k8s resources, load balancers, security groups), enumerate every endpoint, route, selector, target, or rule served by that resource — not only the hostname or object the user named. Prefer reversible disable/detach/stop actions when they satisfy the task.
 
 ## Required Before Destructive Operations
 

@@ -67,6 +67,17 @@ Parallel batches return results together, so a same-batch permanent dispatch pro
 
 Example: do not diagnose `triage-dispatch.yml` from memory, create an issue, and delegate a fix in the same parallel call before reading the workflow. If the read later shows a different root cause, the issue, PR, and commit trail become correction debt even when the eventual code direction is acceptable.
 
+### Proxy Signal vs Canonical Ground-Truth
+
+When diagnosing pipeline or data state, verify the canonical store — the authoritative DB, registry, API, or system-of-record — before characterizing state from a secondary proxy such as a `.txt` artifact, filesystem mtime, cached file, or one ingestion path.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Characterize pipeline health from a filesystem proxy | Query the canonical store first |
+| Generalize one ingestion path's failure to the whole pipeline | Check the final landing store across all relevant paths before alarming or reprocessing |
+
+A single path's failure does not prove the whole multi-path system is down.
+
 ## Degraded-Output Re-Verification Gate
 
 When tool output shows provider instability, buffering, truncation, duplicated chunks, `529`, timeout recovery, or `(no result)` while a permanent action is being considered, treat the current read as degraded. Do not characterize corruption, missing files, stale state, release failure, or data loss from that single degraded read.
@@ -164,6 +175,17 @@ When a user sends a new instruction while work is in progress, completion status
 3. If the new message adds a requirement, add it to the completion contract before closing.
 4. If no conflict exists, continue but explicitly preserve the new requirement in the next verification pass.
 
+### Interrupt ≠ Prior-Request Cancellation
+
+If the first message after an interrupt is ambiguous, do not assume the prior request was cancelled. The user may be continuing a multi-message request, correcting input, or starting a new request. Keep the prior non-destructive context alive and ask once only when the new message cannot be classified as a clear instruction.
+
+**Safety carve-out:** if the interrupted work is destructive or irreversible (`git reset --hard`, `git clean -fd`, broad `rm`, force push, tunnel/DNS/k8s/infra deletion, production state changes), halt first and require explicit re-authorization before resuming. Interrupts retain their emergency-stop value for risky work.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Treat an ambiguous interrupt as cancellation and switch to unrelated work | Preserve context and clarify intent once |
+| Continue destructive work after an ambiguous interrupt | Stop immediately; resume only after explicit re-authorization |
+
 ### Tool-Call Payload Completeness
 
 도구 호출의 required 파라미터는 invoke 전에 확인한다(완료 선언 후가 아니라 호출 시점의 전제조건). announce(prefix)만 출력하고 payload의 required 필드를 누락하는 패턴은 R008 "Required-Parameter Completeness Check"가 canonical owner다. Reference: #1487 / upstream #1324.
@@ -211,6 +233,30 @@ Related memory records:
 - `feedback_github_workflows_inventory.md` — original incident (v0.87.2~v0.88.0 session)
 - `feedback_subagent_pre_existing_claims.md` — subagent false-positive pattern
 -->
+
+## CI Publish-Step Error vs Published-Artifact Ground Truth
+
+A CI publish/deploy step that logs an error has not necessarily failed. The step may recover through a fallback or the error may be non-fatal. Before declaring a publish/release failed, re-running it, rolling it back, or changing release workflow logic, verify the published artifact directly.
+
+| Publish target | Ground-truth check |
+|----------------|--------------------|
+| npm | `npm view <pkg> version` equals expected |
+| GitHub Release | `gh release view <tag>` exists and is not draft |
+| Docker/registry image | image tag or manifest exists |
+| Run outcome | `gh run view <id> --json jobs` conclusions, not one step log line |
+
+## State-Change Claim → Live System Verification
+
+Before closing or marking-done a task that claims an infrastructure/resource state change, verify the actual live system state rather than only the command attempt.
+
+| Claimed state change | Live ground-truth check |
+|----------------------|-------------------------|
+| Service stopped | `launchctl list`, `systemctl status`, or equivalent shows inactive/absent |
+| k8s resource torn down | `kubectl get <resource>` returns NotFound |
+| Container removed | `docker ps -a` does not list it |
+| Process killed | `pgrep`/`ps` check returns empty |
+
+"Issued the teardown" is not evidence that the resource is down.
 
 ## Integration
 

@@ -24,7 +24,6 @@ tools: [Read, Write, ...]  # Allowed tools
 | `opus` | claude-opus-4-6 | Complex reasoning, architecture |
 | `opusplan` | claude-opus-4-6 + plan mode | Architecture planning with approval gates |
 | `opus47` | claude-opus-4-7 | Latest Opus model, supports xhigh effort |
-
 Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M token context window.
 
 <!-- DETAIL: Fallback Models and Thinking Toggle (Claude Code v2.1.166+)
@@ -88,6 +87,7 @@ This Codex port ships `.claude` compatibility templates. When updating those tem
 - v2.1.162: `claude agents --json` includes waiting/blocker metadata and explicit `--tools Grep/Glob` behavior is fixed; compatibility prompts may use those fields when diagnosing stuck Claude sessions.
 - v2.1.163: managed `requiredMinimumVersion`/`requiredMaximumVersion`, `/plugin list`, Stop/SubagentStop `hookSpecificOutput.additionalContext`, and skill command literal `\$` escaping are available. Hook/skill template changes should preserve these affordances.
 - v2.1.165: bug-fix/reliability release; no local template change required beyond compatibility confirmation. v2.1.166: fallbackModel availability failover and thinking-disable controls are Claude compatibility settings, not Codex/OMX routing. v2.1.167/v2.1.168: bug-fix-only compatibility confirmation.
+- v2.1.170: Claude compatibility sessions gain access to the `fable` alias (`claude-fable-5`) and fix a VS Code integrated-terminal transcript persistence bug. Skills that rely on transcript replay (for example `homework`) should prefer v2.1.170+ in Claude-template sessions. No Codex runtime model-routing change.
 -->
 
 ## Hook Event Types
