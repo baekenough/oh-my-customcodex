@@ -1,7 +1,7 @@
 ---
 title: "OpenAI Codex Compatibility Guide"
 type: guide
-updated: 2026-06-09
+updated: 2026-06-11
 sources:
   - guides/openai-codex/01-version-compatibility.md
 related:
@@ -29,7 +29,7 @@ This guide tracks Codex/OMX runtime compatibility notes separately from Claude C
 
 ## Current Release Note
 
-`rust-v0.138.0` is tracked for #1481. The package records impact for Desktop handoff, local image path hints, reasoning effort ordering, app-server token usage, plugin JSON output, and AGENTS.md loading behavior. No dependency or runtime migration is required.
+`rust-v0.139.0` is tracked for #1498. The package records impact for web search from code mode, richer connector schema preservation, redacted `codex doctor` metadata, plugin marketplace JSON, resume/fork prompt handling, MCP warning scoping, exact image-edit paths, URL linkification, thread-reset config preservation, and sandbox escalation/proxy consistency. No package dependency or runtime migration is required.
 
 ## Relationships
 

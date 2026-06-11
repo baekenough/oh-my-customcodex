@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-50 agents. 121 skills. 23 rules. One command.
+50 agents. 122 skills. 23 rules. One command.
 
 ```bash
 npm install -g oh-my-customcodex && cd your-project && omcustomcodex init
@@ -135,13 +135,13 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (121)
+### Skills (122)
 
 | Category | Count | Includes |
 |----------|-------|----------|
 | Best Practices | 24 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns, alembic, and more |
 | Routing | 4 | secretary, dev-lead, de-lead, qa-lead |
-| Workflow | 13 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, pipeline, and more |
+| Workflow | 14 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, pipeline, fsd, and more |
 | Development | 10 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcodex:takeover, skill-extractor, pre-generation-arch-check, idea |
 | Operations | 10 | update-docs, audit-agents, sauron-watch, monitoring-setup, token-efficiency-audit, fix-refs, release-notes, and more |
 | Memory | 3 | memory-save, memory-recall, memory-management |
@@ -172,6 +172,7 @@ All commands are invoked inside the oh-my-customcodex GPT Codex + OMX session.
 | `/pre-generation-arch-check` | Check architecture risks before implementation |
 | `/adversarial-review` | Attacker-mindset security code review |
 | `/omcustomcodex:goal` | Keep a concrete objective in view through planning, execution, and verification |
+| `/omcustomcodex:fsd` | Full Self Driving release loop: repeat `/pipeline auto-dev` + `/homework` until eligible issues are exhausted |
 | `/pipeline` | Execute YAML-defined pipelines |
 | `/pipeline resume` | Resume a halted pipeline from last failure point |
 
@@ -288,7 +289,7 @@ your-project/
 │   ├── contexts/               # 4 shared context files
 │   └── ontology/               # Knowledge graph for RAG
 ├── .agents/
-│   └── skills/                 # 121 installed skill modules
+│   └── skills/                 # 122 installed skill modules
 └── guides/                     # 52 reference documents
 ```
 

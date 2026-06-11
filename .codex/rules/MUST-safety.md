@@ -25,7 +25,7 @@ When the user has a standing "do not touch X" constraint and a safety classifier
 
 ### Infra-Diagnostic File Checks — Metadata, Not Contents
 
-When diagnosing infrastructure or health issues, file checks must stay metadata-only: `ls -la` for existence, size, permissions, and mtime. Do not `cat .env`, inspect credential JSON keys, or read secret contents into the transcript just to confirm configuration exists.
+When diagnosing infrastructure or health issues (502s, container state, env/config presence), file checks must stay metadata-only: `ls -la` for existence, size, permissions, and mtime. Do not `cat .env`, inspect credential JSON keys, parse secret-bearing files, or read secret contents into the transcript just to confirm configuration exists.
 
 | Anti-pattern | Required |
 |--------------|----------|

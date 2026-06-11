@@ -4,7 +4,7 @@
 #
 # Env vars:
 #   GH_TOKEN   GitHub personal access token (required; gh CLI reads this automatically)
-#   REPO       Target repo for issue creation (default: baekenough/oh-my-customcode)
+#   REPO       Target repo for issue creation (default: baekenough/oh-my-customcodex)
 #   FEED_URL   GeekNews RSS/Atom feed URL
 #   KEYWORDS   Pipe-separated keyword regex (case-insensitive)
 
@@ -13,7 +13,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-REPO="${REPO:-baekenough/oh-my-customcode}"
+REPO="${REPO:-baekenough/oh-my-customcodex}"
 FEED_URL="${FEED_URL:-http://feeds.feedburner.com/geeknews-feed}"
 KEYWORDS="${KEYWORDS:-Claude|Anthropic|MCP|Model Context Protocol|AI agent|에이전트|코드 에이전트|agent orchestr|Claude Code|coding agent|agentic|multi-agent|LLM tool|developer tool|CLI agent|코딩 에이전트}"
 ISSUE_LABEL_AUTOMATED="automated"
@@ -209,7 +209,7 @@ ${matched_keywords}
 
 ## Action Items
 
-- [ ] Review article for applicability to oh-my-customcode
+- [ ] Review article for applicability to oh-my-customcodex
 - [ ] If relevant: create implementation issue or integrate learnings
 - [ ] If not relevant: close with comment
 

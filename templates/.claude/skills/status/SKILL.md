@@ -122,7 +122,7 @@ Guides:
   ✓ docker, aws
 
 Commands:
-  system:    lists, status, help, omcustomcodex:goal
+  system:    lists, status, help, omcustomcodex:goal, omcustomcodex:fsd
   manager:   create-agent, update-docs, update-external, audit-agents, fix-refs
   dev:       dev-review, dev-refactor
 

@@ -14,11 +14,11 @@ related:
 
 # Hada Scout
 
-Automated pipeline that monitors hada.io (via feedburner RSS) for AI agent, harness, benchmark, and eval-related articles, then runs `/scout` analysis on each match.
+Automated pipeline that monitors hada.io (via feedburner RSS) for AI agent, harness, benchmark, and eval-related articles, then runs `/scout` analysis on each match. As of v0.5.22, broad GeekNews/HN/arXiv monitoring is handled by the GitHub Actions `daily-scout` workflow; this page remains for the legacy hada-specific k8s flow.
 
 ## Overview
 
-hada-scout complements [[geeknews-scout]] with harness/eval-focused coverage from hada.io. While geeknews-scout casts a broad net over AI agent news, hada-scout narrows to benchmark and evaluation framework content — the domain most relevant to oh-my-customcodex's harness and agent-eval subsystems. Tracked in GitHub Issue #841.
+hada-scout is the legacy hada.io-specific k8s pipeline. The v0.5.22 `daily-scout` GitHub Actions workflow supersedes broad monitoring with multi-source feeds and OpenAI pre-scoring, while this skill documents the narrower historical benchmark/evaluation flow. Tracked in GitHub Issue #841 and deprecation port #1493.
 
 ## Key Details
 
@@ -63,7 +63,7 @@ Layer 2 runs at most **5 /scout executions per cron invocation**. Each /scout ca
 
 ## Deployment
 
-Same K8s CronJob structure as `infra/geeknews-scout/`, hosted on the `ubuntu-ext` cluster. Infrastructure files in `infra/hada-scout/`: `check-feed.sh`, `scout-runner.sh`, `Dockerfile`, `cronjob.template.yaml`, `deploy.sh`, `.env.example`.
+Legacy K8s CronJob structure mirrors `infra/geeknews-scout/`, hosted on the `ubuntu-ext` cluster. New broad scouting should use `.github/workflows/daily-scout.yml` instead of deploying another k8s CronJob.
 
 ## Sources
 

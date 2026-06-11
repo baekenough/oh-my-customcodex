@@ -28,6 +28,7 @@ System:
   status             Show system status
   help               Show help information
   /omcustomcodex:goal  Run a goal-to-execution workflow
+  /omcustomcodex:fsd   Run the autonomous full-backlog release loop
 
 Manager:
   /create-agent          Create a new agent
@@ -57,6 +58,7 @@ System Commands:
 │ status  │ Show system status and health checks         │
 │ help    │ Show help for commands and agents            │
 │ /omcustomcodex:goal │ Run a goal-to-execution workflow  │
+│ /omcustomcodex:fsd  │ Run full-backlog auto-dev loop    │
 └─────────┴──────────────────────────────────────────────┘
 
 Manager Commands:

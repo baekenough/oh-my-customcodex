@@ -73,6 +73,19 @@ R001-listed catastrophic git operations (`git reset --hard`, `git clean -fd`, `g
 
 Boundary: this rule governs model behavior only. It cannot suppress Codex/Claude runtime auto-mode permission prompts. For genuine prompt suppression on a repeated destructive command, surface the scoped settings/permission-rule workaround for the specific command instead of re-asking the same high-level question.
 
+## User-Provided Input Precedence
+
+When the user explicitly provides new input (credentials, config values, IdP, API keys, endpoints), applying that new input takes precedence over idempotent "reuse existing" logic. After applying, verify the change took effect using only non-secret identifiers such as `client_id`, endpoint URL, key fingerprint/last-4, or a side-effect probe. Never echo secret values into the transcript.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| "An existing X is present → reuse it" when the user just supplied a new X | Apply the user-supplied X; reuse only when the user supplied nothing |
+| User-supplied X equals the existing X | Treat as an idempotent no-op; do not re-provision |
+| User supplies only a subset of fields | Apply supplied fields; reuse existing values only for unsupplied fields |
+| Apply new credential, assume it took effect | Verify via non-secret identifier match or side-effect probe |
+
+Cross-reference: R001 credential guardrails and R020 actual-outcome verification.
+
 ## Structured Question Failure Discipline
 
 When a structured question surface (`AskUserQuestion`, `omx question`, or native structured input) is rejected, unavailable, or malformed, the orchestrator must not silently downgrade to a different workflow.
