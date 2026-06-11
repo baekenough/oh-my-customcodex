@@ -2,6 +2,19 @@
 
 This guide records OpenAI Codex release-note impact decisions for oh-my-customcodex. Use it for Codex/OMX runtime compatibility notes; keep Claude-only release notes in `guides/claude-code/15-version-compatibility.md`.
 
+## rust-v0.139.0 / CLI 0.139.0
+
+Source: upstream OpenAI Codex release `rust-v0.139.0`, Codex-port issue #1498.
+
+| Change | Impact on oh-my-customcodex | Action |
+| --- | --- | --- |
+| Code mode can call standalone web search directly, including nested JavaScript tool calls, and receive plaintext results | Improves Codex runtime research ergonomics but does not change packaged skill/tool routing. | Keep repository research guidance source-backed; no package dependency change. |
+| Tool and connector schemas preserve `oneOf`/`allOf`; large schemas keep more shallow structure during compaction | Reduces MCP/app connector schema loss for richer tools. | No template migration; continue to prefer connector schemas as runtime ground truth. |
+| `codex doctor` includes editor and pager environment details while redacting raw values in JSON output | Aligns with metadata-only diagnostics and secret-redaction rules. | Document compatibility; keep `omcustomcodex doctor` separate. |
+| Plugin marketplace automation exposes marketplace source in `list --json` and returns cached catalogs before background refresh | Useful for future plugin inventory automation. | Prefer JSON when automating plugin inventory; no current CLI behavior change. |
+| `codex resume --last "..."` and `codex fork --last "..."` treat trailing text as the initial prompt | Reduces operator surprise for resume/fork workflows. | No package change. |
+| MCP startup warnings are scoped to the owning thread, image edits use exact referenced paths, URLs with `~` linkify correctly, thread resets preserve cloud requirements, and sandbox execution preserves approved escalation/proxy-only networking more consistently | Runtime stability and evidence quality improvements. | No package change beyond this compatibility record. |
+
 ## rust-v0.138.0 / CLI 0.138.0
 
 Source: upstream OpenAI Codex release `rust-v0.138.0`, Codex-port issue #1481.

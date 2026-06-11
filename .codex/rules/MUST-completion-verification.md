@@ -78,6 +78,18 @@ When diagnosing pipeline or data state, verify the canonical store — the autho
 
 A single path's failure does not prove the whole multi-path system is down.
 
+## Config-Schema-Before-Edit
+
+Before planning edits to configuration that participates in an override, precedence, inheritance, provider, endpoint, credential, or multi-key chain, read the full config schema and precedence chain first. Do not plan partial edits before understanding which fields override which.
+
+This applies when a change touches interdependent fields such as provider + `base_url`, endpoint overrides, multi-key fallback, or layered defaults. A single independent field edit does not require a full-schema read.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Plan a provider/endpoint switch as N commands without reading the override chain | Read schema and precedence → enumerate every touched field, including `base_url` → then plan |
+
+Sibling discipline to Read-Before-Characterize: diagnosis must read evidence before labeling; config edits must read precedence before planning.
+
 ## Degraded-Output Re-Verification Gate
 
 When tool output shows provider instability, buffering, truncation, duplicated chunks, `529`, timeout recovery, or `(no result)` while a permanent action is being considered, treat the current read as degraded. Do not characterize corruption, missing files, stale state, release failure, or data loss from that single degraded read.

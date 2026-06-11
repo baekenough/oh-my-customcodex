@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.22] - 2026-06-11
+
+### Added
+- Add the Codex-port `omcustomcodex:fsd` full-backlog release-loop skill and wiki coverage for #1499.
+- Add `daily-scout` GitHub Actions monitoring with OpenAI pre-scoring and deprecate the pending k8s `geeknews-scout` path for #1493.
+- Add wiki source-hash manifest generation plus advisory content-drift detection for #1494.
+
+### Changed
+- Record Claude Code v2.1.169 and OpenAI Codex rust-v0.139.0 compatibility impacts for #1496 and #1498.
+- Harden safety, intent, and completion-verification guidance for #1495 and #1500 around credential metadata-only diagnostics, user-supplied config precedence, and provider/base_url schema reads.
+
+
 ## [0.5.21] - 2026-06-11
 
 ### Added

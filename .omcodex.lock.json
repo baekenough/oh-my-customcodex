@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.5.21",
-  "generatedAt": "2026-06-11T05:30:51.850Z",
-  "templateVersion": "0.5.21",
+  "generatorVersion": "0.5.22",
+  "generatedAt": "2026-06-11T05:59:48.467Z",
+  "templateVersion": "0.5.22",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e2690ef49068c522f452b7bc26089687adf98b1039841704dfcac64a6fa8a65b",
@@ -20,8 +20,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-intent-transparency.md": {
-      "templateHash": "07576c742520944cf6ffc8c6c038e6e3eb809246eed537510f8d7417f304a5bf",
-      "size": 5621,
+      "templateHash": "0f7bdbc1b7c9048f63b8ef63dd42aba3b255782c0e655ff19939bd6b6062f62e",
+      "size": 6658,
       "component": "rules"
     },
     ".codex/rules/SHOULD-error-handling.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-design.md": {
-      "templateHash": "80a587b27deea5490069b5e5ccf59f0a298d8e65389ebeab4c755927bf9e56ff",
-      "size": 27425,
+      "templateHash": "c2bed08212d33abf0cf83934569a37a602d0df465f4109b67f50182988f6981c",
+      "size": 27996,
       "component": "rules"
     },
     ".codex/rules/MUST-agent-identification.md": {
@@ -65,8 +65,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-teams.md": {
-      "templateHash": "c4989cdea7a4ec56f4cca436fbce3e67c461154527f610735e288069e30404c3",
-      "size": 10006,
+      "templateHash": "96bb08bc3873d635b145c4c0d28e603de763c57565ff213f891bf336238da073",
+      "size": 10561,
       "component": "rules"
     },
     ".codex/rules/MAY-optimization.md": {
@@ -90,8 +90,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-safety.md": {
-      "templateHash": "58cb7eb515656720ea574a1f253258e1ab3a9324056c989b5eb9db6e192d0ebf",
-      "size": 5130,
+      "templateHash": "d1fe7a5f989d3ddadabb7872fb65e816a793ca3cfacc7c57cbe8bb386d4eb902",
+      "size": 5203,
       "component": "rules"
     },
     ".codex/rules/MUST-tool-identification.md": {
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-completion-verification.md": {
-      "templateHash": "30a7e92b5a4aed5bbdc5609c4c877af314a7d3027fa4428da004ca2f6e4be104",
-      "size": 16921,
+      "templateHash": "d013530d8c82b1b8f2daf23e40c8af0f1b42098e333ffaa5d48a48859c4edcd8",
+      "size": 17840,
       "component": "rules"
     },
     ".codex/agents/be-springboot-expert.md": {
@@ -690,8 +690,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "f4cc66ed04e933e7c3dd5589d7f1ec524fc4757603ae66fc4baa0c894aea05e6",
-      "size": 30051,
+      "templateHash": "144ef1e0516bfb94e268fdd31ec37869eb7ad171c4cdaa2144b7501b694fb4e3",
+      "size": 31353,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {
@@ -750,8 +750,8 @@
       "component": "guides"
     },
     "guides/openai-codex/01-version-compatibility.md": {
-      "templateHash": "714716ff3f596dbeaab6238ea4d29ab9574fdfb23c4230a82faa53cad9e53f55",
-      "size": 2529,
+      "templateHash": "d2969da14fa3dbe649f06080debdcd94db1f482ce001b90dfe146d3a34ecdff3",
+      "size": 4329,
       "component": "guides"
     },
     "guides/openai-codex/index.yaml": {

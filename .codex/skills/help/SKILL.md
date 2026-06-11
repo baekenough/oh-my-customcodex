@@ -31,9 +31,11 @@ Quick Start:
   status             Show system status
   help <command>     Get help for a specific command
   /omcustomcodex:goal <objective>  Run a goal-to-execution workflow
+  /omcustomcodex:fsd [max]        Run the autonomous full-backlog release loop
 
 Common Commands:
   /omcustomcodex:goal  Keep an objective through planning, execution, and verification
+  /omcustomcodex:fsd   Repeat /pipeline auto-dev + /homework until eligible issues are exhausted
   /update-docs       Sync documentation with project
   /update-external   Update external agents
   /audit-agents      Check agent dependencies

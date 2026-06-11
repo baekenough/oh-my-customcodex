@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-05-29
+updated: 2026-06-11
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/15-version-compatibility.md
@@ -33,6 +33,15 @@ Covers Claude's advanced API features for building Claude Code-compatible applic
 ## Version Compatibility
 
 oh-my-customcodex keeps Claude compatibility guidance for installed templates while `.codex/**` and OMX remain the primary runtime surface.
+
+### v2.1.169 (2026-06-08)
+
+Source: upstream oh-my-customcode #1329, Codex port #1496.
+
+- `--safe-mode` / `CLAUDE_CODE_SAFE_MODE` disables Claude customizations for compatibility regression isolation.
+- `disableBundledSkills` / `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` hides bundled skills/workflows/slash commands from the model; this is distinct from advisory `skills:` frontmatter metadata.
+- `claude agents --json --all` exposes `id` and `state` for blocked/running/completed session checks.
+- `/cd` and MCP/history reliability fixes are Claude operator improvements; no Codex runtime change is required.
 
 ### v2.1.156 (2026-05-29)
 

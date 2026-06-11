@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-50개 에이전트. 120개 스킬. 22개 규칙. 명령어 하나.
+50개 에이전트. 122개 스킬. 23개 규칙. 명령어 하나.
 
 > **v0.1.7** — token-efficiency-audit 스킬, 토큰 효율 3계층 가이드, cc-token-saver/CLI flags cross-reference 추가
 
@@ -150,13 +150,13 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (120개)
+## 스킬 (122개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
 | 베스트 프랙티스 | 24 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns, alembic 외 |
 | 라우팅 | 4 | secretary, dev-lead, de-lead, qa-lead |
-| 워크플로우 | 13 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, pipeline 외 |
+| 워크플로우 | 14 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, pipeline, fsd 외 |
 | 개발 | 10 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcodex:takeover, skill-extractor, pre-generation-arch-check, idea |
 | 운영 | 10 | update-docs, audit-agents, sauron-watch, monitoring-setup, token-efficiency-audit, fix-refs, release-notes 외 |
 | 메모리 | 3 | memory-save, memory-recall, memory-management |
@@ -189,6 +189,7 @@ Agent(arch-documenter):haiku      ┘
 | `/pre-generation-arch-check` | 구현 전 아키텍처 위험 점검 |
 | `/adversarial-review` | 공격자 관점 보안 코드 리뷰 |
 | `/omcustomcodex:goal` | 구체 목표를 계획, 실행, 검증까지 유지 |
+| `/omcustomcodex:fsd` | `/pipeline auto-dev` + `/homework`를 eligible 이슈가 소진될 때까지 반복 |
 | `/pipeline` | YAML 파이프라인 실행 |
 | `/pipeline resume` | 중단된 파이프라인 재개 |
 
@@ -293,15 +294,15 @@ your-project/
 ├── AGENTS.md                   # 진입점
 ├── .codex/
 │   ├── agents/                 # 50개 에이전트 정의
-│   ├── rules/                  # 22개 거버넌스 규칙 (R000-R022)
+│   ├── rules/                  # 23개 거버넌스 규칙
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마
 │   ├── specs/                  # 추출된 canonical spec
 │   ├── contexts/               # 4개 공유 컨텍스트 파일
 │   └── ontology/               # RAG용 지식 그래프
 ├── .agents/
-│   └── skills/                 # 121개 설치 스킬 모듈
-└── guides/                     # 49개 레퍼런스 문서
+│   └── skills/                 # 122개 설치 스킬 모듈
+└── guides/                     # 52개 레퍼런스 문서
 ```
 
 ### 소스 리포와 호환성 표면

@@ -3,7 +3,7 @@
   "workspaces": [
     "packages/*"
   ],
-  "version": "0.5.21",
+  "version": "0.5.22",
   "requiresCC": ">=2.1.121",
   "claudeCode": {
     "minimumVersion": "2.1.121",
