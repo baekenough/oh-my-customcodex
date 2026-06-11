@@ -3,7 +3,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { ExecuteSelfUpdateOptions, SelfUpdateOptions } from '../../../src/core/self-update.js';
@@ -205,6 +205,58 @@ describe('self-update module', () => {
       expect(result.checked).toBe(true);
       expect(result.updateAvailable).toBe(true);
       expect(result.latestVersion).toBe('1.1.0');
+      expect(result.usedCache).toBe(false);
+    });
+
+    it('should accept live fetched cross-major version and write cache (#1507)', () => {
+      const cachePath = createCachePath('cache-live-cross-major.json');
+      const now = Date.now();
+
+      const result = checkSelfUpdate({
+        currentVersion: '0.5.20',
+        packageName: 'test-package',
+        cachePath,
+        fetchLatestVersion: () => '1.0.0',
+        now,
+      });
+
+      expect(result.checked).toBe(true);
+      expect(result.updateAvailable).toBe(true);
+      expect(result.latestVersion).toBe('1.0.0');
+      expect(result.usedCache).toBe(false);
+
+      const cache = JSON.parse(readFileSync(cachePath, 'utf-8')) as { latestVersion: string };
+      expect(cache.latestVersion).toBe('1.0.0');
+    });
+
+    it('should ignore a fresh cached cross-major version and refetch (#1507)', () => {
+      const cachePath = createCachePath('cache-fresh-cross-major.json');
+      const now = Date.now();
+
+      writeFileSync(
+        cachePath,
+        JSON.stringify({
+          checkedAt: new Date(now - 1000).toISOString(),
+          latestVersion: '1.0.0',
+        }),
+        'utf-8'
+      );
+
+      let fetchCalls = 0;
+      const result = checkSelfUpdate({
+        currentVersion: '0.5.20',
+        cachePath,
+        cacheTtlMs: 24 * 60 * 60 * 1000,
+        fetchLatestVersion: () => {
+          fetchCalls += 1;
+          return '0.5.21';
+        },
+        now,
+      });
+
+      expect(fetchCalls).toBe(1);
+      expect(result.checked).toBe(true);
+      expect(result.latestVersion).toBe('0.5.21');
       expect(result.usedCache).toBe(false);
     });
 
@@ -603,6 +655,30 @@ describe('self-update module', () => {
       const result = executeSelfUpdate(options);
 
       expect(result.updated).toBe(false);
+    });
+
+    it('should reach install path for live cross-major update (#1507)', () => {
+      const installCalls: Array<{ packageName: string; version: string; silent: boolean }> = [];
+
+      const result = executeSelfUpdate({
+        currentVersion: '0.5.20',
+        packageName: 'test-package',
+        cachePath: createCachePath('exec-cache-live-cross-major.json'),
+        fetchLatestVersion: () => '1.0.0',
+        installPackage: (packageName, version, silent) => {
+          installCalls.push({ packageName, version, silent });
+          return true;
+        },
+        silent: true,
+        now: Date.now(),
+        argv: ['node', '/usr/local/bin/omcustomcodex'],
+        env: {},
+      });
+
+      expect(installCalls).toEqual([
+        { packageName: 'test-package', version: '1.0.0', silent: true },
+      ]);
+      expect(result).toEqual({ updated: true, fromVersion: '0.5.20', toVersion: '1.0.0' });
     });
 
     it('should return updated=false when already at latest version', () => {

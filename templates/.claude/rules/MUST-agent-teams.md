@@ -8,6 +8,18 @@
 
 Available when `OMCODEX_AGENT_TEAMS=1` or `TeamCreate` / `SendMessage` exists.
 
+## Gate Transparency Scope
+
+R018 gate-transparency announcements apply only when Agent Teams are enabled or callable; otherwise R009 parallel-execution announcements are sufficient.
+
+<!--
+DETAIL: Gate Transparency Scope
+| Runtime state | Required |
+|---------------|----------|
+| Agent Teams enabled/callable | Announce the R018 gate result for qualifying 3+ agent dispatches |
+| Agent Teams disabled/unavailable | Use R009 `[N]` dispatch format and state the fallback only if useful for clarity |
+-->
+
 ## Decision Matrix
 
 | Scenario | Preferred | Reason |

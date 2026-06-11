@@ -26,6 +26,9 @@
 | Clear | Execute immediately |
 | Ambiguous | `[Confirm] Understood "{request}" as {interpretation}. Proceed?` |
 | Risky | `[Warning] This action has {risk}. Continue? Yes: {action} / No: Cancel` |
+| Interrupt (ambiguous first message) | Do not assume the prior request is cancelled. The first message after an interrupt may be continuation, correction, or a new request. If the in-progress action is risky/destructive, apply the Risky row first and halt before clarification. |
+
+Request handling precedence: **Risky > Interrupt > Ambiguous > Clear**. Clear new instructions should still be executed directly; the interrupt row exists only for ambiguous first messages after an interruption.
 
 ## External Product UI Claims
 

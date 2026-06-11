@@ -133,7 +133,7 @@ Synchronization verification:
 
 **ID**: R018
 
-Agent Teams integration (conditional - when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`):
+Agent Teams integration (conditional - when Codex/OMX Agent Teams are enabled, for example `OMCODEX_AGENT_TEAMS=1`):
 
 - Mandatory use of Agent Teams for qualifying coordinated tasks
 - Decision matrix for Task tool vs Agent Teams
@@ -198,6 +198,17 @@ Ecomode for efficiency:
 - Aggregation patterns
 - Result compression
 - Activation conditions
+
+### SHOULD-verification-ladder
+
+**ID**: R023
+
+Verification ladder guidance:
+
+- Prefer deterministic checks before LLM review
+- Run safety-signal rule carve-out pre-checks while authoring rules
+- Supply verifier lanes with canonical ground truth for cross-cutting facts
+- Escalate to expensive/human review only after cheaper tiers are exhausted
 
 ## MAY Rules
 
@@ -266,6 +277,7 @@ Rules are stored in `.codex/rules/`:
 ├── SHOULD-memory-integration.md
 ├── SHOULD-hud-statusline.md
 ├── SHOULD-ecomode.md
+├── SHOULD-verification-ladder.md
 └── MAY-optimization.md
 ```
 

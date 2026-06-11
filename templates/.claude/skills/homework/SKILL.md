@@ -161,6 +161,17 @@ Invoke the `omcustomcodex:feedback` skill with the drafted issue content. The us
 
 If `--dry-run` is active, skip this phase and output the draft directly to the conversation instead.
 
+## Cross-Project Import Compatibility
+
+When `homework` is imported into another project, Phase 5 depends on `omcustomcodex:feedback` being available and model-invocable in that project.
+
+| Condition | Behavior |
+|-----------|----------|
+| `omcustomcodex:feedback` model-invocable | Use the normal Phase 4A preview + confirmation gate |
+| feedback skill missing or model invocation disabled | Fall back to manual submission: present the drafted findings to the user, write the dry-run artifact when possible, and ask the user to file/run the feedback workflow themselves |
+
+Do not silently drop a retrospective because the imported feedback skill cannot be invoked.
+
 ### Phase 6: Output Summary
 
 ```

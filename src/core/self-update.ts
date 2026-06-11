@@ -165,6 +165,25 @@ function isCacheFresh(cache: SelfUpdateCache, now: number, cacheTtlMs: number): 
   return now - checkedAt < cacheTtlMs;
 }
 
+function readFreshPlausibleCachedVersion(
+  cachePath: string,
+  currentVersion: string,
+  now: number,
+  cacheTtlMs: number
+): string | null {
+  const cache = readCache(cachePath);
+  if (!cache || !isCacheFresh(cache, now, cacheTtlMs)) {
+    return null;
+  }
+
+  const cachedVersion = normalizeVersion(cache.latestVersion);
+  if (!cachedVersion || !isVersionPlausible(currentVersion, cachedVersion)) {
+    return null;
+  }
+
+  return cachedVersion;
+}
+
 /**
  * Fetch latest package version from npm registry via npm CLI.
  */
@@ -261,6 +280,7 @@ export interface ExecuteSelfUpdateOptions {
   /** Bypass self-update-cache.json TTL and always query npm view fresh. */
   forceRefresh?: boolean;
   fetchLatestVersion?: (packageName: string) => string | null;
+  installPackage?: (packageName: string, version: string, silent: boolean) => boolean;
   now?: number;
   argv?: string[];
   env?: NodeJS.ProcessEnv;
@@ -348,7 +368,8 @@ export function executeSelfUpdate(options: ExecuteSelfUpdateOptions = {}): Execu
     console.log(i18n.t('cli.selfUpdate.updatingGlobal', { version: latestVersion }));
   }
 
-  const installed = installGlobalPackage(packageName, latestVersion, options.silent ?? false);
+  const installPackage = options.installPackage || installGlobalPackage;
+  const installed = installPackage(packageName, latestVersion, options.silent ?? false);
 
   if (installed) {
     if (!options.silent) {
@@ -385,23 +406,14 @@ export function checkSelfUpdate(options: SelfUpdateOptions): SelfUpdateCheckResu
     };
   }
 
-  let latestVersion: string | null = null;
-  let usedCache = false;
-  const cache = readCache(cachePath);
-
-  if (cache && isCacheFresh(cache, now, cacheTtlMs)) {
-    const cachedVersion = normalizeVersion(cache.latestVersion);
-    if (isVersionPlausible(currentVersion, cachedVersion)) {
-      latestVersion = cachedVersion;
-      usedCache = true;
-    }
-    // Implausible cached version silently ignored — will re-fetch below
-  }
+  let latestVersion = readFreshPlausibleCachedVersion(cachePath, currentVersion, now, cacheTtlMs);
+  const usedCache = Boolean(latestVersion);
 
   if (!latestVersion) {
     const fetched = fetchLatestVersion(packageName);
-    if (fetched && isVersionPlausible(currentVersion, fetched)) {
-      latestVersion = fetched;
+    const fetchedVersion = fetched ? normalizeVersion(fetched) : '';
+    if (fetchedVersion) {
+      latestVersion = fetchedVersion;
       writeCache(cachePath, latestVersion, now);
     }
   }
