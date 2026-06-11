@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-11
+
+### Changed
+- Promote oh-my-customcodex to the 1.0.0 stable release line after the v0.5.22 Codex/OMX harness sync.
+- Preserve the v0.5.22 feature set and release workflow while publishing the first stable semver major.
+
 ## [0.5.22] - 2026-06-11
 
 ### Added
