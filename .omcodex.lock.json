@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.0",
-  "generatedAt": "2026-06-11T09:54:26.954Z",
-  "templateVersion": "1.0.0",
+  "generatorVersion": "1.0.1",
+  "generatedAt": "2026-06-13T03:34:14.333Z",
+  "templateVersion": "1.0.1",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e2690ef49068c522f452b7bc26089687adf98b1039841704dfcac64a6fa8a65b",
@@ -10,13 +10,13 @@
       "component": "rules"
     },
     ".codex/rules/SHOULD-hud-statusline.md": {
-      "templateHash": "0583726d8603ba37ceaaa25a70b77ce490ad37295ec507131c6681661f3e1ac4",
-      "size": 2819,
+      "templateHash": "81fcd1ca66ff76edb618f622c3f8672418f71eb342ab7c291081d066326e4a2b",
+      "size": 3104,
       "component": "rules"
     },
     ".codex/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "d75e8027b087e8488effd47c539190937fa1ce70ec5930616f0a60bfe4eb4137",
-      "size": 26819,
+      "templateHash": "46960abc0b675d5483fbfe02c787ab5c667727625ef2e40860cb2f46f1287c73",
+      "size": 28658,
       "component": "rules"
     },
     ".codex/rules/MUST-intent-transparency.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-design.md": {
-      "templateHash": "c2bed08212d33abf0cf83934569a37a602d0df465f4109b67f50182988f6981c",
-      "size": 27996,
+      "templateHash": "ecb2ddf45bd536ec943d5a3ac03ec0841941b970a26d501482a29c8d28c8c66b",
+      "size": 28235,
       "component": "rules"
     },
     ".codex/rules/MUST-agent-identification.md": {
