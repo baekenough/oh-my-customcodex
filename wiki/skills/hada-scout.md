@@ -6,7 +6,6 @@ sources:
   - .codex/skills/hada-scout/SKILL.md
 related:
   - [[scout]]
-  - [[geeknews-scout]]
   - [[infra-docker-expert]]
   - [[R009]]
   - [[R010]]
@@ -14,11 +13,11 @@ related:
 
 # Hada Scout
 
-Automated pipeline that monitors hada.io (via feedburner RSS) for AI agent, harness, benchmark, and eval-related articles, then runs `/scout` analysis on each match. As of v0.5.22, broad GeekNews/HN/arXiv monitoring is handled by the GitHub Actions `daily-scout` workflow; this page remains for the legacy hada-specific k8s flow.
+Automated pipeline that monitors hada.io (via feedburner RSS) for AI agent, harness, benchmark, and eval-related articles, then runs `/scout` analysis on each match. The removed broad `daily-scout`/`geeknews-scout` paths are historical; this page documents the remaining hada-specific k8s flow.
 
 ## Overview
 
-hada-scout is the legacy hada.io-specific k8s pipeline. The v0.5.22 `daily-scout` GitHub Actions workflow supersedes broad monitoring with multi-source feeds and OpenAI pre-scoring, while this skill documents the narrower historical benchmark/evaluation flow. Tracked in GitHub Issue #841 and deprecation port #1493.
+hada-scout provides hada.io-specific harness/eval coverage, narrowing to benchmark and evaluation framework content — the domain most relevant to oh-my-customcodex's harness and agent-eval subsystems. The removed broad scout predecessors remain historical only. Tracked in GitHub Issue #841 and deprecation port #1513.
 
 ## Key Details
 
@@ -39,13 +38,11 @@ Finds open issues with `pending-scout` label, extracts source URL from issue bod
 
 ## Keyword Strategy
 
-hada-scout uses harness/benchmark/eval focused keywords, distinct from geeknews-scout's broader AI agent coverage:
+hada-scout uses harness/benchmark/eval focused keywords to capture content relevant to the project's evaluation and harness subsystems:
 
 ```
 harness|benchmark|eval|evaluation framework|agent framework|코드 리뷰 자동화|하네스|벤치마크|평가
 ```
-
-geeknews-scout handles: `Claude|Anthropic|MCP|AI agent|에이전트|agentic|multi-agent|...`
 
 ## Label Scheme
 
@@ -63,7 +60,7 @@ Layer 2 runs at most **5 /scout executions per cron invocation**. Each /scout ca
 
 ## Deployment
 
-Legacy K8s CronJob structure mirrors `infra/geeknews-scout/`, hosted on the `ubuntu-ext` cluster. New broad scouting should use `.github/workflows/daily-scout.yml` instead of deploying another k8s CronJob.
+K8s CronJob hosted on the `ubuntu-ext` cluster. Infrastructure files live in `infra/hada-scout/`; broad daily-scout/geeknews-scout automation has been removed.
 
 ## Sources
 

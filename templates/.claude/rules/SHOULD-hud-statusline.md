@@ -17,6 +17,8 @@ Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` �
 
 > **Claude Code v2.1.141+ compatibility**: Hook JSON output can include `terminalSequence` to emit desktop notifications, window title changes, or terminal bells without a controlling terminal. Treat this as an optional companion to stderr HUD events and the command statusline; do not add terminal-control hook behavior until there is a concrete Codex-compatible UX need.
 
+> **v2.1.172+ Claude compatibility**: The `claude_code.lines_of_code.count` OTEL metric includes a `model` attribute, so lines-of-code telemetry can be sliced by model when monitoring is enabled. This extends the per-dimension slicing configured through the `monitoring-setup` skill.
+
 <!-- DETAIL: HUD Events full spec
 ### When to Display: Multi-step tasks, parallel execution, long-running operations. Skip for single brief operations.
 ### Parallel Display:

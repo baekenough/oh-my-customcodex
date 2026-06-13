@@ -8,6 +8,8 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 
 **Agent Teams Exception**: Agent Teams members are peers, not hierarchical subagents. Teams members CAN spawn sub-agents via the Agent tool to execute complex workflows (e.g., research teams, verification teams). This enables Teams-compatible skills like `/research` and `/deep-plan` to run inside Team members. The Teams member acts as a local orchestrator for its own sub-tasks.
 
+> **v2.1.172+ Claude compatibility**: The Claude Code platform allows sub-agents to spawn their own sub-agents up to 5 levels deep. oh-my-customcodex RETAINS the sole-orchestrator design as a deliberate project architecture choice for predictable R009 parallelism and R018 coordination, not because of a platform limitation. The sanctioned nesting path remains the Agent Teams Exception.
+
 **The orchestrator MUST NEVER directly write, edit, or create files. ALL file modifications MUST be delegated to appropriate subagents.**
 
 ## Codex-Native Meta-File Boundary
@@ -136,6 +138,22 @@ Required STOP response:
 
 Thirteen repeated security trips or repeated privileged retries are an anti-pattern: after the second trip, continuing without redesign is a coordination failure.
 
+### Pre-Delegation Privileged-Scope Boundary (proactive)
+
+> Origin: upstream #1368 #5 — an infra subagent was delegated a prod-touching task with no explicit approval boundary in the delegation prompt; it freely ran prod DB queries, file deletes, and SMS reads, tripping the safety classifier 3+ times.
+
+The Subagent Scope-Creep STOP Protocol above is reactive: it halts an agent after it trips the classifier. This rule is its proactive complement. When delegating ANY task that touches prod or privileged resources (prod DB, infra deletion, credential stores, external messaging/SMS, shared-namespace secrets), the orchestrator MUST state explicitly in the delegation prompt:
+
+- the user-approved actions;
+- explicit forbidden actions;
+- the authorization scope tied back to the user request.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Delegate a prod/privileged-touching task with no scope or forbidden-line in the prompt | State approved actions, forbidden actions (for example: do NOT delete files, do NOT query prod DB, do NOT read SMS/messages), and authorization scope |
+
+Cross-reference: R001 credential/privileged-scope guardrails and the Subagent Scope-Creep STOP Protocol.
+
 ## Common Violations
 
 Key violations to avoid (file writes, git commands, bundled operations — all must be delegated):
@@ -233,6 +251,8 @@ Current guidance:
 Claude Code v2.1.141+ preserves the current permission mode when a session is detached with `/bg` or `←←` backgrounding. Earlier versions could revert to the default mode and surprise unattended release flows with permission prompts.
 
 For this Codex port, native Codex/OMX subagents still follow the active Codex runtime tool policy. Claude compatibility prompts should keep delegated write authority explicit when a workflow relies on unattended edits, but v2.1.141+ no longer needs an extra `/bg` permission-mode workaround.
+
+Claude Code v2.1.172+ fixes background agents potentially reading another project directory's settings (`.mcp.json` approvals, trust) when dispatched onto a pre-warmed worker, strengthening background-agent isolation for unattended `/bg` flows.
 
 ## Agent Capability Pre-Check
 

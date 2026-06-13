@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-06-13
+
+### Changed
+- Port upstream v1.0.2–v1.0.5 compatibility changes for #1511-#1514: remove daily-scout automation, promote wiki content drift to a blocking check on genuine drift, remove defunct geeknews-scout infra, and harden R010 privileged delegation boundaries.
+
 ## [1.0.0] - 2026-06-11
 
 ### Changed
