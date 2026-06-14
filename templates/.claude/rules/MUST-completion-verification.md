@@ -270,6 +270,19 @@ Before closing or marking-done a task that claims an infrastructure/resource sta
 
 "Issued the teardown" is not evidence that the resource is down.
 
+## Binary/Rendered-Artifact Completeness (text grep ≠ complete)
+
+> Origin: upstream #1384 (second-brain public-repo redaction retrospective) — text and git-history checks passed, but rendered diagram PNGs and one residual host token still contained redaction targets. Additional force-pushes were required because binary/rendered artifacts were checked only after an early completion claim.
+
+For tasks that claim complete removal or cleanup — redaction, identifier removal, secret scrubbing, content cleanup, migration cleanup — a passing text grep is insufficient. Rendered images, PDFs, generated diagrams, binary blobs, embedded metadata, or EXIF can preserve the same content outside the searchable text layer. Before saying “fully removed,” “clean,” or “complete,” verify both text and binary/rendered artifact surfaces.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Declare cleanup complete after text grep only | Also scan relevant rendered images, PDFs, binary artifacts, and embedded metadata before completion |
+| Discover redaction variants sequentially and force-push repeatedly | Inventory case-insensitive tokens, substring/hostname variants, binary/rendered artifacts, and reference/orphan status before a single rewrite/push pass |
+
+This extends the UI/browser-render verification principle to security and cleanup work: if rendered or binary artifacts can carry the content, text-layer verification alone is not completion evidence. Cross-reference R001 for secret/identifier safety and R005 for avoiding repeated irreversible rewrites.
+
 ## Integration
 
 | Rule | Interaction |

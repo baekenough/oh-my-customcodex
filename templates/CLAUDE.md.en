@@ -241,6 +241,7 @@ Install in Claude Code via `/plugin install <name>`:
 |--------|---------|
 | omx-memory | Session memory persistence |
 | semble | Semantic code search MCP for high-recall repository exploration |
+| aws-mcp | AWS authenticated access — `call_aws` (15,000+ API operations), `search_documentation`/`read_documentation` (live AWS docs), `run_script` (sandbox). Delegate privileged execution to `infra-aws-expert` with R010/R001 boundaries |
 
 ### Claude Code Setup Commands
 
@@ -267,6 +268,10 @@ omx memory doctor
 
 # Optional semantic code search
 uv tool install semble
+
+# AWS MCP server (IAM credentials required, manual install — R001 auto-install prohibited)
+claude mcp add-json aws-mcp --scope user '{"command":"uvx","args":["mcp-proxy-for-aws@latest","https://aws-mcp.us-east-1.api.aws/mcp","--metadata","AWS_REGION=us-west-2"]}'
+# Prerequisite: configured AWS IAM credentials. Endpoint regions: us-east-1, eu-central-1 (API calls can target all AWS regions)
 ```
 
 <!-- omcodex:git-workflow -->

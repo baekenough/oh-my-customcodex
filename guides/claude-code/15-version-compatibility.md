@@ -2,6 +2,38 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
+## v2.1.177
+
+| Change | Impact | oh-my-customcodex action |
+|--------|--------|---------------------------|
+| Bug-fix/reliability release following v2.1.176 | No new Codex/OMX runtime contract. | Record compatibility confirmation; no package behavior change. |
+
+## v2.1.176
+
+| Change | Impact | oh-my-customcodex action |
+|--------|--------|---------------------------|
+| `footerLinksRegexes` renders regex-matched footer link badges; session titles are generated in the conversation language when configured | Useful for packaged Claude compatibility statusline UX. | Document in R012; keep `.codex/statusline.sh` as the Codex/OMX primary status surface. |
+
+## v2.1.175
+
+| Change | Impact | oh-my-customcodex action |
+|--------|--------|---------------------------|
+| Managed `enforceAvailableModels` constrains the resolved Default model as well as subagent model overrides, dispatch picker, and advisor model | Enterprise Claude templates can prevent user/project settings from widening model allowlists. | Document in R006 as Claude enterprise config behavior; do not change Codex native model routing. |
+
+## v2.1.174
+
+| Change | Impact | oh-my-customcodex action |
+|--------|--------|---------------------------|
+| `/usage` shows attribution for cache misses, long context, subagents, and per-skill/agent/plugin/MCP usage | Better Claude-client cost diagnostics without standing up OTEL. | Document in R012; keep `monitoring-setup` as the Codex/OMX telemetry path. |
+| Workflow `agent()` subagents include per-agent attribution headers | Aligns Workflow fan-out with R008 traceability expectations. | Document in R008; Codex-native subagents still require explicit OMX `agent_type`. |
+| Background sessions stop inheriting foreign `ANTHROPIC_*` provider env and pre-warmed workers recover auth correctly | Reduces Claude `/bg` isolation/auth false blockers. | Document in R010; keep explicit Codex/OMX routing and permission boundaries. |
+
+## v2.1.173
+
+| Change | Impact | oh-my-customcodex action |
+|--------|--------|---------------------------|
+| Fable 5 model IDs with redundant `[1m]` suffix are auto-normalized because Fable includes 1M context by default | Avoids confusing Claude compatibility model strings. | Document in R006; omit `[1m]` from Fable metadata while leaving Opus/Sonnet extended context suffix guidance intact. |
+
 ## v2.1.170
 
 Published: 2026-06-10.

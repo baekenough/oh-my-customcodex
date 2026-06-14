@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-06-14
+
+### Added
+- Add optional AWS MCP server integration guidance and an `infra-aws-expert` surface for #1516, including high-privilege `call_aws` boundaries and manual install instructions.
+
+### Changed
+- Port Claude Code v2.1.173-v2.1.177 compatibility notes for #1517 across model alias, statusline, tool-identification, and orchestration guidance.
+- Harden R020 completion verification for #1518 so binary/rendered artifacts require direct binary inspection or rendering, not text grep alone.
+
 ## [1.0.1] - 2026-06-13
 
 ### Changed
