@@ -234,6 +234,7 @@ Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 | omx-memory | Session memory persistence (Chroma-based) |
 | semble | Semantic code search MCP for high-recall repository exploration |
 | context7 | Library documentation lookup MCP server when a project needs it |
+| aws-mcp | Optional AWS live documentation and IAM-scoped AWS API execution; delegate privileged calls to `infra-aws-expert` with R010/R001 boundaries |
 
 ### Setup Commands
 
@@ -244,6 +245,11 @@ omx-memory setup
 
 # Optional semantic code search
 uv tool install semble
+
+# Optional AWS MCP (manual, IAM credentials required; do not auto-install)
+# Configure the AWS MCP endpoint in the active Codex/OMX MCP config.
+# For Claude compatibility sessions only:
+claude mcp add-json aws-mcp --scope user '{"command":"uvx","args":["mcp-proxy-for-aws@latest","https://aws-mcp.us-east-1.api.aws/mcp","--metadata","AWS_REGION=us-west-2"]}'
 ```
 
 ### Claude Code Compatibility Note

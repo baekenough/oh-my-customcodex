@@ -17,6 +17,10 @@ Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` �
 
 > **Claude Code v2.1.141+ compatibility**: Hook JSON output can include `terminalSequence` to emit desktop notifications, window title changes, or terminal bells without a controlling terminal. Treat this as an optional companion to stderr HUD events and the command statusline; do not add terminal-control hook behavior until there is a concrete Codex-compatible UX need.
 
+> **v2.1.174+ Claude compatibility**: The `/usage` account dialog shows usage attribution for cache misses, long context, subagents, and per-skill/agent/plugin/MCP breakdowns over the last 24 hours or 7 days in VS Code. This complements `monitoring-setup`; it is an interactive Claude-client view, not a Codex/OMX telemetry source.
+
+> **v2.1.176+ Claude compatibility**: `footerLinksRegexes` can render regex-matched link badges in the footer row, and session titles are generated in the conversation language when configured. Treat these as Claude-template statusline composition options; keep `.codex/statusline.sh` as the Codex/OMX primary status surface.
+
 > **v2.1.172+ Claude compatibility**: The `claude_code.lines_of_code.count` OTEL metric includes a `model` attribute, so lines-of-code telemetry can be sliced by model when monitoring is enabled. This extends the per-dimension slicing configured through the `monitoring-setup` skill.
 
 <!-- DETAIL: HUD Events full spec

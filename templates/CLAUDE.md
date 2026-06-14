@@ -246,6 +246,7 @@ Codex CLI의 Agent Teams 기능이 활성화되어 있으면 (`OMCODEX_AGENT_TEA
 |------|------|
 | omx-memory | 세션 메모리 영속성 |
 | semble | 대규모 저장소 탐색용 semantic code search MCP |
+| aws-mcp | AWS 서비스 인증 접근 — `call_aws`(15,000+ API 실행), `search_documentation`/`read_documentation`(실시간 AWS 문서), `run_script`(샌드박스). 고특권 실행은 `infra-aws-expert` 위임 + R010/R001 특권경계 |
 
 ### 설치 명령어
 
@@ -272,6 +273,10 @@ omx memory doctor
 
 # 선택: semantic code search
 uv tool install semble
+
+# AWS MCP 서버 (IAM 인증 필요, 수동 설치 — R001 auto-install 금지)
+claude mcp add-json aws-mcp --scope user '{"command":"uvx","args":["mcp-proxy-for-aws@latest","https://aws-mcp.us-east-1.api.aws/mcp","--metadata","AWS_REGION=us-west-2"]}'
+# 사전요건: AWS IAM 자격증명 구성. 가용 리전: us-east-1, eu-central-1 (API 호출은 전 리전)
 ```
 
 <!-- omcodex:git-workflow -->

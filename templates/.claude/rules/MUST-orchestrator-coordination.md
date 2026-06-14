@@ -254,6 +254,8 @@ For this Codex port, native Codex/OMX subagents still follow the active Codex ru
 
 Claude Code v2.1.172+ fixes background agents potentially reading another project directory's settings (`.mcp.json` approvals, trust) when dispatched onto a pre-warmed worker, strengthening background-agent isolation for unattended `/bg` flows.
 
+Claude Code v2.1.174+ fixes background sessions inheriting another session's `ANTHROPIC_*` provider environment (gateway URL, custom headers, `/model` aliases) from the shell that started the background daemon. It also fixes pre-warmed background workers failing with `Could not resolve authentication method` after sitting idle. This is a Claude-template isolation improvement; Codex/OMX sessions still keep explicit agent routing and permission boundaries.
+
 ## Agent Capability Pre-Check
 
 Before delegating work, compare the task requirements with the target agent frontmatter:

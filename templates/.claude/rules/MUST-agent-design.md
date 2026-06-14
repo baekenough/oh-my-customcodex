@@ -24,11 +24,13 @@ tools: [Read, Write, ...]  # Allowed tools
 | `opus` | claude-opus-4-6 | Complex reasoning, architecture |
 | `opusplan` | claude-opus-4-6 + plan mode | Architecture planning with approval gates |
 | `opus47` | claude-opus-4-7 | Latest Opus model, supports xhigh effort |
-Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M token context window.
 
+<!-- DETAIL: Fable and Extended Context Aliases (Claude Code v2.1.170+)
+`fable` resolves to `claude-fable-5` for Claude compatibility only: Mythos-class model, tier above Opus; do not change Codex/OMX routing defaults. Extended context suffix `[1m]` (for example, `claude-opus-4-6[1m]`) enables a 1M token context window. For Fable 5, do not append `[1m]`; Claude Code v2.1.173+ strips it because Fable includes 1M context by default.
+-->
 
 <!-- DETAIL: Fallback Models and Thinking Toggle (Claude Code v2.1.166+)
-Claude compatibility settings can declare up to three `fallbackModel` entries tried in order when the primary Claude model is overloaded or unavailable. `--fallback-model` also applies to interactive Claude sessions. Treat this as platform availability failover, not Codex-native model routing or outcome-based escalation. Claude Code v2.1.166+ also supports disabling default thinking with `MAX_THINKING_TOKENS=0`, `--thinking disabled`, or the per-model thinking toggle. Claude Code v2.1.169+ adds `--safe-mode` / `CLAUDE_CODE_SAFE_MODE` to disable customizations for regression isolation, plus `disableBundledSkills` / `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` to hide bundled skills/workflows/slash commands when they conflict with project skills. Codex-native agents continue to use the OMX model contract and `reasoning_effort` routing. Claude Code v2.1.172+ applies `availableModels` restrictions to subagent `model:` overrides, the agent dispatch model picker, and the advisor model; compatibility allowlists should account for version-specific IDs and 1M suffix handling.
+Claude compatibility settings can declare up to three `fallbackModel` entries tried in order when the primary Claude model is overloaded or unavailable. `--fallback-model` also applies to interactive Claude sessions. Treat this as platform availability failover, not Codex-native model routing or outcome-based escalation. Claude Code v2.1.166+ also supports disabling default thinking with `MAX_THINKING_TOKENS=0`, `--thinking disabled`, or the per-model thinking toggle. Claude Code v2.1.169+ adds `--safe-mode` / `CLAUDE_CODE_SAFE_MODE` to disable customizations for regression isolation, plus `disableBundledSkills` / `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` to hide bundled skills/workflows/slash commands when they conflict with project skills. Codex-native agents continue to use the OMX model contract and `reasoning_effort` routing. Claude Code v2.1.172+ applies `availableModels` restrictions to subagent `model:` overrides, the agent dispatch model picker, and the advisor model; compatibility allowlists should account for version-specific IDs and 1M suffix handling. Claude Code v2.1.173+ auto-normalizes Fable 5 IDs with redundant `[1m]` suffixes. Claude Code v2.1.175+ adds `enforceAvailableModels`, which constrains the resolved Default model as well as subagent overrides and prevents user/project settings from widening a managed allowlist.
 -->
 
 ### Optional Frontmatter
@@ -90,6 +92,8 @@ This Codex port ships `.claude` compatibility templates. When updating those tem
 - v2.1.165: bug-fix/reliability release; no local template change required beyond compatibility confirmation. v2.1.166: fallbackModel availability failover and thinking-disable controls are Claude compatibility settings, not Codex/OMX routing. v2.1.167/v2.1.168: bug-fix-only compatibility confirmation.
 - v2.1.169: `--safe-mode` / `CLAUDE_CODE_SAFE_MODE` disables all customizations for Claude regression isolation; `disableBundledSkills` / `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` hides bundled skills/workflows/slash commands from the model. Keep distinct from advisory `skills:` frontmatter metadata.
 - v2.1.170: Claude compatibility sessions gain access to the `fable` alias (`claude-fable-5`) and fix a VS Code integrated-terminal transcript persistence bug. Skills that rely on transcript replay (for example `homework`) should prefer v2.1.170+ in Claude-template sessions. No Codex runtime model-routing change.
+- v2.1.173: Fable 5 model IDs carrying `[1m]` are auto-normalized because Fable includes 1M context by default; omit the suffix in packaged Claude compatibility metadata.
+- v2.1.175: managed `enforceAvailableModels` constrains the Default model in addition to subagent model overrides, dispatch picker, and advisor model; document this as Claude enterprise config behavior, not Codex model routing.
 -->
 
 ## Hook Event Types

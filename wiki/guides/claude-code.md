@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-06-11
+updated: 2026-06-14
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/15-version-compatibility.md
@@ -19,6 +19,10 @@ Reference documentation for Claude Code capabilities, features, and API integrat
 ## Overview
 
 Covers Claude's advanced API features for building Claude Code-compatible applications and agents. Topics include the 1M token context window, Agent Skills, batch processing, citations, extended thinking, Files API, structured outputs, and tool use. Also documents built-in tools (Bash, code execution, computer use, MCP connector, web fetch/search). Used by `mgr-claude-code-bible` for spec compliance verification.
+
+## v2.1.174-v2.1.177 compatibility updates
+
+The Claude compatibility guide now records v2.1.173-v2.1.177 impacts while keeping Codex/OMX as the active runtime boundary: Fable `[1m]` normalization, `/usage` attribution, Workflow `agent()` attribution headers, background-session `ANTHROPIC_*` isolation, managed `enforceAvailableModels`, `footerLinksRegexes`, localized session titles, and a v2.1.177 no-op reliability confirmation.
 
 ## Key Topics
 
