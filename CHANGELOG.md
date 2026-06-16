@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-06-17
+
+### Changed
+- Record upstream `Yeachan-Heo/oh-my-codex` v0.18.12 compatibility review for #1520 as no source-port required in this package.
+- Record OpenAI Codex `rust-v0.140.0` compatibility impacts for #1522 across source/template/wiki guidance, including `/usage`, native `/goal`, `/delete`, `/import`, unified `@` mentions, credential storage, and MCP/plugin reliability notes.
+
 ## [1.0.2] - 2026-06-14
 
 ### Added

@@ -2,6 +2,20 @@
 
 This guide records OpenAI Codex release-note impact decisions for oh-my-customcodex. Use it for Codex/OMX runtime compatibility notes; keep Claude-only release notes in `guides/claude-code/15-version-compatibility.md`.
 
+## rust-v0.140.0 / CLI 0.140.0
+
+Source: upstream OpenAI Codex release `rust-v0.140.0`, Codex-port issue #1522.
+
+| Change | Impact on oh-my-customcodex | Action |
+| --- | --- | --- |
+| `/usage` adds daily, weekly, and cumulative account token activity views | Useful runtime cost signal, but not a packaged `omcustomcodex` telemetry contract. | Keep Codex usage evidence source-specific; continue using OMX/status/trace or local command evidence for package workflows. |
+| Native `/goal` preserves oversized text, large pasted blocks, and image attachments, including remote app-server sessions | Reduces data loss in Codex-native goal tracking while this package keeps its namespaced `omcustomcodex:goal` workflow. | Do not shadow native `/goal`; keep long objective handoff text in artifacts when package workflows need durable release evidence. |
+| `codex delete`, `/delete`, and app-server `thread/delete` can permanently delete sessions with safeguards and subagent cleanup | Destructive lifecycle operation outside this package's installed template surface. | Treat permanent thread deletion as an explicit user-authorized runtime action; do not automate it from package skills. |
+| `/import` selectively imports setup, project configuration, and recent chats from Claude Code | Helpful migration path for operators moving Claude context into Codex. | Keep `omcustomcodex init/update` as the package-owned template path; mention import only as a Codex runtime migration helper, not as a replacement for template sync. |
+| Typing `@` opens a unified mentions menu for files, plugins, and skills | Matches connector/plugin/skill routing vocabulary in current instructions. | No template change; continue to prefer exact file, plugin, and skill references when a task depends on them. |
+| Managed Amazon Bedrock API-key auth and encrypted local storage for CLI/MCP OAuth credentials | Improves Codex credential handling but does not change this package's credential boundary. | Keep R001 metadata-only credential diagnostics; never read or echo stored credential values. |
+| SQLite recovery, MCP startup/auth fixes, remote plugin uninstall fixes, update-dismissal persistence, stale hook cleanup, and interruptible non-TTY background commands | Runtime reliability improvements that reduce false blockers during package workflows. | No package dependency or config migration required beyond this compatibility record. |
+
 ## rust-v0.139.0 / CLI 0.139.0
 
 Source: upstream OpenAI Codex release `rust-v0.139.0`, Codex-port issue #1498.
