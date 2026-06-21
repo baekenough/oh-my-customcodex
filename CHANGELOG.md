@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-06-21
+
+### Changed
+- Add Claude Code v2.1.178 compatibility notes for #1524 from upstream oh-my-customcode v1.0.9, covering per-parameter permission denies, compaction fallback, nested `.claude` resolution, auto-mode subagent classification, and background-agent auth fixes.
+- Record `Yeachan-Heo/oh-my-codex` v0.18.13 compatibility review for #1525 as documentation-only: no source/runtime change and no `MINIMUM_OMX_VERSION` bump.
+- Add OpenAI Codex `rust-v0.141.0` compatibility notes for #1526, including remote-executor encryption/path behavior, selected-plugin MCP activation, app-server/realtime/TUI additions, hook/plugin/Windows/SQLite/TLS fixes, and performance cleanup.
+
 ## [1.0.3] - 2026-06-17
 
 ### Changed

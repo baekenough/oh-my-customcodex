@@ -2,6 +2,22 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
+## v2.1.178
+
+Published: 2026-06-15.
+
+Source: upstream oh-my-customcode v1.0.9 / #1391, Codex-port issue #1524.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Permission rules support `Tool(param:value)` with `*` wildcards, such as `Agent(model:opus)` | Claude compatibility settings can now deny a specific tool-parameter shape instead of only a tool name. This complements `availableModels` and explicit subagent permission-mode guidance, but Codex/OMX sandboxing remains the active runtime boundary here. | Document as Claude-template R002 compatibility; do not translate Claude permission syntax into Codex policy. |
+| Compaction honors the configured `fallbackModel` chain on overload or availability errors | Claude compatibility sessions using fallback models are less likely to fail during compaction. This extends the v2.1.166 fallback behavior to the compaction path. | Document under Claude agent/model compatibility; keep Codex subagent routing on OMX model metadata and `reasoning_effort`. |
+| Nested `.claude/skills` directories load for files in that subtree, name collisions surface as `<dir>:<name>`, and directory-qualified skills avoid non-interactive permission prompts | Nested Claude template trees can coexist with root skills without silently hiding same-named entries. | Keep this package's installed `.codex/**` and flat template layout primary; mention the nested Claude behavior only for compatibility sessions. |
+| Subagent `disallowedTools` now honors MCP-spec entries such as `mcp__server`, `mcp__server__*`, and `mcp__*` | Claude subagent frontmatter can constrain MCP surfaces that were previously ignored. | Record as Claude R006 compatibility; continue using repo-owned Codex/OMX tool boundaries for this package. |
+| When nested `.claude/` definitions collide, the closest agent, workflow, or output-style to the working directory wins; project-scope workflow saves target the closest existing `.claude/workflows/` | Monorepo Claude compatibility sessions may resolve names differently from root-only assumptions. | Document closest-wins behavior; avoid inferring Codex skill/workflow precedence from it. |
+| Auto mode evaluates subagent spawns with the safety classifier before launch | Claude adds a platform-level pre-launch gate for subagent actions. It complements, but does not replace, prompt-level scope boundaries. | Keep pre-delegation scope statements in guidance; treat classifier gating as defense-in-depth for Claude sessions only. |
+| `claude agents` workers behind `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` no longer fail with `401 Invalid bearer token`; `/bg` sessions no longer show `Working` forever after completion | Reduces false blockers in Claude background-agent and custom-gateway workflows. | Document as Claude background-agent reliability; no Codex runtime or package source change. |
+
 ## v2.1.177
 
 | Change | Impact | oh-my-customcodex action |

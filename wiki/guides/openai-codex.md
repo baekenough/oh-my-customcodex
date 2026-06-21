@@ -1,7 +1,7 @@
 ---
 title: "OpenAI Codex Compatibility Guide"
 type: guide
-updated: 2026-06-17
+updated: 2026-06-21
 sources:
   - guides/openai-codex/01-version-compatibility.md
 related:
@@ -29,9 +29,9 @@ This guide tracks Codex/OMX runtime compatibility notes separately from Claude C
 
 ## Current Release Note
 
-`rust-v0.140.0` is tracked for #1522. The package records impact for `/usage` token activity views, native `/goal` large-input preservation, permanent session deletion, Claude Code `/import`, unified `@` mentions, managed Bedrock/OAuth credential storage, SQLite recovery, MCP reliability, remote plugin uninstall fixes, stale hook cleanup, and interruptible non-TTY background commands.
+`rust-v0.141.0` is tracked for #1526. The package records impact for encrypted remote-executor relay channels, cross-platform cwd/shell/path preservation, selected-plugin stdio MCP activation, app-server child-thread/import/rate-limit observability, realtime and TUI prompt improvements, hook trust and blocking `PostToolUse` fixes, plugin auth/dedup/order fixes, Windows sandbox reliability, exec relay/`wait_agent` interruption, SQLite WAL-reset protection, TLS P-521 support, and runtime performance cleanup.
 
-No package dependency or runtime migration is required. `omcustomcodex:goal` remains namespaced beside native `/goal`, destructive `codex delete`/`/delete` actions stay explicitly user-authorized, and credential diagnostics remain metadata-only under R001.
+No package dependency, source, or runtime migration is required. Treat these as Codex runtime capabilities and reliability fixes while keeping `omcustomcodex` workflows evidence-driven and metadata-only for credential/proxy diagnostics.
 
 ## Relationships
 

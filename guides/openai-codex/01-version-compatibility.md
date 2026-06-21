@@ -2,6 +2,25 @@
 
 This guide records OpenAI Codex release-note impact decisions for oh-my-customcodex. Use it for Codex/OMX runtime compatibility notes; keep Claude-only release notes in `guides/claude-code/15-version-compatibility.md`.
 
+## rust-v0.141.0 / CLI 0.141.0
+
+Source: upstream OpenAI Codex release `rust-v0.141.0`, Codex-port issue #1526.
+
+| Change | Impact on oh-my-customcodex | Action |
+| --- | --- | --- |
+| Remote executors use authenticated end-to-end encrypted Noise relay channels | Strengthens Codex remote execution transport without changing package-owned templates or CLI behavior. | Record compatibility; no package dependency or config migration required. |
+| Cross-platform remote execution preserves executor-native working directories, shells, and filesystem permission paths across app-server and exec-server boundaries | Reduces path/shell mismatch during Codex runtime sessions, especially remote or mixed-platform work. | Keep repo guidance path-explicit and verify local evidence; no source change. |
+| Selected executor plugins can activate stdio MCP servers per thread; plugin discovery adds created-by-me marketplace and auth-specific curated catalogs | Improves runtime plugin/MCP availability and inventory vocabulary. | Continue treating connector schemas and selected plugins as runtime ground truth; no packaged skill migration. |
+| App-server clients can list immediate child threads, correlate external-agent imports with detailed results, and read or redeem rate-limit reset credits | Adds observability for app-server and external-agent workflows. | Mention as external runtime capability; package workflows still require local artifact/evidence checks before completion claims. |
+| Realtime clients can append speech explicitly, control how Codex responses enter conversations, and omit startup context | Realtime behavior improves outside this package's installed documentation/runtime surface. | No package action beyond this compatibility record. |
+| TUI input prompts can auto-resolve after inactivity with a countdown that pauses on interaction | Aligns with non-blocking prompt behavior for Codex sessions. | Keep asking only for materially blocking input; no package workflow change. |
+| Hook trust bypass persists through `codex exec` thread start/resume, and blocking `PostToolUse` hooks reject code-mode tool calls correctly | Hardens Codex hook boundaries relevant to repository safety guidance. | Preserve repo hook/safety guidance; no `omcustomcodex` source change required. |
+| Plugin capabilities route by authentication mode, deduplicate conflicting App/MCP declarations, and preserve remote marketplace ordering | Reduces duplicate or misrouted tool exposure in plugin-heavy sessions. | Prefer runtime connector/tool metadata as the source of truth; no template change. |
+| Windows sandbox execution repairs stale credentials and gives PowerShell commands more time before backgrounding | Improves Windows reliability for Codex runtime users. | No package migration; continue documenting shell-specific assumptions explicitly. |
+| Idle exec-server relays stay connected and steered user input interrupts `wait_agent` immediately | Reduces false blockers in long-running or multi-agent Codex sessions. | No package action beyond compatibility tracking. |
+| Bundled SQLite is pinned to a WAL-reset corruption fix; TLS supports P-521 certificate signatures used by enterprise proxies | Improves storage/network reliability under Codex itself. | No package dependency change; keep credential and enterprise-proxy diagnostics metadata-only. |
+| Tool-search caching, request/history copy reduction, bounded prompt-image cache, bounded feedback upload subtrees, and always-on terminal resize reflow reduce latency, memory, and stale UI behavior | Runtime performance and UX improvements may make documentation/test sessions less fragile. | No source/runtime change in this package. |
+
 ## rust-v0.140.0 / CLI 0.140.0
 
 Source: upstream OpenAI Codex release `rust-v0.140.0`, Codex-port issue #1522.
