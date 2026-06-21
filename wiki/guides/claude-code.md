@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-06-14
+updated: 2026-06-21
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/15-version-compatibility.md
@@ -20,9 +20,9 @@ Reference documentation for Claude Code capabilities, features, and API integrat
 
 Covers Claude's advanced API features for building Claude Code-compatible applications and agents. Topics include the 1M token context window, Agent Skills, batch processing, citations, extended thinking, Files API, structured outputs, and tool use. Also documents built-in tools (Bash, code execution, computer use, MCP connector, web fetch/search). Used by `mgr-claude-code-bible` for spec compliance verification.
 
-## v2.1.174-v2.1.177 compatibility updates
+## v2.1.178 compatibility updates
 
-The Claude compatibility guide now records v2.1.173-v2.1.177 impacts while keeping Codex/OMX as the active runtime boundary: Fable `[1m]` normalization, `/usage` attribution, Workflow `agent()` attribution headers, background-session `ANTHROPIC_*` isolation, managed `enforceAvailableModels`, `footerLinksRegexes`, localized session titles, and a v2.1.177 no-op reliability confirmation.
+The Claude compatibility guide now records v2.1.178 impacts from upstream oh-my-customcode v1.0.9 / Codex-port #1524 while keeping Codex/OMX as the active runtime boundary: per-parameter `Tool(param:value)` permission denies, compaction `fallbackModel` use, nested `.claude/skills` loading with `<dir>:<name>` disambiguation, MCP `disallowedTools` honoring, nearest `.claude/` collision precedence, auto-mode subagent pre-launch classification, and background-agent custom-gateway auth fixes.
 
 ## Key Topics
 
@@ -37,6 +37,16 @@ The Claude compatibility guide now records v2.1.173-v2.1.177 impacts while keepi
 ## Version Compatibility
 
 oh-my-customcodex keeps Claude compatibility guidance for installed templates while `.codex/**` and OMX remain the primary runtime surface.
+
+### v2.1.178 (2026-06-15)
+
+Source: upstream oh-my-customcode v1.0.9 / #1391, Codex port #1524.
+
+- `Tool(param:value)` permission deny syntax, including `Agent(model:opus)`, is Claude settings compatibility vocabulary; Codex/OMX sandboxing remains the active package boundary.
+- Compaction now consults `fallbackModel` on overload or model-availability errors, reducing Claude compatibility session failures without changing Codex model routing.
+- Nested `.claude/skills` directories load with `<dir>:<name>` disambiguation, nested `.claude/` collisions use closest-wins precedence, and MCP `mcp__*` entries in subagent `disallowedTools` are honored.
+- Auto mode classifies subagent spawns before launch; prompt-level pre-delegation scope boundaries remain required as defense-in-depth.
+- `claude agents` and `/bg` custom-gateway fixes reduce Claude background-agent false blockers; no package source/runtime change is required.
 
 ### v2.1.169 (2026-06-08)
 
