@@ -7,7 +7,7 @@
 > **AI 에이전트 스택. 설정이 아닌 컴파일.**
 
 [![npm version](https://img.shields.io/npm/v/oh-my-customcodex.svg)](https://www.npmjs.com/package/oh-my-customcodex)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: PolyForm NC 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
 [![CI](https://github.com/baekenough/oh-my-customcodex/actions/workflows/ci.yml/badge.svg)](https://github.com/baekenough/oh-my-customcodex/actions/workflows/ci.yml)
 [![Security Audit](https://github.com/baekenough/oh-my-customcodex/actions/workflows/security-audit.yml/badge.svg)](https://github.com/baekenough/oh-my-customcodex/actions/workflows/security-audit.yml)
 
@@ -355,7 +355,11 @@ bun run cli -- --help
 
 ## 라이선스
 
-[MIT](LICENSE)
+이 프로젝트는 **[PolyForm Noncommercial License 1.0.0](LICENSE)** 라이선스를 따릅니다.
+
+**비상업적** 목적(개인 프로젝트, 연구, 교육, 비영리/정부 용도)에 한해 자유롭게 **사용·수정·배포**할 수 있습니다. 본 라이선스에서 **상업적 이용은 허용되지 않습니다**.
+
+상업용 라이선스가 필요하시면 이슈를 열거나 작성자에게 문의해 주세요.
 
 ---
 

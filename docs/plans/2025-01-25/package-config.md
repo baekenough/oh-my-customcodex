@@ -8,7 +8,7 @@
   "version": "0.1.0",
   "description": "Batteries-included agent harness for Claude Code",
   "author": "baekenough",
-  "license": "MIT",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/baekenough/oh-my-customcode"

@@ -7,7 +7,7 @@
 > **Your AI Agent Stack. Compiled, Not Configured.**
 
 [![npm version](https://img.shields.io/npm/v/oh-my-customcodex.svg)](https://www.npmjs.com/package/oh-my-customcodex)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: PolyForm NC 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
 [![CI](https://github.com/baekenough/oh-my-customcodex/actions/workflows/ci.yml/badge.svg)](https://github.com/baekenough/oh-my-customcodex/actions/workflows/ci.yml)
 [![Security Audit](https://github.com/baekenough/oh-my-customcodex/actions/workflows/security-audit.yml/badge.svg)](https://github.com/baekenough/oh-my-customcodex/actions/workflows/security-audit.yml)
 
@@ -333,7 +333,11 @@ Requirements: Node.js >= 18.0.0, Bun, Codex CLI. GitHub CLI (`gh`) and `jq` are 
 
 ## License
 
-[MIT](LICENSE)
+This project is licensed under the **[PolyForm Noncommercial License 1.0.0](LICENSE)**.
+
+You are free to **use, modify, and distribute** oh-my-customcodex for any **noncommercial** purpose — personal projects, research, education, and nonprofit/government use. **Commercial use is not permitted** under this license.
+
+Need a commercial license? Open an issue or reach out to the author.
 
 ---
 

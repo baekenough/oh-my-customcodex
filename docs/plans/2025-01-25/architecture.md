@@ -55,7 +55,7 @@ oh-my-customcode/
 ├── tsconfig.json
 ├── bunfig.toml
 ├── biome.json                  # Rust-based linter/formatter
-├── LICENSE                     # MIT
+├── LICENSE                     # PolyForm Noncommercial 1.0.0
 ├── README.md                   # English
 └── README_ko.md                # Korean
 ```

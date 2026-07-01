@@ -6,7 +6,7 @@
 |------|-------|
 | Name | oh-my-customcode |
 | Description | Batteries-included agent harness for Claude Code |
-| License | MIT |
+| License | PolyForm-Noncommercial-1.0.0 |
 | Repository | github.com/baekenough/oh-my-customcode |
 | npm Package | oh-my-customcode |
 | CLI Command | omcustom |
