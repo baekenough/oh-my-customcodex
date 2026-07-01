@@ -1219,6 +1219,26 @@ describe('Template Validation', () => {
       expect(content).toContain('find wiki -mindepth 2');
       expect(content).toContain('/omcustomcodex:wiki');
     });
+    it('source hash generator refuses to overwrite templates manifest', async () => {
+      const scriptPath = join(PROJECT_ROOT, '.github/scripts/lib/source-hash.sh');
+      const manifestPath = join(PROJECT_ROOT, 'templates/manifest.json');
+      const before = await readFile(manifestPath, 'utf-8');
+      const syntax = spawnSync('bash', ['-n', scriptPath], {
+        cwd: PROJECT_ROOT,
+        encoding: 'utf-8',
+      });
+      const result = spawnSync('bash', [scriptPath, 'generate', 'templates/manifest.json'], {
+        cwd: PROJECT_ROOT,
+        encoding: 'utf-8',
+      });
+      const after = await readFile(manifestPath, 'utf-8');
+
+      expect(syntax.status).toBe(0);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('refusing to overwrite templates/manifest.json');
+      expect(result.stderr).toContain('wiki/.source-hashes.json');
+      expect(after).toBe(before);
+    });
 
     it('customization guide uses workflows/ and /pipeline syntax instead of legacy pipeline commands', async () => {
       const customization = await readFile(

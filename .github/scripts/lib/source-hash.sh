@@ -11,7 +11,7 @@
 # rules (.codex/rules/*.md), guides (guides/*/ dirs, concat-hashed).
 #
 # Source-able (functions) AND runnable:
-#   bash .github/scripts/lib/source-hash.sh generate <output_path>   → writes manifest JSON
+#   bash .github/scripts/lib/source-hash.sh generate <output_path>   → writes source-hash JSON
 #
 # This file is intentionally side-effect-free when sourced (no top-level execution).
 
@@ -51,6 +51,13 @@ generate_manifest() {
     echo "ERROR: generate_manifest: output path required" >&2
     return 1
   fi
+
+  case "$out_file" in
+    templates/manifest.json|./templates/manifest.json|*/templates/manifest.json)
+      echo "ERROR: generate_manifest: refusing to overwrite templates/manifest.json; use wiki/.source-hashes.json for source hashes" >&2
+      return 1
+      ;;
+  esac
 
   local skills_root=".codex/skills"
   if [ -d ".agents/skills" ]; then
