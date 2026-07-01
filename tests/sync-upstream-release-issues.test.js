@@ -271,6 +271,76 @@ test('run creates a release update issue when a dependency release only referenc
   assert.match(createdIssues[0].body, /upstream-release: openai\/codex@v0\.64\.0/);
 });
 
+test('run retries transient GitHub read failures before failing the release sync', async (t) => {
+  const createdIssues = [];
+  let releaseAttempts = 0;
+  const server = http.createServer(async (request, response) => {
+    const url = new URL(request.url || '/', 'http://localhost');
+    const route = `${request.method} ${url.pathname}`;
+
+    if (route === 'GET /repos/target/repo/issues') {
+      sendJson(response, 200, []);
+      return;
+    }
+
+    if (route === 'GET /repos/openai/codex/releases') {
+      releaseAttempts += 1;
+      if (releaseAttempts === 1) {
+        sendJson(response, 504, { message: 'Gateway Timeout' });
+        return;
+      }
+
+      sendJson(response, 200, [
+        {
+          tag_name: 'v0.64.0',
+          name: 'Codex CLI 0.64.0',
+          html_url: 'https://github.com/openai/codex/releases/tag/v0.64.0',
+          published_at: '2026-05-29T00:00:00Z',
+          draft: false,
+          prerelease: false,
+          body: '- improved model routing by @contributor in #987',
+        },
+      ]);
+      return;
+    }
+
+    if (route === 'GET /repos/openai/codex/contents/CHANGELOG.md') {
+      sendJson(response, 404, {});
+      return;
+    }
+
+    if (route === 'POST /repos/target/repo/issues') {
+      createdIssues.push(await readJsonBody(request));
+      sendJson(response, 201, {
+        number: 124,
+        html_url: 'https://github.test/target/repo/issues/124',
+      });
+      return;
+    }
+
+    sendJson(response, 404, { message: `unexpected ${route}` });
+  });
+
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+
+  const { port } = server.address();
+  const result = await run({
+    apiBase: `http://127.0.0.1:${port}`,
+    env: {
+      GITHUB_TOKEN: 'token',
+      TARGET_REPO: 'target/repo',
+      UPSTREAM_REPOS: 'openai/codex',
+    },
+    logger: { log() {} },
+  });
+
+  assert.equal(releaseAttempts, 2);
+  assert.equal(result.created, 1);
+  assert.equal(result.scannedReleases, 1);
+  assert.equal(createdIssues.length, 1);
+});
+
 async function handleReleaseSyncMockRequest(request, response, createdIssues) {
   const url = new URL(request.url || '/', 'http://localhost');
   const route = `${request.method} ${url.pathname}`;

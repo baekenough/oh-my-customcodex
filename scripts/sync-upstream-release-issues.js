@@ -6,6 +6,9 @@ const DEFAULT_UPSTREAM_REPOS = ['openai/codex', 'Yeachan-Heo/oh-my-codex', DEFAU
 const USER_AGENT = 'oh-my-customcodex-release-sync';
 const MAX_RELEASE_NOTES_LENGTH = 6000;
 const MAX_ISSUE_BODY_LENGTH = 12000;
+const DEFAULT_RETRY_DELAY_MS = 250;
+const DEFAULT_MAX_RETRIES = 3;
+const TRANSIENT_GITHUB_STATUSES = new Set([429, 500, 502, 503, 504]);
 
 class GitHubRequestError extends Error {
   constructor({ method, path, status, statusText, responseBody }) {
@@ -168,16 +171,56 @@ This issue was auto-created because a dependency upstream published a release wi
   };
 }
 
+function sleep(ms) {
+  return ms > 0 ? new Promise((resolve) => setTimeout(resolve, ms)) : Promise.resolve();
+}
+
+function isRetryableGitHubRead({ method, status }) {
+  return method === 'GET' && TRANSIENT_GITHUB_STATUSES.has(status);
+}
+
+async function fetchGitHubWithReadRetry(
+  path,
+  {
+    token,
+    method = 'GET',
+    body,
+    apiBase = DEFAULT_API_BASE,
+    accept = 'application/vnd.github+json',
+  }
+) {
+  for (let attempt = 0; ; attempt += 1) {
+    const response = await fetch(`${apiBase}${path}`, {
+      method,
+      headers: {
+        Accept: accept,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'User-Agent': USER_AGENT,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    if (
+      !response.ok &&
+      attempt < DEFAULT_MAX_RETRIES &&
+      isRetryableGitHubRead({ method, status: response.status })
+    ) {
+      await response.arrayBuffer();
+      await sleep(DEFAULT_RETRY_DELAY_MS * 2 ** attempt);
+      continue;
+    }
+
+    return response;
+  }
+}
+
 async function githubRequest(path, { token, method = 'GET', body, apiBase = DEFAULT_API_BASE }) {
-  const response = await fetch(`${apiBase}${path}`, {
+  const response = await fetchGitHubWithReadRetry(path, {
+    token,
     method,
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      'User-Agent': USER_AGENT,
-    },
-    body: body ? JSON.stringify(body) : undefined,
+    body,
+    apiBase,
   });
 
   if (!response.ok) {
@@ -204,12 +247,10 @@ function isMissingUpstreamIssue(error, upstreamRepo, issueNumber) {
 }
 
 async function githubTextRequest(path, { token, apiBase = DEFAULT_API_BASE }) {
-  const response = await fetch(`${apiBase}${path}`, {
-    headers: {
-      Accept: 'application/vnd.github.raw',
-      Authorization: `Bearer ${token}`,
-      'User-Agent': USER_AGENT,
-    },
+  const response = await fetchGitHubWithReadRetry(path, {
+    token,
+    apiBase,
+    accept: 'application/vnd.github.raw',
   });
 
   if (response.status === 404) {
