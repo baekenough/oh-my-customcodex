@@ -132,7 +132,7 @@ project/
 +-- AGENTS.md                    # 진입점
 +-- .codex/
 |   +-- agents/                  # 서브에이전트 정의 (50 파일)
-|   +-- skills/                  # 스킬 (120 디렉토리)
+|   +-- skills/                  # 스킬 (122 디렉토리)
 |   +-- rules/                   # 전역 규칙 (22 파일)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (4 파일)
@@ -194,7 +194,7 @@ Codex CLI의 Agent Teams 기능이 활성화되어 있으면 (`OMCODEX_AGENT_TEA
 **활성화 시, 적격한 협업 작업에 Agent Teams를 반드시 사용해야 합니다 (R018 MUST).**
 결정 매트릭스는 R018 (MUST-agent-teams.md)을 참조하세요.
 하이브리드 패턴 (Claude + Codex, 동적 생성 + Teams)이 지원됩니다.
-단순/비용 민감 작업에는 Task tool + 라우팅 스킬이 폴백으로 유지됩니다.
+단순/비용 민감 작업에는 Codex native subagents와 라우팅 스킬이 폴백으로 유지됩니다.
 
 ## 빠른 참조
 

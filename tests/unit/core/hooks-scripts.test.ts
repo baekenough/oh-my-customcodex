@@ -106,7 +106,7 @@ async function waitForFile(path: string, timeoutMs = 250): Promise<boolean> {
   return existsSync(path);
 }
 
-/** Build a minimal Claude Code hook JSON payload for Task tool calls. */
+/** Build a minimal Claude Code hook JSON payload for Agent/subagent calls. */
 function makeTaskInput(subagentType: string, prompt: string): string {
   return JSON.stringify({
     tool: 'Task',
@@ -941,7 +941,7 @@ describe('claude-sensitive-path-guard.sh', () => {
 // -------------------------------------------------------------------
 
 describe('agent-teams-advisor.sh', () => {
-  /** Build a Task hook JSON payload using the `description` field the script actually reads. */
+  /** Build an Agent/subagent hook JSON payload using the `description` field the script actually reads. */
   function makeAdvisorInput(agentType: string, description: string): string {
     return JSON.stringify({
       tool_input: {
@@ -978,21 +978,21 @@ describe('agent-teams-advisor.sh', () => {
 
   // --- Counter and warning behavior ---
 
-  it('should not show warning on first Task call', async () => {
+  it('should not show warning on first Agent/subagent call', async () => {
     const input = makeAdvisorInput('lang-typescript-expert', 'First call');
     const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
     expect(result.stderr).not.toContain('R018 Advisor');
-    expect(result.stderr).not.toContain('Multiple Task calls');
+    expect(result.stderr).not.toContain('Multiple Agent/subagent calls');
   });
 
-  it('should show R018 warning on second Task call', async () => {
+  it('should show R018 warning on second Agent/subagent call', async () => {
     const input = makeAdvisorInput('lang-typescript-expert', 'Second call');
     // First call — no warning
     await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
     // Second call — warning appears
     const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
     expect(result.stderr).toContain('R018 Advisor');
-    expect(result.stderr).toContain('Task tool call #2');
+    expect(result.stderr).toContain('Agent/subagent call #2');
   });
 
   it('should show warning on third and subsequent calls', async () => {
@@ -1000,7 +1000,7 @@ describe('agent-teams-advisor.sh', () => {
     await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
     await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
     const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
-    expect(result.stderr).toContain('Task tool call #3');
+    expect(result.stderr).toContain('Agent/subagent call #3');
   });
 
   it('should include agent type in warning', async () => {
@@ -1034,7 +1034,7 @@ describe('agent-teams-advisor.sh', () => {
     await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input); // 3
     await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input); // 4
     const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input); // 5
-    expect(result.stderr).toContain('Task tool call #5');
+    expect(result.stderr).toContain('Agent/subagent call #5');
   });
 
   it('should always pass through stdin even when warning is shown', async () => {
@@ -1134,7 +1134,7 @@ describe('agent-teams-advisor.sh', () => {
       expect(result.stderr).toContain('Batch context detected');
       expect(result.stderr).toContain('RECOMMENDATION');
       // Batch warning is different from sequential warning
-      expect(result.stderr).not.toContain('Multiple Task calls detected');
+      expect(result.stderr).not.toContain('Multiple Agent/subagent calls detected');
     } finally {
       await unlink(workflowFile).catch(() => {});
     }

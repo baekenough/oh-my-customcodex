@@ -22,18 +22,18 @@ function depsFor(commands: Record<string, string | Error>): InstallerDeps {
 
 describe('omx installer baseline checks', () => {
   it('parses oh-my-codex version output', () => {
-    expect(parseOmxVersion('oh-my-codex v0.18.0')).toBe('0.18.0');
-    expect(parseOmxVersion('0.18.1')).toBe('0.18.1');
+    expect(parseOmxVersion('oh-my-codex v0.18.17')).toBe('0.18.17');
+    expect(parseOmxVersion('0.18.18')).toBe('0.18.18');
     expect(parseOmxVersion('oh-my-codex v0.19.0-beta.1')).toBe('0.19.0-beta.1');
     expect(parseOmxVersion('unknown')).toBeNull();
   });
 
   it('compares semantic versions with prereleases below final releases', () => {
-    expect(compareOmxVersions('0.18.1', '0.18.0')).toBe(1);
-    expect(compareOmxVersions('0.17.3', '0.18.0')).toBe(-1);
-    expect(compareOmxVersions('0.18.0-beta.1', '0.18.0')).toBe(-1);
-    expect(compareOmxVersions('0.18.0', '0.18.0')).toBe(0);
-    expect(isOmxVersionAtLeast('oh-my-codex v0.18.0')).toBe(true);
+    expect(compareOmxVersions('0.18.18', '0.18.17')).toBe(1);
+    expect(compareOmxVersions('0.18.16', '0.18.17')).toBe(-1);
+    expect(compareOmxVersions('0.18.17-beta.1', '0.18.17')).toBe(-1);
+    expect(compareOmxVersions('0.18.17', '0.18.17')).toBe(0);
+    expect(isOmxVersionAtLeast('oh-my-codex v0.18.17')).toBe(true);
   });
 
   it('marks missing omx as missing', () => {
@@ -43,16 +43,16 @@ describe('omx installer baseline checks', () => {
     expect(result.installed).toBe(false);
   });
 
-  it('marks pre-0.18.0 omx as stale without probing api', () => {
+  it('marks pre-0.18.17 omx as stale without probing api', () => {
     const result = assessOmxInstallation(
       depsFor({
         'which omx': '/usr/local/bin/omx',
-        'omx --version': 'oh-my-codex v0.17.3',
+        'omx --version': 'oh-my-codex v0.18.16',
       })
     );
 
     expect(result.status).toBe('stale');
-    expect(result.parsedVersion).toBe('0.17.3');
+    expect(result.parsedVersion).toBe('0.18.16');
     expect(result.hasApiCommand).toBe(false);
   });
 
@@ -60,7 +60,7 @@ describe('omx installer baseline checks', () => {
     const result = assessOmxInstallation(
       depsFor({
         'which omx': '/usr/local/bin/omx',
-        'omx --version': 'oh-my-codex v0.18.0',
+        'omx --version': 'oh-my-codex v0.18.17',
         'omx api --help': new Error('unknown command'),
       })
     );
@@ -69,11 +69,11 @@ describe('omx installer baseline checks', () => {
     expect(result.installed).toBe(true);
   });
 
-  it('marks v0.18.0 with omx api as ready', () => {
+  it('marks v0.18.17 with omx api as ready', () => {
     const result = assessOmxInstallation(
       depsFor({
         'which omx': '/usr/local/bin/omx',
-        'omx --version': 'oh-my-codex v0.18.0',
+        'omx --version': 'oh-my-codex v0.18.17',
         'omx api --help': 'Usage: omx api',
       })
     );

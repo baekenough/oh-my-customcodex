@@ -2,6 +2,17 @@
 
 This guide records OpenAI Codex release-note impact decisions for oh-my-customcodex. Use it for Codex/OMX runtime compatibility notes; keep Claude-only release notes in `guides/claude-code/15-version-compatibility.md`.
 
+## oh-my-codex v0.18.17 / OMX baseline
+
+Source: upstream oh-my-codex release `v0.18.17`, Codex-port issue #1556.
+
+| Change | Impact on oh-my-customcodex | Action |
+| --- | --- | --- |
+| Ultragoal null `get_goal` loop recovery, Ralplan/planning-gate state-write guards, and stop-keyword path false-positive fixes | These are upstream OMX runtime safety fixes for workflows this package delegates to rather than reimplementing locally. | Raise the packaged `MINIMUM_OMX_VERSION` to `0.18.17` so `init`, `update`, and `doctor` require the fixed runtime instead of copying runtime internals into this child package. |
+| Team worker startup path fixes for MSYS, Windows psmux question rendering, exact-role worker CLI resolution, and tmux-session test hardening | Cross-platform Team/Question behavior belongs to the installed OMX runtime; local repo has no `src/team`, `src/question`, or `ultragoal` engine surface to patch. | Treat as runtime dependency compatibility; `omcustomcodex doctor` now flags older OMX installs as stale. |
+| Auth slot isolation/invalid token rotation and notification fallback fixes | Operational reliability improvements in upstream runtime/auth layers. | Covered by the baseline bump; no package-owned credential or notification implementation copied. |
+| Docs/dependency/model-table release churn | No direct package-owned behavior unless this repo mirrors that runtime metadata exactly. | Skip as source changes; keep this compatibility record as evidence. |
+
 ## rust-v0.141.0 / CLI 0.141.0
 
 Source: upstream OpenAI Codex release `rust-v0.141.0`, Codex-port issue #1526.

@@ -1,6 +1,6 @@
 # Skills
 
-oh-my-customcodex includes **41 skills** covering various domains.
+oh-my-customcodex includes **122 skills** covering various domains.
 
 ## Categories
 

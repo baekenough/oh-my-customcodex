@@ -1,7 +1,7 @@
 ---
 title: Status
 type: skill
-updated: 2026-04-12
+updated: 2026-07-04
 sources:
   - .codex/skills/status/SKILL.md
 related:
@@ -16,7 +16,7 @@ Show system status and health checks.
 
 ## Overview
 
-Displays a comprehensive system status: rules loaded, agent counts by category, skill counts, guide count, and available commands. `--verbose` shows each agent and skill with validity status. `--health` runs integrity checks (all agent files exist, skill references valid, external sources reachable, CLAUDE.md in sync). Used for quick system health verification.
+Displays a comprehensive system status: 23 rules (R000-R023), 50 agents, 122 skills, 52 guides, and 60+ available commands. `--verbose` shows each agent and skill with validity status. `--health` runs integrity checks (all agent files exist, skill references valid, external sources reachable, CLAUDE.md in sync). Used for quick system health verification.
 
 ## Key Details
 

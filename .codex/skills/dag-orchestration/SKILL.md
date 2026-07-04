@@ -72,7 +72,7 @@ config:
 4. Initialize queue with nodes where in-degree = 0
 5. While queue is not empty:
    a. Dequeue up to max_parallel nodes
-   b. Execute nodes in parallel via Task tool (R009)
+   b. Execute nodes in parallel via Codex native subagents (R009)
    c. On completion:
       - Success → decrement in-degree of dependents
       - Failure → apply failure_strategy
@@ -95,7 +95,7 @@ Sensitive-path compatibility note: if this skill delegates work that touches `.c
 | Max parallel | 5 concurrent nodes max, 4 default (R009) |
 | Agent Teams gate | 3+ parallel nodes → check R018 eligibility |
 | Orchestrator only | DAG scheduling runs in main conversation (R010) |
-| Node execution | Each node = one Task tool call to specified agent |
+| Node execution | Each node = one Codex native subagent task to specified role |
 | State tracking | `/tmp/.codex-dag-$PPID.json` |
 | Stall detection | Running node > 2x avg completed duration → enqueue independent pending nodes early |
 

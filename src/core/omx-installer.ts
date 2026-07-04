@@ -8,7 +8,7 @@ import { type ExecSyncOptions, execSync } from 'node:child_process';
 import { platform } from 'node:os';
 import { info, warn } from '../utils/logger.js';
 
-export const MINIMUM_OMX_VERSION = '0.18.0';
+export const MINIMUM_OMX_VERSION = '0.18.17';
 
 export interface InstallerDeps {
   exec: (cmd: string, opts?: ExecSyncOptions) => string | Buffer;

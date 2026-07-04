@@ -46,7 +46,7 @@ oh-my-customcodex's `.claude/statusline.sh` (R012) already covers Cost, Rate Lim
 
 ### SubTask Delegation (R009/R010/R018 Priority)
 
-cc-token-saver's Smart Session Architecture injects SubTask delegation patterns. Internal rules always override external skills (R010). When cc-token-saver suggests SubTask patterns, use the oh-my-customcodex routing skill + Agent tool instead, with specialized agents per domain (R010) and parallel execution when independent (R009).
+cc-token-saver's Smart Session Architecture injects SubTask delegation patterns. Internal rules always override external skills (R010). When cc-token-saver suggests SubTask patterns, translate them to oh-my-customcodex routing skills plus Codex native subagents, with specialized agents per domain (R010) and parallel execution when independent (R009).
 
 ### Token Guardian and R013 (Coexistence)
 

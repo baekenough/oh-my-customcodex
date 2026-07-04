@@ -132,7 +132,7 @@ project/
 +-- AGENTS.md                    # Entry point
 +-- .codex/
 |   +-- agents/                  # Subagent definitions (50 files)
-|   +-- skills/                  # Skills (120 directories)
+|   +-- skills/                  # Skills (122 directories)
 |   +-- rules/                   # Global rules (22 files)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (4 files)
@@ -194,7 +194,7 @@ When Codex CLI's Agent Teams feature is enabled (`OMCODEX_AGENT_TEAMS=1`), activ
 **When enabled, Agent Teams is MANDATORY for qualifying collaborative tasks (R018 MUST).**
 See R018 (MUST-agent-teams.md) for the decision matrix.
 Hybrid patterns (Claude + Codex, Dynamic Creation + Teams) are supported.
-Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
+Codex native subagents plus routing skills remain the fallback for simple/cost-sensitive tasks.
 
 ## Quick Reference
 

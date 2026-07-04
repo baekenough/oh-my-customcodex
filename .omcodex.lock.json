@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.4",
-  "generatedAt": "2026-06-21T03:53:17.253Z",
-  "templateVersion": "1.0.4",
+  "generatorVersion": "1.0.5",
+  "generatedAt": "2026-07-04T08:37:53.125Z",
+  "templateVersion": "1.0.5",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e2690ef49068c522f452b7bc26089687adf98b1039841704dfcac64a6fa8a65b",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "af12a33f73486058bcc3e19c1b2575f33d8ea17af07aafb2415e465f1d721222",
-      "size": 29118,
+      "templateHash": "40c85fd081b22ee323592e5005665d94ba20e9aae2de65da388f080ad8820fb2",
+      "size": 29122,
       "component": "rules"
     },
     ".codex/rules/MUST-intent-transparency.md": {
@@ -490,8 +490,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/git-delegation-guard.sh": {
-      "templateHash": "bcd441fd179544e27bf7e3c4cf3bc1a9b9cb02236f7407a4023741cd875a07b5",
-      "size": 2175,
+      "templateHash": "58a130aeb99015da0dd7cceb9eebadd66879989e99561f3cf080ce0d4b52f295",
+      "size": 2179,
       "component": "hooks"
     },
     ".codex/hooks/scripts/r007-r008-drift-advisor.sh": {
@@ -505,8 +505,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/agent-teams-advisor.sh": {
-      "templateHash": "6b0b3f2b53001b741a4475696cff4458e5efe73bddcc81da0d24ae4b0f5ccb24",
-      "size": 3265,
+      "templateHash": "7158beafb3e96be9a23ddcab56a9a36d76e25a6440c4ee64b5c1f5e3bb15510a",
+      "size": 3273,
       "component": "hooks"
     },
     ".codex/hooks/scripts/stuck-detector.sh": {
@@ -675,8 +675,8 @@
       "component": "guides"
     },
     "guides/claude-code/03-tools.md": {
-      "templateHash": "b3b97efc89670a68edce148a9671735b7eaae72081b1d578a8c09f402cbff699",
-      "size": 4134,
+      "templateHash": "2db66d39c9a9ffe15192a7c38c7d4b085317e52138e7dcaef65f4c8a31af33aa",
+      "size": 4132,
       "component": "guides"
     },
     "guides/claude-code/08-testing.md": {
@@ -710,8 +710,8 @@
       "component": "guides"
     },
     "guides/claude-code/06-mcp.md": {
-      "templateHash": "87a195f766e8bfe6f509e2d3482d306e8ae6cf239dc66a27caebd57c10f6f213",
-      "size": 4496,
+      "templateHash": "2ad6fce310aba8ff14bf1738430b93896254acb59fc3c0e0672065b458489819",
+      "size": 4494,
       "component": "guides"
     },
     "guides/claude-code/01-overview.md": {
@@ -750,8 +750,8 @@
       "component": "guides"
     },
     "guides/openai-codex/01-version-compatibility.md": {
-      "templateHash": "5d6a83c4d3ea1d44297c6dfddaf2cca9c44824f11d330a67e7073d80ce7f7bb0",
-      "size": 10454,
+      "templateHash": "dd164e66dfa64d1ca9f2ab8d2d9dac4ea42e7909c25758a16e08345287bac5bd",
+      "size": 11942,
       "component": "guides"
     },
     "guides/openai-codex/index.yaml": {
@@ -845,8 +845,8 @@
       "component": "guides"
     },
     "guides/cc-token-saver/README.md": {
-      "templateHash": "136a71fcb2907a92d6541ca3ed79575e7d441ef7b6b353379f885974b9602f44",
-      "size": 3904,
+      "templateHash": "999ec7dc0ac4768f62b5c00fe4934f6b5da44134a4d4af632e840470341393e4",
+      "size": 4029,
       "component": "guides"
     },
     "guides/dbt/README.md": {
@@ -915,8 +915,8 @@
       "component": "guides"
     },
     "guides/deep-plan/phases.md": {
-      "templateHash": "a910ecda1d3fde63bb372d8f6031070edd63f7cca0046fed578453417abccd1b",
-      "size": 10752,
+      "templateHash": "6f5846fb21c0ea136147e78cb19aeea548df06ca45ee5ee2fde9b19dcb7fcd7c",
+      "size": 10561,
       "component": "guides"
     },
     "guides/deep-plan/README.md": {
