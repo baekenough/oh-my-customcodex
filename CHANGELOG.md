@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-07-04
+
+### Changed
+- Port upstream oh-my-customcode v1.1.1-v1.1.2 audit cleanup by refreshing stale Sonnet/model and legacy Task/SubTask wording, retiring obsolete mandatory `/tmp` artifact-bypass guidance, and updating skill-count metadata.
+- Raise the required OMX runtime baseline to oh-my-codex v0.18.17 for #1556 so package install/update/doctor paths require the upstream workflow-safety, Team/Windows, and auth reliability fixes.
+
 ## [1.0.4] - 2026-06-21
 
 ### Changed

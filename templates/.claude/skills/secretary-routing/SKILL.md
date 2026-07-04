@@ -28,9 +28,9 @@ Routes agent management tasks to the appropriate manager agent. This skill conta
 
 ## Routing Decision (Priority Order)
 
-Before routing via Task tool, evaluate Agent Teams eligibility first:
+Before routing via Codex native subagents, evaluate Agent Teams eligibility first:
 
-**Self-check:** Does this task need 3+ agents, shared state, or inter-agent communication? If yes, prefer Agent Teams over Task tool. See R018 for the full decision matrix.
+**Self-check:** Does this task need 3+ agents, shared state, or inter-agent communication? If yes, prefer Agent Teams over individual subagents. See R018 for the full decision matrix.
 
 | Scenario | Preferred |
 |----------|-----------|

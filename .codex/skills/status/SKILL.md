@@ -24,24 +24,19 @@ Show comprehensive system status including agents, skills, guides, and health ch
 AI Agent System - Status
 
 System:
-  Rules: 10 loaded (R000-R009)
+  Rules: 23 loaded (R000-R023)
 
 Agents:
-  Orchestrator:     1 (secretary)
-  Manager:          3 (mgr-creator, mgr-updater, mgr-supplier)
-  SW Engineer:      6
-  Backend Engineer: 3
-  Infra Engineer:   2
-  Total:           15 agents
+  Total:           50 agents
 
 Skills:
-  Development:     8
-  Backend:         3
-  Infrastructure:  2
-  Total:          13 skills
+  Best Practices:  24
+  Workflow:        14
+  Other:           84
+  Total:          122 skills
 
-Guides:            12 loaded
-Commands:          11 available
+Guides:            52 loaded
+Commands:          60+ available
 
 Health: ✓ OK
 ```

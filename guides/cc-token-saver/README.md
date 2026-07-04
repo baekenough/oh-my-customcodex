@@ -38,17 +38,17 @@ The R012 statusline already covers: Cost, Rate Limit %, Weekly Limit %, Context 
 
 ### SubTask Delegation (R009/R010/R018 Priority)
 
-cc-token-saver's Smart Session Architecture auto-injects SubTask delegation patterns. oh-my-customcodex has its own delegation rules (R010) and parallel execution rules (R009/R018).
+cc-token-saver's Smart Session Architecture may inject legacy SubTask delegation patterns. oh-my-customcodex translates those to its own Codex-native delegation rules (R010) and parallel execution rules (R009/R018).
 
 **Resolution**: Internal rules always take precedence (R010 External Skills vs Internal Rules).
 
 | cc-token-saver suggests | oh-my-customcodex rule |
 |-------------------------|----------------------|
-| Use SubTask for delegation | Agent tool via routing skills (R010) |
+| Use SubTask for delegation | Codex native subagents via routing skills (R010) |
 | Sequential delegation pattern | Parallel when independent (R009) |
 | Generic subtask agent | Specialized agent by domain (R010) |
 
-Ignore cc-token-saver's SubTask suggestions when they conflict with R009/R010/R018.
+Treat cc-token-saver's SubTask suggestions as legacy Claude wording; use Codex native subagents when they do not conflict with R009/R010/R018.
 
 ### Token Guardian ↔ R013 context-budget-advisor.sh (Coexistence)
 
@@ -102,5 +102,5 @@ Reports your current rate limit hit to the community pool and shows aggregate ra
 
 - R013 ecomode and Token Guardian are complementary, not competing
 - R012 statusline supersedes cc-token-saver's Live Status Line
-- R009/R010/R018 delegation rules override cc-token-saver's SubTask patterns
+- R009/R010/R018 delegation rules translate or override cc-token-saver's legacy SubTask patterns
 - `/continue`, `/usage-view`, `/report-limit` have no conflicts with internal rules — use freely

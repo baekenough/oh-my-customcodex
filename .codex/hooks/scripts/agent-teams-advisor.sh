@@ -6,7 +6,7 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 # Agent Teams Advisor Hook
 # Trigger: PreToolUse, tool == "Task" || tool == "Agent"
-# Purpose: Track Agent/Task tool usage count per session and warn when Agent Teams may be more appropriate
+# Purpose: Track Agent/subagent usage count per session and warn when Agent Teams may be more appropriate
 # Protocol: stdin JSON -> process -> stdout pass-through, exit 0 always (advisory only)
 
 input=$(cat)
@@ -63,8 +63,8 @@ if [ "$BATCH_ISSUES" -ge 3 ] && [ "$COUNT" -eq 1 ]; then
   echo "-----------------------------------------------------------" >&2
 elif [ "$COUNT" -ge 2 ]; then
   echo "" >&2
-  echo "--- [R018 Advisor] Agent/Task tool call #${COUNT} in this session ---" >&2
-  echo "  WARNING: Multiple Task calls detected. Consider Agent Teams if:" >&2
+  echo "--- [R018 Advisor] Agent/subagent call #${COUNT} in this session ---" >&2
+  echo "  WARNING: Multiple Agent/subagent calls detected. Consider Agent Teams if:" >&2
   echo "    * 3+ agents needed for this work" >&2
   echo "    * Review -> fix -> re-review cycle exists" >&2
   echo "    * Agents need shared state or coordination" >&2

@@ -136,9 +136,9 @@ Synchronization verification:
 Agent Teams integration (conditional - when Codex/OMX Agent Teams are enabled, for example `OMCODEX_AGENT_TEAMS=1`):
 
 - Mandatory use of Agent Teams for qualifying coordinated tasks
-- Decision matrix for Task tool vs Agent Teams
+- Decision matrix for Codex native subagents vs Agent Teams
 - Team composition patterns
-- Graceful fallback to Task tool when disabled
+- Graceful fallback to Codex native subagents when disabled
 
 ## SHOULD Rules
 
