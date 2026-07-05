@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-07-05
+
+### Added
+- Add Claude Fable 5 prompting guidance for #1562, including Fable effort strategy, over-prescription warnings, long-lived lane guidance, and R006/R009/R010/R020/R023 cross-references.
+
+### Changed
+- Port upstream oh-my-customcode v1.1.3 and v1.1.6 compatibility hardening for #1561 and #1564 across source/template rules and wiki docs: Claude Code v2.1.198-v2.1.199 delegation reliability, hook visibility, background-agent notification notes, verification-delegation non-termination, detection-guard design, and new-file count-impact checks.
+- Raise the required OMX runtime baseline to oh-my-codex v0.19.0 for #1565 so package install/update/doctor paths require the upstream planning-gate, handoff, subagent provenance, Ralplan, Madmax, Ultragoal HUD, and Rust reliability fixes.
+- Record upstream oh-my-customcode v1.1.5 (#1563) as a parent-only pre-commit coverage ANSI fix; this package's pre-commit hook has no coverage parser to port.
+
 ## [1.0.5] - 2026-07-04
 
 ### Changed

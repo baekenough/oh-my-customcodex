@@ -69,3 +69,7 @@ documents:
     title: 버전 호환성
     description: Claude Code 릴리스별 oh-my-customcodex 호환성 판단 기록
     path: ./15-version-compatibility.md
+  - name: fable5-prompting
+    title: Claude Fable 5 Prompting Guide
+    description: Fable 5 prompting and harness-tuning patterns mapped to R006/R009/R010/R020/R023
+    path: ./16-fable5-prompting.md

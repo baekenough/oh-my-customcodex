@@ -1,10 +1,11 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-06-21
+updated: 2026-07-05
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/15-version-compatibility.md
+  - guides/claude-code/16-fable5-prompting.md
 related:
   - [[mgr-claude-code-bible]]
   - [[r010]]
@@ -23,6 +24,13 @@ Covers Claude's advanced API features for building Claude Code-compatible applic
 ## v2.1.178 compatibility updates
 
 The Claude compatibility guide now records v2.1.178 impacts from upstream oh-my-customcode v1.0.9 / Codex-port #1524 while keeping Codex/OMX as the active runtime boundary: per-parameter `Tool(param:value)` permission denies, compaction `fallbackModel` use, nested `.claude/skills` loading with `<dir>:<name>` disambiguation, MCP `disallowedTools` honoring, nearest `.claude/` collision precedence, auto-mode subagent pre-launch classification, and background-agent custom-gateway auth fixes.
+
+
+## v2.1.198-v2.1.199 and Fable 5 updates
+
+Reviewed on 2026-07-05 for #1561, #1562, and #1564. The Claude compatibility guide now records Explore model/extended-thinking inheritance, hook stderr visibility, stacked slash-skill loading depth, subagent partial-work/error reporting, Agent Teams retry/reporting fixes, background-agent auto-commit/PR lifecycle reliability, and `Notification` events for `agent_needs_input` / `agent_completed`. These are Claude-template compatibility notes; Codex/OMX role routing remains primary.
+
+The new `guides/claude-code/16-fable5-prompting.md` page records Fable 5 prompting guidance: high effort by default, `xhigh` only for capability-sensitive work, concise prompts to avoid over-prescription, long-lived bounded lanes as an option, R020 ground-truth completion, R010 boundary clarity, and Mythos 5 as limited availability / not GA.
 
 ## Key Topics
 

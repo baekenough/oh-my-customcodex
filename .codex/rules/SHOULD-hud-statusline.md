@@ -23,6 +23,8 @@ Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` �
 
 > **v2.1.172+ Claude compatibility**: The `claude_code.lines_of_code.count` OTEL metric includes a `model` attribute, so lines-of-code telemetry can be sliced by model when monitoring is enabled. This extends the per-dimension slicing configured through the `monitoring-setup` skill.
 
+> **v2.1.198+ Claude compatibility**: background agent notifications fire the `Notification` hook when a session needs input or completes (`agent_needs_input` / `agent_completed`). Combine those notifications with HUD/statusline evidence so long-running Claude compatibility work does not appear silently idle. Codex/OMX status remains driven by native runtime state and `.codex/statusline.sh`.
+
 <!-- DETAIL: HUD Events full spec
 ### When to Display: Multi-step tasks, parallel execution, long-running operations. Skip for single brief operations.
 ### Parallel Display:

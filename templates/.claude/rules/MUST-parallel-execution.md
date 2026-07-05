@@ -90,6 +90,10 @@ Claude Code parallel tool calls in a single batch are independent — one failed
 | Instance independence | Isolated context, no shared state |
 | Large tasks (>3 min) | MUST split into parallel sub-tasks |
 
+<!-- DETAIL: Fable 5 long-lived subagent reuse
+Fable 5 is strong at long-horizon, long-lived subagent reuse. That does not weaken R009: independent work should still run in parallel, but Claude-template Fable 5 agents may carry a coherent multi-step lane longer instead of splitting every step into short-lived agents. See `guides/claude-code/16-fable5-prompting.md`.
+-->
+
 ## Capability-Aware Parallel Planning
 
 When capability metadata is available (for example via `action-validator` policy cache hints), use it to refine R009 parallelization decisions:

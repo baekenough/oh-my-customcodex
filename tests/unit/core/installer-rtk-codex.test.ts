@@ -20,9 +20,9 @@ import { join } from 'node:path';
 const readyOmxAssessment = () => ({
   status: 'ready',
   installed: true,
-  version: 'oh-my-codex v0.18.17',
-  parsedVersion: '0.18.17',
-  minimumVersion: '0.18.17',
+  version: 'oh-my-codex v0.19.0',
+  parsedVersion: '0.19.0',
+  minimumVersion: '0.19.0',
   hasApiCommand: true,
 });
 
@@ -31,7 +31,7 @@ const missingOmxAssessment = () => ({
   installed: false,
   version: null,
   parsedVersion: null,
-  minimumVersion: '0.18.17',
+  minimumVersion: '0.19.0',
   hasApiCommand: false,
 });
 
@@ -40,7 +40,7 @@ const staleOmxAssessment = () => ({
   installed: true,
   version: 'oh-my-codex v0.17.3',
   parsedVersion: '0.17.3',
-  minimumVersion: '0.18.17',
+  minimumVersion: '0.19.0',
   hasApiCommand: false,
 });
 
@@ -129,13 +129,13 @@ function assessOmxFromDepsOr(fallback: () => MockOmxAssessment) {
     }
 
     const parsedVersion = parseMockOmxVersion(version);
-    if (parsedVersion && compareMockOmxVersions(parsedVersion, '0.18.17') < 0) {
+    if (parsedVersion && compareMockOmxVersions(parsedVersion, '0.19.0') < 0) {
       return {
         status: 'stale',
         installed: true,
         version,
         parsedVersion,
-        minimumVersion: '0.18.17',
+        minimumVersion: '0.19.0',
         hasApiCommand: false,
       };
     }
@@ -154,7 +154,7 @@ function assessOmxFromDepsOr(fallback: () => MockOmxAssessment) {
         installed: true,
         version,
         parsedVersion,
-        minimumVersion: '0.18.17',
+        minimumVersion: '0.19.0',
         hasApiCommand: false,
       };
     }
@@ -165,7 +165,7 @@ function assessOmxFromDepsOr(fallback: () => MockOmxAssessment) {
         installed: true,
         version,
         parsedVersion: null,
-        minimumVersion: '0.18.17',
+        minimumVersion: '0.19.0',
         hasApiCommand: false,
       };
     }
@@ -175,20 +175,20 @@ function assessOmxFromDepsOr(fallback: () => MockOmxAssessment) {
       installed: true,
       version,
       parsedVersion,
-      minimumVersion: '0.18.17',
+      minimumVersion: '0.19.0',
       hasApiCommand,
     };
   };
 }
 
 const omxInstallerMockBase = {
-  MINIMUM_OMX_VERSION: '0.18.17',
+  MINIMUM_OMX_VERSION: '0.19.0',
   compareOmxVersions: compareMockOmxVersions,
   hasOmxApiCommand: () => true,
   isOmxReady: () => true,
   isOmxVersionAtLeast: (version: string | null) => {
     const parsedVersion = parseMockOmxVersion(version);
-    return parsedVersion !== null && compareMockOmxVersions(parsedVersion, '0.18.17') >= 0;
+    return parsedVersion !== null && compareMockOmxVersions(parsedVersion, '0.19.0') >= 0;
   },
   parseOmxVersion: parseMockOmxVersion,
 };
@@ -235,11 +235,11 @@ describe('installer RTK/Codex/OMX paths', () => {
     }));
     mock.module('../../../src/core/omx-installer.js', () => ({
       ...omxInstallerMockBase,
-      MINIMUM_OMX_VERSION: '0.18.17',
+      MINIMUM_OMX_VERSION: '0.19.0',
       assessOmxInstallation: assessOmxFromDepsOr(readyOmxAssessment),
       isOmxInstalled: () => true,
       installOmx: () => true,
-      getOmxVersion: () => 'oh-my-codex v0.18.17',
+      getOmxVersion: () => 'oh-my-codex v0.19.0',
     }));
 
     const { install } = await import('../../../src/core/installer.js');
@@ -264,11 +264,11 @@ describe('installer RTK/Codex/OMX paths', () => {
     }));
     mock.module('../../../src/core/omx-installer.js', () => ({
       ...omxInstallerMockBase,
-      MINIMUM_OMX_VERSION: '0.18.17',
+      MINIMUM_OMX_VERSION: '0.19.0',
       assessOmxInstallation: assessOmxFromDepsOr(readyOmxAssessment),
       isOmxInstalled: () => true,
       installOmx: () => true,
-      getOmxVersion: () => 'oh-my-codex v0.18.17',
+      getOmxVersion: () => 'oh-my-codex v0.19.0',
     }));
 
     const { install } = await import('../../../src/core/installer.js');
@@ -295,11 +295,11 @@ describe('installer RTK/Codex/OMX paths', () => {
     }));
     mock.module('../../../src/core/omx-installer.js', () => ({
       ...omxInstallerMockBase,
-      MINIMUM_OMX_VERSION: '0.18.17',
+      MINIMUM_OMX_VERSION: '0.19.0',
       assessOmxInstallation: assessOmxFromDepsOr(readyOmxAssessment),
       isOmxInstalled: () => true,
       installOmx: () => true,
-      getOmxVersion: () => 'oh-my-codex v0.18.17',
+      getOmxVersion: () => 'oh-my-codex v0.19.0',
     }));
 
     const { install } = await import('../../../src/core/installer.js');
@@ -324,11 +324,11 @@ describe('installer RTK/Codex/OMX paths', () => {
     }));
     mock.module('../../../src/core/omx-installer.js', () => ({
       ...omxInstallerMockBase,
-      MINIMUM_OMX_VERSION: '0.18.17',
+      MINIMUM_OMX_VERSION: '0.19.0',
       assessOmxInstallation: assessOmxFromDepsOr(readyOmxAssessment),
       isOmxInstalled: () => true,
       installOmx: () => true,
-      getOmxVersion: () => 'oh-my-codex v0.18.17',
+      getOmxVersion: () => 'oh-my-codex v0.19.0',
     }));
 
     const { install } = await import('../../../src/core/installer.js');
@@ -353,11 +353,11 @@ describe('installer RTK/Codex/OMX paths', () => {
     }));
     mock.module('../../../src/core/omx-installer.js', () => ({
       ...omxInstallerMockBase,
-      MINIMUM_OMX_VERSION: '0.18.17',
+      MINIMUM_OMX_VERSION: '0.19.0',
       assessOmxInstallation: assessOmxFromDepsOr(readyOmxAssessment),
       isOmxInstalled: () => true,
       installOmx: () => true,
-      getOmxVersion: () => 'oh-my-codex v0.18.17',
+      getOmxVersion: () => 'oh-my-codex v0.19.0',
     }));
 
     const { install } = await import('../../../src/core/installer.js');
@@ -387,11 +387,11 @@ describe('installer RTK/Codex/OMX paths', () => {
     }));
     mock.module('../../../src/core/omx-installer.js', () => ({
       ...omxInstallerMockBase,
-      MINIMUM_OMX_VERSION: '0.18.17',
+      MINIMUM_OMX_VERSION: '0.19.0',
       assessOmxInstallation: assessOmxFromDepsOr(readyOmxAssessment),
       isOmxInstalled: () => true,
       installOmx: () => true,
-      getOmxVersion: () => 'oh-my-codex v0.18.17',
+      getOmxVersion: () => 'oh-my-codex v0.19.0',
     }));
     // Mock lockfile module to return a warning, simulating lockfile generation failure
     mock.module('../../../src/core/lockfile.js', () => ({
@@ -436,7 +436,7 @@ describe('installer RTK/Codex/OMX paths', () => {
     }));
     mock.module('../../../src/core/omx-installer.js', () => ({
       ...omxInstallerMockBase,
-      MINIMUM_OMX_VERSION: '0.18.17',
+      MINIMUM_OMX_VERSION: '0.19.0',
       assessOmxInstallation: assessOmxFromDepsOr(missingOmxAssessment),
       isOmxInstalled: () => false,
       installOmx: () => false,
@@ -463,7 +463,7 @@ describe('installer RTK/Codex/OMX paths', () => {
     }));
     mock.module('../../../src/core/omx-installer.js', () => ({
       ...omxInstallerMockBase,
-      MINIMUM_OMX_VERSION: '0.18.17',
+      MINIMUM_OMX_VERSION: '0.19.0',
       assessOmxInstallation: assessOmxFromDepsOr(missingOmxAssessment),
       isOmxInstalled: () => false,
       installOmx: () => true,
@@ -492,7 +492,7 @@ describe('installer RTK/Codex/OMX paths', () => {
     }));
     mock.module('../../../src/core/omx-installer.js', () => ({
       ...omxInstallerMockBase,
-      MINIMUM_OMX_VERSION: '0.18.17',
+      MINIMUM_OMX_VERSION: '0.19.0',
       assessOmxInstallation: assessOmxFromDepsOr(staleOmxAssessment),
       isOmxInstalled: () => true,
       installOmx: () => {

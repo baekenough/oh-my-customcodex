@@ -256,6 +256,8 @@ Claude Code v2.1.172+ fixes background agents potentially reading another projec
 
 Claude Code v2.1.174+ fixes background sessions inheriting another session's `ANTHROPIC_*` provider environment (gateway URL, custom headers, `/model` aliases) from the shell that started the background daemon. It also fixes pre-warmed background workers failing with `Could not resolve authentication method` after sitting idle. This is a Claude-template isolation improvement; Codex/OMX sessions still keep explicit agent routing and permission boundaries.
 
+Claude Code v2.1.198+ background agents can auto-commit, push, and open draft PRs after completing work in a worktree, and retry transient network aborts. Claude Code v2.1.199+ returns partial subagent work on rate-limit/server errors and fixes several background-daemon lifecycle races. These are Claude-template reliability improvements only; Codex/OMX workflows must still make write authority explicit, keep release branches auditable, and verify the repository state before claiming completion.
+
 ## Agent Capability Pre-Check
 
 Before delegating work, compare the task requirements with the target agent frontmatter:
@@ -282,6 +284,16 @@ Required check:
 4. For multi-copy assets, verify all source/template mirrors before assigning the edit. If the copies are expected to match, check content identity (`cmp`, checksum, or `diff -q`) before delegation; if they intentionally differ, document the canonical source and drift rationale in the prompt.
 
 Do not rely on the delegate to repair stale path guesses in shared workflow, rule, guide, or release tasks.
+
+### New-File Count-Impact Pre-Check
+
+Before delegating a new-file addition that may affect a count in manifests, guide indexes, wiki summaries, or release notes, determine whether the file creates a new top-level topic/entity directory or only adds a document inside an existing directory. Measure the relevant top-level directories first, for example `find <dir> -mindepth 1 -maxdepth 1 -type d | wc -l`, and tell the delegate to sync based on the measured value rather than guessing a count change.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Delegating `count N→N+1` for a file under an existing topic directory | Measure directory/topic count first; pass the measured value and allow count to remain unchanged |
+
+Origin: upstream #1443; `guides/claude-code/16-fable5-prompting.md` is a new document inside an existing guide topic, so top-level guide count remains unchanged.
 
 <!-- DETAIL: Autonomous Execution Mode
 

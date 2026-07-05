@@ -3,9 +3,9 @@ import { afterEach, describe, expect, it, mock } from 'bun:test';
 const readyAssessment = {
   status: 'ready',
   installed: true,
-  version: 'oh-my-codex v0.18.17',
-  parsedVersion: '0.18.17',
-  minimumVersion: '0.18.17',
+  version: 'oh-my-codex v0.19.0',
+  parsedVersion: '0.19.0',
+  minimumVersion: '0.19.0',
   hasApiCommand: true,
 };
 
@@ -86,7 +86,7 @@ function assessOmxFromDepsOr(fallback: () => MockOmxAssessment) {
         installed: false,
         version: null,
         parsedVersion: null,
-        minimumVersion: '0.18.17',
+        minimumVersion: '0.19.0',
         hasApiCommand: false,
       };
     }
@@ -101,13 +101,13 @@ function assessOmxFromDepsOr(fallback: () => MockOmxAssessment) {
     }
 
     const parsedVersion = parseMockOmxVersion(version);
-    if (parsedVersion && compareMockOmxVersions(parsedVersion, '0.18.17') < 0) {
+    if (parsedVersion && compareMockOmxVersions(parsedVersion, '0.19.0') < 0) {
       return {
         status: 'stale',
         installed: true,
         version,
         parsedVersion,
-        minimumVersion: '0.18.17',
+        minimumVersion: '0.19.0',
         hasApiCommand: false,
       };
     }
@@ -126,7 +126,7 @@ function assessOmxFromDepsOr(fallback: () => MockOmxAssessment) {
         installed: true,
         version,
         parsedVersion,
-        minimumVersion: '0.18.17',
+        minimumVersion: '0.19.0',
         hasApiCommand: false,
       };
     }
@@ -137,7 +137,7 @@ function assessOmxFromDepsOr(fallback: () => MockOmxAssessment) {
         installed: true,
         version,
         parsedVersion: null,
-        minimumVersion: '0.18.17',
+        minimumVersion: '0.19.0',
         hasApiCommand: false,
       };
     }
@@ -147,24 +147,24 @@ function assessOmxFromDepsOr(fallback: () => MockOmxAssessment) {
       installed: true,
       version,
       parsedVersion,
-      minimumVersion: '0.18.17',
+      minimumVersion: '0.19.0',
       hasApiCommand,
     };
   };
 }
 
 const omxInstallerMockBase = {
-  MINIMUM_OMX_VERSION: '0.18.17',
+  MINIMUM_OMX_VERSION: '0.19.0',
   compareOmxVersions: compareMockOmxVersions,
   hasOmxApiCommand: () => true,
   isOmxInstalled: () => true,
   isOmxReady: () => true,
   isOmxVersionAtLeast: (version: string | null) => {
     const parsedVersion = parseMockOmxVersion(version);
-    return parsedVersion !== null && compareMockOmxVersions(parsedVersion, '0.18.17') >= 0;
+    return parsedVersion !== null && compareMockOmxVersions(parsedVersion, '0.19.0') >= 0;
   },
   parseOmxVersion: parseMockOmxVersion,
-  getOmxVersion: () => 'oh-my-codex v0.18.17',
+  getOmxVersion: () => 'oh-my-codex v0.19.0',
 };
 
 describe('doctor OMX baseline checks', () => {
@@ -172,16 +172,16 @@ describe('doctor OMX baseline checks', () => {
     mock.restore();
   });
 
-  it('warns when OMX is below the required v0.18.17 baseline', async () => {
+  it('warns when OMX is below the required v0.19.0 baseline', async () => {
     mock.module('../../../src/core/omx-installer.js', () => ({
       ...omxInstallerMockBase,
-      MINIMUM_OMX_VERSION: '0.18.17',
+      MINIMUM_OMX_VERSION: '0.19.0',
       assessOmxInstallation: assessOmxFromDepsOr(() => ({
         status: 'stale',
         installed: true,
         version: 'oh-my-codex v0.17.3',
         parsedVersion: '0.17.3',
-        minimumVersion: '0.18.17',
+        minimumVersion: '0.19.0',
         hasApiCommand: false,
       })),
       installOmx: () => true,
@@ -192,19 +192,19 @@ describe('doctor OMX baseline checks', () => {
 
     expect(result.status).toBe('warn');
     expect(result.fixable).toBe(true);
-    expect(result.message).toContain('v0.18.17');
+    expect(result.message).toContain('v0.19.0');
   });
 
   it('warns when OMX is new enough but lacks omx api', async () => {
     mock.module('../../../src/core/omx-installer.js', () => ({
       ...omxInstallerMockBase,
-      MINIMUM_OMX_VERSION: '0.18.17',
+      MINIMUM_OMX_VERSION: '0.19.0',
       assessOmxInstallation: assessOmxFromDepsOr(() => ({
         status: 'api-missing',
         installed: true,
-        version: 'oh-my-codex v0.18.17',
-        parsedVersion: '0.18.17',
-        minimumVersion: '0.18.17',
+        version: 'oh-my-codex v0.19.0',
+        parsedVersion: '0.19.0',
+        minimumVersion: '0.19.0',
         hasApiCommand: false,
       })),
       installOmx: () => true,
@@ -221,7 +221,7 @@ describe('doctor OMX baseline checks', () => {
   it('passes when OMX meets the baseline and exposes omx api', async () => {
     mock.module('../../../src/core/omx-installer.js', () => ({
       ...omxInstallerMockBase,
-      MINIMUM_OMX_VERSION: '0.18.17',
+      MINIMUM_OMX_VERSION: '0.19.0',
       assessOmxInstallation: assessOmxFromDepsOr(() => readyAssessment),
       installOmx: () => true,
     }));
