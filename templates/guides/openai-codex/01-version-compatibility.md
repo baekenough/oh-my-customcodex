@@ -2,6 +2,15 @@
 
 This guide records OpenAI Codex release-note impact decisions for oh-my-customcodex. Use it for Codex/OMX runtime compatibility notes; keep Claude-only release notes in `guides/claude-code/15-version-compatibility.md`.
 
+## oh-my-codex v0.19.0 / OMX baseline
+
+Source: upstream oh-my-codex release `v0.19.0`, Codex-port issue #1565.
+
+| Change | Impact on oh-my-customcodex | Action |
+| --- | --- | --- |
+| Planning-gate and handoff transport lock-down, conductor contract, typed subagent provenance/lane fences, Ralplan consensus/terminal-state handling, Madmax fixes, Ultragoal HUD, and Rust flake fix | These are upstream OMX runtime reliability and safety fixes for workflows this package delegates to rather than reimplementing locally. | Raise the packaged `MINIMUM_OMX_VERSION` to `0.19.0` so `init`, `update`, and `doctor` require the fixed runtime. |
+| Release note states no intended breaking CLI/package/plugin-layout/config changes | No source migration, package dependency change, or template format change is required beyond the runtime baseline. | Record compatibility disposition and keep Codex/OMX runtime behavior external. |
+
 ## oh-my-codex v0.18.17 / OMX baseline
 
 Source: upstream oh-my-codex release `v0.18.17`, Codex-port issue #1556.

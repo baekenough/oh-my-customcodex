@@ -53,6 +53,10 @@ Claude Code v2.1.166+ no longer propagates user authority through cross-session 
 Claude Code v2.1.169+ makes `claude agents --json` include blocked and just-dispatched background sessions, adds `--all` for completed sessions, and includes `id` plus `state`. In Claude-template Agent Teams compatibility checks, prefer `--all` + `state` as ground truth for blocked/running/completed instead of inferring completion from a member disappearing from the active list. Codex/OMX sessions should use their native runtime state plus deterministic repository evidence.
 -->
 
+<!-- DETAIL: Claude Agent Teams Reliability Updates (Claude Code v2.1.198-v2.1.199)
+Claude Code v2.1.198+ reports teammate API errors to the lead as failed and wakes stuck teammates when messaged so they can retry. Claude Code v2.1.199+ returns partial work on rate-limit/server errors and reports API errors to the parent instead of misclassifying them as success. These fixes reduce false-success risk in Claude-template Agent Teams, but SendMessage reports remain low-reliability until backed by deterministic evidence such as `git status`, validation scripts, or native OMX state.
+-->
+
 ## Self-Check Before Agent Tool
 
 Quick rule: explicit user preference for plain subagents wins. Otherwise use Teams for 3+ agents, review cycles, shared state, complex debugging, dynamic creation, or multi-issue batches; use Agent Tool for 1-2 simple tasks, sequential scaffolding, or mechanical disjoint-file batches with explicit scopes.

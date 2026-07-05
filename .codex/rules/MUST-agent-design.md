@@ -24,12 +24,19 @@ tools: [Read, Write, ...]  # Allowed tools
 | `opus` | claude-opus-4-6 | Complex reasoning, architecture |
 | `opusplan` | claude-opus-4-6 + plan mode | Architecture planning with approval gates |
 | `opus47` | claude-opus-4-7 | Latest Opus model, supports xhigh effort |
+| `fable` | claude-fable-5 | Claude compatibility only; high default effort; omit `[1m]` |
 
 <!-- DETAIL: Fable and Extended Context Aliases (Claude Code v2.1.170+)
 `fable` resolves to `claude-fable-5` for Claude compatibility only: Mythos-class model, tier above Opus; do not change Codex/OMX routing defaults. Extended context suffix `[1m]` (for example, `claude-opus-4-6[1m]`) enables a 1M token context window. For Fable 5, do not append `[1m]`; Claude Code v2.1.173+ strips it because Fable includes 1M context by default.
+
+Fable 5 effort strategy: Fable 5 defaults to high effort; reserve `xhigh` for capability-sensitive architecture, reasoning, or verification work. Its `low`/`medium` effort can exceed earlier-model high-effort quality, so avoid reflexive `xhigh` in Claude-template agents. Mythos 5 (`claude-mythos-5`) is Project Glasswing limited availability, not GA; do not add an alias until it is generally available. See `guides/claude-code/16-fable5-prompting.md` for Fable/Mythos prompting patterns and over-prescription risks.
 -->
 
 <!-- DETAIL: Fallback Models and Thinking Toggle (Claude Code v2.1.166+)
+
+Claude Code v2.1.198+ makes the built-in Explore agent inherit the main session model (capped at Opus) instead of staying fixed to Haiku, and makes subagents plus compaction inherit the session's extended-thinking setting. This improves Claude-template delegation quality, but Codex-native subagents still follow the installed OMX role/model contract.
+
+Claude Code v2.1.199+ shows stderr for SessionStart/Setup/SubagentStart hooks that exit 2, improving hard-block/advisory hook debugging. It also loads up to five leading stacked slash-skill calls (for example `/skill-a /skill-b do X`), reducing context loss in chained compatibility skills such as `omcustomcodex:fsd`; keep using explicit `$skill`/namespaced surfaces in Codex sessions.
 Claude compatibility settings can declare up to three `fallbackModel` entries tried in order when the primary Claude model is overloaded or unavailable. `--fallback-model` also applies to interactive Claude sessions. Treat this as platform availability failover, not Codex-native model routing or outcome-based escalation. Claude Code v2.1.166+ also supports disabling default thinking with `MAX_THINKING_TOKENS=0`, `--thinking disabled`, or the per-model thinking toggle. Claude Code v2.1.169+ adds `--safe-mode` / `CLAUDE_CODE_SAFE_MODE` to disable customizations for regression isolation, plus `disableBundledSkills` / `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` to hide bundled skills/workflows/slash commands when they conflict with project skills. Codex-native agents continue to use the OMX model contract and `reasoning_effort` routing. Claude Code v2.1.172+ applies `availableModels` restrictions to subagent `model:` overrides, the agent dispatch model picker, and the advisor model; compatibility allowlists should account for version-specific IDs and 1M suffix handling. Claude Code v2.1.173+ auto-normalizes Fable 5 IDs with redundant `[1m]` suffixes. Claude Code v2.1.175+ adds `enforceAvailableModels`, which constrains the resolved Default model as well as subagent overrides and prevents user/project settings from widening a managed allowlist.
 -->
 

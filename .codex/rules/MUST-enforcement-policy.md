@@ -42,6 +42,10 @@ Promotion requires: (1) measured violation rate data, (2) user approval, (3) rol
 | `rule-deletion-guard.sh` | 2026-04-08 | User-requested: rule files must require individual confirmation before deletion. Prevents accidental bulk deletion of project rules. |
 -->
 
+## Claude Compatibility Hook Visibility
+
+Claude Code v2.1.199+ displays stderr from SessionStart/Setup/SubagentStart hooks when they exit 2. This strengthens observability for hard-block and advisory hooks in packaged Claude templates, complementing structured `hookSpecificOutput.additionalContext` without changing the Codex/OMX enforcement model.
+
 ## Integration
 
 | Rule | Interaction |

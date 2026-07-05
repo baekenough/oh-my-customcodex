@@ -59,6 +59,10 @@ R021 (MUST-enforcement-policy)과 R023은 **직교**한다. 두 규칙은 서로
 
 R021은 위반 시 어떻게 멈출지를, R023은 어떤 순서로 검증할지를 정의한다.
 
+## Fable 5 Over-Prescription Advisory
+
+Fable 5 follows instructions strongly enough that overly long, overly procedural prompts can reduce quality. When authoring Fable-targeted skills, agents, or delegation prompts, prefer concise goals, boundaries, and evidence requirements over repeating entire rulebooks. This advisory is orthogonal to R023: it concerns instruction compactness, while R023 concerns verification cost order. See `guides/claude-code/16-fable5-prompting.md`.
+
 ## Self-Check
 
 새 검증 도구 추가 시:
@@ -80,6 +84,18 @@ R021은 위반 시 어떻게 멈출지를, R023은 어떤 순서로 검증할지
 - [ ] 기존 안전 규칙(R001/R002)과의 우선순위가 명시되어 있는가?
 
 하나라도 불확실하면 **먼저 carve-out을 명시(Tier 1 우선 해결)**하고, 그래도 불확실하면 Tier 3 적대적 검증(`adversarial-review`, `multi-model-verification`)을 통과시킨 뒤 release한다 (ladder 순서 유지). 이는 R023 shift-left 원칙(저렴한 tier 우선)을 룰 작성 자체에 적용한 것이며, R016 룰 작성 워크플로우의 Tier-1 품질 게이트로 동작한다 (R016은 위반 후 룰 업데이트 소유, R023 carve-out은 안전-신호 룰 작성 시 사전 점검 — 직교). Closes #1353.
+
+## Detection Guard Delegation Standard
+
+When delegating Tier-1 detection guards such as deprecated-pattern grep checks, specify the difference between positive defects and negative/deprecated-context descriptions. Bare grep patterns can self-block on correct documentation that says a pattern is deprecated or no longer required.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Delegate a bare pattern scan that matches both mandates and deprecation notes | Require positive-match context (MUST/MANDATORY/use) and carve out negative context (deprecated/no longer/unnecessary) |
+
+Workflow prompt sanity checks must also catch unescaped shell variables in JavaScript template literals. Look for `$?`, `${PIPESTATUS[0]}`, command substitutions, and similar shell fragments inside prompt strings; escape them as `\${...}` when the string is evaluated by JavaScript before reaching Bash. `node --check` catches syntax, not this runtime interpolation failure.
+
+Origin: upstream #1438; a verify prompt containing `${PIPESTATUS[0]}` failed at runtime as `PIPESTATUS is not defined`.
 
 ## Integration
 
@@ -111,6 +127,7 @@ Before invoking a Workflow script, deterministically verify:
 | No unresolved placeholders (`{phase1_summary}`, `TODO`, `<...>`, `{{ }}`) remain in any agent prompt string | An unfilled placeholder reaches the agent verbatim → garbled task |
 | Template-literal / string concatenation produces the intended prompt (assemble-before-call, see above) | Post-call concatenation (`agent(prompt) + FACTS`) silently drops content |
 | Script parses — balanced braces/quotes, valid JS | A syntax error aborts the entire run after partial work |
+| Shell variables inside JS template prompt strings are escaped (`\${PIPESTATUS[0]}`, `$?`, `$(...)`) | Prevents JavaScript interpolation from turning shell variables into runtime `ReferenceError`s |
 
 #### Common Violation (#1271)
 Session 106 follow-up to #1266 ③: a Workflow authoring error recurred — the guardrail fact-sheet was concatenated onto the agent's RETURN VALUE instead of the prompt string, and a placeholder/assembly slip went uncaught because no pre-run sanity check existed. This check is the deterministic Tier-1 guard that catches such slips before the expensive run.

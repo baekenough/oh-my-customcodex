@@ -2,6 +2,39 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
+## v2.1.199
+
+Reviewed: 2026-07-05.
+
+Source: upstream oh-my-customcode v1.1.3 / #1561 and v1.1.6 / #1564.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| SessionStart/Setup/SubagentStart hooks now surface stderr when exiting 2 | Improves Claude-template hard-block/advisory hook debugging. | Document in R006/R021; Codex/OMX enforcement remains advisory-first plus local hooks. |
+| Stacked slash-skill calls load up to five leading skills | Reduces context loss for chained Claude compatibility skill invocations. | Document in R006; keep `omcustomcodex:` namespaced skill surfaces for this package. |
+| Subagent rate-limit/server errors return partial work and API errors are no longer reported as success | Lowers false-success risk for Claude subagents and Agent Teams. | Document in R018/R020; still require deterministic repository/test/API evidence before accepting completion. |
+
+## v2.1.198
+
+Reviewed: 2026-07-05.
+
+Source: upstream oh-my-customcode v1.1.3 / #1561.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Built-in Explore agent inherits the main session model and subagents/compaction inherit extended-thinking settings | Improves Claude-template exploration/delegation quality. | Record as Claude compatibility only; Codex-native subagents still use installed OMX roles and model metadata. |
+| Background agents can auto-commit/push/open draft PRs after completing work, with better transient-network retry behavior | Reduces false blockers for Claude background-agent flows. | Document in R010; keep release branches and PR state explicitly verified by Git/GitHub evidence. |
+| Background agent notifications fire for needs-input and completed states | Better observability for long-running Claude compatibility sessions. | Document in R012; Codex/OMX status remains native runtime state plus `.codex/statusline.sh`. |
+| Agent Teams reports teammate API failures and wakes stuck teammates on message | Improves retry behavior but does not make SendMessage self-report authoritative. | Document in R018 and keep deterministic ground-truth checks. |
+
+## Claude Fable 5 prompting guide
+
+Reviewed: 2026-07-05.
+
+Source: upstream oh-my-customcode v1.1.4 / #1562.
+
+`guides/claude-code/16-fable5-prompting.md` records Fable 5 prompting guidance for packaged Claude compatibility sessions: high effort by default, `xhigh` only for capability-sensitive work, concise prompts over over-prescription, long-lived bounded lanes when appropriate, and Mythos 5 as limited availability / not GA. This does not change Codex-native OMX model routing.
+
 ## v2.1.178
 
 Published: 2026-06-15.

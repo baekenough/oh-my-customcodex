@@ -162,6 +162,18 @@ Subagents often report failures as "pre-existing", "baseline", or "unchanged". T
 Never accept "pre-existing" without direct base-branch evidence. A false "pre-existing" claim can mask a regression introduced by the current change.
 -->
 
+### Verification-Delegation Non-Termination
+
+When delegating structural verification, release-quality judgment, or a quality gate, the prompt must state: **do not end the turn without a final PASS/FAIL verdict**. A mid-step verifier report is not completion evidence. If a verifier stops while still comparing hashes, reading logs, or drafting findings, resume it and obtain the final verdict before proceeding.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Verification delegate stops after partial analysis with no verdict | Prompt for a final PASS/FAIL and resume on mid-step termination |
+
+Origin: upstream #1443; prevents incomplete R017/deep-verify handoffs from being treated as release evidence.
+
+> **Claude Code v2.1.199+ compatibility**: subagent API errors are reported to the parent instead of being self-reported as success. This lowers false-success frequency, but R020 still requires canonical ground-truth verification (`git status`, grep, tests, validation scripts, registry/API checks) before accepting a subagent report.
+
 ## Common False Completion Patterns — 7 anti-patterns including "Command executed" without exit code check, "Waiting for manual publish" when CI auto-publishes. See full table via Read tool.
 
 <!-- DETAIL: Common False Completion Patterns
