@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-07-06
+
+### Changed
+- Port upstream oh-my-customcode v1.1.7 compatibility notes for #1567 across source/template rules, Claude compatibility guides, and wiki docs: Claude Code v2.1.200-v2.1.201 Manual permission labeling, AskUserQuestion no-auto-continue behavior, subagent pre-output rate-limit clean failures, background lifecycle hardening, MCP config resilience, and Sonnet 5 harness-reminder delivery changes.
+
 ## [1.0.6] - 2026-07-05
 
 ### Added

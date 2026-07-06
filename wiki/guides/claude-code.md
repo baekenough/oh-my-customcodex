@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-07-05
+updated: 2026-07-06
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/15-version-compatibility.md
@@ -204,3 +204,7 @@ The Codex port does not currently ignore `docs/superpowers/plans/`, so nested pl
 
 - `guides/claude-code/01-overview.md` — feature overview, tool catalog, API capabilities
 - `guides/claude-code/15-version-compatibility.md` — per-version compatibility notes
+
+### v2.1.200-v2.1.201 compatibility
+
+The Claude compatibility guide now records upstream oh-my-customcode v1.1.7 / #1567: `default` permission mode appears as `Manual` while remaining behaviorally identical, `AskUserQuestion` no longer auto-continues by default, pre-output subagent rate-limit failures surface as clean failures, background daemon lifecycle handling is more robust, `.claude.json` MCP server array mistakes no longer crash startup, and Sonnet 5 harness reminders no longer arrive as mid-conversation `system` role messages. These are Claude-template compatibility notes only; Codex-native routing, sandboxing, and verification remain OMX/Codex governed.

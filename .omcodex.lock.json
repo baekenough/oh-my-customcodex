@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.6",
-  "generatedAt": "2026-07-05T02:07:48.366Z",
-  "templateVersion": "1.0.6",
+  "generatorVersion": "1.0.7",
+  "generatedAt": "2026-07-06T06:18:47.469Z",
+  "templateVersion": "1.0.7",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e2690ef49068c522f452b7bc26089687adf98b1039841704dfcac64a6fa8a65b",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "56f2c2bd9d1f35346c8e23a355a463304db7f0895922f03e762687a6e3ea283f",
-      "size": 30520,
+      "templateHash": "4f07584ba2c033644c28807a4a2095eba67ac4967cb5c5186e63d297f4a0bfd1",
+      "size": 31111,
       "component": "rules"
     },
     ".codex/rules/MUST-intent-transparency.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-design.md": {
-      "templateHash": "6bf47756fe8b59bdb8dcfd6ccb3694b482ed02a556d4e7c0dd5b01bfd843deaa",
-      "size": 30604,
+      "templateHash": "a21703e72b3769d92bb088c4d10598d804b9c66716e9a7295c61fbd772d36f2c",
+      "size": 31291,
       "component": "rules"
     },
     ".codex/rules/MUST-agent-identification.md": {
@@ -80,8 +80,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-permissions.md": {
-      "templateHash": "d8b3e14c3b28dc27d03979e920edc76be257931fbbf07b1d4241069a4a81510f",
-      "size": 3876,
+      "templateHash": "9412bbaf7a7bb97ec37f05f993487cc6bae0b5bc7db0010256d762d07a76c4e9",
+      "size": 4723,
       "component": "rules"
     },
     ".codex/rules/SHOULD-ontology-rag-routing.md": {
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-completion-verification.md": {
-      "templateHash": "5f385488af3b003822db513e95b4861af4afb5771c7eab0f08683543035efa99",
-      "size": 20482,
+      "templateHash": "ab389e28f68b85708244584144becac22f0924e3027d251f4fa1fcdfec4777b2",
+      "size": 20830,
       "component": "rules"
     },
     ".codex/agents/be-springboot-expert.md": {
@@ -695,8 +695,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "f2327e0c706ee922b59206382fbb7a19a6c2abeabbb633e44097736f475bd446",
-      "size": 39270,
+      "templateHash": "0b22fba629f5822aac79b35945a033b83e4468b1d411c2744f01d9543af3f5b3",
+      "size": 41361,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {

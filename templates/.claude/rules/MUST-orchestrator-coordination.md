@@ -258,6 +258,8 @@ Claude Code v2.1.174+ fixes background sessions inheriting another session's `AN
 
 Claude Code v2.1.198+ background agents can auto-commit, push, and open draft PRs after completing work in a worktree, and retry transient network aborts. Claude Code v2.1.199+ returns partial subagent work on rate-limit/server errors and fixes several background-daemon lifecycle races. These are Claude-template reliability improvements only; Codex/OMX workflows must still make write authority explicit, keep release branches auditable, and verify the repository state before claiming completion.
 
+Claude Code v2.1.200+ further hardens background sessions and agents: sleep/wake or stalled-session resumes no longer silently stop mid-turn, cancelled respawned turns are not replayed after Esc, stale `daemon.lock` files from crashed workers are handled, older reinstalled builds cannot hijack newer daemons, roster corruption no longer disables orphan cleanup permanently, older binaries preserve newer record fields, and daemon restarts preserve socket auth tokens. Treat this as Claude-template reliability only; Codex/OMX still requires explicit branch, PR, and working-tree evidence.
+
 ## Agent Capability Pre-Check
 
 Before delegating work, compare the task requirements with the target agent frontmatter:

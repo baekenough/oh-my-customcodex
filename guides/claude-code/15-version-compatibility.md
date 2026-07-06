@@ -2,6 +2,30 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
+## v2.1.201
+
+Reviewed: 2026-07-06.
+
+Source: upstream oh-my-customcode v1.1.7 / #1567.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Claude Sonnet 5 sessions no longer receive harness reminders as mid-conversation `system` role messages | Prompt-shape compatibility change for packaged Claude templates only. PostCompact rule reinjection and Codex/OMX continuity are unchanged. | Document in R006 and keep Codex-native routing/state on AGENTS.md plus OMX surfaces. |
+
+## v2.1.200
+
+Reviewed: 2026-07-06.
+
+Source: upstream oh-my-customcode v1.1.7 / #1567.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| `default` permission mode is displayed as `Manual`; `manual` is accepted alongside `default` | Claude compatibility templates and operator docs should recognize both names as the same behavior. | Document in R002/R006; do not map the UI label onto Codex sandbox policy. |
+| `AskUserQuestion` no longer auto-continues by default | Unattended Claude compatibility flows can now block indefinitely if they ask questions without a real blocker. | Document in R002; FSD/auto-dev should continue using best judgment for low-risk reversible work. |
+| Subagents rate-limited before first output now return clean failure instead of an empty result | Reduces silent-empty delegated results, but does not remove the need for ground-truth verification. | Document in R020 and keep deterministic `git status`/validation/test/API checks. |
+| Background-session and daemon lifecycle fixes cover sleep/wake stalls, stale locks, daemon freshness, roster/orphan cleanup, record preservation, and socket auth token handling | Fewer Claude background-agent false blockers. | Document in R010; Codex/OMX release flow still verifies branch, PR, tag, registry, and working-tree state directly. |
+| `.claude.json` non-array MCP server lists no longer crash startup | Claude compatibility config is more forgiving. | Mention in R002 as Tier-6/MCP startup resilience; no Codex config schema change. |
+
 ## v2.1.199
 
 Reviewed: 2026-07-05.

@@ -174,6 +174,8 @@ Origin: upstream #1443; prevents incomplete R017/deep-verify handoffs from being
 
 > **Claude Code v2.1.199+ compatibility**: subagent API errors are reported to the parent instead of being self-reported as success. This lowers false-success frequency, but R020 still requires canonical ground-truth verification (`git status`, grep, tests, validation scripts, registry/API checks) before accepting a subagent report.
 
+> **Claude Code v2.1.200+ compatibility**: subagents that hit a rate limit before emitting any output now return a clean failure instead of an empty result. This removes one silent-empty failure mode, but the R020 rule is unchanged: do not accept delegated completion without deterministic repository, test, validation, registry, or API evidence.
+
 ## Common False Completion Patterns — 7 anti-patterns including "Command executed" without exit code check, "Waiting for manual publish" when CI auto-publishes. See full table via Read tool.
 
 <!-- DETAIL: Common False Completion Patterns

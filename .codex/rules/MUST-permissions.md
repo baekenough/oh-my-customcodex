@@ -55,6 +55,12 @@ Claude Code compatibility templates may rely on v2.1.166+ deny-rule glob behavio
 
 Use `"*"` deny rules only for Claude compatibility settings that intentionally enforce deny-by-default, then add explicit allow rules. This is separate from Codex/OMX sandbox policy and the advisory tool-tier table above.
 
+## Claude Permission Mode Manual Label and AskUserQuestion (v2.1.200+)
+
+Claude Code v2.1.200+ displays the existing `default` permission mode as `Manual` across CLI help and IDE surfaces. `--permission-mode manual` and `"defaultMode": "manual"` are accepted alongside `default` with identical behavior. Document both names in Claude compatibility guidance, but do not translate the UI label into Codex sandbox policy.
+
+The same Claude release changed `AskUserQuestion` so dialogs no longer auto-continue by default; idle-timeout continuation is now explicit `/config` opt-in. Autonomous flows such as `omcustomcodex:fsd` should avoid question tools unless truly blocked and should proceed on best judgment for low-risk reversible work. Non-array `disabledMcpServers` / `enabledMcpServers` values in `.claude.json` no longer crash Claude startup.
+
 ## Permission Request Format
 
 ```

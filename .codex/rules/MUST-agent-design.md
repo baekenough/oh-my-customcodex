@@ -37,6 +37,9 @@ Fable 5 effort strategy: Fable 5 defaults to high effort; reserve `xhigh` for ca
 Claude Code v2.1.198+ makes the built-in Explore agent inherit the main session model (capped at Opus) instead of staying fixed to Haiku, and makes subagents plus compaction inherit the session's extended-thinking setting. This improves Claude-template delegation quality, but Codex-native subagents still follow the installed OMX role/model contract.
 
 Claude Code v2.1.199+ shows stderr for SessionStart/Setup/SubagentStart hooks that exit 2, improving hard-block/advisory hook debugging. It also loads up to five leading stacked slash-skill calls (for example `/skill-a /skill-b do X`), reducing context loss in chained compatibility skills such as `omcustomcodex:fsd`; keep using explicit `$skill`/namespaced surfaces in Codex sessions.
+
+Claude Code v2.1.201+ changes Claude Sonnet 5 harness-reminder delivery so rule reminders are no longer injected as mid-conversation `system` role messages. This is a Claude-template prompt-shape change only; PostCompact rule reinjection and Codex/OMX session continuity remain governed by this repository's normal hooks and state.
+
 Claude compatibility settings can declare up to three `fallbackModel` entries tried in order when the primary Claude model is overloaded or unavailable. `--fallback-model` also applies to interactive Claude sessions. Treat this as platform availability failover, not Codex-native model routing or outcome-based escalation. Claude Code v2.1.166+ also supports disabling default thinking with `MAX_THINKING_TOKENS=0`, `--thinking disabled`, or the per-model thinking toggle. Claude Code v2.1.169+ adds `--safe-mode` / `CLAUDE_CODE_SAFE_MODE` to disable customizations for regression isolation, plus `disableBundledSkills` / `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` to hide bundled skills/workflows/slash commands when they conflict with project skills. Codex-native agents continue to use the OMX model contract and `reasoning_effort` routing. Claude Code v2.1.172+ applies `availableModels` restrictions to subagent `model:` overrides, the agent dispatch model picker, and the advisor model; compatibility allowlists should account for version-specific IDs and 1M suffix handling. Claude Code v2.1.173+ auto-normalizes Fable 5 IDs with redundant `[1m]` suffixes. Claude Code v2.1.175+ adds `enforceAvailableModels`, which constrains the resolved Default model as well as subagent overrides and prevents user/project settings from widening a managed allowlist.
 -->
 
@@ -203,6 +206,8 @@ When spawning agents via the Agent tool, CC applies a default `mode` of `acceptE
 1. **Agent frontmatter `permissionMode`**: Declares the agent's intended permission level. CC respects this when the agent is spawned via Agent tool.
 2. **Agent tool `mode` parameter**: Overrides frontmatter at spawn time. Routing skills should pass this explicitly.
 3. **Recommendation**: For agents that modify files, set `permissionMode: bypassPermissions` in frontmatter if the project uses `bypassPermissions` mode.
+
+Claude Code v2.1.200+ displays `default` permission mode as `Manual` in CLI help and IDE surfaces, and accepts `--permission-mode manual` / `"defaultMode": "manual"` alongside `default` with the same behavior. This is a Claude compatibility label change only; Codex/OMX approval policy and sandbox state remain controlled by the current Codex runtime.
 -->
 
 <!-- DETAIL: Isolation/Token/Limitations/Escalation details
