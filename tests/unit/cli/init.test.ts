@@ -6,13 +6,24 @@ import { install } from '../../../src/core/installer.js';
 
 describe('init command', () => {
   let tempDir: string;
+  const originalFrontierModel = process.env.OMX_DEFAULT_FRONTIER_MODEL;
+  const originalSparkModel = process.env.OMX_DEFAULT_SPARK_MODEL;
 
   beforeEach(async () => {
+    process.env.OMX_DEFAULT_FRONTIER_MODEL = 'test-frontier-model';
+    process.env.OMX_DEFAULT_SPARK_MODEL = 'test-spark-model';
+
     // Create a temporary directory for each test
     tempDir = await mkdtemp(join(tmpdir(), 'omcodex-init-test-'));
   });
 
   afterEach(async () => {
+    if (originalFrontierModel === undefined) delete process.env.OMX_DEFAULT_FRONTIER_MODEL;
+    else process.env.OMX_DEFAULT_FRONTIER_MODEL = originalFrontierModel;
+
+    if (originalSparkModel === undefined) delete process.env.OMX_DEFAULT_SPARK_MODEL;
+    else process.env.OMX_DEFAULT_SPARK_MODEL = originalSparkModel;
+
     // Clean up temporary directory
     await rm(tempDir, { recursive: true, force: true });
   });
