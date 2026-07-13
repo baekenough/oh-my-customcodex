@@ -162,7 +162,7 @@ export function createProgram(commandName = getActiveCliCommandName()): Command 
   web
     .command('open')
     .description(i18n.t('cli.web.open.description'))
-    .option('-p, --port <port>', i18n.t('cli.web.open.portOption'), '4321')
+    .option('-p, --port <port>', i18n.t('cli.web.open.portOption'))
     .action(async (options) => {
       await webOpenCommand(options);
     });

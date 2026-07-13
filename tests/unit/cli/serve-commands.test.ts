@@ -12,42 +12,30 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { mkdir, mkdtemp, rm, unlink, writeFile } from 'node:fs/promises';
-import { homedir, tmpdir } from 'node:os';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { serveCommand, serveStopCommand } from '../../../src/cli/serve-commands.js';
 import { initI18n } from '../../../src/i18n/index.js';
 
-const PID_FILE = join(homedir(), '.omcodex-serve.pid');
-const LEGACY_PID_FILE = join(homedir(), '.omcustom-serve.pid');
-
-async function removePidFile(): Promise<void> {
-  for (const pidFile of [PID_FILE, LEGACY_PID_FILE]) {
-    try {
-      await unlink(pidFile);
-    } catch {
-      // Ignore — file may not exist
-    }
-  }
-}
-
 describe('serve-commands.ts', () => {
   let consoleLogSpy: ReturnType<typeof spyOn>;
+  let consoleWarnSpy: ReturnType<typeof spyOn>;
   let consoleErrorSpy: ReturnType<typeof spyOn>;
   let emptyTempDir: string;
 
   beforeEach(async () => {
     await initI18n('en');
-    await removePidFile();
     emptyTempDir = await mkdtemp(join(tmpdir(), 'omcodex-serve-cmd-test-'));
     consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
+    consoleWarnSpy = spyOn(console, 'warn').mockImplementation(() => {});
     consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(async () => {
     consoleLogSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
     consoleErrorSpy.mockRestore();
-    await removePidFile();
     await rm(emptyTempDir, { recursive: true, force: true });
   });
 
@@ -90,6 +78,18 @@ describe('serve-commands.ts', () => {
 
       try {
         await expect(serveCommand({ port: '99999' })).rejects.toThrow('process.exit called');
+      } finally {
+        processExitSpy.mockRestore();
+      }
+    });
+
+    it('should call process.exit(1) when port is fractional', async () => {
+      const processExitSpy = spyOn(process, 'exit').mockImplementation((_code?: number) => {
+        throw new Error('process.exit called');
+      });
+
+      try {
+        await expect(serveCommand({ port: '4321.5' })).rejects.toThrow('process.exit called');
       } finally {
         processExitSpy.mockRestore();
       }
@@ -147,9 +147,9 @@ describe('serve-commands.ts', () => {
 
       try {
         // With no build dir, startServeBackground is a no-op, isServeRunning→false → exit(1)
-        await expect(serveCommand({ port: '4321', _projectRoot: emptyTempDir })).rejects.toThrow(
-          'process.exit called'
-        );
+        await expect(
+          serveCommand({ port: '4321', _projectRoot: emptyTempDir, _stateDir: emptyTempDir })
+        ).rejects.toThrow('process.exit called');
 
         const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
         expect(errorOutput.length).toBeGreaterThan(0);
@@ -168,14 +168,43 @@ describe('serve-commands.ts', () => {
   describe('serveCommand() — success path (server already running)', () => {
     it('should log the started message when isServeRunning returns true', async () => {
       // Write current process PID so isServeRunning() → true
-      await writeFile(PID_FILE, String(process.pid), 'utf-8');
+      await writeFile(
+        join(emptyTempDir, '.omcodex-serve.pid'),
+        JSON.stringify({
+          version: 1,
+          pid: process.pid,
+          port: 4321,
+          projectRoot: emptyTempDir,
+          startedAt: new Date().toISOString(),
+        }),
+        'utf-8'
+      );
 
       // startServeBackground will short-circuit (already running), then
       // isServeRunning() returns true → console.log started message (line 44)
-      await serveCommand({ port: '4321' });
+      await serveCommand({ port: '4321', _stateDir: emptyTempDir });
 
       const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
       expect(logOutput).toContain('4321');
+    });
+
+    it('should report and use the persisted port when a new request differs', async () => {
+      await writeFile(
+        join(emptyTempDir, '.omcodex-serve.pid'),
+        JSON.stringify({
+          version: 1,
+          pid: process.pid,
+          port: 7444,
+          projectRoot: emptyTempDir,
+          startedAt: new Date().toISOString(),
+        }),
+        'utf-8'
+      );
+
+      await serveCommand({ port: '7555', _stateDir: emptyTempDir });
+
+      expect(consoleWarnSpy.mock.calls.flat().join(' ')).toContain('7444');
+      expect(consoleLogSpy.mock.calls.flat().join(' ')).toContain('7444');
     });
   });
 
@@ -186,7 +215,7 @@ describe('serve-commands.ts', () => {
   describe('serveStopCommand()', () => {
     it('should log a not-running message when server is not running', async () => {
       // No PID file → stopServe returns false → else branch (line 62)
-      await serveStopCommand();
+      await serveStopCommand({ _stateDir: emptyTempDir });
 
       expect(consoleLogSpy.mock.calls.length).toBeGreaterThan(0);
     });
@@ -197,9 +226,9 @@ describe('serve-commands.ts', () => {
 
       try {
         // Write a valid PID (current process) — process.kill is mocked so no signal sent
-        await writeFile(PID_FILE, String(process.pid), 'utf-8');
+        await writeFile(join(emptyTempDir, '.omcodex-serve.pid'), String(process.pid), 'utf-8');
 
-        await serveStopCommand();
+        await serveStopCommand({ _stateDir: emptyTempDir });
 
         // stopServe returns true → console.log stopped message (line 60)
         const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');

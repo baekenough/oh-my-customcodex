@@ -277,7 +277,8 @@
         "openOption": "시작 후 브라우저 자동 열기",
         "foregroundOption": "포그라운드 실행 (백그라운드 분리 안 함)",
         "started": "Web UI 시작됨: http://localhost:{{port}}",
-        "failed": "Web UI 서버 시작 실패"
+        "failed": "Web UI 서버 시작 실패",
+        "portMismatch": "Web UI가 이미 {{actualPort}} 포트에서 실행 중입니다(요청: {{requestedPort}}). 실행 중인 주소를 사용합니다"
       },
       "stop": {
         "description": "Web UI 서버 중지",
@@ -288,12 +289,16 @@
         "description": "Web UI 서버 상태 표시",
         "running": "Web UI 실행 중: http://localhost:{{port}}",
         "notRunning": "Web UI가 실행 중이 아닙니다",
-        "startHint": "  시작하려면: omcustomcodex web start"
+        "startHint": "  시작하려면: omcustomcodex web start",
+        "legacyPortAssumed": "이전 형식의 Web UI 상태에는 포트가 없어 {{port}} 포트로 추정합니다"
       },
       "open": {
         "description": "기본 브라우저에서 Web UI 열기",
         "portOption": "포트 번호",
-        "notRunningWarn": "Web UI가 실행 중이지 않은 것 같습니다. 먼저 시작하세요: omcustomcodex web start"
+        "notRunningWarn": "Web UI가 실행 중이지 않은 것 같습니다. 먼저 시작하세요: omcustomcodex web start",
+        "portMismatch": "{{requestedPort}} 포트를 요청했지만 실행 중인 Web UI는 {{actualPort}} 포트를 사용합니다. 실행 중인 주소를 엽니다",
+        "failed": "{{url}} 열기 실패: {{reason}}",
+        "opened": "Web UI 열림: {{url}}"
       },
       "deprecated": {
         "serve": "[Deprecated] `omcustomcodex serve` is deprecated. Use `omcustomcodex web start` instead.",

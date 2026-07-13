@@ -1245,6 +1245,17 @@ describe('feedback-collector.sh', () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout.trim()).toBe(input);
   });
+
+  it('writes only to the canonical eval-core database path', async () => {
+    const [templateScript, sourceScript] = await Promise.all([
+      readFile(FEEDBACK_COLLECTOR_SCRIPT, 'utf8'),
+      readFile(join(SOURCE_SCRIPTS_DIR, 'feedback-collector.sh'), 'utf8'),
+    ]);
+
+    expect(templateScript).toContain(`DB_PATH="\${HOME}/.oh-my-customcodex/eval-core.sqlite"`);
+    expect(templateScript).not.toContain('.config/oh-my-customcode/eval-core.sqlite');
+    expect(sourceScript).toBe(templateScript);
+  });
 });
 
 // -------------------------------------------------------------------

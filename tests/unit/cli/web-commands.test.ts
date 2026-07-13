@@ -1,12 +1,9 @@
-/**
- * Unit tests for web-commands.ts — omcodex web subcommand handlers
- */
-
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { mkdtemp, rm, unlink, writeFile } from 'node:fs/promises';
-import { homedir, tmpdir } from 'node:os';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  openUrlInDefaultBrowser,
   webOpenCommand,
   webStartCommand,
   webStatusCommand,
@@ -14,30 +11,49 @@ import {
 } from '../../../src/cli/web-commands.js';
 import { initI18n } from '../../../src/i18n/index.js';
 
-// PID file is computed at module load with HOME — use the real path
-const PID_FILE = join(homedir(), '.omcodex-serve.pid');
-const LEGACY_PID_FILE = join(homedir(), '.omcustom-serve.pid');
+type SpawnSync = typeof import('node:child_process').spawnSync;
 
-async function removePidFile(): Promise<void> {
-  for (const pidFile of [PID_FILE, LEGACY_PID_FILE]) {
-    try {
-      await unlink(pidFile);
-    } catch {
-      // Ignore — file may not exist
-    }
-  }
+function successfulSpawn(
+  calls: Array<{ command: string; args: readonly string[]; options: Record<string, unknown> }>
+): SpawnSync {
+  return ((command: string, args: readonly string[], options: Record<string, unknown>) => {
+    calls.push({ command, args, options });
+    return {
+      pid: 123,
+      output: [null, null, null],
+      stdout: null,
+      stderr: null,
+      status: 0,
+      signal: null,
+    };
+  }) as SpawnSync;
 }
 
-describe('web-commands.ts', () => {
+describe('web commands', () => {
+  let stateDir: string;
+  let stateFile: string;
   let consoleLogSpy: ReturnType<typeof spyOn>;
   let consoleWarnSpy: ReturnType<typeof spyOn>;
   let consoleErrorSpy: ReturnType<typeof spyOn>;
-  let emptyTempDir: string;
+
+  async function writeState(port: number, pid = process.pid): Promise<void> {
+    await writeFile(
+      stateFile,
+      JSON.stringify({
+        version: 1,
+        pid,
+        port,
+        projectRoot: stateDir,
+        startedAt: '2026-07-13T00:00:00.000Z',
+      })
+    );
+  }
 
   beforeEach(async () => {
     await initI18n('en');
-    await removePidFile();
-    emptyTempDir = await mkdtemp(join(tmpdir(), 'omcodex-web-cmd-test-'));
+    stateDir = await mkdtemp(join(tmpdir(), 'omcodex-web-command-test-'));
+    stateFile = join(stateDir, '.omcodex-serve.pid');
+    process.exitCode = 0;
     consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
     consoleWarnSpy = spyOn(console, 'warn').mockImplementation(() => {});
     consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
@@ -47,210 +63,214 @@ describe('web-commands.ts', () => {
     consoleLogSpy.mockRestore();
     consoleWarnSpy.mockRestore();
     consoleErrorSpy.mockRestore();
-    await removePidFile();
-    await rm(emptyTempDir, { recursive: true, force: true });
+    // Bun keeps the first non-zero exitCode when it is reset to undefined.
+    process.exitCode = 0;
+    await rm(stateDir, { recursive: true, force: true });
   });
 
-  // ---------------------------------------------------------------------------
-  // webStatusCommand
-  // ---------------------------------------------------------------------------
-
-  describe('webStatusCommand', () => {
-    it('should print "not running" message when no PID file exists', async () => {
-      await webStatusCommand();
-
-      const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
-      expect(logOutput).toContain('not running');
+  describe('browser launcher', () => {
+    it('uses exact shell-free macOS argv and keeps metacharacters in one argument', () => {
+      const calls: Array<{
+        command: string;
+        args: readonly string[];
+        options: Record<string, unknown>;
+      }> = [];
+      const url = 'http://localhost:4321/?x=$HOME;echo pwned';
+      expect(
+        openUrlInDefaultBrowser(url, {
+          platform: 'darwin',
+          spawnSyncImpl: successfulSpawn(calls),
+        })
+      ).toEqual({ ok: true });
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({ command: '/usr/bin/open', args: [url] });
+      expect(calls[0]?.options.shell).toBe(false);
     });
 
-    it('should print the start hint when server is not running', async () => {
-      await webStatusCommand();
-
-      const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
-      expect(logOutput).toContain('omcodex web start');
-    });
-
-    it('should print "running" message with URL when server is running', async () => {
-      // Write current process PID to fake a running server
-      await writeFile(PID_FILE, String(process.pid), 'utf-8');
-
-      await webStatusCommand();
-
-      const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
-      expect(logOutput).toContain('running');
-      expect(logOutput).toContain('localhost');
-    });
-
-    it('should use OMCODEX_PORT env var in the running URL when set', async () => {
-      const origPort = process.env.OMCODEX_PORT;
-      process.env.OMCODEX_PORT = '9876';
-
-      try {
-        await writeFile(PID_FILE, String(process.pid), 'utf-8');
-        await webStatusCommand();
-
-        const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
-        expect(logOutput).toContain('9876');
-      } finally {
-        if (origPort === undefined) {
-          delete process.env.OMCODEX_PORT;
-        } else {
-          process.env.OMCODEX_PORT = origPort;
-        }
-      }
-    });
-
-    it('should call console.log exactly twice when server is not running', async () => {
-      await webStatusCommand();
-
-      // One line for "not running", one line for the start hint
-      expect(consoleLogSpy.mock.calls.length).toBe(2);
-    });
-
-    it('should call console.log exactly once when server is running', async () => {
-      await writeFile(PID_FILE, String(process.pid), 'utf-8');
-
-      await webStatusCommand();
-
-      expect(consoleLogSpy.mock.calls.length).toBe(1);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // webStopCommand
-  // ---------------------------------------------------------------------------
-
-  describe('webStopCommand', () => {
-    it('should print "not running" message when no PID file exists', async () => {
-      await webStopCommand();
-
-      const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
-      expect(logOutput).toContain('not running');
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // webOpenCommand
-  // ---------------------------------------------------------------------------
-
-  describe('webOpenCommand', () => {
-    it('should call process.exit(1) when port is non-numeric', async () => {
-      const processExitSpy = spyOn(process, 'exit').mockImplementation((_code?: number) => {
-        throw new Error('process.exit called');
+    it('uses xdg-open on Linux', () => {
+      const calls: Array<{
+        command: string;
+        args: readonly string[];
+        options: Record<string, unknown>;
+      }> = [];
+      openUrlInDefaultBrowser('http://localhost:4321', {
+        platform: 'linux',
+        spawnSyncImpl: successfulSpawn(calls),
       });
-
-      try {
-        await expect(webOpenCommand({ port: 'not-a-port' })).rejects.toThrow('process.exit called');
-
-        const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
-        expect(errorOutput).toContain('not-a-port');
-      } finally {
-        processExitSpy.mockRestore();
-      }
-    });
-
-    it('should call process.exit(1) when port is out of range (> 65535)', async () => {
-      const processExitSpy = spyOn(process, 'exit').mockImplementation((_code?: number) => {
-        throw new Error('process.exit called');
+      expect(calls[0]).toMatchObject({
+        command: 'xdg-open',
+        args: ['http://localhost:4321'],
       });
-
-      try {
-        await expect(webOpenCommand({ port: '99999' })).rejects.toThrow('process.exit called');
-
-        const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
-        expect(errorOutput).toContain('99999');
-      } finally {
-        processExitSpy.mockRestore();
-      }
     });
 
-    it('should call process.exit(1) when port is 0', async () => {
-      const processExitSpy = spyOn(process, 'exit').mockImplementation((_code?: number) => {
-        throw new Error('process.exit called');
+    it('uses direct rundll32 argv on Windows', () => {
+      const calls: Array<{
+        command: string;
+        args: readonly string[];
+        options: Record<string, unknown>;
+      }> = [];
+      openUrlInDefaultBrowser('http://localhost:4321', {
+        platform: 'win32',
+        systemRoot: 'C:\\Windows',
+        spawnSyncImpl: successfulSpawn(calls),
       });
-
-      try {
-        await expect(webOpenCommand({ port: '0' })).rejects.toThrow('process.exit called');
-      } finally {
-        processExitSpy.mockRestore();
-      }
+      expect(calls[0]).toMatchObject({
+        command: join('C:\\Windows', 'System32', 'rundll32.exe'),
+        args: ['url.dll,FileProtocolHandler', 'http://localhost:4321'],
+      });
     });
 
-    it('should warn when server does not appear to be running', async () => {
-      // No PID file → not running
-      await webOpenCommand({ port: '4321' });
-
-      const warnOutput = consoleWarnSpy.mock.calls.map((c) => c.join(' ')).join('\n');
-      expect(warnOutput).toContain('not');
+    it('rejects unsupported platforms before spawning', () => {
+      expect(openUrlInDefaultBrowser('http://localhost:4321', { platform: 'aix' })).toEqual({
+        ok: false,
+        error: 'Unsupported platform: aix',
+      });
     });
 
-    it('should not warn when server is running', async () => {
-      await writeFile(PID_FILE, String(process.pid), 'utf-8');
+    it('reports non-zero and timeout results', () => {
+      const nonzero = (() => ({ status: 7, signal: null })) as SpawnSync;
+      expect(
+        openUrlInDefaultBrowser('http://localhost:4321', {
+          platform: 'linux',
+          spawnSyncImpl: nonzero,
+        }).error
+      ).toContain('status 7');
 
-      await webOpenCommand({ port: '4321' });
-
-      expect(consoleWarnSpy.mock.calls.length).toBe(0);
-    });
-
-    it('should use DEFAULT_PORT (4321) when no port option is provided', async () => {
-      // Should not throw for a valid default port
-      await expect(webOpenCommand({})).resolves.toBeUndefined();
-    });
-
-    it('should accept valid port in range (1–65535)', async () => {
-      await expect(webOpenCommand({ port: '8080' })).resolves.toBeUndefined();
+      const timedOut = (() => {
+        const error = new Error('timed out') as NodeJS.ErrnoException;
+        error.code = 'ETIMEDOUT';
+        return { status: null, signal: 'SIGTERM', error };
+      }) as SpawnSync;
+      expect(
+        openUrlInDefaultBrowser('http://localhost:4321', {
+          platform: 'linux',
+          spawnSyncImpl: timedOut,
+        })
+      ).toEqual({ ok: false, error: 'Browser launcher timed out' });
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // webStartCommand
-  // ---------------------------------------------------------------------------
+  describe('web status', () => {
+    it('prints not-running status and start hint without state', async () => {
+      await webStatusCommand({ stateDir });
+      const output = consoleLogSpy.mock.calls.map((call) => call.join(' ')).join('\n');
+      expect(output).toContain('not running');
+      expect(output).toContain('omcustomcodex web start');
+      expect(consoleLogSpy).toHaveBeenCalledTimes(2);
+    });
 
-  describe('webStartCommand', () => {
-    it('should fail with process.exit(1) when no build directory exists', async () => {
-      // serveCommand → startServeBackground (no build) → isServeRunning → false → exit(1)
-      const processExitSpy = spyOn(process, 'exit').mockImplementation((_code?: number) => {
+    it('uses the persisted port instead of the current process environment', async () => {
+      const previous = process.env.OMCODEX_PORT;
+      process.env.OMCODEX_PORT = '4321';
+      try {
+        await writeState(9876);
+        await webStatusCommand({ stateDir });
+        expect(consoleLogSpy.mock.calls.flat().join(' ')).toContain('9876');
+        expect(consoleLogSpy.mock.calls.flat().join(' ')).not.toContain('4321');
+      } finally {
+        if (previous === undefined) delete process.env.OMCODEX_PORT;
+        else process.env.OMCODEX_PORT = previous;
+      }
+    });
+  });
+
+  describe('web open', () => {
+    it('validates only an explicitly supplied port', async () => {
+      const exitSpy = spyOn(process, 'exit').mockImplementation(() => {
         throw new Error('process.exit called');
       });
-
       try {
-        await expect(webStartCommand({ port: '4321', _projectRoot: emptyTempDir })).rejects.toThrow(
+        await expect(webOpenCommand({ port: 'nope' }, { stateDir })).rejects.toThrow(
           'process.exit called'
         );
+        await expect(webOpenCommand({}, { stateDir })).resolves.toBeUndefined();
       } finally {
-        processExitSpy.mockRestore();
+        exitSpy.mockRestore();
       }
     });
 
-    it('should print an error message when server fails to start', async () => {
-      const processExitSpy = spyOn(process, 'exit').mockImplementation((_code?: number) => {
-        throw new Error('process.exit called');
-      });
-
-      try {
-        await webStartCommand({ port: '4321', _projectRoot: emptyTempDir }).catch(() => {});
-      } finally {
-        processExitSpy.mockRestore();
-      }
-
-      const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
-      expect(errorOutput).toContain('Failed');
+    it('preserves the actionable no-server warning without invoking a browser', async () => {
+      let opened = false;
+      await webOpenCommand(
+        {},
+        {
+          stateDir,
+          browserOpener: () => {
+            opened = true;
+            return { ok: true };
+          },
+        }
+      );
+      expect(consoleWarnSpy.mock.calls.flat().join(' ')).toContain('not');
+      expect(opened).toBe(false);
     });
 
-    it('should pass port option through to the underlying serveCommand', async () => {
-      const processExitSpy = spyOn(process, 'exit').mockImplementation((_code?: number) => {
+    it('opens the persisted custom port across an independent invocation', async () => {
+      await writeState(9345);
+      let openedUrl = '';
+      await webOpenCommand(
+        {},
+        {
+          stateDir,
+          browserOpener: (url) => {
+            openedUrl = url;
+            return { ok: true };
+          },
+        }
+      );
+      expect(openedUrl).toBe('http://localhost:9345');
+      expect(consoleLogSpy.mock.calls.flat().join(' ')).toContain('9345');
+    });
+
+    it('warns on an explicit mismatch and still opens the authoritative endpoint', async () => {
+      await writeState(9345);
+      let openedUrl = '';
+      await webOpenCommand(
+        { port: '4321' },
+        {
+          stateDir,
+          browserOpener: (url) => {
+            openedUrl = url;
+            return { ok: true };
+          },
+        }
+      );
+      expect(openedUrl).toBe('http://localhost:9345');
+      expect(consoleWarnSpy.mock.calls.flat().join(' ')).toContain('9345');
+    });
+
+    it('sets a failing exit code and diagnostic when browser launch fails', async () => {
+      await writeState(9345);
+      await webOpenCommand(
+        {},
+        {
+          stateDir,
+          browserOpener: () => ({ ok: false, error: 'launcher missing' }),
+        }
+      );
+      expect(process.exitCode).toBe(1);
+      expect(consoleErrorSpy.mock.calls.flat().join(' ')).toContain('launcher missing');
+    });
+  });
+
+  describe('delegated start and stop', () => {
+    it('reports a missing isolated build as a failed start', async () => {
+      const exitSpy = spyOn(process, 'exit').mockImplementation(() => {
         throw new Error('process.exit called');
       });
-
       try {
-        await webStartCommand({ port: '9000', _projectRoot: emptyTempDir }).catch(() => {});
+        await expect(
+          webStartCommand({ port: '9000', _projectRoot: stateDir, _stateDir: stateDir })
+        ).rejects.toThrow('process.exit called');
+        expect(consoleErrorSpy.mock.calls.flat().join(' ')).toContain('Failed');
       } finally {
-        processExitSpy.mockRestore();
+        exitSpy.mockRestore();
       }
+    });
 
-      // serveCommand reports the error — verifies the delegation path ran
-      const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
-      expect(errorOutput.length).toBeGreaterThan(0);
+    it('reports not running when stopped without state', async () => {
+      await webStopCommand({ _stateDir: stateDir });
+      expect(consoleLogSpy.mock.calls.flat().join(' ')).toContain('not running');
     });
   });
 });
