@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.10] - 2026-07-13
+
+### Added
+- Deterministically compile packaged Markdown agent sources into managed native Codex TOML roles while preserving custom and OMX-owned roles (#1590).
+- Install and validate the native Codex root hook registry with normalized hook payloads and compatibility artifacts (#1591).
+- Provision and assess complete project-scoped OMX readiness rather than accepting binary presence alone (#1592).
+
+### Changed
+- Move Web agent creation, listing, detail, and count surfaces to native TOML roles; Markdown remains a Claude-legacy source input (#1590).
+- Align doctor, list, and security diagnostics with native roles, hooks, and complete OMX setup, and re-normalize shared hook groups after harness-owned setup flows as a local mitigation (Refs #1610).
+
+### Fixed
+- Confine Web agent reads and writes against symlink escapes while preserving custom and OMX role ownership (#1590).
+- Normalize real `apply_patch` payload shapes and preserve shared Codex/OMX hook ownership (#1591).
+- Require plugin source, manifest, assets, and the exact packaged OMX launcher command before readiness can pass (#1592, #1619).
+- Run all critical native regressions in synchronized fail-closed CI and release batches (#1618).
+
 ## [1.0.9] - 2026-07-13
 
 ### Added
