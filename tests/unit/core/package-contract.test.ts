@@ -63,6 +63,8 @@ describe('public package contract', () => {
     expect(packageVerifier).toContain("SCOPED_PACKAGE_NAME = '@baekenough/oh-my-customcodex'");
     expect(packageVerifier).toContain('assertArtifactParity(unscopedArtifact, scopedArtifact)');
     expect(packageVerifier).toContain('packageName: SCOPED_PACKAGE_NAME');
+    expect(packageVerifier).toContain('npm 10 still prints `prepare` lifecycle output');
+    expect(packageVerifier).toContain("join(setupHooksDirectory, 'setup-hooks.sh')");
     expect(releaseWorkflow).toContain('Verify npm and GitHub Packages artifact parity');
     expect(releaseWorkflow).toContain('node scripts/verify-package-contract.mjs --skip-build');
     expect(releaseWorkflow).toContain('.name = "@baekenough/oh-my-customcodex"');

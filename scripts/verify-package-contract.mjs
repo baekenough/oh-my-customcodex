@@ -233,8 +233,35 @@ async function assertHttpRoutes(baseUrl, routes) {
   }
 }
 
+function tryParseJsonArray(text) {
+  try {
+    const candidate = JSON.parse(text);
+    return Array.isArray(candidate) ? candidate : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function parsePackMetadata(stdout) {
-  const parsed = JSON.parse(stdout.trim());
+  const lines = stdout.split(/\r?\n/);
+  let parsed;
+
+  // npm 10 still prints `prepare` lifecycle output before `npm pack --json`
+  // metadata even when --ignore-scripts is set. Find the complete JSON array
+  // rather than assuming stdout contains JSON and nothing else.
+  outer: for (let start = 0; start < lines.length; start += 1) {
+    if (lines[start].trim() !== '[') continue;
+    for (let end = lines.length - 1; end >= start; end -= 1) {
+      if (lines[end].trim() !== ']') continue;
+      const candidate = tryParseJsonArray(lines.slice(start, end + 1).join('\n'));
+      if (candidate) {
+        parsed = candidate;
+        break outer;
+      }
+    }
+  }
+
+  assert(parsed, 'npm pack --json output did not contain a valid metadata array');
   assert(Array.isArray(parsed) && parsed.length === 1, 'npm pack --json must return one artifact');
   const [metadata] = parsed;
   assert(metadata?.filename, 'npm pack metadata is missing filename');
@@ -289,6 +316,18 @@ async function createScopedPackageSource(unscopedTarballPath, scopedSourceDir) {
   packageJson.name = SCOPED_PACKAGE_NAME;
   packageJson.publishConfig = GITHUB_PACKAGES_PUBLISH_CONFIG;
   await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+
+  // npm 10 always runs `prepare` for a directory pack, including with
+  // --ignore-scripts. The real scoped publish runs from the full checkout, so
+  // recreate its development-only script in this extracted staging source.
+  // The package files allow-list excludes scripts/, and parity verification
+  // below proves this helper never reaches either registry artifact.
+  const setupHooksDirectory = join(packageDir, 'scripts');
+  await mkdir(setupHooksDirectory, { recursive: true });
+  await writeFile(
+    join(setupHooksDirectory, 'setup-hooks.sh'),
+    await readFile(join(REPO_ROOT, 'scripts', 'setup-hooks.sh'))
+  );
   return packageDir;
 }
 
