@@ -3,6 +3,8 @@ import { mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from 'node:fs
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { installNativeCodexHooks } from '../../src/core/codex-hooks.ts';
+import { createIsolatedGitEnvironment } from '../../src/core/codex-project-root.js';
+import { computeFileHash, generateLockfile } from '../../src/core/lockfile.ts';
 import {
   assessOmxProjectSetup,
   type CodexHookRuntimeEntry,
@@ -14,7 +16,12 @@ const nativeInteropAvailable = Bun.spawnSync(['codex', '--version']).exitCode ==
 const nativeIt = nativeInteropAvailable ? it : it.skip;
 
 function git(args: string[], cwd: string): void {
-  const result = Bun.spawnSync(['git', ...args], { cwd, stdout: 'pipe', stderr: 'pipe' });
+  const result = Bun.spawnSync(['git', ...args], {
+    cwd,
+    env: createIsolatedGitEnvironment(),
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
   if (result.exitCode !== 0) {
     throw new Error(new TextDecoder().decode(result.stderr));
   }
@@ -140,6 +147,19 @@ describe('Codex app-server hook interop', () => {
       expect(
         discovered?.every((hook) => hook.sourcePath === join(root, '.codex', 'hooks.json'))
       ).toBe(true);
+      const lockfile = await generateLockfile(linked, '1.0.13', '1.0.13');
+      expect(lockfile.files['.codex/hooks.json']).toEqual(
+        expect.objectContaining({
+          root: 'codex-project',
+          templateHash: await computeFileHash(discovered?.[0]?.sourcePath ?? ''),
+        })
+      );
+      for (const hook of discovered ?? []) {
+        const scriptName = hook.command?.match(/\.codex\/hooks\/scripts\/([^"' ]+)/)?.[1];
+        if (!scriptName) continue;
+        const key = `.codex/hooks/scripts/${scriptName}`;
+        expect(lockfile.files[key]).toEqual(expect.objectContaining({ root: 'codex-project' }));
+      }
       expect(discovered?.every((hook) => hook.trustStatus === 'untrusted')).toBe(true);
 
       await writeFile(

@@ -8,7 +8,7 @@
 
 import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import {
   copyFile,
   deleteFile,
@@ -143,6 +143,8 @@ export interface InstallNativeCodexHooksOptions {
   forceRegistry?: boolean;
   /** Test/integration override for the packaged Claude compatibility source. */
   sourceRoot?: string;
+  /** Project-relative managed assets that an updater has proven user-modified. */
+  preservePaths?: readonly string[];
 }
 
 export interface InstallNativeCodexHooksResult {
@@ -961,9 +963,12 @@ async function prevalidateActiveManagedHookAssets(
 async function copyActiveManagedHookAssets(
   targetDir: string,
   activeAssets: ManagedHookAsset[],
-  overwrite: boolean
+  overwrite: boolean,
+  preservedPaths: ReadonlySet<string>
 ): Promise<void> {
   for (const asset of activeAssets) {
+    const relativePath = relative(targetDir, asset.targetPath).replace(/\\/g, '/');
+    if (preservedPaths.has(relativePath)) continue;
     if (!overwrite && (await fileExists(asset.targetPath))) continue;
     await copyFile(asset.sourcePath, asset.targetPath, targetDir);
     const stats = await fs.stat(asset.sourcePath);
@@ -1015,6 +1020,9 @@ export async function installNativeCodexHooks(
   options: InstallNativeCodexHooksOptions = {}
 ): Promise<InstallNativeCodexHooksResult> {
   const paths = resolveNativeCodexHookPaths(targetDir, options);
+  const preservedPaths = new Set(
+    (options.preservePaths ?? []).map((path) => path.replace(/\\/g, '/').replace(/^\.\//, ''))
+  );
   const source = await readJsonFile<unknown>(paths.sourceRegistryPath);
   const compilation = compileCodexHooks(source, { authoritativeRoot: paths.projectRoot });
   await prevalidateResolvedNativeCodexHooks(paths);
@@ -1023,13 +1031,23 @@ export async function installNativeCodexHooks(
   const existingRegistry = registryExists
     ? validateCodexHookRegistry(await readJsonFile<unknown>(paths.registryPath))
     : ({ hooks: {} } satisfies CodexHookRegistry);
-  const registryPreserved = registryExists && registryHasUnmanagedContent(existingRegistry);
+  const registryExplicitlyPreserved = preservedPaths.has('.codex/hooks.json');
+  const registryPreserved =
+    registryExplicitlyPreserved ||
+    (registryExists && registryHasUnmanagedContent(existingRegistry));
   const mergedRegistry = mergeCodexHookRegistries(existingRegistry, compilation.registry);
   const activeAssets = activeManagedHookAssets(paths, compilation.registry);
-  const retainedScriptNames = getReferencedHookScriptNames(mergedRegistry);
+  const retainedScriptNames = getReferencedHookScriptNames(
+    registryExplicitlyPreserved ? existingRegistry : mergedRegistry
+  );
   const activeScriptNames = new Set(activeAssets.map((asset) => asset.name));
 
-  await copyActiveManagedHookAssets(paths.projectRoot, activeAssets, !!options.overwrite);
+  await copyActiveManagedHookAssets(
+    paths.projectRoot,
+    activeAssets,
+    !!options.overwrite,
+    preservedPaths
+  );
   const staleAssets = await classifyStaleManagedHookAssets(
     paths,
     activeScriptNames,
@@ -1038,13 +1056,36 @@ export async function installNativeCodexHooks(
   for (const asset of staleAssets.removable) {
     await deleteFile(asset.targetPath, paths.projectRoot);
   }
-  await writeJsonFile(paths.registryPath, mergedRegistry, { trustedWriteRoot: paths.projectRoot });
-  await writeJsonFile(paths.conversionPath, compilation.compatibility, {
-    trustedWriteRoot: paths.projectRoot,
-  });
-  await writeJsonFile(paths.compatibilityRegistryPath, source, {
-    trustedWriteRoot: paths.projectRoot,
-  });
+  if (!registryExplicitlyPreserved) {
+    await writeJsonFile(paths.registryPath, mergedRegistry, {
+      trustedWriteRoot: paths.projectRoot,
+    });
+  }
+  if (!preservedPaths.has('.codex/hooks/compatibility/conversion.json')) {
+    await writeJsonFile(paths.conversionPath, compilation.compatibility, {
+      trustedWriteRoot: paths.projectRoot,
+    });
+  }
+  if (!preservedPaths.has('.codex/hooks/compatibility/claude-hooks.json')) {
+    await writeJsonFile(paths.compatibilityRegistryPath, source, {
+      trustedWriteRoot: paths.projectRoot,
+    });
+  }
+
+  const explicitlyPreservedTargets = [
+    ...(registryExplicitlyPreserved ? [paths.registryPath] : []),
+    ...activeAssets
+      .filter((asset) =>
+        preservedPaths.has(relative(paths.projectRoot, asset.targetPath).replace(/\\/g, '/'))
+      )
+      .map((asset) => asset.targetPath),
+    ...(preservedPaths.has('.codex/hooks/compatibility/conversion.json')
+      ? [paths.conversionPath]
+      : []),
+    ...(preservedPaths.has('.codex/hooks/compatibility/claude-hooks.json')
+      ? [paths.compatibilityRegistryPath]
+      : []),
+  ];
 
   return {
     installed: true,
@@ -1054,6 +1095,11 @@ export async function installNativeCodexHooks(
     registryPreserved,
     activeScriptPaths: activeAssets.map((asset) => asset.targetPath),
     removedStaleManagedPaths: staleAssets.removable.map((asset) => asset.targetPath),
-    preservedCustomPaths: staleAssets.preserved.map((asset) => asset.targetPath),
+    preservedCustomPaths: [
+      ...new Set([
+        ...staleAssets.preserved.map((asset) => asset.targetPath),
+        ...explicitlyPreservedTargets,
+      ]),
+    ],
   };
 }

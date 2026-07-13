@@ -2,10 +2,19 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { resolveCodexProjectRoot } from '../../../src/core/codex-project-root.js';
+import {
+  createIsolatedGitEnvironment,
+  resolveCodexProjectRoot,
+} from '../../../src/core/codex-project-root.js';
+import { generateLockfile } from '../../../src/core/lockfile.js';
 
 function git(args: string[], cwd: string): void {
-  const result = Bun.spawnSync(['git', ...args], { cwd, stdout: 'pipe', stderr: 'pipe' });
+  const result = Bun.spawnSync(['git', ...args], {
+    cwd,
+    env: createIsolatedGitEnvironment(),
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
   if (result.exitCode !== 0) throw new Error(new TextDecoder().decode(result.stderr));
 }
 
@@ -41,7 +50,14 @@ describe('Codex authoritative project root', () => {
     );
     git(['worktree', 'add', '-qb', 'linked-fixture', linked], main);
 
-    expect(resolveCodexProjectRoot(linked)).toBe(await realpath(main));
+    const inheritedIndex = process.env.GIT_INDEX_FILE;
+    process.env.GIT_INDEX_FILE = '.git/index';
+    try {
+      expect(resolveCodexProjectRoot(linked)).toBe(await realpath(main));
+    } finally {
+      if (inheritedIndex === undefined) delete process.env.GIT_INDEX_FILE;
+      else process.env.GIT_INDEX_FILE = inheritedIndex;
+    }
     expect(resolveCodexProjectRoot(main)).toBe(await realpath(main));
 
     const spoof = join(sandbox, 'spoof');
@@ -97,5 +113,12 @@ describe('Codex authoritative project root', () => {
     await writeFile(join(sandbox, 'storage', 'README.md'), 'unrelated-storage\n');
 
     expect(resolveCodexProjectRoot(linked)).toBe(await realpath(linked));
+
+    await mkdir(join(linked, '.codex'), { recursive: true });
+    await writeFile(join(linked, '.codex', 'hooks.json'), '{"hooks":{}}\n');
+    const lockfile = await generateLockfile(linked, '1.0.13', '1.0.13');
+    expect(lockfile.files['.codex/hooks.json']).toEqual(
+      expect.not.objectContaining({ root: 'codex-project' })
+    );
   });
 });

@@ -1,10 +1,11 @@
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { link, mkdir, mkdtemp, readFile, rename, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   computeFileHash,
+  computeLockfileEntryMetadata,
   diffLockfiles,
   generateAndWriteLockfileForDir,
   generateLockfile,
@@ -94,6 +95,37 @@ describe('lockfile', () => {
       const missingPath = join(tempDir, 'does-not-exist.txt');
 
       await expect(computeFileHash(missingPath)).rejects.toThrow();
+    });
+  });
+
+  describe('computeLockfileEntryMetadata', () => {
+    it('rejects an ancestor symlink replacement between inspection and open', async () => {
+      const hooksDir = join(tempDir, '.codex', 'hooks');
+      const originalHooksDir = join(tempDir, '.codex', 'hooks-original');
+      const outsideDir = join(tempDir, 'outside-hooks');
+      await Promise.all([
+        mkdir(join(hooksDir, 'scripts'), { recursive: true }),
+        mkdir(join(outsideDir, 'scripts'), { recursive: true }),
+      ]);
+      await writeFile(join(hooksDir, 'scripts', 'managed.sh'), 'inside-safe');
+      await writeFile(join(outsideDir, 'scripts', 'managed.sh'), 'outside-secret');
+
+      const entry = {
+        templateHash: expectedSha256('inside-safe'),
+        size: 'inside-safe'.length,
+        component: 'hooks',
+      };
+      await expect(
+        computeLockfileEntryMetadata(tempDir, '.codex/hooks/scripts/managed.sh', entry, undefined, {
+          afterPathInspection: async () => {
+            await rename(hooksDir, originalHooksDir);
+            await symlink(outsideDir, hooksDir);
+          },
+        })
+      ).rejects.toThrow('identity changed before hashing');
+      expect(await readFile(join(outsideDir, 'scripts', 'managed.sh'), 'utf-8')).toBe(
+        'outside-secret'
+      );
     });
   });
 
@@ -216,6 +248,48 @@ describe('lockfile', () => {
       const result = await readLockfile(tempDir);
 
       expect(result).toBeNull();
+    });
+
+    it.each([
+      '../outside.md',
+      '.codex/../outside.md',
+      '/absolute.md',
+      'C:/absolute.md',
+      String.raw`C:\absolute.md`,
+      String.raw`.codex\hooks.json`,
+    ])('rejects an unsafe lockfile key: %s', async (unsafePath) => {
+      const lockfile = makeLockfile({
+        files: {
+          [unsafePath]: {
+            templateHash: 'abc123',
+            size: 1,
+            component: 'hooks',
+          },
+        },
+      });
+      await writeFile(join(tempDir, LOCKFILE_NAME), JSON.stringify(lockfile), 'utf-8');
+
+      expect(await readLockfile(tempDir)).toBeNull();
+    });
+
+    it('rejects unknown roots and codex-project roots outside the hook namespace', async () => {
+      for (const [relativePath, root, component] of [
+        ['.codex/hooks.json', 'outside', 'hooks'],
+        ['.codex/rules/MUST-safety.md', 'codex-project', 'rules'],
+      ] as const) {
+        const lockfile = makeLockfile({
+          files: {
+            [relativePath]: {
+              templateHash: 'abc123',
+              size: 1,
+              component,
+              root,
+            },
+          },
+        });
+        await writeFile(join(tempDir, LOCKFILE_NAME), JSON.stringify(lockfile), 'utf-8');
+        expect(await readLockfile(tempDir)).toBeNull();
+      }
     });
   });
 
@@ -371,6 +445,30 @@ describe('lockfile', () => {
       expect(lockfile.files[key]).toBeDefined();
       expect(lockfile.files[key].component).toBe('skills');
     });
+
+    it('fails closed instead of hashing through a component symlink', async () => {
+      const outside = join(tempDir, 'outside-rules');
+      await mkdir(outside);
+      await writeFile(join(outside, 'secret.md'), 'outside secret', 'utf-8');
+      await mkdir(join(tempDir, '.codex'), { recursive: true });
+      await symlink(outside, join(tempDir, '.codex', 'rules'));
+
+      await expect(generateLockfile(tempDir, '0.31.0', '0.31.0')).rejects.toThrow('symbolic link');
+      expect(await readFile(join(outside, 'secret.md'), 'utf-8')).toBe('outside secret');
+    });
+
+    it('fails closed instead of hashing a multiply-linked component file', async () => {
+      const outside = join(tempDir, 'outside-rule.md');
+      const rulesDir = join(tempDir, '.codex', 'rules');
+      await mkdir(rulesDir, { recursive: true });
+      await writeFile(outside, 'outside secret', 'utf-8');
+      await link(outside, join(rulesDir, 'MUST-safety.md'));
+
+      await expect(generateLockfile(tempDir, '0.31.0', '0.31.0')).rejects.toThrow(
+        'multiple hard links'
+      );
+      expect(await readFile(outside, 'utf-8')).toBe('outside secret');
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -482,6 +580,27 @@ describe('lockfile', () => {
       expect(diff.removed).toHaveLength(0);
       expect(diff.modified).toHaveLength(0);
       expect(diff.unchanged).toHaveLength(1);
+    });
+
+    it('treats a trusted-root change as a modified lockfile entry', () => {
+      const relativePath = '.codex/hooks.json';
+      const base = makeLockfile({
+        files: {
+          [relativePath]: { templateHash: 'same', size: 4, component: 'hooks' },
+        },
+      });
+      const current = makeLockfile({
+        files: {
+          [relativePath]: {
+            templateHash: 'same',
+            size: 4,
+            component: 'hooks',
+            root: 'codex-project',
+          },
+        },
+      });
+
+      expect(diffLockfiles(base, current).modified).toEqual([relativePath]);
     });
 
     it('handles empty base and current lockfiles', () => {

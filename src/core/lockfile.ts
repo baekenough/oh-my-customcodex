@@ -8,9 +8,9 @@
  */
 
 import { createHash } from 'node:crypto';
-import { createReadStream } from 'node:fs';
-import { readdir, stat } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { constants, createReadStream } from 'node:fs';
+import { lstat, open, readdir } from 'node:fs/promises';
+import { isAbsolute, join, posix, relative, resolve } from 'node:path';
 import {
   fileExists,
   getPackageRoot,
@@ -19,6 +19,7 @@ import {
   writeJsonFile,
 } from '../utils/fs.js';
 import { debug, warn } from '../utils/logger.js';
+import { resolveCodexProjectRoot, resolveCodexTargetRoot } from './codex-project-root.js';
 import { getComponentPath, type InstallComponent } from './layout.js';
 
 export const LOCKFILE_NAME = '.omcodex.lock.json';
@@ -39,6 +40,8 @@ export interface LockfileEntry {
   size: number;
   /** Component this file belongs to (rules, agents, skills, guides, hooks, contexts, ontology) */
   component: string;
+  /** Use Codex's authoritative checkout root instead of the requested target checkout. */
+  root?: 'codex-project';
 }
 
 /**
@@ -98,6 +101,57 @@ const STANDALONE_COMPONENT_FILES: ReadonlyArray<readonly [string, string]> = [
   ['.codex/hooks.json', 'hooks'],
 ] as const;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isSafeLockfileKey(relativePath: string): boolean {
+  if (
+    relativePath.length === 0 ||
+    relativePath.includes('\\') ||
+    relativePath.includes('\0') ||
+    posix.isAbsolute(relativePath) ||
+    /^[a-zA-Z]:\//.test(relativePath) ||
+    posix.normalize(relativePath) !== relativePath
+  ) {
+    return false;
+  }
+  return relativePath
+    .split('/')
+    .every((segment) => segment !== '' && segment !== '.' && segment !== '..');
+}
+
+function isCodexHookKey(relativePath: string): boolean {
+  return relativePath === '.codex/hooks.json' || relativePath.startsWith('.codex/hooks/');
+}
+
+function isValidLockfileEntry(relativePath: string, value: unknown): value is LockfileEntry {
+  if (!isSafeLockfileKey(relativePath) || !isRecord(value)) return false;
+  if (
+    typeof value.templateHash !== 'string' ||
+    typeof value.size !== 'number' ||
+    !Number.isFinite(value.size) ||
+    value.size < 0 ||
+    typeof value.component !== 'string' ||
+    value.component.length === 0
+  ) {
+    return false;
+  }
+  if (value.root !== undefined && value.root !== 'codex-project') return false;
+  return (
+    value.root !== 'codex-project' || (value.component === 'hooks' && isCodexHookKey(relativePath))
+  );
+}
+
+function hasValidLockfileFiles(value: unknown): value is Record<string, LockfileEntry> {
+  return (
+    isRecord(value) &&
+    Object.entries(value).every(([relativePath, entry]) =>
+      isValidLockfileEntry(relativePath, entry)
+    )
+  );
+}
+
 /**
  * Compute SHA-256 hash of a file using a read stream.
  * Returns lowercase hex digest.
@@ -145,7 +199,7 @@ export async function readLockfile(targetDir: string): Promise<Lockfile | null> 
       }
 
       const record = data as Record<string, unknown>;
-      if (typeof record.files !== 'object' || record.files === null) {
+      if (!hasValidLockfileFiles(record.files)) {
         warn('lockfile.invalid_structure', { path: lockfilePath });
         return null;
       }
@@ -192,17 +246,192 @@ function resolveComponent(relativePath: string): string {
   return 'unknown';
 }
 
+function assertPathInsideRoot(root: string, filePath: string): void {
+  const pathFromRoot = relative(root, filePath);
+  if (
+    pathFromRoot === '..' ||
+    pathFromRoot.startsWith('../') ||
+    pathFromRoot.startsWith('..\\') ||
+    isAbsolute(pathFromRoot)
+  ) {
+    throw new Error(`Unsafe lockfile path: destination escapes trusted root "${root}"`);
+  }
+}
+
+async function inspectSafePath(
+  trustedRoot: string,
+  filePath: string,
+  expected: 'directory' | 'file',
+  allowMissing: boolean
+): Promise<Awaited<ReturnType<typeof lstat>> | null> {
+  const root = resolve(trustedRoot);
+  const destination = resolve(filePath);
+  assertPathInsideRoot(root, destination);
+
+  const rootStats = await inspectTrustedRoot(root);
+
+  let current = root;
+  const segments = relative(root, destination).split(/[\\/]/).filter(Boolean);
+  for (let index = 0; index < segments.length; index++) {
+    current = join(current, segments[index]);
+    const final = index === segments.length - 1;
+    const stats = await inspectPathSegment(current, allowMissing);
+    if (!stats) return null;
+    assertSafePathSegment(stats, current, final ? expected : 'directory');
+    if (final) return stats;
+  }
+
+  return rootStats;
+}
+
+async function inspectTrustedRoot(root: string): Promise<Awaited<ReturnType<typeof lstat>>> {
+  const stats = await lstat(root);
+  if (stats.isSymbolicLink() || !stats.isDirectory()) {
+    throw new Error(`Unsafe lockfile path: trusted root is not a regular directory "${root}"`);
+  }
+  return stats;
+}
+
+async function inspectPathSegment(
+  path: string,
+  allowMissing: boolean
+): Promise<Awaited<ReturnType<typeof lstat>> | null> {
+  try {
+    return await lstat(path);
+  } catch (error) {
+    if (allowMissing && (error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
+function assertSafePathSegment(
+  stats: Awaited<ReturnType<typeof lstat>>,
+  path: string,
+  expected: 'directory' | 'file'
+): void {
+  if (stats.isSymbolicLink()) {
+    throw new Error(`Unsafe lockfile path: symbolic link segment "${path}"`);
+  }
+  if (expected === 'directory' && !stats.isDirectory()) {
+    throw new Error(`Unsafe lockfile path: expected directory "${path}"`);
+  }
+  if (expected === 'file' && !stats.isFile()) {
+    throw new Error(`Unsafe lockfile path: expected regular file "${path}"`);
+  }
+  if (expected === 'file' && stats.nlink !== 1) {
+    throw new Error(`Unsafe lockfile path: file has multiple hard links "${path}"`);
+  }
+}
+
+export interface LockfileRootContext {
+  targetRoot: string;
+  codexProjectRoot: string;
+}
+
+/** Resolve Git/worktree roots once for a complete lockfile operation. */
+export function resolveLockfileRootContext(targetDir: string): LockfileRootContext {
+  return {
+    targetRoot: resolveCodexTargetRoot(targetDir),
+    codexProjectRoot: resolveCodexProjectRoot(targetDir),
+  };
+}
+
+function lockfileEntryRoot(context: LockfileRootContext, entry: LockfileEntry): string {
+  return entry.root === 'codex-project' ? context.codexProjectRoot : context.targetRoot;
+}
+
+/** Resolve one validated lockfile entry without following links below its trusted root. */
+export async function resolveLockfileEntryPath(
+  targetDir: string,
+  relativePath: string,
+  entry: LockfileEntry,
+  context: LockfileRootContext = resolveLockfileRootContext(targetDir)
+): Promise<string> {
+  if (!isValidLockfileEntry(relativePath, entry)) {
+    throw new Error(`Unsafe lockfile entry: ${relativePath}`);
+  }
+  const root = lockfileEntryRoot(context, entry);
+  const filePath = join(root, ...relativePath.split('/'));
+  await inspectSafePath(root, filePath, 'file', true);
+  return filePath;
+}
+
+async function computeSafeFileMetadata(
+  filePath: string,
+  trustedRoot: string,
+  options: LockfileMetadataOptions = {}
+): Promise<{ templateHash: string; size: number }> {
+  const inspected = await inspectSafePath(trustedRoot, filePath, 'file', false);
+  if (!inspected) throw new Error(`Unsafe lockfile path: file disappeared "${filePath}"`);
+  await options.afterPathInspection?.(filePath);
+  const noFollow = typeof constants.O_NOFOLLOW === 'number' ? constants.O_NOFOLLOW : 0;
+  const handle = await open(filePath, constants.O_RDONLY | noFollow);
+  try {
+    const before = await handle.stat();
+    if (
+      !before.isFile() ||
+      before.nlink !== 1 ||
+      inspected.dev !== before.dev ||
+      inspected.ino !== before.ino
+    ) {
+      throw new Error(`Unsafe lockfile path: file identity changed before hashing "${filePath}"`);
+    }
+    const hash = createHash('sha256');
+    const stream = handle.createReadStream({ autoClose: false });
+    for await (const chunk of stream) hash.update(chunk);
+    const after = await handle.stat();
+    if (
+      before.dev !== after.dev ||
+      before.ino !== after.ino ||
+      before.size !== after.size ||
+      before.mtimeMs !== after.mtimeMs ||
+      before.ctimeMs !== after.ctimeMs ||
+      after.nlink !== 1
+    ) {
+      throw new Error(`Unsafe lockfile path: file identity changed while hashing "${filePath}"`);
+    }
+    const finalPathStats = await inspectSafePath(trustedRoot, filePath, 'file', false);
+    if (
+      !finalPathStats ||
+      finalPathStats.dev !== after.dev ||
+      finalPathStats.ino !== after.ino ||
+      finalPathStats.nlink !== 1
+    ) {
+      throw new Error(`Unsafe lockfile path: file identity changed after hashing "${filePath}"`);
+    }
+    return { templateHash: hash.digest('hex'), size: after.size };
+  } finally {
+    await handle.close();
+  }
+}
+
+export interface LockfileMetadataOptions {
+  /** Test seam used to prove path replacement cannot redirect an already inspected read. */
+  afterPathInspection?: (filePath: string) => Promise<void> | void;
+}
+
+/** Hash one lockfile entry through the same root and link policy used by generation. */
+export async function computeLockfileEntryMetadata(
+  targetDir: string,
+  relativePath: string,
+  entry: LockfileEntry,
+  context: LockfileRootContext = resolveLockfileRootContext(targetDir),
+  options: LockfileMetadataOptions = {}
+): Promise<{ templateHash: string; size: number }> {
+  const filePath = await resolveLockfileEntryPath(targetDir, relativePath, entry, context);
+  return computeSafeFileMetadata(filePath, lockfileEntryRoot(context, entry), options);
+}
+
 /**
  * Walk a directory recursively and collect all file paths.
  * Skips entries that are not regular files (directories, symlinks, etc.).
  * Skips hidden entries (starting with '.') only at the top level of targetDir.
  */
-async function collectFiles(
-  dir: string,
-  projectRoot: string,
-  isTopLevel: boolean
-): Promise<string[]> {
+async function collectFiles(dir: string, projectRoot: string): Promise<string[]> {
   const results: string[] = [];
+
+  const directoryStats = await inspectSafePath(projectRoot, dir, 'directory', true);
+  if (!directoryStats) return results;
 
   let entries: string[];
   try {
@@ -213,28 +442,28 @@ async function collectFiles(
   }
 
   for (const entry of entries) {
-    // Skip hidden entries only at the project root level
-    if (isTopLevel && entry.startsWith('.') && entry !== '.claude' && entry !== '.codex') {
-      continue;
-    }
-
     const fullPath = join(dir, entry);
 
-    let fileStat: Awaited<ReturnType<typeof stat>>;
+    let fileStat: Awaited<ReturnType<typeof lstat>>;
     try {
-      fileStat = await stat(fullPath);
+      fileStat = await lstat(fullPath);
     } catch {
       // File disappeared between readdir and stat — skip
       continue;
     }
 
+    if (fileStat.isSymbolicLink()) {
+      throw new Error(`Unsafe lockfile path: symbolic link segment "${fullPath}"`);
+    }
     if (fileStat.isDirectory()) {
-      const subFiles = await collectFiles(fullPath, projectRoot, false);
+      const subFiles = await collectFiles(fullPath, projectRoot);
       results.push(...subFiles);
     } else if (fileStat.isFile()) {
+      if (fileStat.nlink !== 1) {
+        throw new Error(`Unsafe lockfile path: file has multiple hard links "${fullPath}"`);
+      }
       results.push(fullPath);
     }
-    // Symlinks and other special files are intentionally skipped
   }
 
   return results;
@@ -250,61 +479,14 @@ export async function generateLockfile(
   templateVersion: string
 ): Promise<Lockfile> {
   const files: Record<string, LockfileEntry> = {};
+  const context = resolveLockfileRootContext(targetDir);
 
-  // Walk each component root that may exist in the target directory
-  const componentRoots = COMPONENT_PATHS.map(([prefix]) => join(targetDir, prefix));
-
-  for (const componentRoot of componentRoots) {
-    const exists = await fileExists(componentRoot);
-    if (!exists) {
-      debug('lockfile.component_dir_missing', { path: componentRoot });
-      continue;
-    }
-
-    const allFiles = await collectFiles(componentRoot, targetDir, false);
-
-    for (const absolutePath of allFiles) {
-      const relativePath = relative(targetDir, absolutePath).replace(/\\/g, '/');
-
-      let hash: string;
-      let size: number;
-
-      try {
-        hash = await computeFileHash(absolutePath);
-        const fileStat = await stat(absolutePath);
-        size = fileStat.size;
-      } catch (err) {
-        warn('lockfile.hash_failed', { path: absolutePath, error: String(err) });
-        continue;
-      }
-
-      const component = resolveComponent(relativePath);
-
-      files[relativePath] = {
-        templateHash: hash,
-        size,
-        component,
-      };
-
-      debug('lockfile.entry_added', { path: relativePath, component });
-    }
+  for (const [prefix, mappedComponent] of COMPONENT_PATHS) {
+    await collectComponentEntries(files, prefix, mappedComponent, context);
   }
 
   for (const [relativePath, component] of STANDALONE_COMPONENT_FILES) {
-    const absolutePath = join(targetDir, relativePath);
-    if (!(await fileExists(absolutePath))) continue;
-    try {
-      const fileStat = await stat(absolutePath);
-      if (!fileStat.isFile()) continue;
-      files[relativePath] = {
-        templateHash: await computeFileHash(absolutePath),
-        size: fileStat.size,
-        component,
-      };
-      debug('lockfile.entry_added', { path: relativePath, component });
-    } catch (err) {
-      warn('lockfile.hash_failed', { path: absolutePath, error: String(err) });
-    }
+    await collectStandaloneEntry(files, relativePath, component, context);
   }
 
   return {
@@ -314,6 +496,62 @@ export async function generateLockfile(
     templateVersion,
     files,
   };
+}
+
+function authoritativeHookRoot(context: LockfileRootContext): {
+  physicalRoot: string;
+  usesCodexProjectRoot: boolean;
+} {
+  const usesCodexProjectRoot = context.codexProjectRoot !== context.targetRoot;
+  return {
+    physicalRoot: usesCodexProjectRoot ? context.codexProjectRoot : context.targetRoot,
+    usesCodexProjectRoot,
+  };
+}
+
+async function collectComponentEntries(
+  files: Record<string, LockfileEntry>,
+  prefix: string,
+  mappedComponent: string,
+  context: LockfileRootContext
+): Promise<void> {
+  const hookRoot = authoritativeHookRoot(context);
+  const usesCodexProjectRoot = mappedComponent === 'hooks' && hookRoot.usesCodexProjectRoot;
+  const physicalRoot = usesCodexProjectRoot ? hookRoot.physicalRoot : context.targetRoot;
+  const componentRoot = join(physicalRoot, prefix);
+  if (!(await inspectSafePath(physicalRoot, componentRoot, 'directory', true))) {
+    debug('lockfile.component_dir_missing', { path: componentRoot });
+    return;
+  }
+
+  for (const absolutePath of await collectFiles(componentRoot, physicalRoot)) {
+    const relativePath = relative(physicalRoot, absolutePath).replace(/\\/g, '/');
+    const metadata = await computeSafeFileMetadata(absolutePath, physicalRoot);
+    const component = resolveComponent(relativePath);
+    files[relativePath] = {
+      ...metadata,
+      component,
+      ...(usesCodexProjectRoot ? { root: 'codex-project' as const } : {}),
+    };
+    debug('lockfile.entry_added', { path: relativePath, component });
+  }
+}
+
+async function collectStandaloneEntry(
+  files: Record<string, LockfileEntry>,
+  relativePath: string,
+  component: string,
+  context: LockfileRootContext
+): Promise<void> {
+  const { physicalRoot, usesCodexProjectRoot } = authoritativeHookRoot(context);
+  const absolutePath = join(physicalRoot, relativePath);
+  if (!(await inspectSafePath(physicalRoot, absolutePath, 'file', true))) return;
+  files[relativePath] = {
+    ...(await computeSafeFileMetadata(absolutePath, physicalRoot)),
+    component,
+    ...(usesCodexProjectRoot ? { root: 'codex-project' as const } : {}),
+  };
+  debug('lockfile.entry_added', { path: relativePath, component });
 }
 
 /**
@@ -357,7 +595,10 @@ export function diffLockfiles(base: Lockfile, current: Lockfile): LockfileDiff {
   for (const key of currentKeys) {
     if (!baseKeys.has(key)) {
       added.push(key);
-    } else if (base.files[key].templateHash !== current.files[key].templateHash) {
+    } else if (
+      base.files[key].templateHash !== current.files[key].templateHash ||
+      base.files[key].root !== current.files[key].root
+    ) {
       modified.push(key);
     } else {
       unchanged.push(key);

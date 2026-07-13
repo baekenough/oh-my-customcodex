@@ -127,6 +127,7 @@ jobs:
             tests/sync-upstream-release-issues.test.js \
             tests/integration/i18n.test.ts \
             tests/integration/init-flow.test.ts \
+            tests/integration/codex-hooks-app-server.test.ts \
             tests/integration/omx-readiness.test.ts \
             tests/e2e/list.test.ts \
             tests/e2e/doctor.test.ts \
@@ -140,6 +141,9 @@ jobs:
           run_bun_batch "cli-web-commands" tests/unit/cli/web-commands.test.ts
 
           # CLI doctor / init / list / security surface
+          # The linked-worktree snapshot regression invokes real Git and must not
+          # share Bun's process with CLI suites that install global mocks.
+          run_bun_batch "cli-init-snapshot" tests/unit/cli/init-snapshot.test.ts
           run_bun_batch "cli-doctor-init-list-security" \
             tests/unit/cli/doctor.test.ts \
             tests/unit/cli/doctor-checks.test.ts \
@@ -148,14 +152,18 @@ jobs:
             tests/unit/cli/doctor-updates.test.ts \
             tests/unit/cli/init.test.ts \
             tests/unit/cli/init-orchestration.test.ts \
-            tests/unit/cli/init-snapshot.test.ts \
             tests/unit/cli/list.test.ts \
             tests/unit/cli/list-managed.test.ts \
             tests/unit/cli/security.test.ts
 
+          # Git-backed linked hook regressions invoke real child processes and must not
+          # share Bun's process with suites that install process-wide mocks.
+          run_bun_batch "native-linked-hooks" \
+            tests/unit/core/codex-hooks-integration.test.ts \
+            tests/unit/core/sync.test.ts
+
           # Core update / registry / template / hook surface
           run_bun_batch "core-update-registry-template-hooks" \
-            tests/unit/core/codex-hooks-integration.test.ts \
             tests/unit/core/codex-hooks.test.ts \
             tests/unit/core/hooks-scripts.test.ts \
             tests/unit/core/hooks-validation.test.ts \
@@ -166,10 +174,12 @@ jobs:
             tests/unit/core/self-update.test.ts \
             tests/unit/core/self-update-integration.test.ts \
             tests/unit/core/updater.test.ts \
-            tests/unit/core/entry-doc-update.test.ts \
-            tests/unit/core/sync.test.ts
+            tests/unit/core/entry-doc-update.test.ts
 
           # Core install / config / infra helpers
+          # Keep the Git-backed project-root probe isolated from preflight-brew's
+          # process-wide child_process mock in Bun's shared test runtime.
+          run_bun_batch "codex-project-root" tests/unit/core/codex-project-root.test.ts
           run_bun_batch "core-config-installer-utils" \
             tests/unit/core/agent-compiler.test.ts \
             tests/unit/core/config.test.ts \

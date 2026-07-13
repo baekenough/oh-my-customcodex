@@ -109,15 +109,25 @@ run_bun_batch "cli-serve" tests/unit/cli/serve.test.ts
 run_bun_batch "cli-serve-commands" tests/unit/cli/serve-commands.test.ts
 run_bun_batch "cli-web-commands" tests/unit/cli/web-commands.test.ts
 
+# Git-backed snapshot/root tests use real child processes. Keep them outside
+# batches containing process-wide Bun mocks.
+run_bun_batch "cli-init-snapshot" tests/unit/cli/init-snapshot.test.ts
+run_bun_batch "codex-project-root" tests/unit/core/codex-project-root.test.ts
+
 run_bun_batch "cli-doctor-init-list-security" \
     tests/unit/cli/doctor.test.ts \
     tests/unit/cli/doctor-checks.test.ts \
     tests/unit/cli/doctor-updates.test.ts \
     tests/unit/cli/init.test.ts \
-    tests/unit/cli/init-snapshot.test.ts \
     tests/unit/cli/list.test.ts \
     tests/unit/cli/list-managed.test.ts \
     tests/unit/cli/security.test.ts
+
+# Git-backed linked hook regressions invoke real child processes and must not
+# share Bun's process with suites that install process-wide mocks.
+run_bun_batch "native-linked-hooks" \
+    tests/unit/core/codex-hooks-integration.test.ts \
+    tests/unit/core/sync.test.ts
 
 run_bun_batch "core-update-registry-template-hooks" \
     tests/unit/core/hooks-scripts.test.ts \
@@ -129,8 +139,7 @@ run_bun_batch "core-update-registry-template-hooks" \
     tests/unit/core/self-update.test.ts \
     tests/unit/core/self-update-integration.test.ts \
     tests/unit/core/updater.test.ts \
-    tests/unit/core/entry-doc-update.test.ts \
-    tests/unit/core/sync.test.ts
+    tests/unit/core/entry-doc-update.test.ts
 
 run_bun_batch "core-config-installer-utils" \
     tests/unit/core/config.test.ts \
