@@ -29,14 +29,14 @@ Inspired by Pi Coding Agent Workflow Extension's structured development approach
 
 Following the [reasoning-sandwich](/skills/reasoning-sandwich) pattern:
 
-| Stage | Recommended Model | Rationale |
+| Stage | Recommended Lane / Effort | Rationale |
 |-------|------------------|-----------|
-| 1: Plan | opus | Architectural reasoning, requirement analysis |
-| 2: Verify Plan | opus | Edge case detection, alternative evaluation |
-| 3: Implement | sonnet | Code generation, file creation optimized |
-| 4: Verify Implementation | sonnet | Test execution, structural review |
-| 5: Compound | sonnet | Integration testing, cross-module validation |
-| 6: Done | haiku | Checklist validation, summary generation |
+| 1: Plan | frontier/high | Architectural reasoning, requirement analysis |
+| 2: Verify Plan | frontier/high | Edge case detection, alternative evaluation |
+| 3: Implement | frontier/medium | Code generation, file creation optimized |
+| 4: Verify Implementation | frontier/medium | Test execution, structural review |
+| 5: Compound | frontier/medium | Integration testing, cross-module validation |
+| 6: Done | spark/low | Checklist validation, summary generation |
 
 Model selection is advisory — the orchestrator may override based on task complexity.
 

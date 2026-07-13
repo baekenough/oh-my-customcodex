@@ -133,8 +133,12 @@ class OntologyMCPResources:
                 "name": agent.name,
                 "class": agent.agent_class,
                 "description": agent.description,
+                "model_lane": agent.model_lane,
+                # Deprecated v1.0.0 compatibility alias; canonical key is model_lane.
                 "model": agent.model,
                 "memory": agent.memory,
+                "model_reasoning_effort": agent.model_reasoning_effort,
+                # Deprecated v1.0.0 compatibility alias; canonical key is model_reasoning_effort.
                 "effort": agent.effort,
                 "summary": agent.summary,
                 "keywords": agent.keywords,

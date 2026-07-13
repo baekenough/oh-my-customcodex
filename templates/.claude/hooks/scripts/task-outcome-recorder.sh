@@ -14,6 +14,7 @@ input=$(cat)
 # Extract task info — support both PostToolUse (tool_input.*) and SubagentStop (top-level) shapes
 agent_type=$(echo "$input" | jq -r '.tool_input.subagent_type // .agent_type // "unknown"')
 model=$(echo "$input" | jq -r '.tool_input.model // .model // "inherit"')
+model_reasoning_effort=$(echo "$input" | jq -r '.tool_input.model_reasoning_effort // .tool_input.reasoning_effort // .model_reasoning_effort // "inherit"')
 description=$(echo "$input" | jq -r '.tool_input.description // .description // ""' | head -c 80)
 
 # Extract skill name from description or prompt
@@ -86,13 +87,14 @@ entry=$(jq -c -n \
   --arg ts "$timestamp" \
   --arg agent "$agent_type" \
   --arg model "$model" \
+  --arg effort "$model_reasoning_effort" \
   --arg outcome "$outcome" \
   --arg pattern "$pattern" \
   --arg skill "$skill_name" \
   --arg desc "$description" \
   --arg err "$error_summary" \
   --arg dur "$duration_seconds" \
-  '{timestamp: $ts, agent_type: $agent, model: $model, outcome: $outcome, pattern_used: $pattern, skill: $skill, description: $desc, error_summary: $err, duration_seconds: ($dur | tonumber)}')
+  '{timestamp: $ts, agent_type: $agent, model: $model, model_reasoning_effort: $effort, outcome: $outcome, pattern_used: $pattern, skill: $skill, description: $desc, error_summary: $err, duration_seconds: ($dur | tonumber)}')
 
 printf '%s\n' "$entry" >> "$OUTCOME_FILE"
 

@@ -171,23 +171,23 @@ For projects spanning multiple DE tools:
 
 ### Model Mapping by Task Type
 
-| Task Type | Recommended Model | Reason |
+| Task Type | Recommended Lane / Effort | Reason |
 |-----------|-------------------|--------|
-| Pipeline architecture | `opus` | Deep reasoning required |
-| DAG/model review | `sonnet` | Balanced quality judgment |
-| Implementation | `sonnet` | Standard code generation |
-| Quick validation | `haiku` | Fast response |
+| Pipeline architecture | `frontier/high` | Deep reasoning required |
+| DAG/model review | `frontier/medium` | Balanced quality judgment |
+| Implementation | `frontier/medium` | Standard code generation |
+| Quick validation | `spark/low` | Fast response |
 
 ### Model Mapping by Agent
 
 | Agent | Default Model | Alternative |
 |-------|---------------|-------------|
-| de-pipeline-expert | `sonnet` | `opus` for architecture |
-| de-airflow-expert | `sonnet` | `haiku` for DAG validation |
-| de-dbt-expert | `sonnet` | `haiku` for test checks |
-| de-spark-expert | `sonnet` | `opus` for optimization |
-| de-kafka-expert | `sonnet` | `opus` for topology design |
-| de-snowflake-expert | `sonnet` | `opus` for warehouse design |
+| de-pipeline-expert | `frontier/medium` | `frontier/high` for architecture |
+| de-airflow-expert | `frontier/medium` | `spark/low` for DAG validation |
+| de-dbt-expert | `frontier/medium` | `spark/low` for test checks |
+| de-spark-expert | `frontier/medium` | `frontier/high` for optimization |
+| de-kafka-expert | `frontier/medium` | `frontier/high` for topology design |
+| de-snowflake-expert | `frontier/medium` | `frontier/high` for warehouse design |
 
 ## No Match Fallback
 

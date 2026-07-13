@@ -66,11 +66,11 @@ Ecomode deactivates when:
 
 Agent frontmatter `effort` field maps to runtime behavior:
 
-| Effort | Model Preference | Output Length | Detail Level | Token Budget |
+| Effort | Typical Lane | Output Length | Detail Level | Token Budget |
 |--------|-----------------|---------------|--------------|--------------|
-| `low` | haiku | ≤100 tokens | Minimal — result only | Conservative |
-| `medium` | sonnet | ≤200 tokens | Summary + key details | Balanced |
-| `high` | opus | ≤500 tokens | Full reasoning + examples | Generous |
+| `low` | `spark` or `inherit` | ≤100 tokens | Minimal — result only | Conservative |
+| `medium` | `frontier` or `inherit` | ≤200 tokens | Summary + key details | Balanced |
+| `high` | `frontier` | ≤500 tokens | Full reasoning + examples | Generous |
 
 ### Effort ↔ Ecomode Interaction
 

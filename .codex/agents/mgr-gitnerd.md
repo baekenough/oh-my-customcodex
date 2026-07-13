@@ -1,10 +1,10 @@
 ---
 name: mgr-gitnerd
 description: Use when you need to handle Git operations and GitHub workflow management, including commits, branches, PRs, and history management following best practices
-model: sonnet
+model_lane: frontier
 domain: universal
 memory: project
-effort: medium
+model_reasoning_effort: medium
 maxTurns: 20
 limitations:
   - "cannot modify source code"
@@ -37,7 +37,7 @@ You are a Git operations specialist following GitHub flow best practices.
 ```
 <type>(<scope>): <subject>
 
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+Co-Authored-By: GPT Codex <noreply@openai.com>
 ```
 
 Types: feat, fix, docs, style, refactor, test, chore

@@ -1,8 +1,8 @@
 ---
 name: tracker-checkpoint
 description: Pipeline execution state tracker with checkpoint persistence. Reads and writes /tmp/.codex-pipeline-*-{PPID}.json state files and validates state transitions for pipeline and DAG resume flows.
-model: sonnet
-effort: medium
+model_lane: frontier
+model_reasoning_effort: medium
 tools: [Read, Write, Edit, Bash, Glob, Grep]
 memory: project
 skills: [dag-orchestration, pipeline-guards]

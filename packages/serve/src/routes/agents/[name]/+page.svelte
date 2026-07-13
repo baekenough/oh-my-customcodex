@@ -3,11 +3,6 @@
 
 	export let data: PageData;
 
-	const modelColor: Record<string, string> = {
-		sonnet: 'bg-emerald-900/60 text-emerald-300 border-emerald-800',
-		opus: 'bg-violet-900/60 text-violet-300 border-violet-800',
-		haiku: 'bg-sky-900/60 text-sky-300 border-sky-800'
-	};
 </script>
 
 <div class="p-8 max-w-5xl">
@@ -22,8 +17,11 @@
 	<div class="mb-8">
 		<div class="flex items-center gap-3 mb-2">
 			<h1 class="text-2xl font-bold text-zinc-50">{data.agent.name}</h1>
-			<span class="px-2 py-0.5 rounded border text-xs font-medium {modelColor[data.agent.model] ?? 'bg-zinc-800 text-zinc-400 border-zinc-700'}">
+			<span class="px-2 py-0.5 rounded border text-xs font-medium bg-indigo-900/50 text-indigo-300 border-indigo-800">
 				{data.agent.model}
+			</span>
+			<span class="px-2 py-0.5 rounded border text-xs font-medium bg-zinc-800 text-zinc-400 border-zinc-700">
+				{data.agent.modelReasoningEffort} effort
 			</span>
 		</div>
 		{#if data.agent.description}

@@ -104,7 +104,7 @@ function seedInvocation(
       sessionPpid: 'ppid-test',
       sessionId: 'sess-test',
       agentType,
-      model: 'claude-sonnet-4-6',
+      model: 'gpt-runtime-frontier',
       outcome,
       timestamp: options.since ?? new Date().toISOString(),
       skillName: options.skillName ?? null,
@@ -474,6 +474,9 @@ describe('getImprovementSuggestions', () => {
     );
     expect(escalate).toBeDefined();
     expect(escalate?.confidence).toBe('medium');
+    expect(escalate?.description).toContain('role capability');
+    expect(escalate?.description).toContain('model_reasoning_effort');
+    expect(escalate?.description).not.toMatch(/haiku|sonnet|opus/i);
   });
 
   it('does NOT produce escalation for agents with <10 total invocations', async () => {

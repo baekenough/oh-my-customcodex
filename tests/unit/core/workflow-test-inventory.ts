@@ -11,6 +11,9 @@ export const CRITICAL_NATIVE_REGRESSION_FILES = [
   'tests/unit/core/codex-hooks.test.ts',
   'tests/unit/core/omx-readiness.test.ts',
   'tests/unit/serve/agent-files.test.ts',
+  'tests/unit/serve/agent-generator.test.ts',
+  'tests/unit/serve/create-routes.integration.test.ts',
+  'tests/unit/serve/generation-provider.test.ts',
 ] as const;
 
 export const WORKFLOW_INVENTORY_GUARDS = [
@@ -21,9 +24,14 @@ export const WORKFLOW_INVENTORY_GUARDS = [
 interface WorkflowDefinition {
   jobs?: {
     test?: {
+      env?: Record<string, string>;
       steps?: Array<{ name?: string; run?: string }>;
     };
   };
+}
+
+export function extractTestJobEnvironment(content: string): Record<string, string> {
+  return parse(content).jobs?.test?.env ?? {};
 }
 
 export function extractStableBatchScript(content: string): string {

@@ -7,19 +7,19 @@ user-invocable: false
 
 # Model Escalation Skill
 
-Tracks task outcomes and advises model upgrades when failures are detected. **Advisory-only** — the orchestrator makes the final decision (R010).
+Tracks task outcomes and advises reasoning-effort changes when failures are detected. **Advisory-only** — the orchestrator makes the final decision (R010), and OMX remains the owner of concrete model resolution.
 
 ## Escalation Path
 
 ```
-haiku → sonnet → opus
+none → minimal → low → medium → high → xhigh → ultra → max
 ```
 
 ## Trigger Conditions
 
 | Condition | Action |
 |-----------|--------|
-| 2+ failures with same model for same agent type | Advise escalation |
+| 2+ failures with same effort for same agent type | Advise escalation |
 | 3+ consecutive failures across any agent type | Advise global escalation |
 | Sustained success after escalation | Advise de-escalation |
 
@@ -33,15 +33,15 @@ haiku → sonnet → opus
 
 ## Cost Guard
 
-- Advisory includes estimated cost multiplier
+- Advisory identifies the next supported reasoning effort
 - De-escalation suggested after sustained success at higher tier
-- Cost tracked per session via PPID-scoped temp file
+- Outcomes are tracked per session via a PPID-scoped temp file
 
 ## Architecture
 
 ```
 PostToolUse (Task) → task-outcome-recorder.sh
-  Records: agent_type, model, success/failure, error_summary
+  Records: agent_type, model_reasoning_effort, success/failure, error_summary
   Storage: /tmp/.codex-task-outcomes-$PPID (JSON lines, max 50)
 
 PreToolUse (Task) → model-escalation-advisor.sh
@@ -54,9 +54,11 @@ PreToolUse (Task) → model-escalation-advisor.sh
 ```
 --- [Model Escalation Advisory] ---
   Agent type: {agent_type}
-  Current model: {current_model}
+  Current effort: {current_effort}
   Recent failures: {count}/{threshold}
-  ⚡ Recommended: Escalate to {next_model}
-  Cost impact: {multiplier} per task
+  Recommended effort: {next_effort}
+  Concrete model: resolved by the active OMX runtime
 ---
 ```
+
+The advisor must not rewrite a concrete model ID. If the active model does not support the recommended value, the orchestrator chooses the nearest supported effort from the generated runtime model table.

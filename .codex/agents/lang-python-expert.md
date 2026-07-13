@@ -1,10 +1,10 @@
 ---
 name: lang-python-expert
 description: Expert Python developer for writing Pythonic, clean code following PEP 8. Use for Python files (*.py, requirements.txt, pyproject.toml), Python-related keywords, designing Python APIs, reviewing Python code, and optimizing Python applications.
-model: sonnet
+model_lane: frontier
 domain: backend
 memory: project
-effort: high
+model_reasoning_effort: high
 skills:
   - python-best-practices
 tools:

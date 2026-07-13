@@ -15,6 +15,7 @@ export interface ServeAgentInfo {
 	name: string;
 	description: string;
 	model: string;
+	modelReasoningEffort: string;
 	domain: string;
 	tools: string[];
 	skills: string[];
@@ -120,7 +121,8 @@ function nativeAgentInfo(content: string): ServeAgentInfo {
 	return {
 		name: metadata.name,
 		description: metadata.description,
-		model: metadata.model ?? 'default',
+		model: metadata.model ?? 'runtime default',
+		modelReasoningEffort: metadata.modelReasoningEffort ?? 'runtime default',
 		domain: '',
 		tools: [],
 		skills: metadata.skills,
@@ -134,7 +136,11 @@ function legacyAgentInfo(name: string, content: string): ServeAgentInfo {
 	return {
 		name,
 		description: String(frontmatter.description ?? ''),
+		// Claude-layout files keep their historical default only at this compatibility boundary.
 		model: String(frontmatter.model ?? 'sonnet'),
+		modelReasoningEffort: String(
+			frontmatter.model_reasoning_effort ?? frontmatter.effort ?? 'runtime default'
+		),
 		domain: String(frontmatter.domain ?? ''),
 		tools: arrayField(frontmatter.tools),
 		skills: arrayField(frontmatter.skills),

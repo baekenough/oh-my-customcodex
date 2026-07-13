@@ -114,22 +114,22 @@ DAG: domain → [repository] → service → controller → tests
 ├── Complexity: High (4 files, 3 domains, ~45 min)
 ├── Decomposed into 5 subtasks:
 │
-│   [1] analyze (Explore:haiku)
+│   [1] analyze (Explore:spark/low)
 │       Scan codebase for existing auth patterns
 │
-│   [2] implement-auth (lang-typescript-expert:sonnet)
+│   [2] implement-auth (lang-typescript-expert:frontier/medium)
 │       Implement JWT signing and validation
 │       Depends: [1]
 │
-│   [3] implement-middleware (lang-typescript-expert:sonnet)
+│   [3] implement-middleware (lang-typescript-expert:frontier/medium)
 │       Create auth middleware
 │       Depends: [1]
 │
-│   [4] write-tests (qa-engineer:sonnet)
+│   [4] write-tests (qa-engineer:frontier/medium)
 │       Write auth tests
 │       Depends: [2, 3]
 │
-│   [5] commit (mgr-gitnerd:sonnet)
+│   [5] commit (mgr-gitnerd:frontier/medium)
 │       Commit all changes
 │       Depends: [4]
 │
@@ -147,26 +147,31 @@ workflow:
 nodes:
   - id: analyze
     agent: Explore
-    model: haiku
+    model_lane: spark
+    model_reasoning_effort: low
     prompt: "Scan codebase for existing auth patterns"
   - id: implement-auth
     agent: lang-typescript-expert
-    model: sonnet
+    model_lane: frontier
+    model_reasoning_effort: medium
     prompt: "Implement JWT signing and validation"
     depends_on: [analyze]
   - id: implement-middleware
     agent: lang-typescript-expert
-    model: sonnet
+    model_lane: frontier
+    model_reasoning_effort: medium
     prompt: "Create auth middleware"
     depends_on: [analyze]
   - id: write-tests
     agent: qa-engineer
-    model: sonnet
+    model_lane: frontier
+    model_reasoning_effort: medium
     prompt: "Write auth tests"
     depends_on: [implement-auth, implement-middleware]
   - id: commit
     agent: mgr-gitnerd
-    model: sonnet
+    model_lane: frontier
+    model_reasoning_effort: medium
     prompt: "Commit all changes"
     depends_on: [write-tests]
 

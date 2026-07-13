@@ -259,7 +259,7 @@ Merge findings into `usage_stats` and `failure_patterns` sections of the project
 
 Based on failure patterns, suggest:
 - Rule overrides (e.g., increase `max_parallel` if timeout patterns detected)
-- Agent replacements (e.g., suggest escalation to `opus` model for frequently failing tasks)
+- Agent replacements (e.g., suggest escalation to `frontier/high` model for frequently failing tasks)
 - Additional skills that may reduce failure rate
 - Missing middleware guidance when loop signals recur
 - Eval pruning when a case is saturated, obsolete, or ambiguous

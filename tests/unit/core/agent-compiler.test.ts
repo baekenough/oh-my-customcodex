@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 import {
+  chmod,
   mkdir,
   mkdtemp,
   readdir,
@@ -10,7 +11,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { delimiter, join, resolve } from 'node:path';
 import {
   compileMarkdownAgent,
   getConfiguredModelLanes,
@@ -25,6 +26,49 @@ async function createTempDirectory(prefix: string): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), prefix));
   tempDirectories.push(directory);
   return directory;
+}
+
+async function createFakeOmxContract(
+  options: {
+    defaultSparkModel?: string;
+    executable?: 'wrapper' | 'symlink';
+    packageName?: string;
+  } = {}
+): Promise<{
+  binDir: string;
+  packageRoot: string;
+}> {
+  const {
+    defaultSparkModel = 'spark-contract-default',
+    executable = 'wrapper',
+    packageName = 'oh-my-codex',
+  } = options;
+  const root = await createTempDirectory('omcodex-fake-omx-contract-');
+  const packageRoot = join(root, 'oh-my-codex');
+  const binDir = join(root, 'bin');
+  const cliDir = join(packageRoot, 'dist', 'cli');
+  const configDir = join(packageRoot, 'dist', 'config');
+  await Promise.all([
+    mkdir(binDir, { recursive: true }),
+    mkdir(cliDir, { recursive: true }),
+    mkdir(configDir, { recursive: true }),
+  ]);
+  await writeFile(join(packageRoot, 'package.json'), JSON.stringify({ name: packageName }));
+  const cliEntrypoint = join(cliDir, 'omx.js');
+  await writeFile(cliEntrypoint, '#!/usr/bin/env node\n');
+  await chmod(cliEntrypoint, 0o755);
+  await writeFile(
+    join(configDir, 'models.js'),
+    `export const DEFAULT_SPARK_MODEL = ${JSON.stringify(defaultSparkModel)};\n`
+  );
+  const shim = join(binDir, 'omx');
+  if (executable === 'symlink') {
+    await symlink(cliEntrypoint, shim);
+  } else {
+    await writeFile(shim, `#!/bin/sh\nexec node '${cliEntrypoint}' "$@"\n`);
+    await chmod(shim, 0o755);
+  }
+  return { binDir, packageRoot };
 }
 
 function sourceAgent(
@@ -116,9 +160,72 @@ describe('compileMarkdownAgent', () => {
       )
     ).toEqual({ frontier: 'gpt-current-frontier', spark: 'gpt-current-spark' });
     expect(getConfiguredModelLanes({ OMX_SPARK_MODEL: 'gpt-legacy-spark' }, codexHome)).toEqual({
-      frontier: 'gpt-5.6-sol',
+      frontier: undefined,
       spark: 'gpt-legacy-spark',
     });
+    expect(getConfiguredModelLanes({}, codexHome)).toEqual({
+      frontier: undefined,
+      spark: undefined,
+    });
+  });
+
+  it('reads a fake installed OMX contract while preserving env and config precedence', async () => {
+    const codexHome = await createTempDirectory('omcodex-native-agent-fake-omx-home-');
+    const { binDir } = await createFakeOmxContract();
+    const lanes = getConfiguredModelLanes({ PATH: binDir }, codexHome);
+
+    expect(lanes.spark).toBe('spark-contract-default');
+    const supplier = await readFile(
+      join(import.meta.dir, '../../../.codex/agents/mgr-supplier.md'),
+      'utf8'
+    );
+    expect(
+      compileMarkdownAgent(supplier, {
+        sourceFilename: 'mgr-supplier.md',
+        modelLanes: lanes,
+      }).config.model
+    ).toBe('spark-contract-default');
+    await writeFile(
+      join(codexHome, '.omx-config.json'),
+      JSON.stringify({ models: { team_low_complexity: 'spark-config-override' } })
+    );
+    expect(getConfiguredModelLanes({ PATH: binDir }, codexHome).spark).toBe(
+      'spark-config-override'
+    );
+    expect(
+      getConfiguredModelLanes(
+        { PATH: binDir, OMX_DEFAULT_SPARK_MODEL: 'spark-env-override' },
+        codexHome
+      ).spark
+    ).toBe('spark-env-override');
+  });
+
+  it('continues past an invalid PATH candidate and accepts a direct OMX entrypoint symlink', async () => {
+    const codexHome = await createTempDirectory('omcodex-native-agent-symlink-omx-home-');
+    const invalid = await createFakeOmxContract({
+      defaultSparkModel: 'invalid-contract-default',
+      packageName: 'not-oh-my-codex',
+    });
+    const valid = await createFakeOmxContract({
+      defaultSparkModel: 'spark-symlink-contract',
+      executable: 'symlink',
+    });
+
+    expect(
+      getConfiguredModelLanes({ PATH: `${invalid.binDir}${delimiter}${valid.binDir}` }, codexHome)
+        .spark
+    ).toBe('spark-symlink-contract');
+  });
+
+  it('fails closed instead of collapsing an unresolved spark role into inheritance', () => {
+    expect(() =>
+      compileMarkdownAgent(
+        sourceAgent('missing-spark')
+          .replace('model: sonnet', 'model_lane: spark')
+          .replace('effort: high', 'model_reasoning_effort: low'),
+        { modelLanes: {} }
+      )
+    ).toThrow('Spark model lane is unavailable');
   });
 
   it('resolves no-env model lanes from Codex and OMX config before current defaults', async () => {
@@ -141,6 +248,75 @@ describe('compileMarkdownAgent', () => {
         }
       ).config.model
     ).toBe('gpt-config-spark');
+  });
+
+  it('matches the OMX model table precedence when config and frontier env conflict', async () => {
+    const codexHome = await createTempDirectory('omcodex-native-agent-model-precedence-');
+    await writeFile(join(codexHome, 'config.toml'), 'model = "gpt-generated-config"\n');
+
+    expect(
+      getConfiguredModelLanes({ OMX_DEFAULT_FRONTIER_MODEL: 'gpt-env-frontier' }, codexHome)
+        .frontier
+    ).toBe('gpt-generated-config');
+  });
+
+  it('keeps generated TOML consistent with the active runtime lanes and reasoning effort', async () => {
+    const codexHome = await createTempDirectory('omcodex-native-agent-runtime-table-');
+    await writeFile(join(codexHome, 'config.toml'), 'model = "gpt-runtime-frontier"\n');
+    await writeFile(
+      join(codexHome, '.omx-config.json'),
+      JSON.stringify({ env: { OMX_DEFAULT_SPARK_MODEL: 'gpt-runtime-spark' } })
+    );
+    const modelLanes = getConfiguredModelLanes({}, codexHome);
+
+    const frontier = Bun.TOML.parse(
+      compileMarkdownAgent(
+        sourceAgent('runtime-frontier').replace('model: sonnet', 'model_lane: frontier'),
+        { modelLanes }
+      ).toml
+    ) as Record<string, unknown>;
+    const spark = Bun.TOML.parse(
+      compileMarkdownAgent(
+        sourceAgent('runtime-spark')
+          .replace('model: sonnet', 'model_lane: spark')
+          .replace('effort: high', 'model_reasoning_effort: low'),
+        { modelLanes }
+      ).toml
+    ) as Record<string, unknown>;
+
+    expect(modelLanes).toEqual({
+      frontier: 'gpt-runtime-frontier',
+      spark: 'gpt-runtime-spark',
+    });
+    expect(frontier).toMatchObject({
+      model: modelLanes.frontier,
+      model_reasoning_effort: 'high',
+    });
+    expect(spark).toMatchObject({
+      model: modelLanes.spark,
+      model_reasoning_effort: 'low',
+    });
+  });
+
+  it('accepts the complete Codex reasoning-effort vocabulary', () => {
+    for (const effort of ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'ultra', 'max']) {
+      const compiled = compileMarkdownAgent(
+        sourceAgent(`effort-${effort}`).replace(
+          'effort: high',
+          `model_reasoning_effort: ${effort}`
+        ),
+        { modelLanes: {} }
+      );
+      expect(compiled.config.model_reasoning_effort).toBe(effort);
+    }
+  });
+
+  it('fails closed when native and compatibility model metadata conflict', () => {
+    expect(() =>
+      compileMarkdownAgent(sourceAgent('conflicting-model', ['model_lane: spark']), {
+        modelLanes: { frontier: 'gpt-frontier', spark: 'gpt-spark' },
+      })
+    ).toThrow('model and model_lane conflict');
   });
 
   it('maps Claude permissions conservatively and never emits Claude tool keys', () => {
@@ -301,18 +477,21 @@ describe('compileMarkdownAgent', () => {
 describe('managed agent drift', () => {
   it('compiles every packaged Markdown agent one-to-one with stable parseable bytes', async () => {
     const sourceDir = join(import.meta.dir, '../../../templates/.claude/agents');
+    const nativeSourceDir = join(import.meta.dir, '../../../.codex/agents');
     const skillDir = join(import.meta.dir, '../../../templates/.claude/skills');
     const sourceFiles = (await readdir(sourceDir)).filter((name) => name.endsWith('.md')).sort();
     const nativeNames = new Set<string>();
 
     for (const sourceFilename of sourceFiles) {
       const markdown = await readFile(join(sourceDir, sourceFilename), 'utf8');
+      const nativeMarkdown = await readFile(join(nativeSourceDir, sourceFilename), 'utf8');
       const options = {
         sourceFilename,
         modelLanes: { frontier: 'gpt-current-frontier', spark: 'gpt-current-spark' },
       };
       const first = compileMarkdownAgent(markdown, options);
       const second = compileMarkdownAgent(markdown, options);
+      const native = compileMarkdownAgent(nativeMarkdown, options);
       const parsed = Bun.TOML.parse(first.toml) as {
         name: string;
         description: string;
@@ -322,6 +501,7 @@ describe('managed agent drift', () => {
       };
 
       expect(first.toml).toBe(second.toml);
+      expect(native.toml).toBe(first.toml);
       expect(first.filename).toBe(sourceFilename.replace(/\.md$/, '.toml'));
       expect(parsed.name).toBe(sourceFilename.replace(/\.md$/, ''));
       expect(parsed.description.length).toBeGreaterThan(0);

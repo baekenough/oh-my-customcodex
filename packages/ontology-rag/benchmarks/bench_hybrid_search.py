@@ -34,7 +34,8 @@ def build_synthetic_ontology(tmp_dir: Path, num_agents: int) -> Path:
             name: {
                 "class": "TestAgent",
                 "description": f"Test agent {i}",
-                "model": "sonnet",
+                "model_lane": "frontier",
+                "model_reasoning_effort": "medium",
                 "skills": [],
                 "tools": ["Read"],
                 "summary": f"Agent {i} for benchmarking",

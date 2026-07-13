@@ -1,14 +1,61 @@
 // Keyword-based natural language parser for agent generation.
 // No external API dependencies — pure keyword inference.
 
+import {
+	getConfiguredModelLanes,
+	NATIVE_REASONING_EFFORTS,
+	type NativeReasoningEffort
+} from '../../../../../src/core/agent-compiler.js';
+
+export { NATIVE_REASONING_EFFORTS };
+
 export interface GeneratedAgent {
 	name: string;
 	description: string;
 	model: string;
+	modelReasoningEffort: NativeReasoningEffort;
 	domain: string;
 	tools: string[];
 	skills: string[];
 	body: string;
+}
+
+export interface AgentModelOption {
+	value: string;
+	lane: 'inherit' | 'frontier' | 'spark';
+	label: string;
+	defaultReasoningEffort: NativeReasoningEffort;
+}
+
+export function getAgentModelOptions(
+	environment: NodeJS.ProcessEnv = process.env
+): AgentModelOption[] {
+	const lanes = getConfiguredModelLanes(environment);
+	const options: AgentModelOption[] = [
+		{
+			value: '',
+			lane: 'inherit',
+			label: 'Inherit Codex runtime model',
+			defaultReasoningEffort: 'medium'
+		}
+	];
+	if (lanes.frontier) {
+		options.push({
+			value: lanes.frontier,
+			lane: 'frontier',
+			label: `Frontier · ${lanes.frontier}`,
+			defaultReasoningEffort: 'medium'
+		});
+	}
+	if (lanes.spark && lanes.spark !== lanes.frontier) {
+		options.push({
+			value: lanes.spark,
+			lane: 'spark',
+			label: `Spark · ${lanes.spark}`,
+			defaultReasoningEffort: 'low'
+		});
+	}
+	return options;
 }
 
 // ---------------------------------------------------------------------------
@@ -112,14 +159,20 @@ const LANG_RULES: Array<{ keywords: string[]; prefix: string; domain: string }> 
 // Model inference
 // ---------------------------------------------------------------------------
 
-const MODEL_RULES: Array<{ model: string; keywords: string[] }> = [
+const EFFORT_RULES: Array<{
+	lane: 'frontier' | 'spark';
+	effort: NativeReasoningEffort;
+	keywords: string[];
+}> = [
 	{
-		model: 'opus',
-		keywords: ['opus', '복잡', 'complex', 'architecture', '아키텍처', 'design', '설계', 'reasoning', 'analysis']
+		lane: 'frontier',
+		effort: 'high',
+		keywords: ['복잡', 'complex', 'architecture', '아키텍처', 'design', '설계', 'reasoning', 'analysis']
 	},
 	{
-		model: 'haiku',
-		keywords: ['haiku', '빠른', 'fast', 'simple', 'search', '검색', '간단', 'lightweight', 'quick']
+		lane: 'spark',
+		effort: 'low',
+		keywords: ['빠른', 'fast', 'simple', 'search', '검색', '간단', 'lightweight', 'quick']
 	}
 ];
 
@@ -173,14 +226,29 @@ const TECH_KEYWORDS: Array<{ keyword: string; slug: string }> = [
 // Core parser
 // ---------------------------------------------------------------------------
 
-export function parseNaturalLanguage(input: string): GeneratedAgent {
+export function parseNaturalLanguage(
+	input: string,
+	environment: NodeJS.ProcessEnv = process.env
+): GeneratedAgent {
 	const lower = ` ${input.toLowerCase()} `;
 
 	// --- Model inference ---
-	let model = 'sonnet';
-	for (const rule of MODEL_RULES) {
+	const lanes = getConfiguredModelLanes(environment);
+	let model = lanes.frontier ?? '';
+	let modelReasoningEffort: NativeReasoningEffort = 'medium';
+	for (const rule of EFFORT_RULES) {
 		if (rule.keywords.some((kw) => lower.includes(kw))) {
-			model = rule.model;
+			if (rule.lane === 'spark') {
+				if (!lanes.spark) {
+					throw new Error(
+						'Spark model lane is unavailable: configure OMX_DEFAULT_SPARK_MODEL or install a discoverable OMX model contract'
+					);
+				}
+				model = lanes.spark;
+			} else {
+				model = lanes.frontier ?? '';
+			}
+			modelReasoningEffort = rule.effort;
 			break;
 		}
 	}
@@ -280,6 +348,7 @@ ${capabilitiesSection}
 		name,
 		description,
 		model,
+		modelReasoningEffort,
 		domain,
 		tools,
 		skills: [],
@@ -312,11 +381,12 @@ export function buildAgentMarkdown(agent: GeneratedAgent): string {
 	const toolsList = agent.tools.map((t) => `  - ${t}`).join('\n');
 	const skillsList =
 		agent.skills.length > 0 ? `\nskills:\n${agent.skills.map((s) => `  - ${s}`).join('\n')}` : '';
+	const modelLine = agent.model ? `\nmodel: ${agent.model}` : '';
 
 	return `---
 name: ${agent.name}
-description: ${agent.description}
-model: ${agent.model}
+description: ${agent.description}${modelLine}
+model_reasoning_effort: ${agent.modelReasoningEffort}
 domain: ${agent.domain}
 tools:
 ${toolsList}${skillsList}

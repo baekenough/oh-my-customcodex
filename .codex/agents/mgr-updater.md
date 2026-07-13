@@ -1,10 +1,10 @@
 ---
 name: mgr-updater
 description: Use when you need to update external agents, skills, and guides from their upstream sources, checking versions and applying updates
-model: sonnet
+model_lane: frontier
 domain: universal
 memory: project
-effort: medium
+model_reasoning_effort: medium
 maxTurns: 20
 limitations:
   - "cannot create new agents"

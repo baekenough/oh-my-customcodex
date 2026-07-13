@@ -44,7 +44,7 @@ Correct:
 <!-- DETAIL: Full violation examples
 Incorrect: Calling tools without identification — no [agent][model] prefix before tool_call
 Incorrect: Missing model — [secretary] → Tool: WebFetch (missing [model])
-Correct: [secretary][opus] → Tool: WebFetch / [secretary][opus] → Fetching: url / then tool_call
+Correct: [secretary][frontier/high] → Tool: WebFetch / [secretary][frontier/high] → Fetching: url / then tool_call
 
 Incorrect parallel: tool_call(url1), tool_call(url2), tool_call(cmd) — no identification
 Correct parallel: list ALL [agent][model] → Tool/Fetching/Running lines FIRST, then all tool_calls
@@ -68,11 +68,11 @@ Cross-reference: R020 (action-completeness precondition — invoke 전에 requir
 
 ## Models
 
-| Model | Use |
+| Lane / Effort | Use |
 |-------|-----|
-| `opus` | Complex reasoning, architecture |
-| `sonnet` | General tasks, code generation (default) |
-| `haiku` | Fast simple tasks, file search |
+| `frontier/high` | Complex reasoning, architecture |
+| `frontier/medium` | General tasks, code generation (default) |
+| `spark/low` | Fast simple tasks, file search |
 
 ## Tool Categories
 
@@ -111,9 +111,9 @@ This ensures the Running display:
 
 matches the spawn announcement:
 ```
-[secretary][opus] → Spawning:
-  [1] lang-golang-expert:sonnet → Go code review
-  [2] lang-python-expert:sonnet → Python code review
+[secretary][frontier/high] → Spawning:
+  [1] lang-golang-expert:frontier/medium → Go code review
+  [2] lang-python-expert:frontier/medium → Python code review
 ```
 
 ## Tier-3 Interaction Tool Prefix (MANDATORY)
@@ -144,10 +144,10 @@ Reference issue: #1486 / upstream #1321 (AskUserQuestion prefix omission); compl
 ## Example
 
 ```
-[mgr-creator][sonnet] → Write: .codex/agents/new-agent.md
-[secretary][opus] → Spawning:
-  [1] lang-golang-expert:sonnet → Go code review
-  [2] lang-python-expert:sonnet → Python code review
+[mgr-creator][frontier/medium] → Write: .codex/agents/new-agent.md
+[secretary][frontier/high] → Spawning:
+  [1] lang-golang-expert:frontier/medium → Go code review
+  [2] lang-python-expert:frontier/medium → Python code review
 ```
 
 Parallel spawn description parameter:

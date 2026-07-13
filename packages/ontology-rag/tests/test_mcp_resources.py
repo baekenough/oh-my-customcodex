@@ -107,7 +107,10 @@ class TestAgentResource:
 
         assert data["agent"]["name"] == "lang-golang-expert"
         assert data["agent"]["class"] == "LanguageExpert"
-        assert data["agent"]["model"] == "sonnet"
+        assert data["agent"]["model_lane"] == "frontier"
+        assert data["agent"]["model_reasoning_effort"] == "high"
+        assert data["agent"]["model"] == "sonnet"  # Deprecated v1.0.0 alias.
+        assert data["agent"]["effort"] == "high"  # Deprecated v1.0.0 alias.
         assert len(data["skills"]) > 0
         assert len(data["rules"]) > 0
 

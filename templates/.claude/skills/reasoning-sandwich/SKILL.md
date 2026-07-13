@@ -14,30 +14,29 @@ A model allocation pattern that wraps implementation actions with stronger-model
 ## Pattern
 
 ```
-[Pre-reasoning] → stronger model (opus)
+[Pre-reasoning] → stronger model (frontier/high)
   ├── Analyze requirements
   ├── Identify edge cases
   └── Define success criteria
 
-[Action] → balanced model (sonnet)
+[Action] → balanced model (frontier/medium)
   ├── Implement solution
   ├── Generate code/content
   └── Execute plan
 
-[Post-verification] → balanced or lighter model (sonnet/haiku)
+[Post-verification] → balanced or lighter lane (`frontier`/`medium` or `spark`/`low`)
   ├── Verify against criteria
   ├── Check for regressions
   └── Validate completeness
 ```
 
-## Model Allocation Table
+## Capability / Effort Allocation Table
 
-| Phase | Recommended Model | Rationale |
+| Phase | Recommended Lane / Effort | Rationale |
 |-------|------------------|-----------|
-| Pre-reasoning (analyze/plan) | opus | Complex architectural reasoning, edge case detection |
-| Pre-reasoning (Opus 4.7) | opus47 | Opus 4.7 makes fewer tool calls and reasons more deeply; pre-reasoning phase should include explicit tool batch planning |
-| Action (implement/generate) | sonnet | Optimized for code generation, balanced cost |
-| Post-verification (review/test) | sonnet or haiku | Structural verification, checklist validation |
+| Pre-reasoning (analyze/plan) | frontier/high | Complex architectural reasoning, edge case detection |
+| Action (implement/generate) | frontier/medium | Optimized for code generation, balanced cost |
+| Post-verification (review/test) | frontier/medium or spark/low | Structural verification, checklist validation |
 
 ## Reasoning Budget Allocation
 
@@ -75,26 +74,10 @@ This pattern is used by:
 
 | Anti-pattern | Problem | Fix |
 |-------------|---------|-----|
-| Opus for everything | Wasteful, slow | Reserve opus for reasoning-heavy phases |
-| Haiku for planning | Insufficient depth | Use opus for complex analysis |
+| High reasoning effort for everything | Wasteful, slow | Reserve high effort for reasoning-heavy phases |
+| Low reasoning effort for complex planning | Insufficient depth | Use high effort when architecture or ambiguity requires it |
 | Skipping verification | False completion risk | Always include post-verification phase |
-| Forcing frequent tool calls on Opus 4.7 | Fights model's natural reasoning-first tendency | Let Opus 4.7 reason; batch tool calls in pre-reasoning |
 
-## Opus 4.7 Considerations
+## Runtime Support Gate
 
-Opus 4.7 exhibits a distinct behavioral pattern: fewer tool calls with deeper reasoning per call. This affects how the sandwich pattern is applied:
-
-| Aspect | Opus 4.6 | Opus 4.7 |
-|--------|----------|----------|
-| Tool call frequency | Moderate | Lower |
-| Reasoning depth per call | Standard | Deeper |
-| Pre-reasoning benefit | Plan what to check | Plan explicit tool batch — model will under-call if not guided |
-
-### Pre-reasoning Adjustment for Opus 4.7
-
-When using Opus 4.7 in the pre-reasoning phase:
-1. **Explicitly enumerate tools needed** — Opus 4.7 may skip tool calls it deems unnecessary
-2. **Batch tool-call plans upfront** — structure the action phase with a concrete tool sequence
-3. **Prefer fewer, richer tool calls** — align with the model's natural tendency
-
-Reference: [Best practices for using Claude Opus 4.7 with Claude Code](https://claude.com/blog/best-practices-for-using-claude-opus-4-7-with-claude-code)
+Reasoning-effort support is model-dependent. Read the active OMX model table, choose the lowest supported effort that satisfies the phase, and fall back to the nearest supported effort when necessary. Do not infer tool-use behavior from a model-family name or hardcode a concrete model ID in this pattern.

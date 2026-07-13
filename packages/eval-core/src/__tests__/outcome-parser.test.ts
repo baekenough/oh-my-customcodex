@@ -16,7 +16,7 @@ function outcome(agentType: string) {
   return {
     timestamp: '2026-07-13T00:00:00Z',
     agent_type: agentType,
-    model: 'gpt-5.6-sol',
+    model: 'gpt-runtime-frontier',
     outcome: 'success' as const,
   };
 }

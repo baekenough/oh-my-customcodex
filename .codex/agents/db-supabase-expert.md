@@ -1,10 +1,10 @@
 ---
 name: db-supabase-expert
 description: Supabase and PostgreSQL expert. Use when working with Supabase projects, writing SQL queries, designing database schemas, configuring Row-Level Security (RLS), optimizing Postgres performance, or managing connection pooling. Handles .sql files and Supabase configuration.
-model: sonnet
+model_lane: frontier
 domain: backend
 memory: user
-effort: high
+model_reasoning_effort: high
 skills:
   - supabase-postgres-best-practices
 tools:

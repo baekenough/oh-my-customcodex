@@ -1,6 +1,12 @@
 """Tests for ontology loading and querying."""
 
+from pathlib import Path
+
+import pytest
+import yaml
+
 from ontology_rag import Ontology
+from ontology_rag.ontology import AgentInfo
 
 
 def test_load_agents(sample_ontology_dir):
@@ -15,8 +21,80 @@ def test_agent_info(sample_ontology_dir):
     onto = Ontology(sample_ontology_dir)
     agent = onto.get_agent("lang-golang-expert")
     assert agent is not None
-    assert agent.model == "sonnet"
+    assert agent.model_lane == "frontier"
+    assert agent.model_reasoning_effort == "high"
+    assert agent.model == "sonnet"  # Deprecated v1.0.0 compatibility alias.
+    assert agent.effort == "high"  # Deprecated v1.0.0 compatibility alias.
     assert "go-best-practices" in agent.skills
+
+
+@pytest.mark.parametrize(
+    ("model_lane", "deprecated_model"),
+    [("inherit", "inherit"), ("frontier", "sonnet"), ("spark", "haiku")],
+)
+def test_agent_info_deprecated_model_alias(model_lane, deprecated_model):
+    """Map canonical model lanes to stable v1.0.0 compatibility aliases."""
+    agent = AgentInfo("agent", "SystemAgent", "test", model_lane)
+    assert agent.model == deprecated_model
+
+
+def test_legacy_agent_input_aliases(tmp_path):
+    """Accept v1.0.0 input names while storing only canonical ontology state."""
+    (tmp_path / "agents.yaml").write_text(
+        """
+agents:
+  legacy:
+    model: opus
+    effort: high
+"""
+    )
+    agent = Ontology(tmp_path).get_agent("legacy")
+    assert agent is not None
+    assert agent.model_lane == "frontier"
+    assert agent.model_reasoning_effort == "high"
+    assert agent.model == "sonnet"
+    assert agent.effort == "high"
+
+
+@pytest.mark.parametrize(
+    "agent_fields",
+    [
+        "model: sonnet\n    model_lane: frontier",
+        "effort: low\n    model_reasoning_effort: high",
+    ],
+)
+def test_agent_input_alias_conflicts_fail_closed(tmp_path, agent_fields):
+    """Reject ambiguous legacy/native metadata rather than guessing precedence."""
+    (tmp_path / "agents.yaml").write_text(
+        f"agents:\n  conflict:\n    {agent_fields}\n"
+    )
+    with pytest.raises(ValueError, match="conflict"):
+        Ontology(tmp_path)
+
+
+def test_v1_schema_documents_native_and_deprecated_agent_fields():
+    """Keep schema 1.0.0 additive for native and existing consumers."""
+    schema_path = (
+        Path(__file__).resolve().parents[3]
+        / "templates"
+        / ".claude"
+        / "ontology"
+        / "schema.yaml"
+    )
+    schema = yaml.safe_load(schema_path.read_text())
+    properties = schema["entity_types"]["Agent"]["properties"]
+
+    assert schema["version"] == "1.0.0"
+    assert properties["model_lane"]["required"] is False
+    assert properties["model"]["deprecated"] is True
+    assert properties["model"]["required"] is False
+    assert properties["model"]["compatibility_alias_for"] == "model_lane"
+    assert properties["model_reasoning_effort"]["required"] is False
+    assert properties["effort"]["deprecated"] is True
+    assert (
+        properties["effort"]["compatibility_alias_for"]
+        == "model_reasoning_effort"
+    )
 
 
 def test_agents_by_class(sample_ontology_dir):

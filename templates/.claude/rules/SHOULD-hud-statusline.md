@@ -29,8 +29,8 @@ Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` �
 ### When to Display: Multi-step tasks, parallel execution, long-running operations. Skip for single brief operations.
 ### Parallel Display:
 ─── [Agent] secretary | [Parallel] 4 ───
-  [1] Agent(mgr-creator):sonnet → Create agent
-  [2] Agent(lang-golang-expert):haiku → Code review
+  [1] Agent(mgr-creator):frontier/medium → Create agent
+  [2] Agent(lang-golang-expert):spark/low → Code review
 -->
 
 ## Statusline API (Command-based)

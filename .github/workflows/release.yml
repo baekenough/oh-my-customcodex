@@ -108,6 +108,9 @@ jobs:
     name: Test
     needs: [gate]
     runs-on: macos-latest
+    env:
+      OMX_DEFAULT_FRONTIER_MODEL: test-frontier-model
+      OMX_DEFAULT_SPARK_MODEL: test-spark-model
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
@@ -223,7 +226,11 @@ jobs:
             tests/unit/utils/logger.test.ts \
             tests/unit/i18n/index.test.ts
 
-          run_bun_batch "serve-native-agent-files" tests/unit/serve/agent-files.test.ts
+          run_bun_batch "serve-native-generation" \
+            tests/unit/serve/agent-files.test.ts \
+            tests/unit/serve/agent-generator.test.ts \
+            tests/unit/serve/create-routes.integration.test.ts \
+            tests/unit/serve/generation-provider.test.ts
           run_bun_batch "workflow-test-inventory" \
             tests/unit/core/ci-workflow.test.ts \
             tests/unit/core/release-workflow.test.ts

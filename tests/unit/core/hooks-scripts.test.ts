@@ -29,6 +29,7 @@ const FEEDBACK_COLLECTOR_SCRIPT = join(SCRIPTS_DIR, 'feedback-collector.sh');
 const SKILL_EXTRACTOR_ANALYZER_SCRIPT = join(SCRIPTS_DIR, 'skill-extractor-analyzer.sh');
 const PLUGIN_CACHE_CHECK_SCRIPT = join(SCRIPTS_DIR, 'plugin-cache-check.sh');
 const SHELL_RESERVED_VAR_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'shell-reserved-var-advisor.sh');
+const MODEL_ESCALATION_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'model-escalation-advisor.sh');
 
 const STAGE_FILE = '/tmp/.codex-dev-stage';
 
@@ -1243,6 +1244,158 @@ describe('feedback-collector.sh', () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout.trim()).toBe(input);
+  });
+});
+
+// -------------------------------------------------------------------
+// model-escalation-advisor.sh
+// -------------------------------------------------------------------
+
+describe('model-escalation-advisor.sh', () => {
+  const tempPaths: string[] = [];
+
+  async function createFixture(role = 'executor'): Promise<{
+    projectRoot: string;
+    codexHome: string;
+    outcomesFile: string;
+    input: string;
+  }> {
+    const suffix = `${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const projectRoot = join(tmpdir(), `omcodex-advisor-project-${suffix}`);
+    const codexHome = join(tmpdir(), `omcodex-advisor-home-${suffix}`);
+    const outcomesFile = join(tmpdir(), `.codex-task-outcomes-advisor-${suffix}`);
+    tempPaths.push(projectRoot, codexHome, outcomesFile);
+    await Promise.all([
+      mkdir(join(projectRoot, '.codex', 'agents'), { recursive: true }),
+      mkdir(join(codexHome, 'agents'), { recursive: true }),
+    ]);
+    await writeFile(
+      outcomesFile,
+      `${[
+        JSON.stringify({ agent_type: role, outcome: 'failure' }),
+        JSON.stringify({ agent_type: role, outcome: 'failure' }),
+      ].join('\n')}\n`
+    );
+    return {
+      projectRoot,
+      codexHome,
+      outcomesFile,
+      input: JSON.stringify({
+        tool: 'Agent',
+        tool_input: {
+          agent_type: role,
+        },
+      }),
+    };
+  }
+
+  afterEach(async () => {
+    await Promise.all(
+      tempPaths.splice(0).map((path) => rm(path, { recursive: true, force: true }))
+    );
+  });
+
+  it('uses OMX agentReasoning before role TOML and ignores unsupported per-call overrides', async () => {
+    const fixture = await createFixture();
+    const inputWithUnsupportedOverride = JSON.stringify({
+      tool: 'Agent',
+      tool_input: {
+        agent_type: 'executor',
+        model_reasoning_effort: 'none',
+      },
+    });
+    await Promise.all([
+      writeFile(
+        join(fixture.projectRoot, '.codex', 'agents', 'executor.toml'),
+        'model_reasoning_effort = "medium"\n'
+      ),
+      writeFile(
+        join(fixture.codexHome, 'agents', 'executor.toml'),
+        'model_reasoning_effort = "low"\n'
+      ),
+      writeFile(
+        join(fixture.codexHome, '.omx-config.json'),
+        JSON.stringify({ agentReasoning: { executor: 'high' } })
+      ),
+    ]);
+
+    const result = await runHookScript(
+      MODEL_ESCALATION_ADVISOR_SCRIPT,
+      inputWithUnsupportedOverride,
+      {
+        CODEX_HOME: fixture.codexHome,
+        CODEX_TASK_OUTCOMES_FILE: fixture.outcomesFile,
+      },
+      fixture.projectRoot
+    );
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(inputWithUnsupportedOverride);
+    expect(result.stderr).toContain('Current model_reasoning_effort: high');
+    expect(result.stderr).toContain('Recommended effort: xhigh');
+    expect(result.stderr).toContain('.omx-config.json agentReasoning.executor');
+    expect(result.stderr).toContain('native dispatch has no per-call effort override');
+    expect(result.stderr).not.toContain('Current model_reasoning_effort: none');
+  });
+
+  it('falls back from OMX runtime overrides to project and user role TOML', async () => {
+    const projectFixture = await createFixture('architect');
+    await Promise.all([
+      writeFile(
+        join(projectFixture.projectRoot, '.codex', 'agents', 'architect.toml'),
+        'model_reasoning_effort = "medium"\n'
+      ),
+      writeFile(
+        join(projectFixture.codexHome, 'agents', 'architect.toml'),
+        'model_reasoning_effort = "low"\n'
+      ),
+    ]);
+
+    const projectResult = await runHookScript(
+      MODEL_ESCALATION_ADVISOR_SCRIPT,
+      projectFixture.input,
+      {
+        CODEX_HOME: projectFixture.codexHome,
+        CODEX_TASK_OUTCOMES_FILE: projectFixture.outcomesFile,
+      },
+      projectFixture.projectRoot
+    );
+    expect(projectResult.stderr).toContain('Current model_reasoning_effort: medium');
+    expect(projectResult.stderr).toContain('Recommended effort: high');
+    expect(projectResult.stderr).toContain('.codex/agents/architect.toml');
+
+    await rm(join(projectFixture.projectRoot, '.codex', 'agents', 'architect.toml'));
+    const userResult = await runHookScript(
+      MODEL_ESCALATION_ADVISOR_SCRIPT,
+      projectFixture.input,
+      {
+        CODEX_HOME: projectFixture.codexHome,
+        CODEX_TASK_OUTCOMES_FILE: projectFixture.outcomesFile,
+      },
+      projectFixture.projectRoot
+    );
+    expect(userResult.stderr).toContain('Current model_reasoning_effort: low');
+    expect(userResult.stderr).toContain('Recommended effort: medium');
+    expect(userResult.stderr).toContain('/agents/architect.toml');
+  });
+
+  it('uses the Codex root effort only when no role-specific source exists', async () => {
+    const fixture = await createFixture('verifier');
+    await writeFile(join(fixture.codexHome, 'config.toml'), 'model_reasoning_effort = "low"\n');
+
+    const result = await runHookScript(
+      MODEL_ESCALATION_ADVISOR_SCRIPT,
+      fixture.input,
+      {
+        CODEX_HOME: fixture.codexHome,
+        CODEX_TASK_OUTCOMES_FILE: fixture.outcomesFile,
+      },
+      fixture.projectRoot
+    );
+
+    expect(result.stderr).toContain('Current model_reasoning_effort: low');
+    expect(result.stderr).toContain('Recommended effort: medium');
+    expect(result.stderr).toContain(`${fixture.codexHome}/config.toml`);
   });
 });
 

@@ -14,13 +14,15 @@
 	let guideName = '';
 	let guideBody = '';
 	let analyzed = false;
-	let analysisMode: 'claude' | 'keyword' | 'keyword-fallback' | null = null;
+	let analysisMode: 'codex' | 'claude-compat' | 'keyword' | 'keyword-fallback' | null = null;
+	let analysisDiagnostics: string[] = [];
 
 	// Populate fields when server returns analysis
 	$: if (form?.success) {
 		guideName = form.name ?? '';
 		guideBody = form.body ?? '';
 		analysisMode = form.mode as typeof analysisMode ?? null;
+		analysisDiagnostics = form.diagnostics ? [...(form.diagnostics as string[])] : [];
 		analyzed = true;
 	}
 
@@ -33,10 +35,13 @@
 		<a href="/guides" class="text-zinc-500 hover:text-zinc-300 text-sm mb-3 inline-block">← Guides</a>
 		<div class="flex items-center gap-3">
 			<h1 class="text-2xl font-bold text-zinc-50">New Guide</h1>
-			<!-- Optional Claude CLI compatibility helper badge -->
-			{#if data.claudeAvailable}
+			{#if data.generationProviders.preferredMode === 'codex'}
 				<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-900/50 text-emerald-400 border border-emerald-700/50">
-					Claude CLI helper
+					Codex CLI
+				</span>
+			{:else if data.generationProviders.preferredMode === 'claude-compat'}
+				<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-900/50 text-amber-400 border border-amber-700/50">
+					Claude compatibility fallback
 				</span>
 			{:else}
 				<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-800 text-zinc-500 border border-zinc-700">
@@ -83,7 +88,11 @@
 					{#if analyzing}
 						<span class="flex items-center gap-2">
 							<span class="inline-block animate-spin">⟳</span>
-							{data.claudeAvailable ? 'Claude CLI helper로 생성 중...' : 'Analyzing...'}
+							{data.generationProviders.preferredMode === 'codex'
+								? 'Codex CLI로 생성 중...'
+								: data.generationProviders.preferredMode === 'claude-compat'
+									? 'Claude compatibility fallback으로 생성 중...'
+									: 'Analyzing...'}
 						</span>
 					{:else}
 						Analyze
@@ -91,14 +100,19 @@
 				</button>
 
 				<!-- Mode badge shown after analysis -->
-				{#if analysisMode === 'claude'}
-					<span class="text-xs text-emerald-400">🤖 Claude CLI helper로 생성</span>
+				{#if analysisMode === 'codex'}
+					<span class="text-xs text-emerald-400">🤖 Codex CLI로 생성</span>
+				{:else if analysisMode === 'claude-compat'}
+					<span class="text-xs text-amber-400">↩ Claude compatibility fallback으로 생성</span>
 				{:else if analysisMode === 'keyword-fallback'}
-					<span class="text-xs text-amber-400">⚠ Claude CLI helper를 사용할 수 없습니다. 키워드 기반으로 전환합니다.</span>
+					<span class="text-xs text-amber-400">⚠ CLI 생성 실패. 키워드 기반으로 전환했습니다.</span>
 				{:else if analysisMode === 'keyword'}
 					<span class="text-xs text-zinc-500">📝 키워드 기반 생성</span>
 				{/if}
 			</div>
+			{#if analysisDiagnostics.length > 0 && analysisMode !== 'keyword'}
+				<p class="mt-2 text-xs text-zinc-600">{analysisDiagnostics.join(' · ')}</p>
+			{/if}
 		</form>
 	</div>
 

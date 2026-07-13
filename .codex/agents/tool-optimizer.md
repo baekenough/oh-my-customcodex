@@ -1,10 +1,10 @@
 ---
 name: tool-optimizer
 description: Use for bundle size analysis, tree-shaking verification, performance profiling, dead code detection, and build optimization recommendations
-model: sonnet
+model_lane: frontier
 domain: universal
 memory: project
-effort: medium
+model_reasoning_effort: medium
 skills:
   - optimize-analyze
   - optimize-bundle

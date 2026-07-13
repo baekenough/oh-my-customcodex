@@ -70,9 +70,9 @@ policy_cache:
 
 Policy caching reduces redundant LLM calls for well-understood workflows. Policies are advisory — the orchestrator may override.
 
-## Capability Hints (Opus 4.7+)
+## Capability Hints
 
-When agents target Opus 4.7 (`opus47` model alias), tool capability hints improve batched tool-call planning. Declare per-tool metadata in policy cache entries:
+For high-effort frontier roles, tool capability hints improve batched tool-call planning. Declare per-tool metadata in policy cache entries without coupling the policy to a concrete model ID or provider alias:
 
 | Field | Values | Effect |
 |-------|--------|--------|

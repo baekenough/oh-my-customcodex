@@ -1,8 +1,8 @@
 """LLM-based semantic routing for agent/skill selection.
 
-Uses a fast LLM (Haiku) instead of embedding models for semantic matching.
-This avoids external ML dependencies while leveraging the LLM already available
-in the Claude Code environment.
+Uses the configured fast Codex/OMX model lane instead of embedding models for
+semantic matching. This avoids external ML dependencies while leveraging the
+LLM already available in the active harness environment.
 """
 
 from dataclasses import dataclass
@@ -44,7 +44,7 @@ class IntentClassification:
 class SemanticRouter:
     """Route queries to appropriate agents using LLM-based classification.
 
-    This router uses a fast LLM (e.g., Claude Haiku) to classify user intent
+    This router uses the configured fast Codex/OMX model lane to classify user intent
     and match it to the most appropriate agent. No embedding models required.
 
     In production (MCP server), this calls the LLM API.

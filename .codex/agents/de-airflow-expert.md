@@ -1,10 +1,10 @@
 ---
 name: de-airflow-expert
 description: Expert Apache Airflow developer for DAG authoring, testing, and debugging. Use for DAG files (*.py in dags/), airflow.cfg, Airflow-related keywords, scheduling patterns, and pipeline orchestration.
-model: sonnet
+model_lane: frontier
 domain: data-engineering
 memory: project
-effort: high
+model_reasoning_effort: high
 skills:
   - airflow-best-practices
 tools:

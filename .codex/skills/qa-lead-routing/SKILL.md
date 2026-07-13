@@ -68,7 +68,7 @@ Parallel execution only for independent analyses (e.g., multi-module testing). S
 
 ## Sub-agent Model Selection
 
-All QA agents use `sonnet` by default for balanced quality output.
+All QA agents use `frontier/medium` by default for balanced quality output.
 
 ## No Match Fallback
 

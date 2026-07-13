@@ -105,7 +105,8 @@ class TestEdgeCases:
                 "solo-agent": {
                     "class": "Solo",
                     "description": "Lone agent",
-                    "model": "sonnet",
+                    "model_lane": "frontier",
+                    "model_reasoning_effort": "medium",
                     "summary": "A solo agent",
                     "keywords": ["solo"],
                     "skills": [],

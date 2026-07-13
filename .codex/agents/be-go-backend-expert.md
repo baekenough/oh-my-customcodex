@@ -1,10 +1,10 @@
 ---
 name: be-go-backend-expert
 description: Expert Go backend developer for production-ready services following Uber style guide and standard layout. Use for Go backend services, HTTP/gRPC servers, microservices in Go, concurrent systems, and Go performance optimization.
-model: sonnet
+model_lane: frontier
 domain: backend
 memory: project
-effort: high
+model_reasoning_effort: high
 skills:
   - go-backend-best-practices
 tools:

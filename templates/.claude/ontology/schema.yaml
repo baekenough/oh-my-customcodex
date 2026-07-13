@@ -1,4 +1,4 @@
-# Ontology Schema for oh-my-customcode
+# Ontology Schema for oh-my-customcodex
 # Defines class hierarchies and relations between entities
 version: "1.0.0"
 
@@ -43,9 +43,26 @@ entity_types:
     properties:
       name: { type: string, required: true }
       description: { type: string, required: true }
-      model: { type: enum, values: [opus, sonnet, haiku], required: true }
+      # Optional in schema v1.0.0 so documents using the deprecated `model`
+      # field remain valid. New documents should emit this canonical field.
+      model_lane: { type: enum, values: [inherit, frontier, spark], required: false }
+      # Deprecated v1.0.0 compatibility alias. Canonical output maps
+      # inherit -> inherit, frontier -> sonnet, and spark -> haiku.
+      model:
+        type: enum
+        values: [inherit, opus, sonnet, haiku]
+        required: false
+        deprecated: true
+        compatibility_alias_for: model_lane
       memory: { type: enum, values: [project, user, local], required: false }
-      effort: { type: enum, values: [low, medium, high], required: false }
+      model_reasoning_effort: { type: enum, values: [none, minimal, low, medium, high, xhigh, ultra, max], required: false }
+      # Deprecated v1.0.0 compatibility alias; mirrors model_reasoning_effort.
+      effort:
+        type: enum
+        values: [none, minimal, low, medium, high, xhigh, ultra, max]
+        required: false
+        deprecated: true
+        compatibility_alias_for: model_reasoning_effort
       tools: { type: "list[string]", required: true }
 
   Skill:

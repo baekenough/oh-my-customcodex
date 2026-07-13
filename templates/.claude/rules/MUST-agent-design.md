@@ -11,12 +11,30 @@ Location: `.codex/agents/{name}.md` (single file, kebab-case)
 ```yaml
 name: agent-name           # Unique identifier (kebab-case)
 description: Brief desc    # One-line summary
-model: sonnet              # sonnet | opus | haiku | opusplan (or full ID: claude-sonnet-4-6, claude-opus-4-6[1m])
+model_lane: frontier       # inherit | frontier | spark
+model_reasoning_effort: medium  # none | minimal | low | medium | high | xhigh | ultra | max
 tools: [Read, Write, ...]  # Allowed tools
 ```
 
-### Model Aliases
+### Codex/OMX Model Lanes
 
+Use `inherit`, `frontier`, or `spark`; resolve concrete IDs from the active OMX
+contract rather than hardcoding generated capability-table values.
+
+<!-- DETAIL: Codex/OMX model lane resolution
+| Lane | Resolution | Use Case |
+|------|------------|----------|
+| `inherit` | Omit generated TOML `model` | Follow the active Codex session |
+| `frontier` | Active Codex model or `OMX_DEFAULT_FRONTIER_MODEL` | Implementation, architecture, verification |
+| `spark` | `OMX_DEFAULT_SPARK_MODEL` or OMX low-complexity config | Search, triage, lightweight validation |
+-->
+
+### Claude Compatibility Source Aliases
+
+Only `templates/.claude/agents/*.md` uses this upstream schema; the compiler
+translates it at the provider boundary.
+
+<!-- DETAIL: Claude compatibility source aliases
 | Alias | Full ID | Use Case |
 |-------|---------|----------|
 | `haiku` | claude-haiku-4-5 | Fast, cheap tasks (search, simple edits) |
@@ -25,6 +43,7 @@ tools: [Read, Write, ...]  # Allowed tools
 | `opusplan` | claude-opus-4-6 + plan mode | Architecture planning with approval gates |
 | `opus47` | claude-opus-4-7 | Latest Opus model, supports xhigh effort |
 | `fable` | claude-fable-5 | Claude compatibility only; high default effort; omit `[1m]` |
+-->
 
 <!-- DETAIL: Fable and Extended Context Aliases (Claude Code v2.1.170+)
 `fable` resolves to `claude-fable-5` for Claude compatibility only: Mythos-class model, tier above Opus; do not change Codex/OMX routing defaults. Extended context suffix `[1m]` (for example, `claude-opus-4-6[1m]`) enables a 1M token context window. For Fable 5, do not append `[1m]`; Claude Code v2.1.173+ strips it because Fable includes 1M context by default.
@@ -45,7 +64,11 @@ Claude compatibility settings can declare up to three `fallbackModel` entries tr
 
 ### Optional Frontmatter
 
-Key optional fields: `memory`, `effort`, `skills`, `soul`, `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations`, `domain`, `disableSkillShellExecution`. Supported since CC v2.1.63+. See full optional frontmatter via Read tool.
+Key native optional fields: `memory`, `model_reasoning_effort`, `skills`, `soul`,
+`isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`,
+`permissionMode`, `disallowedTools`, `limitations`, `domain`, and
+`disableSkillShellExecution`. Compatibility templates may use `effort`; the compiler
+normalizes it to `model_reasoning_effort`.
 
 <!-- DETAIL: Optional Frontmatter (full yaml block)
 ```yaml
@@ -57,9 +80,9 @@ source:                    # For external agents
   origin: github | npm
   url: https://...
   version: 1.0.0
-escalation:              # Model escalation policy (optional)
+escalation:              # Reasoning escalation policy (optional)
   enabled: true          # Enable auto-escalation advisory
-  path: haiku → sonnet → opus  # Escalation sequence
+  model_reasoning_effort_path: medium → high → xhigh
   threshold: 2           # Failures before advisory
 soul: true                 # Enable SOUL.md identity injection
 isolation: worktree | sandbox  # worktree = git worktree, sandbox = restricted bash
@@ -238,7 +261,7 @@ When `escalation.enabled: true`, the model-escalation hooks will track outcomes 
 | Field | Default | Description |
 |-------|---------|-------------|
 | `enabled` | false | Enable escalation tracking for this agent |
-| `path` | haiku → sonnet → opus | Model upgrade sequence |
+| `model_reasoning_effort_path` | medium → high → xhigh | Reasoning-effort upgrade sequence |
 | `threshold` | 2 | Failure count before escalation advisory |
 -->
 
@@ -375,7 +398,8 @@ user-invocable: false      # Whether user can invoke directly
 disable-model-invocation: true  # Prevent model from auto-invoking
 effort: medium              # low | medium | high | default | max — overrides model effort level when invoked
 argument-hint: "<arg> [--flag]"  # CLI-style usage hint displayed in /help and command listings
-model: sonnet                      # Override spawned model when skill is invoked via Agent
+model_lane: frontier               # Resolve through the active OMX model contract
+model_reasoning_effort: medium     # Override invocation reasoning effort
 agent: mgr-creator                 # Preferred agent to execute this skill
 hooks:                             # Skill-specific hooks (same syntax as agent hooks)
   PreToolUse:

@@ -13,43 +13,55 @@
 	// Editable form fields (populated after analysis)
 	let agentName = '';
 	let agentDescription = '';
-	let agentModel = 'sonnet';
+	let agentModel = data.modelOptions.find((option) => option.lane === 'frontier')?.value ?? '';
+	let agentModelReasoningEffort = 'medium';
 	let agentDomain = 'universal';
 	let agentTools: string[] = ['Read', 'Write', 'Edit', 'Grep', 'Glob', 'Bash'];
 	let agentSkills: string[] = [];
 	let agentBody = '';
 	let analyzed = false;
 	let newSkill = '';
-	let analysisMode: 'claude' | 'keyword' | 'keyword-fallback' | null = null;
+	let analysisMode: 'codex' | 'claude-compat' | 'keyword' | 'keyword-fallback' | null = null;
+	let analysisDiagnostics: string[] = [];
 
 	const ALL_TOOLS = ['Read', 'Write', 'Edit', 'Grep', 'Glob', 'Bash', 'WebFetch', 'WebSearch'];
 	const DOMAINS = [
 		'universal', 'backend', 'frontend', 'devops', 'database',
 		'data-engineering', 'security', 'qa', 'architecture', 'management'
 	];
-	const MODELS = ['sonnet', 'opus', 'haiku'];
 
 	// Populate fields when server returns analysis result
 	$: if (form?.success) {
 		agentName = form.name ?? '';
 		agentDescription = form.description ?? '';
-		agentModel = form.model ?? 'sonnet';
+		agentModel = form.model ?? '';
+		agentModelReasoningEffort = form.modelReasoningEffort ?? 'medium';
 		agentDomain = form.domain ?? 'universal';
 		agentTools = form.tools ? [...(form.tools as string[])] : ['Read', 'Write', 'Edit', 'Grep', 'Glob', 'Bash'];
 		agentSkills = form.skills ? [...(form.skills as string[])] : [];
 		agentBody = form.body ?? '';
 		analysisMode = form.mode as typeof analysisMode ?? null;
+		analysisDiagnostics = form.diagnostics ? [...(form.diagnostics as string[])] : [];
 		analyzed = true;
 	}
 
 	// Live markdown preview
-	$: frontmatter = buildFrontmatter(agentName, agentDescription, agentModel, agentDomain, agentTools, agentSkills);
+	$: frontmatter = buildFrontmatter(
+		agentName,
+		agentDescription,
+		agentModel,
+		agentModelReasoningEffort,
+		agentDomain,
+		agentTools,
+		agentSkills
+	);
 	$: preview = frontmatter + '\n' + agentBody;
 
 	function buildFrontmatter(
 		name: string,
 		desc: string,
 		model: string,
+		modelReasoningEffort: string,
 		domain: string,
 		tools: string[],
 		skills: string[]
@@ -57,7 +69,8 @@
 		const toolLines = tools.map((t) => `  - ${t}`).join('\n');
 		const skillsBlock =
 			skills.length > 0 ? `\nskills:\n${skills.map((s) => `  - ${s}`).join('\n')}` : '';
-		return `---\nname: ${name}\ndescription: ${desc}\nmodel: ${model}\ndomain: ${domain}\ntools:\n${toolLines}${skillsBlock}\n---`;
+		const modelLine = model ? `\nmodel: ${model}` : '';
+		return `---\nname: ${name}\ndescription: ${desc}${modelLine}\nmodel_reasoning_effort: ${modelReasoningEffort}\ndomain: ${domain}\ntools:\n${toolLines}${skillsBlock}\n---`;
 	}
 
 	function toggleTool(tool: string) {
@@ -99,10 +112,13 @@
 		<a href="/agents" class="text-zinc-500 hover:text-zinc-300 text-sm mb-3 inline-block">← Agents</a>
 		<div class="flex items-center gap-3">
 			<h1 class="text-2xl font-bold text-zinc-50">New Agent</h1>
-			<!-- Optional Claude CLI compatibility helper badge -->
-			{#if data.claudeAvailable}
+			{#if data.generationProviders.preferredMode === 'codex'}
 				<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-900/50 text-emerald-400 border border-emerald-700/50">
-					Claude CLI helper
+					Codex CLI
+				</span>
+			{:else if data.generationProviders.preferredMode === 'claude-compat'}
+				<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-900/50 text-amber-400 border border-amber-700/50">
+					Claude compatibility fallback
 				</span>
 			{:else}
 				<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-800 text-zinc-500 border border-zinc-700">
@@ -120,7 +136,7 @@
 			id="nl-input"
 			bind:value={nlInput}
 			rows="4"
-			placeholder="예: Kubernetes 배포 전문가. Helm 차트 작성, pod 디버깅 가능. opus 모델 사용.&#10;&#10;Or: A Go backend expert specializing in REST APIs and gRPC services."
+			placeholder="예: Kubernetes 배포 전문가. Helm 차트 작성, pod 디버깅 가능. 높은 추론 강도 사용.&#10;&#10;Or: A Go backend expert specializing in REST APIs and gRPC services."
 			class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 resize-none font-mono"
 		></textarea>
 
@@ -149,7 +165,11 @@
 					{#if analyzing}
 						<span class="flex items-center gap-2">
 							<span class="inline-block animate-spin">⟳</span>
-							{data.claudeAvailable ? 'Claude CLI helper로 생성 중...' : 'Analyzing...'}
+							{data.generationProviders.preferredMode === 'codex'
+								? 'Codex CLI로 생성 중...'
+								: data.generationProviders.preferredMode === 'claude-compat'
+									? 'Claude compatibility fallback으로 생성 중...'
+									: 'Analyzing...'}
 						</span>
 					{:else}
 						Analyze
@@ -157,14 +177,19 @@
 				</button>
 
 				<!-- Mode badge shown after analysis -->
-				{#if analysisMode === 'claude'}
-					<span class="text-xs text-emerald-400">🤖 Claude CLI helper로 생성</span>
+				{#if analysisMode === 'codex'}
+					<span class="text-xs text-emerald-400">🤖 Codex CLI로 생성</span>
+				{:else if analysisMode === 'claude-compat'}
+					<span class="text-xs text-amber-400">↩ Claude compatibility fallback으로 생성</span>
 				{:else if analysisMode === 'keyword-fallback'}
-					<span class="text-xs text-amber-400">⚠ Claude CLI helper를 사용할 수 없습니다. 키워드 기반으로 전환합니다.</span>
+					<span class="text-xs text-amber-400">⚠ CLI 생성 실패. 키워드 기반으로 전환했습니다.</span>
 				{:else if analysisMode === 'keyword'}
 					<span class="text-xs text-zinc-500">📝 키워드 기반 생성</span>
 				{/if}
 			</div>
+			{#if analysisDiagnostics.length > 0 && analysisMode !== 'keyword'}
+				<p class="mt-2 text-xs text-zinc-600">{analysisDiagnostics.join(' · ')}</p>
+			{/if}
 		</form>
 	</div>
 
@@ -197,20 +222,32 @@
 					/>
 				</div>
 
-				<!-- Model -->
+				<!-- Codex model and effort -->
 				<div>
-					<p class="text-xs text-zinc-500 mb-1">Model</p>
-					<div class="flex gap-2">
-						{#each MODELS as m}
+					<label for="agent-model" class="block text-xs text-zinc-500 mb-1">Codex model</label>
+					<select
+						id="agent-model"
+						bind:value={agentModel}
+						class="bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500 w-full"
+					>
+						{#each data.modelOptions as option}
+							<option value={option.value}>{option.label}</option>
+						{/each}
+					</select>
+					<p class="text-xs text-zinc-700 mt-1">Inherit leaves model selection to the active Codex runtime.</p>
+				</div>
+
+				<div>
+					<p class="text-xs text-zinc-500 mb-1">Reasoning effort</p>
+					<div class="flex flex-wrap gap-2">
+						{#each data.reasoningEfforts as effort}
 							<button
-								onclick={() => (agentModel = m)}
-								class="px-3 py-1 rounded text-xs font-semibold border transition-colors {agentModel === m
-									? m === 'opus' ? 'bg-violet-800 text-violet-200 border-violet-500'
-									: m === 'haiku' ? 'bg-sky-800 text-sky-200 border-sky-500'
-									: 'bg-emerald-800 text-emerald-200 border-emerald-500'
+								onclick={() => (agentModelReasoningEffort = effort)}
+								class="px-3 py-1 rounded text-xs font-semibold border transition-colors {agentModelReasoningEffort === effort
+									? 'bg-indigo-800 text-indigo-200 border-indigo-500'
 									: 'border-zinc-700 text-zinc-500 hover:text-zinc-300'}"
 							>
-								{m}
+								{effort}
 							</button>
 						{/each}
 					</div>

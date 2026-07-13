@@ -42,7 +42,7 @@ Every agent file SHOULD contain these conceptual sections:
 
 ```markdown
 ## Design Decisions
-- Uses sonnet (not opus) because task complexity is moderate
+- Uses lane `frontier` with `model_reasoning_effort: medium` because task complexity is moderate
 - Skills X and Y are included because they cover the primary workflow
 - Memory scope is project (not user) because knowledge is repo-specific
 ```

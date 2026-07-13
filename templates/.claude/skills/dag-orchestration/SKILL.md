@@ -23,36 +23,42 @@ workflow:
 nodes:
   - id: analyze
     agent: Explore
-    model: haiku
+    model_lane: spark
+    model_reasoning_effort: low
     prompt: "Analyze codebase for integration points"
 
   - id: implement
     agent: lang-typescript-expert
-    model: sonnet
+    model_lane: frontier
+    model_reasoning_effort: medium
     prompt: "Implement the feature"
     depends_on: [analyze]
 
   - id: test
     agent: qa-engineer
-    model: sonnet
+    model_lane: frontier
+    model_reasoning_effort: medium
     prompt: "Write and run tests"
     depends_on: [implement]
 
   - id: review
     agent: lang-typescript-expert
-    model: opus
+    model_lane: frontier
+    model_reasoning_effort: high
     prompt: "Code review"
     depends_on: [implement]
 
   - id: docs
     agent: arch-documenter
-    model: sonnet
+    model_lane: frontier
+    model_reasoning_effort: medium
     prompt: "Update documentation"
     depends_on: [implement]
 
   - id: commit
     agent: mgr-gitnerd
-    model: sonnet
+    model_lane: frontier
+    model_reasoning_effort: medium
     prompt: "Commit changes"
     depends_on: [test, review, docs]
 
@@ -191,11 +197,11 @@ For ad-hoc workflows without a YAML file:
 
 ```
 [DAG Plan]
-1. analyze (Explore:haiku)
-2. implement (lang-typescript-expert:sonnet) ← depends: 1
-3. test (qa-engineer:sonnet) ← depends: 2
-4. review (lang-typescript-expert:opus) ← depends: 2
-5. commit (mgr-gitnerd:sonnet) ← depends: 3, 4
+1. analyze (Explore:spark/low)
+2. implement (lang-typescript-expert:frontier/medium) ← depends: 1
+3. test (qa-engineer:frontier/medium) ← depends: 2
+4. review (lang-typescript-expert:frontier/high) ← depends: 2
+5. commit (mgr-gitnerd:frontier/medium) ← depends: 3, 4
 
 Execute? [Y/n]
 ```

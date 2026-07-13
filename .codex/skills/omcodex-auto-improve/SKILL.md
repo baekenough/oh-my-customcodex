@@ -36,7 +36,7 @@ Reads improvement suggestions from eval-core analysis, lets the user select whic
 Display numbered list:
 ```
 [Auto-Improve] Available suggestions:
-  1. [HIGH] agent:lang-golang-expert — Escalate model sonnet→opus (3 failures in 5 uses)
+  1. [HIGH] agent:lang-golang-expert — Escalate model frontier/medium→frontier/high (3 failures in 5 uses)
   2. [MED]  routing:dev-lead-routing — Add Flutter keyword mapping (2 routing misses)
   3. [LOW]  skill:systematic-debugging — Add timeout guard (1 timeout in 10 uses)
 

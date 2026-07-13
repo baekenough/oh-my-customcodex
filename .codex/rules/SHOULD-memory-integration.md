@@ -208,8 +208,8 @@ MEMORY.md supports an optional `## Metrics` section for tracking per-agent-type 
 
     | Agent Type | Tasks | Success Rate | Avg Model | Last Used |
     |------------|-------|-------------|-----------|-----------|
-    | lang-golang-expert | 12 | 92% | sonnet | 2026-03-15 |
-    | mgr-gitnerd | 8 | 100% | sonnet | 2026-03-15 |
+    | lang-golang-expert | 12 | 92% | frontier/medium | 2026-03-15 |
+    | mgr-gitnerd | 8 | 100% | frontier/medium | 2026-03-15 |
 
 ### Metrics Collection
 

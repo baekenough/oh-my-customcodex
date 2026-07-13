@@ -5,7 +5,10 @@ import type { Actions, PageServerLoad } from './$types';
 import { getProjectRoot, getSkills } from '$lib/server/data';
 import { parseSkillNaturalLanguage, buildSkillMarkdown, sanitizeSkillName } from '$lib/server/skill-generator';
 import { parseFrontmatter } from '$lib/server/frontmatter';
-import { isClaudeAvailable, generateSkillWithClaude } from '$lib/server/claude-cli';
+import {
+	generateArtifact,
+	getGenerationProviderStatus
+} from '$lib/server/generation-provider';
 import { detectServeProjectLayout } from '$lib/server/runtime-layout';
 
 export const load: PageServerLoad = async ({ parent }) => {
@@ -14,10 +17,10 @@ export const load: PageServerLoad = async ({ parent }) => {
 	const skillSaveDir =
 		layout.surface === 'codex-installed' ? `${layout.skillsDir}/general` : layout.skillsDir;
 	const skills = await getSkills(root);
-	const claudeAvailable = await isClaudeAvailable();
+	const generationProviders = await getGenerationProviderStatus();
 	return {
 		skillNames: skills.map((s) => s.name),
-		claudeAvailable,
+		generationProviders,
 		skillSaveDir
 	};
 };
@@ -33,53 +36,28 @@ export const actions: Actions = {
 		}
 
 		const root = await getProjectRoot();
-		const claudeAvailable = await isClaudeAvailable();
+		const generated = parseSkillNaturalLanguage(input);
+		const markdown = buildSkillMarkdown(generated);
+		const generation = await generateArtifact('skill', input, root, {
+			keywordFallback: () => markdown,
+			validateContent: validateGeneratedSkill
+		});
+		const { frontmatter, body } = parseFrontmatter(generation.content);
+		const cliGenerated = generation.provider !== null;
 
-		if (claudeAvailable) {
-			try {
-				const rawOutput = await generateSkillWithClaude(input, root);
-				const { frontmatter, body } = parseFrontmatter(rawOutput);
-
-				return {
-					success: true,
-					mode: 'claude' as const,
-					name: String(frontmatter.name ?? ''),
-					description: String(frontmatter.description ?? ''),
-					scope: String(frontmatter.scope ?? 'core'),
-					contextFork: frontmatter.context === 'fork',
-					body,
-					raw: rawOutput
-				};
-			} catch (err) {
-				// Claude CLI failed — fall back to keyword parser
-				console.warn('[claude-cli] Claude generation failed, falling back to keyword parser:', err);
-				const generated = parseSkillNaturalLanguage(input);
-				const markdown = buildSkillMarkdown(generated);
-				return {
-					success: true,
-					mode: 'keyword-fallback' as const,
-					name: generated.name,
-					description: generated.description,
-					scope: generated.scope,
-					contextFork: generated.contextFork,
-					body: generated.body,
-					raw: markdown
-				};
-			}
-		} else {
-			const generated = parseSkillNaturalLanguage(input);
-			const markdown = buildSkillMarkdown(generated);
-			return {
-				success: true,
-				mode: 'keyword' as const,
-				name: generated.name,
-				description: generated.description,
-				scope: generated.scope,
-				contextFork: generated.contextFork,
-				body: generated.body,
-				raw: markdown
-			};
-		}
+		return {
+			success: true,
+			mode: generation.mode,
+			diagnostics: generation.diagnostics,
+			name: cliGenerated ? String(frontmatter.name ?? '') : generated.name,
+			description: cliGenerated
+				? String(frontmatter.description ?? '')
+				: generated.description,
+			scope: cliGenerated ? String(frontmatter.scope ?? 'core') : generated.scope,
+			contextFork: cliGenerated ? frontmatter.context === 'fork' : generated.contextFork,
+			body: cliGenerated ? body : generated.body,
+			raw: generation.content
+		};
 	},
 
 	// Save skill file
@@ -134,3 +112,10 @@ export const actions: Actions = {
 		throw redirect(303, `/skills/${name}`);
 	}
 };
+
+function validateGeneratedSkill(content: string): void {
+	const { frontmatter } = parseFrontmatter(content);
+	if (!String(frontmatter.name ?? '').trim() || !String(frontmatter.description ?? '').trim()) {
+		throw new Error('generated skill is missing required frontmatter');
+	}
+}

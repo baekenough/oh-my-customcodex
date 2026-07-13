@@ -63,18 +63,6 @@
 		return sortAsc ? ' ▲' : ' ▼';
 	}
 
-	const modelColor: Record<string, string> = {
-		sonnet: 'bg-emerald-900/50 text-emerald-300 border-emerald-700',
-		opus: 'bg-violet-900/50 text-violet-300 border-violet-700',
-		haiku: 'bg-sky-900/50 text-sky-300 border-sky-700'
-	};
-
-	const modelActiveColor: Record<string, string> = {
-		sonnet: 'bg-emerald-800 text-emerald-200 border-emerald-500',
-		opus: 'bg-violet-800 text-violet-200 border-violet-500',
-		haiku: 'bg-sky-800 text-sky-200 border-sky-500'
-	};
-
 	const domainColors: Record<string, string> = {
 		backend: 'bg-orange-900/40 text-orange-300',
 		frontend: 'bg-pink-900/40 text-pink-300',
@@ -144,7 +132,7 @@
 				<button
 					onclick={() => toggleModel(model)}
 					class="px-3 py-1 rounded text-xs font-semibold border transition-colors {selectedModels.has(model)
-						? (modelActiveColor[model] ?? 'bg-zinc-700 text-zinc-200 border-zinc-500')
+						? 'bg-indigo-800 text-indigo-200 border-indigo-500'
 						: 'border-zinc-700 text-zinc-500 hover:text-zinc-300'}"
 				>
 					{model}
@@ -181,6 +169,7 @@
 						class="px-4 py-3 text-left text-zinc-400 font-medium cursor-pointer select-none hover:text-zinc-200 {sortKey === 'model' ? 'text-zinc-200 font-bold' : ''}"
 						onclick={() => toggleSort('model')}
 					>Model{sortIndicator('model')}</th>
+					<th class="px-4 py-3 text-left text-zinc-400 font-medium">Effort</th>
 					<th
 						class="px-4 py-3 text-left text-zinc-400 font-medium cursor-pointer select-none hover:text-zinc-200 {sortKey === 'domain' ? 'text-zinc-200 font-bold' : ''}"
 						onclick={() => toggleSort('domain')}
@@ -198,16 +187,17 @@
 						</td>
 						<td class="px-4 py-3 text-zinc-400 max-w-xs" title={agent.description}><span class="line-clamp-2">{agent.description}</span></td>
 						<td class="px-4 py-3">
-							<span class="px-2 py-0.5 rounded text-xs font-medium border {modelColor[agent.model] ?? 'bg-zinc-800 text-zinc-400 border-zinc-700'}">
+							<span class="px-2 py-0.5 rounded text-xs font-medium border bg-indigo-900/40 text-indigo-300 border-indigo-800">
 								{agent.model}
 							</span>
 						</td>
+						<td class="px-4 py-3 text-zinc-500 text-xs">{agent.modelReasoningEffort}</td>
 						<td class="px-4 py-3 text-zinc-500 text-xs">{agent.domain || '—'}</td>
 						<td class="px-4 py-3 text-zinc-500 text-xs">{agent.skills.length > 0 ? agent.skills.length : '—'}</td>
 					</tr>
 				{:else}
 					<tr>
-						<td colspan="5" class="px-4 py-8 text-center text-zinc-600">No agents found</td>
+						<td colspan="6" class="px-4 py-8 text-center text-zinc-600">No agents found</td>
 					</tr>
 				{/each}
 

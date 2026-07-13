@@ -6,6 +6,73 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 
+MODEL_LANES = {"inherit", "frontier", "spark"}
+REASONING_EFFORTS = {
+    "none",
+    "minimal",
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "ultra",
+    "max",
+}
+LEGACY_MODEL_LANES = {
+    "inherit": "inherit",
+    "haiku": "spark",
+    "sonnet": "frontier",
+    "opus": "frontier",
+}
+
+# Public v1.0.0 compatibility boundary. Canonical ontology state uses model_lane;
+# these values only preserve the deprecated AgentInfo.model/MCP `model` surface.
+DEPRECATED_MODEL_ALIASES_BY_LANE = {
+    "inherit": "inherit",
+    "frontier": "sonnet",
+    "spark": "haiku",
+}
+
+
+def _deprecated_model_alias(model_lane: str) -> str:
+    """Return the deprecated v1.0.0 model alias for a canonical model lane."""
+    try:
+        return DEPRECATED_MODEL_ALIASES_BY_LANE[model_lane]
+    except KeyError as exc:
+        raise ValueError(f"Invalid agent ontology model_lane: {model_lane}") from exc
+
+
+def _agent_model_lane(info: dict) -> str:
+    """Normalize native lane metadata, accepting legacy Claude aliases at the input boundary."""
+    model_lane = info.get("model_lane")
+    legacy_model = info.get("model")
+    if model_lane is not None and legacy_model is not None:
+        raise ValueError("Agent ontology model and model_lane conflict")
+    if legacy_model is not None:
+        model_lane = LEGACY_MODEL_LANES.get(legacy_model)
+        if model_lane is None:
+            raise ValueError(f"Unsupported legacy agent ontology model: {legacy_model}")
+    model_lane = model_lane or "inherit"
+    if model_lane not in MODEL_LANES:
+        raise ValueError(f"Invalid agent ontology model_lane: {model_lane}")
+    return model_lane
+
+
+def _agent_reasoning_effort(info: dict) -> Optional[str]:
+    """Normalize Codex reasoning effort, accepting legacy effort at the input boundary."""
+    native_effort = info.get("model_reasoning_effort")
+    legacy_effort = info.get("effort")
+    if (
+        native_effort is not None
+        and legacy_effort is not None
+        and native_effort != legacy_effort
+    ):
+        raise ValueError("Agent ontology effort and model_reasoning_effort conflict")
+    effort = native_effort if native_effort is not None else legacy_effort
+    if effort is not None and effort not in REASONING_EFFORTS:
+        raise ValueError(f"Invalid agent ontology model_reasoning_effort: {effort}")
+    return effort
+
+
 @dataclass
 class AgentInfo:
     """Information about an agent from the ontology."""
@@ -13,14 +80,24 @@ class AgentInfo:
     name: str
     agent_class: str
     description: str
-    model: str
+    model_lane: str
     memory: Optional[str] = None
-    effort: Optional[str] = None
+    model_reasoning_effort: Optional[str] = None
     skills: list[str] = field(default_factory=list)
     tools: list[str] = field(default_factory=list)
     summary: str = ""
     keywords: list[str] = field(default_factory=list)
     file_patterns: list[str] = field(default_factory=list)
+
+    @property
+    def model(self) -> str:
+        """Deprecated v1.0.0 compatibility alias; use model_lane."""
+        return _deprecated_model_alias(self.model_lane)
+
+    @property
+    def effort(self) -> Optional[str]:
+        """Deprecated v1.0.0 compatibility alias; use model_reasoning_effort."""
+        return self.model_reasoning_effort
 
 
 @dataclass
@@ -109,9 +186,9 @@ class Ontology:
                 name=name,
                 agent_class=info.get("class", ""),
                 description=info.get("description", ""),
-                model=info.get("model", "sonnet"),
+                model_lane=_agent_model_lane(info),
                 memory=info.get("memory"),
-                effort=info.get("effort"),
+                model_reasoning_effort=_agent_reasoning_effort(info),
                 skills=info.get("skills", []),
                 tools=info.get("tools", []),
                 summary=info.get("summary", ""),

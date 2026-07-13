@@ -3,7 +3,8 @@
 # and templates/.claude/ packaged files.
 #
 # Count parity catches missing files. Content drift checks catch stale template
-# copies when a source rule, agent, hook, or skill changes without mirror sync.
+# copies while allowing the explicit Claude-source to Codex-native agent metadata
+# conversion performed by the agent compiler.
 
 set -euo pipefail
 
@@ -186,8 +187,41 @@ check_content_file() {
   fi
 }
 
+normalize_compat_agent() {
+  sed \
+    -e 's/^model: inherit$/model_lane: inherit/' \
+    -e 's/^model: haiku$/model_lane: spark/' \
+    -e 's/^model: sonnet$/model_lane: frontier/' \
+    -e 's/^model: opus$/model_lane: frontier/' \
+    -e 's/^effort:/model_reasoning_effort:/' \
+    -e 's/^  path: sonnet → opus$/  model_reasoning_effort_path: medium → high → xhigh/' \
+    "$1"
+}
+
+check_agent_content_dir() {
+  local src_dir="$1" tpl_dir="$2"
+  while IFS= read -r f; do
+    local base="${f#"$src_dir"/}"
+    local tpl="$tpl_dir/$base"
+    if [ ! -f "$tpl" ]; then
+      echo "::error::Template missing for agents: $base"
+      content_drift=$((content_drift + 1))
+      continue
+    fi
+
+    local normalized
+    normalized=$(mktemp)
+    normalize_compat_agent "$tpl" > "$normalized"
+    if ! diff -q "$f" "$normalized" >/dev/null 2>&1; then
+      echo "::error::Content drift in agents: $base (source != template after provider normalization)"
+      content_drift=$((content_drift + 1))
+    fi
+    rm -f "$normalized"
+  done < <(find "$src_dir" -maxdepth 1 -type f -name "*.md")
+}
+
 check_content_dir ".codex/rules" "templates/.claude/rules" "*.md" "rules"
-check_content_dir ".codex/agents" "templates/.claude/agents" "*.md" "agents"
+check_agent_content_dir ".codex/agents" "templates/.claude/agents"
 check_content_dir ".codex/hooks/scripts" "templates/.claude/hooks/scripts" "*.sh" "hooks/scripts"
 check_content_file ".codex/hooks/hooks.json" "templates/.claude/hooks/hooks.json" "hooks/hooks.json"
 check_content_file ".codex/statusline.sh" "templates/.claude/statusline.sh" "statusline.sh"
