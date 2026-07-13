@@ -1,7 +1,7 @@
 ---
 title: "cc-token-saver Integration Guide"
 type: guide
-updated: 2026-04-18
+updated: 2026-07-14
 sources:
   - guides/cc-token-saver/README.md
 related:
@@ -14,11 +14,11 @@ related:
 
 # cc-token-saver Integration Guide
 
-External plugin for token cost optimization and session continuity — resolves conflicts with oh-my-customcodex's native statusline and delegation rules.
+External Claude Code plugin for token cost optimization and session continuity — documents its compatibility boundary with Codex/OMX status and delegation surfaces.
 
 ## Overview
 
-[cc-token-saver](https://github.com/ww-w-ai/cc-token-saver) (Apache-2.0) is an external Claude Code plugin providing cache TTL monitoring, cost dashboards, and zero-cost context restore. Because oh-my-customcodex has its own statusline (R012) and delegation model (R009/R010/R018), some features overlap and require explicit priority rules.
+[cc-token-saver](https://github.com/ww-w-ai/cc-token-saver) (Apache-2.0) is an external Claude Code plugin providing cache TTL monitoring, cost dashboards, and zero-cost context restore. Codex sessions use OMX HUD for harness state and the native `/statusline` footer for user-selected TUI items, while R009/R010/R018 govern delegation.
 
 ## Installation
 
@@ -40,9 +40,13 @@ claude plugin install cc-token-saver
 
 ## Conflict Resolution
 
-### Live Status Line (R012 Priority)
+### Live Status Line (R012 Boundary)
 
-oh-my-customcodex's `.claude/statusline.sh` (R012) already covers Cost, Rate Limit %, Weekly Limit %, and Context %. cc-token-saver's Live Status Line is redundant when R012 is active. R012 statusline takes priority — disable or ignore cc-token-saver's status bar.
+Codex init and update do not install a command statusline under `.codex`.
+In an explicit Claude compatibility session, choose either cc-token-saver's
+footer or the packaged `templates/.claude/statusline.sh` compatibility asset;
+do not enable both persistent footers. OMX HUD remains the separate
+harness-workflow status surface.
 
 ### SubTask Delegation (R009/R010/R018 Priority)
 
