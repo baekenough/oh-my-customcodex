@@ -65,7 +65,8 @@ class TestCompressorLoaderIntegration:
             "## Core Rule\n\nAgent files must follow standard format.\n\n"
             "## Requirements\n\n"
             "| Field | Required |\n|-------|----------|\n| name | yes |\n\n"
-            "## Examples\n\n```yaml\nname: my-agent\nmodel: sonnet\n```\n\n"
+            "## Examples\n\n```yaml\nname: my-agent\nmodel_lane: frontier\n"
+            "model_reasoning_effort: medium\n```\n\n"
             "## References\n\n- See R007\n"
         )
 

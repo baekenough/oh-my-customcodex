@@ -2,19 +2,30 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { AgentFileConflictError, saveAgentMarkdown } from '$lib/server/agent-files';
 import { getProjectRoot, getSkills } from '$lib/server/data';
-import { parseNaturalLanguage, buildAgentMarkdown, sanitizeName } from '$lib/server/agent-generator';
+import {
+	parseNaturalLanguage,
+	buildAgentMarkdown,
+	getAgentModelOptions,
+	NATIVE_REASONING_EFFORTS,
+	sanitizeName
+} from '$lib/server/agent-generator';
 import { parseFrontmatter } from '$lib/server/frontmatter';
-import { isClaudeAvailable, generateAgentWithClaude } from '$lib/server/claude-cli';
+import {
+	generateArtifact,
+	getGenerationProviderStatus
+} from '$lib/server/generation-provider';
 import { detectServeProjectLayout } from '$lib/server/runtime-layout';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { root } = await parent();
 	const layout = await detectServeProjectLayout(root);
 	const skills = await getSkills(root);
-	const claudeAvailable = await isClaudeAvailable();
+	const generationProviders = await getGenerationProviderStatus();
 	return {
 		skillNames: skills.map((s) => s.name),
-		claudeAvailable,
+		generationProviders,
+		modelOptions: getAgentModelOptions(),
+		reasoningEfforts: NATIVE_REASONING_EFFORTS,
 		agentSaveDir: layout.agentsDir
 	};
 };
@@ -30,59 +41,33 @@ export const actions: Actions = {
 		}
 
 		const root = await getProjectRoot();
-		const claudeAvailable = await isClaudeAvailable();
+		const generated = parseNaturalLanguage(input);
+		const markdown = buildAgentMarkdown(generated);
+		const generation = await generateArtifact('agent', input, root, {
+			keywordFallback: () => markdown,
+			validateContent: validateGeneratedAgent
+		});
+		const { frontmatter, body } = parseFrontmatter(generation.content);
+		const cliGenerated = generation.provider !== null;
 
-		if (claudeAvailable) {
-			try {
-				const rawOutput = await generateAgentWithClaude(input, root);
-				const { frontmatter, body } = parseFrontmatter(rawOutput);
-
-				return {
-					success: true,
-					mode: 'claude' as const,
-					name: String(frontmatter.name ?? ''),
-					description: String(frontmatter.description ?? ''),
-					model: String(frontmatter.model ?? 'sonnet'),
-					domain: String(frontmatter.domain ?? 'universal'),
-					tools: arrayField(frontmatter.tools),
-					skills: arrayField(frontmatter.skills),
-					body,
-					raw: rawOutput
-				};
-			} catch (err) {
-				// Claude CLI failed — fall back to keyword parser
-				console.warn('[claude-cli] Claude generation failed, falling back to keyword parser:', err);
-				const generated = parseNaturalLanguage(input);
-				const markdown = buildAgentMarkdown(generated);
-				return {
-					success: true,
-					mode: 'keyword-fallback' as const,
-					name: generated.name,
-					description: generated.description,
-					model: generated.model,
-					domain: generated.domain,
-					tools: generated.tools,
-					skills: generated.skills,
-					body: generated.body,
-					raw: markdown
-				};
-			}
-		} else {
-			const generated = parseNaturalLanguage(input);
-			const markdown = buildAgentMarkdown(generated);
-			return {
-				success: true,
-				mode: 'keyword' as const,
-				name: generated.name,
-				description: generated.description,
-				model: generated.model,
-				domain: generated.domain,
-				tools: generated.tools,
-				skills: generated.skills,
-				body: generated.body,
-				raw: markdown
-			};
-		}
+		return {
+			success: true,
+			mode: generation.mode,
+			diagnostics: generation.diagnostics,
+			name: cliGenerated ? String(frontmatter.name ?? '') : generated.name,
+			description: cliGenerated
+				? String(frontmatter.description ?? '')
+				: generated.description,
+			model: cliGenerated ? String(frontmatter.model ?? '') : generated.model,
+			modelReasoningEffort: cliGenerated
+				? String(frontmatter.model_reasoning_effort ?? 'medium')
+				: generated.modelReasoningEffort,
+			domain: cliGenerated ? String(frontmatter.domain ?? 'universal') : generated.domain,
+			tools: cliGenerated ? arrayField(frontmatter.tools) : generated.tools,
+			skills: cliGenerated ? arrayField(frontmatter.skills) : generated.skills,
+			body: cliGenerated ? body : generated.body,
+			raw: generation.content
+		};
 	},
 
 	// Save agent file
@@ -126,4 +111,11 @@ function arrayField(val: unknown): string[] {
 	if (Array.isArray(val)) return val.map(String);
 	if (typeof val === 'string') return [val];
 	return [];
+}
+
+function validateGeneratedAgent(content: string): void {
+	const { frontmatter } = parseFrontmatter(content);
+	if (!String(frontmatter.name ?? '').trim() || !String(frontmatter.description ?? '').trim()) {
+		throw new Error('generated agent is missing required frontmatter');
+	}
 }

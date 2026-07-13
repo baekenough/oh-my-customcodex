@@ -104,8 +104,8 @@ Each agent receives the full diff and returns findings as structured JSON:
 
 ## Notes
 
-- Round 2 agents use `model: sonnet` for cost efficiency
-- Round 3 verification agents use `model: opus` for reasoning depth
+- Round 2 agents use `model_lane: frontier, model_reasoning_effort: medium` for cost efficiency
+- Round 3 verification agents use `model_lane: frontier, model_reasoning_effort: high` for reasoning depth
 - FALSE POSITIVE filtering is critical — previous releases showed 80%+ FP rate on automated review
 - This skill replaces ad-hoc cross-verification with a repeatable process
 - Round 7 philosophy check references AGENTS.md architecture section and R006/R010/R021 rules

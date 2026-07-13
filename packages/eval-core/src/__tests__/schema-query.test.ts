@@ -91,7 +91,7 @@ function seedInvocation(
       sessionPpid: ppid,
       sessionId,
       agentType,
-      model: 'claude-sonnet-4-6',
+      model: 'gpt-runtime-frontier',
       outcome,
       timestamp: new Date().toISOString(),
     })

@@ -146,7 +146,7 @@ function parseMetricsTable(content: string): MemoryMetricRow[] {
 	const tableLines = metricsMatch[1].split('\n');
 
 	for (const line of tableLines) {
-		// Match table data rows: | agent-type | 12 | 92% | sonnet | 2026-03-15 |
+		// Match table data rows: | agent-type | 12 | 92% | configured-model | 2026-03-15 |
 		const cellMatch = line.match(/^\|\s*([^|]+?)\s*\|\s*(\d+)\s*\|\s*(\d+(?:\.\d+)?)%?\s*\|/);
 		if (!cellMatch) continue;
 

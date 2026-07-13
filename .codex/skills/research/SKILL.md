@@ -34,7 +34,7 @@ Orchestrates 10 parallel research teams for comprehensive deep analysis of any t
 
 ## Pre-flight Guards
 
-Before executing the 10-team research workflow, the agent MUST run these checks. Research is a high-cost operation (~$8-15) — these guards prevent wasteful execution.
+Before executing the 10-team research workflow, the agent MUST run these checks. Research is a high-cost operation — these guards prevent wasteful execution regardless of the active model inventory.
 
 ### Guard Levels
 
@@ -67,7 +67,7 @@ indicators_complex:
   - Query references a repository or ecosystem for deep analysis
 ```
 
-**Action (GATE)**: `[Pre-flight] GATE: Query appears to be a simple factual question. Use direct answer or single WebSearch instead. 10-team research (~$8-15) would be wasteful. Override with /research --force if intended.`
+**Action (GATE)**: `[Pre-flight] GATE: Query appears to be a simple factual question. Use a direct answer or one search instead. A 10-team research run would be wasteful. Override with /research --force if intended.`
 
 ### Guard 2: Single-File Review Detection
 
@@ -128,7 +128,7 @@ fi
 ├── Known solution: PASS
 └── Context budget: WARN — context at 45%, research adds ~35%
 Result: PROCEED WITH CAUTION (0 GATE, 1 WARN, 0 INFO)
-Cost estimate: ~$8-15 for 10-team parallel research
+Cost: runtime-dependent; bounded by 10 teams and the verification-round cap
 ```
 
 If any GATE: block and suggest alternative. User can override with `--force`.
@@ -170,14 +170,14 @@ Batch 3: T9, T10            (Innovation)
 Before starting verification rounds, check codex availability:
 
 ```
-Team findings ──→ opus 4.6 verification ──→ optional plugin-assisted verification
+Team findings ──→ verifier (`frontier`/`high`) ──→ optional plugin-assisted verification
        │                                              │
        └── Contradiction detected? ── YES ──→ Round N+1
                                       NO  ──→ Consensus reached → Phase 3
 ```
 
 Each round:
-1. **opus 4.6**: Deep reasoning verification — checks logical consistency, identifies gaps, challenges assumptions
+1. **Verifier (`frontier`/`high`)**: Checks logical consistency, identifies gaps, and challenges assumptions
 2. **Optional Codex interop**: Use native Claude Code plugin `openai/codex-plugin-cc` only when explicitly installed/requested; otherwise use researcher or RTK-backed local evidence gathering.
 3. **Contradiction resolution**: Reconcile divergent findings between teams and verifiers
 4. **Convergence check**: All major claims verified with no outstanding contradictions → proceed
@@ -193,7 +193,7 @@ Convergence expected by round 3. Hard stop at round 30.
 ### Phase 4: Output
 
 1. Structured markdown report (see Output Format below)
-2. **Artifact persistence**: The Phase 4 synthesis agent (opus) writes the report to:
+2. **Artifact persistence**: The Phase 4 synthesis agent (frontier/high) writes the report to:
    ```
    .codex/outputs/sessions/{YYYY-MM-DD}/research-{HHmmss}.md
 
@@ -236,10 +236,10 @@ Retrieval and reasoning are distinct cognitive operations that benefit from expl
 
 ### Principle
 
-| Role | Phase | Model | Responsibility |
+| Role | Phase | Lane / Effort | Responsibility |
 |------|-------|-------|----------------|
-| Retriever | Phase 1 | sonnet (fast, broad) | Gather, catalog, enumerate — no judgment |
-| Reasoner | Phase 2-3 | opus (deep, precise) | Verify, synthesize, judge — no new retrieval |
+| Retriever | Phase 1 | frontier/medium (fast, broad) | Gather, catalog, enumerate — no judgment |
+| Reasoner | Phase 2-3 | frontier/high (deep, precise) | Verify, synthesize, judge — no new retrieval |
 
 ### Why Separate
 
@@ -259,12 +259,12 @@ Retrieval and reasoning are distinct cognitive operations that benefit from expl
 
 ## Model Selection
 
-| Phase | Model | Rationale |
+| Phase | Lane / Effort | Rationale |
 |-------|-------|-----------|
-| Phase 1 (Research teams) | sonnet | Balanced speed/quality for parallel research |
-| Phase 2 (opus verification) | opus | Deep reasoning for cross-verification |
-| Phase 2 (codex verification) | codex xhigh | Code-level validation of technical claims |
-| Phase 3 (Synthesis) | opus | Complex multi-source reasoning and taxonomy |
+| Phase 1 (Research teams) | frontier/medium | Balanced speed/quality for parallel research |
+| Phase 2 (frontier/high verification) | frontier/high | Deep reasoning for cross-verification |
+| Phase 2 (code verification) | frontier/xhigh | Code-level validation of technical claims |
+| Phase 3 (Synthesis) | frontier/high | Complex multi-source reasoning and taxonomy |
 
 ## Team Prompt Templates
 
@@ -311,15 +311,15 @@ Output format:
 ```
 Round N:
   Input:  All 10 team findings + previous round feedback (if any)
-  Step 1: opus reviews each team pair for:
+  Step 1: frontier/high reviews each team pair for:
           - Internal consistency (breadth ↔ depth alignment)
           - Cross-domain consistency (security ↔ architecture)
           - Evidence quality (claims without backing)
   Step 2: Optional plugin-assisted validation (only if `openai/codex-plugin-cc` is explicitly installed/requested):
           a. Validate technical claims against code patterns, benchmark reproducibility,
              and dependency resolution.
-          b. Parse contradictions → merge with opus findings.
-          c. On unavailable plugin or error: log "[Phase 2] Round {N}: optional Codex interop unavailable — continuing with opus/researcher results".
+          b. Parse contradictions → merge with verifier findings.
+          c. On unavailable plugin or error: log "[Phase 2] Round {N}: optional interop unavailable — continuing with verifier/researcher results".
   Step 3: Compile contradiction list
           - 0 contradictions → CONVERGED
           - >0 contradictions → feedback to relevant teams → Round N+1
@@ -401,7 +401,7 @@ This advisory is informational only and does not block execution.
 
 | Scenario | Fallback |
 |----------|----------|
-| Optional Codex plugin unavailable | opus/researcher verification (still min 2 rounds) |
+| Optional Codex plugin unavailable | researcher plus frontier/high verifier (still min 2 rounds) |
 | Agent Teams unavailable | Standard Agent tool with R009 batching |
 | Partial team failure | Synthesize from available results, note gaps in report |
 | GitHub issue creation fails | Output report to conversation only |
@@ -412,13 +412,13 @@ Before execution:
 ```
 [Research Plan] {topic}
 ├── Phase 1: 10 teams (3 batches × 4/4/2)
-├── Phase 2: Cross-verification (2-5 rounds, opus + codex)
-├── Phase 3: Synthesis (opus)
+├── Phase 2: Cross-verification (2-5 rounds, verifier + code evidence)
+├── Phase 3: Synthesis (frontier/high)
 └── Phase 4: Report + GitHub issue
 
-Estimated: {time} | Teams: 10 | Models: sonnet → opus → codex
+Estimated: {time} | Teams: 10 | Routing: researcher/medium → verifier/high → code evidence
 Stopping: max 30 verification rounds, convergence at 0 contradictions
-Cost: ~$8-15 (10 teams × sonnet + opus verification)
+Cost: runtime-dependent; bounded by team and round limits
 Execute? [Y/n]
 ```
 
@@ -473,7 +473,7 @@ Agent(
 
 - Each Teams member running research still respects R009 (max 4 concurrent sub-agents)
 - Batching order remains: T1-T4 → T5-T8 → T9-T10
-- Cost is identical to orchestrator mode (~$8-15 per research invocation)
+- Cost shape is identical to orchestrator mode and depends on the active OMX model inventory
 - Multiple Teams members running research simultaneously will multiply costs proportionally
 
 ## Integration

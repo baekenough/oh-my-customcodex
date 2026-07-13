@@ -6,10 +6,10 @@
  * emits deterministic TOML, and safely synchronizes only generated TOML files.
  */
 
-import { readFileSync } from 'node:fs';
+import { accessSync, constants as fsConstants, readFileSync, realpathSync } from 'node:fs';
 import { lstat, readdir, readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { basename, join } from 'node:path';
+import { basename, delimiter, dirname, isAbsolute, join, resolve } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import {
   deleteFile,
@@ -37,8 +37,6 @@ const NATIVE_AGENT_TOP_LEVEL_STRING_FIELDS = new Set([
   'sandbox_mode',
 ]);
 
-const DEFAULT_FRONTIER_MODEL = 'gpt-5.6-sol';
-const DEFAULT_SPARK_MODEL = 'gpt-5.6-luna';
 const AGENT_DOMAINS = new Set<AgentDomain>([
   'backend',
   'frontend',
@@ -47,13 +45,23 @@ const AGENT_DOMAINS = new Set<AgentDomain>([
   'universal',
 ]);
 
-const REASONING_EFFORTS = new Set<NativeReasoningEffort>([
+export const NATIVE_REASONING_EFFORTS = [
+  'none',
   'minimal',
   'low',
   'medium',
   'high',
   'xhigh',
-]);
+  'ultra',
+  'max',
+] as const;
+export type NativeReasoningEffort = (typeof NATIVE_REASONING_EFFORTS)[number];
+
+export const NATIVE_MODEL_LANES = ['inherit', 'frontier', 'spark'] as const;
+export type NativeModelLane = (typeof NATIVE_MODEL_LANES)[number];
+
+const REASONING_EFFORTS = new Set<NativeReasoningEffort>(NATIVE_REASONING_EFFORTS);
+const MODEL_LANES = new Set<NativeModelLane>(NATIVE_MODEL_LANES);
 const SAFE_SANDBOX_MODES = new Set<NativeSandboxMode>(['read-only', 'workspace-write']);
 const WRITE_CAPABLE_CLAUDE_TOOLS = new Set(['Bash', 'Edit', 'NotebookEdit', 'Write']);
 
@@ -72,7 +80,6 @@ const MCP_SUPPORTED_FIELDS = new Set<string>([
   ...MCP_STRING_MAP_FIELDS,
 ]);
 
-export type NativeReasoningEffort = 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
 export type NativeSandboxMode = 'read-only' | 'workspace-write';
 
 export interface NativeSkillConfig {
@@ -266,6 +273,98 @@ function readCodexRootModel(codexHome: string): string | undefined {
   return undefined;
 }
 
+function omxExecutableNames(environment: NodeJS.ProcessEnv): string[] {
+  if (process.platform !== 'win32') return ['omx'];
+  const extensions = (environment.PATHEXT ?? '.COM;.EXE;.BAT;.CMD')
+    .split(';')
+    .map((extension) => extension.trim().toLowerCase())
+    .filter(Boolean);
+  return ['omx', ...extensions.map((extension) => `omx${extension}`)];
+}
+
+function omxEntrypointsFromExecutable(executable: string): string[] {
+  const entrypoints = new Set<string>();
+  try {
+    accessSync(executable, fsConstants.X_OK);
+    entrypoints.add(realpathSync(executable));
+  } catch {
+    return [];
+  }
+
+  try {
+    const shim = readFileSync(executable, 'utf8').slice(0, 16_384);
+    const entrypointPattern = /(['"])([^'"\r\n]*[\\/]dist[\\/]cli[\\/]omx\.js)\1/g;
+    for (const match of shim.matchAll(entrypointPattern)) {
+      const path = match[2];
+      entrypoints.add(realpathSync(isAbsolute(path) ? path : resolve(dirname(executable), path)));
+    }
+  } catch {
+    // A native/symlinked executable is sufficient; wrapper inspection is best-effort only.
+  }
+  return [...entrypoints];
+}
+
+function installedOmxPackageRoots(environment: NodeJS.ProcessEnv): string[] {
+  const pathValue = environment.PATH ?? environment.Path;
+  if (!pathValue) return [];
+
+  const roots = new Set<string>();
+  for (const directory of pathValue
+    .split(delimiter)
+    .map((entry) => entry.trim())
+    .filter(Boolean)) {
+    for (const name of omxExecutableNames(environment)) {
+      for (const entrypoint of omxEntrypointsFromExecutable(join(directory, name))) {
+        const normalized = entrypoint.replaceAll('\\', '/');
+        if (!normalized.endsWith('/dist/cli/omx.js')) continue;
+        roots.add(dirname(dirname(dirname(entrypoint))));
+      }
+    }
+  }
+  return [...roots];
+}
+
+let installedOmxSparkDefaultCache:
+  | { discoveryKey: string; sparkModel: string | undefined }
+  | undefined;
+
+function installedOmxDiscoveryKey(environment: NodeJS.ProcessEnv): string {
+  return [
+    process.platform,
+    environment.PATH ?? environment.Path ?? '',
+    environment.PATHEXT ?? '',
+  ].join('\0');
+}
+
+function readInstalledOmxSparkDefault(environment: NodeJS.ProcessEnv): string | undefined {
+  const discoveryKey = installedOmxDiscoveryKey(environment);
+  if (installedOmxSparkDefaultCache?.discoveryKey === discoveryKey) {
+    return installedOmxSparkDefaultCache.sparkModel;
+  }
+
+  let sparkModel: string | undefined;
+  for (const packageRoot of installedOmxPackageRoots(environment)) {
+    try {
+      const packageJson = JSON.parse(readFileSync(join(packageRoot, 'package.json'), 'utf8')) as {
+        name?: unknown;
+      };
+      if (packageJson.name !== 'oh-my-codex') continue;
+
+      const contract = readFileSync(join(packageRoot, 'dist', 'config', 'models.js'), 'utf8');
+      const declaration = contract.match(
+        /\bexport\s+const\s+DEFAULT_SPARK_MODEL\s*=\s*(['"])([^'"\r\n]+)\1\s*;/
+      );
+      if (!declaration) continue;
+      sparkModel = validateModelValue(declaration[2], 'installed OMX DEFAULT_SPARK_MODEL');
+      break;
+    } catch {
+      // Ignore incomplete or non-standard installations and continue to the next PATH entry.
+    }
+  }
+  installedOmxSparkDefaultCache = { discoveryKey, sparkModel };
+  return sparkModel;
+}
+
 /** Resolve the same frontier/spark precedence as the installed OMX model contract. */
 export function getConfiguredModelLanes(
   environment: NodeJS.ProcessEnv = process.env,
@@ -278,10 +377,9 @@ export function getConfiguredModelLanes(
   const configuredModels = isRecord(omxConfig?.models) ? omxConfig.models : undefined;
 
   const frontier =
-    environment.OMX_DEFAULT_FRONTIER_MODEL?.trim() ||
-    readConfiguredString(configEnvironment, 'OMX_DEFAULT_FRONTIER_MODEL') ||
     readCodexRootModel(codexHome) ||
-    DEFAULT_FRONTIER_MODEL;
+    environment.OMX_DEFAULT_FRONTIER_MODEL?.trim() ||
+    readConfiguredString(configEnvironment, 'OMX_DEFAULT_FRONTIER_MODEL');
   const spark =
     environment.OMX_DEFAULT_SPARK_MODEL?.trim() ||
     environment.OMX_SPARK_MODEL?.trim() ||
@@ -290,28 +388,69 @@ export function getConfiguredModelLanes(
     readConfiguredString(configuredModels, 'team_low_complexity') ||
     readConfiguredString(configuredModels, 'team-low-complexity') ||
     readConfiguredString(configuredModels, 'teamLowComplexity') ||
-    DEFAULT_SPARK_MODEL;
+    readInstalledOmxSparkDefault(environment);
   return {
-    frontier: validateModelValue(frontier, 'frontier model lane'),
-    spark: validateModelValue(spark, 'spark model lane'),
+    frontier: frontier ? validateModelValue(frontier, 'frontier model lane') : undefined,
+    spark: spark ? validateModelValue(spark, 'spark model lane') : undefined,
   };
 }
 
-function resolveModel(model: unknown, modelLanes?: ModelLaneConfig): string | undefined {
-  if (model === undefined || model === null || model === '') return undefined;
-  if (typeof model !== 'string') {
+function hasMetadataValue(value: unknown): boolean {
+  return value !== undefined && value !== null && value !== '';
+}
+
+function resolveNativeModelLane(value: unknown, lanes: ModelLaneConfig): string | undefined {
+  if (typeof value !== 'string' || !MODEL_LANES.has(value as NativeModelLane)) {
+    throw new Error(`Invalid model_lane: ${String(value)}`);
+  }
+  if (value === 'inherit') return undefined;
+  const resolved = lanes[value as Exclude<NativeModelLane, 'inherit'>];
+  if (value === 'spark' && !resolved) {
+    throw new Error(
+      'Spark model lane is unavailable: configure OMX_DEFAULT_SPARK_MODEL or install a discoverable OMX model contract'
+    );
+  }
+  return resolved ? validateModelValue(resolved, `${value} model lane`) : undefined;
+}
+
+function resolveCompatibilityModel(value: unknown, lanes: ModelLaneConfig): string | undefined {
+  if (!hasMetadataValue(value)) return undefined;
+  if (typeof value !== 'string') {
     throw new Error('Agent model must be a string');
   }
 
-  const normalized = model.trim();
-  const lanes = modelLanes ?? getConfiguredModelLanes();
+  const normalized = value.trim();
+  if (normalized === 'inherit') return undefined;
   if (normalized === 'sonnet' || normalized === 'opus') {
     return lanes.frontier ? validateModelValue(lanes.frontier, 'frontier model lane') : undefined;
   }
   if (normalized === 'haiku') {
-    return lanes.spark ? validateModelValue(lanes.spark, 'spark model lane') : undefined;
+    if (!lanes.spark) {
+      throw new Error(
+        'Spark model lane is unavailable: configure OMX_DEFAULT_SPARK_MODEL or install a discoverable OMX model contract'
+      );
+    }
+    return validateModelValue(lanes.spark, 'spark model lane');
   }
   return validateModelValue(normalized);
+}
+
+function resolveModel(
+  metadata: Record<string, unknown>,
+  modelLanes?: ModelLaneConfig
+): string | undefined {
+  const model = metadata.model;
+  const modelLane = metadata.model_lane;
+  const hasModel = hasMetadataValue(model);
+  const hasModelLane = hasMetadataValue(modelLane);
+  if (hasModel && hasModelLane) {
+    throw new Error('Agent model and model_lane conflict');
+  }
+
+  const lanes = modelLanes ?? getConfiguredModelLanes();
+  return hasModelLane
+    ? resolveNativeModelLane(modelLane, lanes)
+    : resolveCompatibilityModel(model, lanes);
 }
 
 function resolveReasoningEffort(
@@ -925,7 +1064,7 @@ export function compileMarkdownAgent(
     name: parsed.sourceName,
     description: parsed.description,
     developer_instructions: parsed.developerInstructions,
-    model: resolveModel(parsed.metadata.model, options.modelLanes),
+    model: resolveModel(parsed.metadata, options.modelLanes),
     model_reasoning_effort: resolveReasoningEffort(parsed.metadata),
     sandbox_mode: resolveSandboxMode(parsed.metadata),
     mcp_servers: resolveMcpServers(parsed.metadata.mcp_servers),
@@ -967,6 +1106,7 @@ async function compileSourceDirectory(
   options: SyncNativeAgentsOptions
 ): Promise<{ all: CompiledNativeAgent[]; selected: CompiledNativeAgent[] }> {
   const entries = await readdir(options.sourceDir, { withFileTypes: true });
+  const modelLanes = options.modelLanes ?? getConfiguredModelLanes();
   const all: CompiledNativeAgent[] = [];
   for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
     if (!entry.name.endsWith('.md')) continue;
@@ -977,7 +1117,7 @@ async function compileSourceDirectory(
     const markdown = await readFile(join(options.sourceDir, entry.name), 'utf8');
     const agent = compileMarkdownAgent(markdown, {
       sourceFilename: entry.name,
-      modelLanes: options.modelLanes,
+      modelLanes,
     });
     all.push(agent);
   }

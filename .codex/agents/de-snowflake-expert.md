@@ -1,10 +1,10 @@
 ---
 name: de-snowflake-expert
 description: Expert Snowflake developer for cloud data warehouse design, query optimization, and data loading. Use for Snowflake SQL, warehouse configuration, clustering keys, data sharing, and Iceberg table integration.
-model: sonnet
+model_lane: frontier
 domain: data-engineering
 memory: project
-effort: high
+model_reasoning_effort: high
 skills:
   - snowflake-best-practices
 tools:

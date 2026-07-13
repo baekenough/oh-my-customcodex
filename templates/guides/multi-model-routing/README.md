@@ -1,101 +1,88 @@
-# Multi-Model Routing
+# Codex/OMX Model Routing
 
 ## Overview
 
-Role-based model selection strategy for AI agent workflows. Consolidates model routing conventions from R006 (agent design), R008 (tool identification), and agent frontmatter into a single reference.
+Route by role capability and reasoning effort. Do not pin a product-wide model ID:
+OMX owns the current model inventory and Codex agents consume that runtime contract.
 
-## Model Aliases
+## Capability Lanes
 
-| Alias | Full ID | Cost | Speed | Use Case |
-|-------|---------|------|-------|----------|
-| `haiku` | claude-haiku-4-5 | $ | Fast | Search, simple edits, file discovery |
-| `sonnet` | claude-sonnet-4-6 | $$ | Moderate | Code generation, general tasks (default) |
-| `opus` | claude-opus-4-6 | $$$ | Slower | Complex reasoning, architecture, planning |
-| `opusplan` | claude-opus-4-6 + plan mode | $$$ | Slower | Architecture with approval gates |
+| Lane | Resolution order | Use case |
+|------|------------------|----------|
+| `frontier` | active Codex root `config.toml` model → `OMX_DEFAULT_FRONTIER_MODEL` → inherit | Architecture, implementation, complex debugging, release verification |
+| `spark` | `OMX_DEFAULT_SPARK_MODEL` → legacy `OMX_SPARK_MODEL` → OMX low-complexity config → inherit | Search, triage, lightweight validation |
+| `inherit` | Current Codex session | Roles that should follow their caller |
 
-Extended context: `[1m]` suffix enables 1M token context (e.g., `claude-opus-4-6[1m]`).
+`inherit` is also the safe result when a lane has no runtime value. Generated agent
+TOML omits `model` in that case instead of embedding a guessed model ID.
 
-## Role-Based Routing Table
+## Reasoning Effort
 
-| Role | Recommended Model | Rationale |
-|------|------------------|-----------|
-| Code search / file discovery | haiku | Fast, cheap, sufficient for retrieval |
-| Code review | sonnet | Needs understanding, not deep reasoning |
-| Code generation | sonnet | Good balance of quality and speed |
-| Bug fix (simple) | sonnet | Pattern recognition sufficient |
-| Bug fix (complex) | opus | Needs deep reasoning across modules |
-| Architecture design | opus / opusplan | Requires holistic thinking |
-| Test generation | sonnet | Template-driven, moderate complexity |
-| Documentation | sonnet | Straightforward generation |
-| Release verification | opus | Cross-cutting validation |
-| Orchestration | opus | Routing decisions need broad context |
+Choose `model_reasoning_effort` independently of the lane. Codex accepts `none`,
+`minimal`, `low`, `medium`, `high`, `xhigh`, `ultra`, and `max`, subject to the
+selected model's support.
 
-## Cost-Quality Tradeoff Matrix
+| Work | Lane | Typical effort |
+|------|------|----------------|
+| File or symbol discovery | `spark` | `low` |
+| Requirements and task planning | `frontier` | `medium` or `high` |
+| Routine implementation | `frontier` | `medium` |
+| Cross-module debugging | `frontier` | `high` |
+| Architecture or adversarial review | `frontier` | `xhigh` |
+| Mechanical validation | `spark` or `inherit` | `low` |
+| Release verification | `frontier` | `high` |
 
-```
-Quality ▲
-        │  ┌─────────┐
-        │  │  opus    │ Complex reasoning
-        │  └────┬────┘
-        │       │
-        │  ┌────┴────┐
-        │  │ sonnet   │ General purpose (default)
-        │  └────┬────┘
-        │       │
-        │  ┌────┴────┐
-        │  │  haiku   │ Retrieval, simple tasks
-        │  └─────────┘
-        └──────────────────────► Cost
-```
+Increase effort only when evidence shows the current role is under-reasoning. If
+the task also needs a different capability, route to a more appropriate role rather
+than guessing a newer concrete model name.
 
-## MODEL_ROUTING.md Convention
+## Agent Source Metadata
 
-Projects can declare a `MODEL_ROUTING.md` file to override default routing:
-
-```markdown
-# Model Routing
-
-| Agent Pattern | Model | Override Reason |
-|---------------|-------|-----------------|
-| lang-*-expert | sonnet | Default sufficient for code generation |
-| mgr-sauron | opus | Verification requires deep analysis |
-| Explore | haiku | Search-only, no generation needed |
-```
-
-Place in project root or `.claude/` directory.
-
-## Agent Frontmatter Integration
+Repository-native definitions use capability metadata:
 
 ```yaml
-# .claude/agents/example.md
+# .codex/agents/example-agent.md
 name: example-agent
-model: sonnet  # Use alias from table above
+model_lane: frontier
+model_reasoning_effort: medium
 ```
 
-The `model` field in agent frontmatter sets the default. The Agent tool's `model` parameter overrides at spawn time.
+The compiler resolves the lane when generating `.codex/agents/*.toml`:
+
+```toml
+name = "example-agent"
+model = "<value resolved from the active Codex/OMX configuration>"
+model_reasoning_effort = "medium"
+```
+
+When no lane value is configured, the `model` line is absent. Packaged
+`templates/.claude/agents/*.md` remain an explicit upstream-compatibility source;
+their provider aliases are translated only at this compiler boundary.
+
+## Agent Compilation Precedence
+
+1. The active Codex root model resolves the `frontier` lane.
+2. `OMX_DEFAULT_FRONTIER_MODEL` fills `frontier` when the root model is absent.
+3. `OMX_DEFAULT_SPARK_MODEL`, legacy `OMX_SPARK_MODEL`, then OMX low-complexity config resolve `spark`.
+4. Generated TOML inherits when the selected lane has no concrete runtime value.
+
+Do not copy the model names shown in a generated `AGENTS.md` capability table into
+templates. That table is runtime evidence, not a stable source constant.
 
 ## Escalation Pattern
 
-When a task fails at a lower model tier, escalate:
+Escalate capability and effort separately:
 
+```text
+1. Confirm the failure is reasoning-related.
+2. Increase model_reasoning_effort one supported level.
+3. Route to a higher-capability role if the task boundary changed.
+4. Change a concrete model only through OMX runtime configuration.
+5. Re-run the same verification and keep the smallest successful setting.
 ```
-haiku → sonnet → opus
-```
-
-Configuration in agent frontmatter:
-```yaml
-escalation:
-  enabled: true
-  path: haiku → sonnet → opus
-  threshold: 2  # failures before escalation advisory
-```
-
-## Fast Mode Interaction
-
-Fast Mode (`/fast` toggle) uses the same model with faster output (~2.5x). It does NOT change the model — it reduces reasoning depth while maintaining the configured model tier.
 
 ## Related
 
-- R006 — Agent design rules (model aliases, frontmatter format)
-- R008 — Tool identification (model in agent:model format)
-- `guides/skill-bundle-design/` — Skill architecture patterns
+- R006 — agent metadata and provider boundaries
+- R008 — role/lane identification
+- `guides/skill-bundle-design/` — skill architecture patterns

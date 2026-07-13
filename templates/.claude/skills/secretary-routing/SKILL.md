@@ -100,17 +100,17 @@ When command requires multiple independent operations:
 
 ## Sub-agent Model Selection
 
-| Agent | Recommended Model | Reason |
+| Agent | Recommended Lane / Effort | Reason |
 |-------|-------------------|--------|
-| mgr-creator | sonnet | File generation, balanced |
-| mgr-updater | sonnet | External sync, web fetch |
-| mgr-supplier | haiku | File scan, validation |
-| mgr-gitnerd | sonnet | Commit message quality |
-| mgr-sauron | sonnet | Multi-round verification |
-| mgr-claude-code-bible | sonnet | Spec compliance checks |
-| sys-memory-keeper | sonnet | Memory operations, search |
-| sys-naggy | haiku | Simple TODO tracking |
-| tracker-checkpoint | sonnet | Pipeline state recovery |
+| mgr-creator | frontier/medium | File generation, balanced |
+| mgr-updater | frontier/medium | External sync, web fetch |
+| mgr-supplier | spark/low | File scan, validation |
+| mgr-gitnerd | frontier/medium | Commit message quality |
+| mgr-sauron | frontier/medium | Multi-round verification |
+| mgr-claude-code-bible | frontier/medium | Spec compliance checks |
+| sys-memory-keeper | frontier/medium | Memory operations, search |
+| sys-naggy | spark/low | Simple TODO tracking |
+| tracker-checkpoint | frontier/medium | Pipeline state recovery |
 
 ## No Match Fallback
 

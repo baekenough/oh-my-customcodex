@@ -18,9 +18,9 @@ Inspired by Pi Coding Agent Workflow Extension's multi-model verification patter
 
 | Model | Role | Focus Areas |
 |-------|------|-------------|
-| `opus` | Architecture Reviewer | Design patterns, separation of concerns, extensibility, security architecture |
-| `sonnet` | Code Quality Reviewer | Logic correctness, error handling, edge cases, performance patterns |
-| `haiku` | Style & Convention Reviewer | Naming conventions, formatting, documentation, code organization |
+| `frontier/high` | Architecture Reviewer | Design patterns, separation of concerns, extensibility, security architecture |
+| `frontier/medium` | Code Quality Reviewer | Logic correctness, error handling, edge cases, performance patterns |
+| `spark/low` | Style & Convention Reviewer | Naming conventions, formatting, documentation, code organization |
 
 ## Severity Classification
 
@@ -40,9 +40,9 @@ Inspired by Pi Coding Agent Workflow Extension's multi-model verification patter
 
 1. **Input**: File path(s) or diff to verify
 2. **Spawn Parallel Reviewers**:
-   - `Agent(opus)` → Architecture & design review
-   - `Agent(sonnet)` → Code quality & correctness review
-   - `Agent(haiku)` → Style & convention review
+   - `Agent(frontier/high)` → Architecture & design review
+   - `Agent(frontier/medium)` → Code quality & correctness review
+   - `Agent(spark/low)` → Style & convention review
 3. **Collect Results**: Each reviewer returns findings with severity
 4. **Aggregate**: Merge and deduplicate findings
 5. **Report**: Unified report sorted by severity
@@ -53,9 +53,9 @@ When Agent Teams is available, create a verification team:
 
 ```
 TeamCreate("verification-team")
-├── architect-reviewer (opus) → Architecture review
-├── quality-reviewer (sonnet) → Code quality review
-└── style-reviewer (haiku) → Style review
+├── architect-reviewer (frontier/high) → Architecture review
+├── quality-reviewer (frontier/medium) → Code quality review
+└── style-reviewer (spark/low) → Style review
 ```
 
 Members communicate findings via SendMessage for cross-cutting concerns.
@@ -65,9 +65,9 @@ Members communicate findings via SendMessage for cross-cutting concerns.
 When Agent Teams is unavailable, spawn parallel agents:
 
 ```
-[1] Agent(general-purpose):opus → Architecture review
-[2] Agent(general-purpose):sonnet → Code quality review
-[3] Agent(general-purpose):haiku → Style & convention review
+[1] Agent(general-purpose):frontier/high → Architecture review
+[2] Agent(general-purpose):frontier/medium → Code quality review
+[3] Agent(general-purpose):spark/low → Style & convention review
 ```
 
 ## Output Format
@@ -78,22 +78,22 @@ When Agent Teams is unavailable, spawn parallel agents:
 ### Summary
 - Files reviewed: {count}
 - Findings: {critical} CRITICAL, {warning} WARNING, {info} INFO
-- Reviewers: opus (architecture), sonnet (quality), haiku (style)
+- Reviewers: frontier/high (architecture), frontier/medium (quality), spark/low (style)
 
 ### CRITICAL
-[opus] {file}:{line} — {description}
-[sonnet] {file}:{line} — {description}
+[frontier/high] {file}:{line} — {description}
+[frontier/medium] {file}:{line} — {description}
 
 ### WARNING
-[sonnet] {file}:{line} — {description}
-[haiku] {file}:{line} — {description}
+[frontier/medium] {file}:{line} — {description}
+[spark/low] {file}:{line} — {description}
 
 ### INFO
-[haiku] {file}:{line} — {description}
+[spark/low] {file}:{line} — {description}
 
 ### Consensus
 Issues flagged by 2+ reviewers:
-- {file}:{line} — {description} (flagged by: opus, sonnet)
+- {file}:{line} — {description} (flagged by: frontier/high, frontier/medium)
 ```
 
 ## Integration
@@ -106,7 +106,7 @@ Issues flagged by 2+ reviewers:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `models` | `[opus, sonnet, haiku]` | Models to use for verification |
+| `models` | `[frontier/high, frontier/medium, spark/low]` | Models to use for verification |
 | `severity_filter` | `all` | Minimum severity to report (`critical`, `warning`, `all`) |
 | `consensus_threshold` | `2` | Number of reviewers needed for consensus flag |
 | `include_suggestions` | `true` | Include INFO-level suggestions |

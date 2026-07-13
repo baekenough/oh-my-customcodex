@@ -1,10 +1,10 @@
 ---
 name: sys-naggy
 description: Use when you need TODO list management and task tracking with proactive reminders, helping maintain project momentum by monitoring stale tasks and deadlines
-model: sonnet
+model_lane: frontier
 domain: universal
 memory: local
-effort: low
+model_reasoning_effort: low
 maxTurns: 10
 limitations:
   - "cannot modify project files"

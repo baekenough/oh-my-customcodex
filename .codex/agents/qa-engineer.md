@@ -1,10 +1,10 @@
 ---
 name: qa-engineer
 description: Use when you need to execute tests based on detailed plans and documentation, perform manual and automated testing, report defects, and validate fixes
-model: sonnet
+model_lane: frontier
 domain: universal
 memory: project
-effort: medium
+model_reasoning_effort: medium
 maxTurns: 20
 limitations:
   - "cannot modify source code in production branches"

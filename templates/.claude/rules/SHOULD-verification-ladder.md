@@ -12,8 +12,8 @@
 | Tier | 도구 | 비용 | 속도 | 적용 시점 |
 |------|------|------|------|-----------|
 | **1: Deterministic** | hooks, linters, type-check, JSON schema | $0 | <1s | Pre-write, write-time |
-| **2: Cheap LLM** | haiku-based skills (`dev-review`, `action-validator`) | $ | <30s | Per-file review |
-| **3: Expensive LLM** | sonnet/opus skills (`deep-verify`, `adversarial-review`, `multi-model-verification`, `evaluator-optimizer`) | $$$ | 1-5분 | Pre-commit, PR review |
+| **2: Cheap LLM** | spark/low-based skills (`dev-review`, `action-validator`) | $ | <30s | Per-file review |
+| **3: Expensive LLM** | frontier-lane skills at medium/high effort (`deep-verify`, `adversarial-review`, `multi-model-verification`, `evaluator-optimizer`) | $$$ | 1-5분 | Pre-commit, PR review |
 | **4: Human** | maintainer review | time | hours-days | Final gate, contested decisions |
 
 ## Shift-left 원칙
@@ -32,11 +32,11 @@ R013 (SHOULD-ecomode)의 "저렴한 검증 우선" 원칙과 정합: ecomode는 
 | **Tier 1** | `.codex/hooks/ (and mirrored templates/.claude/hooks/)` (PreToolUse hooks) | 도구 호출 전 결정론적 차단 |
 | **Tier 1** | `mgr-sauron` (R017 구조 검증) | 에이전트/스킬/가이드 frontmatter 검증 |
 | **Tier 1** | pre-commit configs, linters | 코드 품질 정적 검사 |
-| **Tier 2** | `dev-review` | 파일 단위 haiku 코드 리뷰 |
+| **Tier 2** | `dev-review` | 파일 단위 spark/low 코드 리뷰 |
 | **Tier 2** | `action-validator` | CI/CD 액션 구문 검증 |
 | **Tier 2** | `pre-generation-arch-check` | 생성 전 아키텍처 lite 점검 |
-| **Tier 3** | `deep-verify` | 다단계 품질 검증 (sonnet) |
-| **Tier 3** | `adversarial-review` | 공격자 시각 보안 리뷰 (opus) |
+| **Tier 3** | `deep-verify` | 다단계 품질 검증 (frontier/medium) |
+| **Tier 3** | `adversarial-review` | 공격자 시각 보안 리뷰 (frontier/high) |
 | **Tier 3** | `multi-model-verification` | 복수 모델 교차 검증 |
 | **Tier 3** | `evaluator-optimizer` | 평가-개선 반복 루프 |
 | **Tier 3** | `worker-reviewer-pipeline` | 구현-리뷰 파이프라인 |

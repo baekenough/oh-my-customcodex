@@ -81,13 +81,13 @@ Sensitive-path compatibility note: if this skill delegates work that touches `.c
 | spec, specification, tdd, requirements | arch-speckit-agent |
 | slack, slack-cli, slack app, slack deploy, slack trigger, slack datastore | slack-cli-expert |
 
-## Model Selection
+## Capability Routing
 
-| Task | Model |
+| Task | Lane / Effort |
 |------|-------|
-| Architecture analysis | opus |
-| Code review/implementation | sonnet |
-| Quick validation/search | haiku |
+| Architecture analysis | frontier/high |
+| Code review/implementation | frontier/medium |
+| Quick validation/search | spark/low |
 
 ## Routing Decision (Priority Order)
 

@@ -332,7 +332,7 @@ export async function getImprovementSuggestions(
         target: pattern.agentType,
         targetType: 'agent',
         actionType: 'escalate',
-        description: `Agent "${pattern.agentType}" failure rate exceeds 50%. Consider upgrading default model (haiku → sonnet, or sonnet → opus).`,
+        description: `Agent "${pattern.agentType}" failure rate exceeds 50%. Consider increasing OMX role capability and model_reasoning_effort (for example, medium → high) before changing a concrete model ID.`,
         confidence: 'medium',
         evidence: {
           metric: 'failure_rate',

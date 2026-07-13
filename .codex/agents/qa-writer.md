@@ -1,10 +1,10 @@
 ---
 name: qa-writer
 description: Use when you need to create comprehensive QA documentation from detailed plans, including test cases, test reports, and quality documentation
-model: sonnet
+model_lane: frontier
 domain: universal
 memory: project
-effort: medium
+model_reasoning_effort: medium
 maxTurns: 20
 limitations:
   - "cannot execute tests"

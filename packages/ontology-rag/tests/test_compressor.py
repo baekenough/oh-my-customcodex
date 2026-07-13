@@ -31,11 +31,12 @@ All agents are stored in `.claude/agents/` directory.
 | Field | Required | Description |
 |-------|----------|-------------|
 | name  | yes      | Agent identifier |
-| model | yes      | Model to use |
+| model_lane | yes | Codex/OMX capability lane |
+| model_reasoning_effort | no | Codex reasoning effort |
 
 All agents must include:
 - Name field in kebab-case
-- Model selection (sonnet, opus, haiku)
+- Model lane selection (inherit, frontier, spark)
 - Tools list
 
 ## Examples
@@ -44,7 +45,8 @@ Basic agent example:
 
 ```yaml
 name: my-agent
-model: sonnet
+model_lane: frontier
+model_reasoning_effort: medium
 tools: [Read, Write]
 ```
 
@@ -52,7 +54,8 @@ Advanced example with memory:
 
 ```yaml
 name: advanced-agent
-model: opus
+model_lane: frontier
+model_reasoning_effort: high
 memory: project
 tools: [Read, Write, Edit]
 ```

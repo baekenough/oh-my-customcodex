@@ -87,27 +87,34 @@ Four routing skills cover the full domain:
 | de-lead-routing | Data engineering agents (de-*) |
 | qa-lead-routing | QA team (qa-planner, qa-writer, qa-engineer) |
 
-### Model Selection
+### Model and Reasoning Selection
 
-Each agent runs on the model optimized for its task:
+Agents select a Codex/OMX capability lane plus `model_reasoning_effort`, not a
+provider-specific model alias. Concrete model IDs are resolved at runtime from
+`OMX_DEFAULT_FRONTIER_MODEL`, `OMX_DEFAULT_SPARK_MODEL`, or the active Codex/OMX
+configuration. When a lane is not configured, generated TOML omits `model` and
+inherits the current Codex model instead of pinning a stale ID.
 
-| Model | When | Examples |
-|-------|------|---------|
-| `opus` | Complex reasoning, architecture | Design review, research synthesis |
-| `sonnet` | Implementation, general tasks | Code generation, agent creation |
-| `haiku` | Fast validation, search | File search, count verification |
+| Lane | Runtime source | Typical work |
+|------|----------------|--------------|
+| `frontier` | `OMX_DEFAULT_FRONTIER_MODEL` or active Codex model | Architecture, implementation, verification |
+| `spark` | `OMX_DEFAULT_SPARK_MODEL` (legacy `OMX_SPARK_MODEL`) | Search, triage, lightweight validation |
+| `inherit` | Current Codex session | Roles that should follow the caller |
 
-The reasoning-sandwich pattern formalizes this: opus for pre-analysis, sonnet for implementation, haiku for post-verification.
+Use `model_reasoning_effort` (`none`, `minimal`, `low`, `medium`, `high`,
+`xhigh`, `ultra`, or `max`, subject to model support) independently of the lane.
+The reasoning-sandwich pattern increases effort for analysis and verification
+while keeping mechanical implementation at the lowest sufficient effort.
 
 ### Parallel Execution
 
 Independent tasks run in parallel (R009). Up to 4 concurrent agents per message:
 
 ```
-Agent(lang-golang-expert):sonnet  ┐
-Agent(lang-python-expert):sonnet  ├─ All spawned in one message
-Agent(qa-engineer):sonnet         │
-Agent(arch-documenter):haiku      ┘
+Agent(lang-golang-expert):frontier/high  ┐
+Agent(lang-python-expert):frontier/high  ├─ All spawned in one message
+Agent(qa-engineer):frontier/medium       │
+Agent(arch-documenter):spark/low         ┘
 ```
 
 ---
@@ -305,7 +312,7 @@ your-project/
 
 - This repository keeps package-authoring skills in `.codex/skills/`; that is a source-repo surface, not the installed project skill path.
 - Installed projects use `.agents/skills/` for managed skills and `.codex/agents/*.toml` for managed Codex agents.
-- Repository/package definitions in `.codex/agents/*.md` and `templates/.claude/agents/*.md` are upstream-compatible source inputs that `omcustomcodex` compiles into the managed TOML runtime surface; they are not active installed roles themselves.
+- Repository definitions in `.codex/agents/*.md` and packaged `templates/.claude/agents/*.md` are distinct upstream-compatible source inputs: the former uses native `model_lane` plus `model_reasoning_effort`, while the latter remains the explicit Claude-compatible schema. `omcustomcodex` compiles both to the same managed TOML runtime contract; neither Markdown form is an active installed role.
 - Other `templates/.claude/` and `templates/CLAUDE.md*` files remain upstream-compatible template inputs; they are not the active Codex runtime surface after install.
 - `.codex/hooks/` contains managed scripts and explicit Claude-compatibility records; `omcustomcodex` compiles the validated native subset into the discoverable project registry at `.codex/hooks.json`.
 - Custom and OMX native roles may coexist in `.codex/agents/*.toml`; `omcustomcodex` preserves them while synchronizing its generated managed TOML roles.

@@ -10,7 +10,7 @@ Invoke the `/research` skill internally for comprehensive topic analysis.
 Phase 1: Discovery Research
 ├── Skill(research, args="<topic>")
 ├── 10-team parallel analysis (3 batches × 4/4/2)
-├── Cross-verification loop (opus + codex)
+├── Cross-verification loop (verifier at frontier/high + code evidence)
 ├── ADOPT / ADAPT / AVOID taxonomy
 └── Output: research report (artifact)
 ```
@@ -109,7 +109,7 @@ Phase 3: Plan Verification Research
 
 **Invocation**: Phase 3 teams are spawned directly as parallel agents (NOT via `Skill(research)`). The orchestrator creates 3 focused agents, each with a specific verification mandate derived from the Phase 2 plan.
 
-**Model selection**: sonnet for teams, opus for synthesis.
+**Capability routing**: frontier/medium for teams, frontier/high for synthesis.
 
 ### Verdict
 
@@ -161,7 +161,7 @@ Before execution:
 ├── Phase 2: Reality-Check Planning (up to 3 Explore agents)
 └── Phase 3: Plan Verification (3 focused teams)
 
-Estimated phases: 3 | Models: sonnet → opus
+Estimated phases: 3 | Routing: frontier/medium → frontier/high
 Execute? [Y/n]
 ```
 
@@ -252,13 +252,13 @@ Agent(
 
 Phase 3's 3-team verification is at the Agent Teams threshold (3+ agents) and benefits from peer messaging for cross-verification.
 
-## Model Selection
+## Capability Routing
 
-| Phase | Component | Model | Rationale |
+| Phase | Component | Lane / Effort | Rationale |
 |-------|-----------|-------|-----------|
-| Phase 1 | Research teams | sonnet | Delegated to /research skill |
-| Phase 1 | Verification | opus | Delegated to /research skill |
-| Phase 2 | Explore agents | haiku | Fast codebase search |
-| Phase 2 | Gap analysis | opus | Complex reconciliation reasoning |
-| Phase 3 | Verification teams | sonnet | Balanced analysis |
-| Phase 3 | Synthesis/verdict | opus | Final judgment |
+| Phase 1 | Research teams | frontier/medium | Delegated to /research skill |
+| Phase 1 | Verification | frontier/high | Delegated to /research skill |
+| Phase 2 | Explore agents | spark/low | Fast codebase search |
+| Phase 2 | Gap analysis | frontier/high | Complex reconciliation reasoning |
+| Phase 3 | Verification teams | frontier/medium | Balanced analysis |
+| Phase 3 | Synthesis/verdict | frontier/high | Final judgment |

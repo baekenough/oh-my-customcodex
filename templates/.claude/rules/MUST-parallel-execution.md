@@ -174,21 +174,25 @@ When testing 5 concurrent agents (above the soft default of 4):
 
 ## Agent Tool Requirements
 
-- Use specific `subagent_type` (not "general-purpose" when specialist exists)
-- Use `model` parameter for cost optimization (haiku for search, sonnet for code, opus for reasoning)
-- Each independent unit = separate Agent tool call in the SAME message
+- Codex native dispatch uses `agent_type`; `subagent_type` is Claude compatibility only.
+- Role TOML/OMX owns lane and effort; never pass them as per-call arguments.
+- Dispatch independent units together, one call per unit.
 
 ## Display Format
 
+Use `[N] {agent_type}:{resolved-lane/effort}` only as an observational progress
+label. Single-agent spawns do not use `[N]`.
+
+<!-- DETAIL: Native dispatch display format
 ```
-[1] mgr-creator:sonnet → Create Go agent
-[2] lang-python-expert:sonnet → Review Python code
-[3] Explore:haiku → Search codebase
+[1] mgr-creator:frontier/medium → Create Go agent
+[2] lang-python-expert:frontier/medium → Review Python code
+[3] explore:spark/low → Search codebase
 ```
 
-Must use `[N] {subagent_type}:{model}` format. `[N]` is 1-indexed and MUST match the `description` parameter prefix of the Agent tool call for Running display correlation.
-
-Single agent spawns do NOT use the `[N]` prefix.
+The resolved lane/effort describes role TOML/OMX configuration, not call arguments.
+The 1-indexed `[N]` must match the dispatch announcement for Running correlation.
+-->
 
 ## Narrative Announcement Format (Before Spawn)
 

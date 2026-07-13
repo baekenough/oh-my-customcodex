@@ -67,11 +67,11 @@ Produce per-issue analysis:
 - 4-10 issues → parallel Explore agents, max 4 concurrent (R009)
 - 10+ issues or 3+ Explore agents needed → Agent Teams per R018
 
-**Delegation**: All codebase search delegated to Explore agent(s) with `model: haiku`. Orchestrator collects and synthesizes results.
+**Delegation**: All codebase search delegated to Explore agent(s) with `model_lane: spark, model_reasoning_effort: low`. Orchestrator collects and synthesizes results.
 
 ## Phase 3: Cross-Analyze
 
-**R010 note**: This is a read-only analytical step — no file writes. Per R010 exception, the orchestrator may perform this directly. For batches >15 issues, delegate to a dedicated cross-analysis agent with model: opus.
+**R010 note**: This is a read-only analytical step — no file writes. Per R010 exception, the orchestrator may perform this directly. For batches >15 issues, delegate to a dedicated cross-analysis agent with model_lane: frontier, model_reasoning_effort: high.
 
 Perform deep cross-analysis with full context from all issues:
 
@@ -115,7 +115,7 @@ Phases 4A, 4B, 4C, 4E use `general-purpose` (NOT `arch-documenter`).
 
 ### 4A: Senior Architect Analysis
 
-Delegate to general-purpose (model: sonnet). Post GitHub comment per issue:
+Delegate to general-purpose (model_lane: frontier, model_reasoning_effort: medium). Post GitHub comment per issue:
 
 ```
 ## 🏛️ Senior Architect Analysis
@@ -145,7 +145,7 @@ _🏛️ Senior Architect perspective — `/professor-triage` v2.3.0_
 
 ### 4B: Project Colleague Review
 
-Delegate to general-purpose (model: sonnet). Post GitHub comment per issue:
+Delegate to general-purpose (model_lane: frontier, model_reasoning_effort: medium). Post GitHub comment per issue:
 
 ```
 ## 🤝 Project Colleague Review
@@ -169,7 +169,7 @@ _🤝 Project Colleague perspective — `/professor-triage` v2.3.0_
 
 ### 4C: Professor Synthesis
 
-Delegate to general-purpose (model: opus). Requires 4A and 4B results as input. Post GitHub comment per issue:
+Delegate to general-purpose (model_lane: frontier, model_reasoning_effort: high). Requires 4A and 4B results as input. Post GitHub comment per issue:
 
 ```
 ## 🎓 Professor Synthesis
@@ -311,13 +311,13 @@ Present to user and wait for approval before executing:
 
 ## Phase Notes Summary
 
-| Phase | Owner | Model | R010 Exception? |
+| Phase | Owner | Lane / Effort | R010 Exception? |
 |-------|-------|-------|----------------|
 | 1 | Orchestrator | — | Yes (read-only fetch) |
-| 2 | Explore agents | haiku | No (delegated) |
-| 3 | Orchestrator (opus for >15 issues) | sonnet/opus | Yes (read-only analysis) |
-| 4A/4B | general-purpose | sonnet | No (delegated) |
-| 4C | general-purpose | opus | No (delegated) |
+| 2 | Explore agents | spark/low | No (delegated) |
+| 3 | Orchestrator (frontier/high for >15 issues) | frontier/medium, escalating to frontier/high | Yes (read-only analysis) |
+| 4A/4B | general-purpose | frontier/medium | No (delegated) |
+| 4C | general-purpose | frontier/high | No (delegated) |
 | 4D | mgr-gitnerd | — | No (delegated) |
 | 4E | general-purpose | — | No (delegated) |
 | 4F | Orchestrator | — | Yes (verification read-only) |

@@ -452,7 +452,10 @@ describe('Template Validation', () => {
       const templateAgent = await readFile(join(TEMPLATES_DIR, templateAgentPath), 'utf-8');
       const reference = await readFile(join(projectRoot, 'docs/reference/agents.md'), 'utf-8');
 
-      expect(templateAgent).toBe(sourceAgent);
+      expect(templateAgent).not.toBe(sourceAgent);
+      expect(templateAgent).toContain('model: sonnet');
+      expect(sourceAgent).toContain('model_lane: frontier');
+      expect(sourceAgent).toContain('model_reasoning_effort: high');
       expect(sourceAgent).toContain('name: scholastic');
       expect(sourceAgent).toContain('Ontology-first reasoning reviewer');
       expect(reference).toContain('### scholastic');
@@ -748,19 +751,22 @@ describe('Template Validation', () => {
       const projectRoot = resolve(import.meta.dir, '../../..');
       const mirroredRules = [
         'MUST-permissions.md',
-        'MUST-agent-design.md',
         'MUST-agent-teams.md',
         'MUST-safety.md',
         'MAY-optimization.md',
-        'SHOULD-memory-integration.md',
         'MUST-language-policy.md',
         'MUST-agent-identification.md',
-        'MUST-tool-identification.md',
-        'MUST-orchestrator-coordination.md',
         'MUST-intent-transparency.md',
         'MUST-continuous-improvement.md',
         'MUST-completion-verification.md',
         'MUST-sync-verification.md',
+        'MUST-agent-design.md',
+        'MUST-orchestrator-coordination.md',
+        'MUST-parallel-execution.md',
+        'MUST-tool-identification.md',
+        'SHOULD-hud-statusline.md',
+        'SHOULD-memory-integration.md',
+        'SHOULD-verification-ladder.md',
       ];
 
       for (const ruleName of mirroredRules) {
@@ -834,6 +840,52 @@ describe('Template Validation', () => {
       expect(r017).toContain('clean checkout or isolated worktree');
     });
 
+    it('keeps changed installer artifacts byte-identical to their active mirrors', async () => {
+      const projectRoot = resolve(import.meta.dir, '../../..');
+      const mirroredArtifacts = [
+        'contexts/ecomode.md',
+        'hooks/hooks.json',
+        'hooks/scripts/model-escalation-advisor.sh',
+        'hooks/scripts/task-outcome-recorder.sh',
+        'rules/MUST-agent-design.md',
+        'rules/MUST-orchestrator-coordination.md',
+        'rules/MUST-parallel-execution.md',
+        'rules/MUST-tool-identification.md',
+        'rules/SHOULD-hud-statusline.md',
+        'rules/SHOULD-memory-integration.md',
+        'rules/SHOULD-verification-ladder.md',
+        'skills/action-validator/SKILL.md',
+        'skills/adaptive-harness/SKILL.md',
+        'skills/cve-triage/SKILL.md',
+        'skills/dag-orchestration/SKILL.md',
+        'skills/de-lead-routing/SKILL.md',
+        'skills/deep-verify/SKILL.md',
+        'skills/dev-lead-routing/SKILL.md',
+        'skills/evaluator-optimizer/SKILL.md',
+        'skills/hada-scout/SKILL.md',
+        'skills/model-escalation/SKILL.md',
+        'skills/multi-model-verification/SKILL.md',
+        'skills/omcodex-auto-improve/SKILL.md',
+        'skills/qa-lead-routing/SKILL.md',
+        'skills/reasoning-sandwich/SKILL.md',
+        'skills/research/SKILL.md',
+        'skills/scout/SKILL.md',
+        'skills/secretary-routing/SKILL.md',
+        'skills/skill-extractor/SKILL.md',
+        'skills/structured-dev-cycle/SKILL.md',
+        'skills/task-decomposition/SKILL.md',
+        'skills/worker-reviewer-pipeline/SKILL.md',
+      ];
+
+      for (const relativePath of mirroredArtifacts) {
+        const [source, template] = await Promise.all([
+          readFile(join(projectRoot, '.codex', relativePath), 'utf-8'),
+          readFile(join(TEMPLATES_DIR, '.claude', relativePath), 'utf-8'),
+        ]);
+        expect(template, relativePath).toBe(source);
+      }
+    });
+
     it('keeps qa-engineer evidence requirements mirrored into templates', async () => {
       const projectRoot = resolve(import.meta.dir, '../../..');
       const sourceAgent = await readFile(
@@ -845,7 +897,10 @@ describe('Template Validation', () => {
         'utf-8'
       );
 
-      expect(templateAgent).toBe(sourceAgent);
+      expect(templateAgent).not.toBe(sourceAgent);
+      expect(templateAgent).toContain('model: sonnet');
+      expect(sourceAgent).toContain('model_lane: frontier');
+      expect(sourceAgent).toContain('model_reasoning_effort: medium');
       expect(sourceAgent).toContain('Evidence Requirements');
       expect(sourceAgent).toContain('data-testid');
       expect(sourceAgent).toContain('browser or screenshot evidence');

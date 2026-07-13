@@ -19,10 +19,12 @@ This skill generalizes the worker-reviewer-pipeline pattern beyond code review t
 evaluator-optimizer:
   generator:
     agent: {subagent_type}       # Agent that produces output
-    model: sonnet                 # Default model
+    model_lane: frontier                 # Default model
+    model_reasoning_effort: medium
   evaluator:
     agent: {subagent_type}       # Agent that reviews output
-    model: opus                   # Evaluator benefits from stronger reasoning
+    model_lane: frontier                   # Evaluator benefits from stronger reasoning
+    model_reasoning_effort: high
   rubric:
     - criterion: {name}
       weight: {0.0-1.0}
@@ -129,21 +131,23 @@ Correctness remains the primary gate. Efficiency ratios are used to compare corr
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | `generator.agent` | Yes | — | Subagent type that produces output |
-| `generator.model` | No | `sonnet` | Model for generation |
+| `generator.model_lane` | No | `frontier` | Capability lane for generation |
+| `generator.model_reasoning_effort` | No | `medium` | Reasoning effort for generation |
 | `evaluator.agent` | Yes | — | Subagent type that evaluates output |
-| `evaluator.model` | No | `opus` | Model for evaluation (stronger reasoning preferred) |
+| `evaluator.model_lane` | No | `frontier` | Capability lane for evaluation |
+| `evaluator.model_reasoning_effort` | No | `high` | Reasoning effort for evaluation |
 | `rubric` | Yes | — | List of evaluation criteria with weights |
 | `quality_gate.type` | No | `score_threshold` | Gate strategy |
 | `quality_gate.threshold` | No | `0.8` | Score threshold (for `score_threshold` type) |
 | `max_iterations` | No | `3` | Max refinement loops (hard cap: 5) |
 
-### Model Selection Guidance
+### Capability and Effort Selection Guidance
 
 For model selection within the evaluator-optimizer loop, follow the [reasoning-sandwich](/skills/reasoning-sandwich) pattern:
 
-- **Generator**: Use `sonnet` (default) — optimized for content generation
-- **Evaluator**: Use `opus` (default) — benefits from stronger reasoning for quality assessment
-- **Override**: For simpler domains, `sonnet`/`sonnet` is acceptable; for critical domains, consider `opus`/`opus`
+- **Generator**: Use lane `frontier` with effort `medium` by default — balanced for content generation
+- **Evaluator**: Use lane `frontier` with effort `high` by default — stronger reasoning for quality assessment
+- **Override**: For simpler domains, `frontier/medium`/`frontier/medium` is acceptable; for critical domains, consider `frontier/high`/`frontier/high`
 
 ## Quality Gate Types
 
@@ -203,8 +207,8 @@ For model selection within the evaluator-optimizer loop, follow the [reasoning-s
 
 ```
 [Evaluator-Optimizer]
-├── Generator: {agent}:{model}
-├── Evaluator: {agent}:{model}
+├── Generator: {agent}:{model_lane}/{model_reasoning_effort}
+├── Evaluator: {agent}:{model_lane}/{model_reasoning_effort}
 ├── Max iterations: {max_iterations} (hard cap: 5)
 ├── Quality gate: {type} (threshold: {threshold})
 └── Rubric: {N} criteria
@@ -243,13 +247,13 @@ The evaluator MUST return a structured verdict in this format:
 
 | Domain | Generator | Evaluator | Rubric Focus |
 |--------|-----------|-----------|--------------|
-| Code review | `lang-*-expert` | opus reviewer | Correctness, style, security |
-| Documentation | `arch-documenter` | opus reviewer | Completeness, clarity, accuracy |
-| Architecture | Plan agent | opus reviewer | No SPOFs, no circular deps |
+| Code review | `lang-*-expert` | frontier/high reviewer | Correctness, style, security |
+| Documentation | `arch-documenter` | frontier/high reviewer | Completeness, clarity, accuracy |
+| Architecture | Plan agent | frontier/high reviewer | No SPOFs, no circular deps |
 | Test plans | `qa-planner` | `qa-engineer` | Coverage, edge cases, feasibility |
 | Test coverage | `qa-writer` | `qa-engineer` + coverage tool | `coverage >= target%` |
-| Agent creation | `mgr-creator` | opus reviewer | Frontmatter validity, R006 compliance |
-| Security audit | `sec-codeql-expert` | opus reviewer | Vulnerability coverage, false positive rate |
+| Agent creation | `mgr-creator` | frontier/high reviewer | Frontmatter validity, R006 compliance |
+| Security audit | `sec-codeql-expert` | frontier/high reviewer | Vulnerability coverage, false positive rate |
 
 ### Example: Documentation Review
 
@@ -257,10 +261,12 @@ The evaluator MUST return a structured verdict in this format:
 evaluator-optimizer:
   generator:
     agent: arch-documenter
-    model: sonnet
+    model_lane: frontier
+    model_reasoning_effort: medium
   evaluator:
     agent: general-purpose
-    model: opus
+    model_lane: frontier
+    model_reasoning_effort: high
   rubric:
     - criterion: completeness
       weight: 0.3
@@ -286,10 +292,12 @@ evaluator-optimizer:
 evaluator-optimizer:
   generator:
     agent: lang-typescript-expert
-    model: sonnet
+    model_lane: frontier
+    model_reasoning_effort: medium
   evaluator:
     agent: general-purpose
-    model: opus
+    model_lane: frontier
+    model_reasoning_effort: high
   rubric:
     - criterion: correctness
       weight: 0.35
@@ -315,10 +323,12 @@ evaluator-optimizer:
 evaluator-optimizer:
   generator:
     agent: qa-writer
-    model: sonnet
+    model_lane: frontier
+    model_reasoning_effort: medium
   evaluator:
     agent: qa-engineer
-    model: sonnet
+    model_lane: frontier
+    model_reasoning_effort: medium
   rubric:
     - criterion: line_coverage
       weight: 0.4
@@ -371,8 +381,8 @@ When ecomode is active (R013), compress output:
 **Normal mode:**
 ```
 [Evaluator-Optimizer] Iteration 2/3
-├── Generator: lang-typescript-expert:sonnet → produced 45-line module
-├── Evaluator: general-purpose:opus → scored 0.85
+├── Generator: lang-typescript-expert:frontier/medium → produced 45-line module
+├── Evaluator: general-purpose:frontier/high → scored 0.85
 ├── Rubric: correctness ✓(0.9), style ✓(0.8), security ✓(0.85), performance ✓(0.8)
 └── Gate: score_threshold(0.8) → PASS
 ```
@@ -411,10 +421,12 @@ For UI/design generation tasks, use weighted rubrics that penalize generic AI pa
 evaluator-optimizer:
   generator:
     agent: fe-design-expert
-    model: sonnet
+    model_lane: frontier
+    model_reasoning_effort: medium
   evaluator:
     agent: fe-design-expert
-    model: opus
+    model_lane: frontier
+    model_reasoning_effort: high
   rubric:
     - criterion: originality
       weight: 0.40

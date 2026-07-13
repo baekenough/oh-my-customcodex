@@ -61,7 +61,7 @@ If no evidence source exists or all sources are empty: report "No recurring work
 Parse JSONL outcome entries when available. Each entry has:
 
 ```json
-{"agent_type": "lang-typescript-expert", "skill": "typescript-best-practices", "description": "Fix type error in auth module", "outcome": "success", "model": "sonnet", "timestamp": "2026-04-05T09:30:00Z", "duration_ms": 15000}
+{"agent_type": "lang-typescript-expert", "skill": "typescript-best-practices", "description": "Fix type error in auth module", "outcome": "success", "model_lane": "frontier", "model_reasoning_effort": "medium", "timestamp": "2026-04-05T09:30:00Z", "duration_ms": 15000}
 ```
 
 For prose evidence, extract only dated or source-attributed observations, for example:

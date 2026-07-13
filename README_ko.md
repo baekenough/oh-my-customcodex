@@ -102,27 +102,34 @@ oh-my-customcodex는 두 가지 아이디어 위에 세워졌습니다.
 | de-lead-routing | 데이터 엔지니어링 에이전트 (de-*) |
 | qa-lead-routing | QA 팀 (qa-planner, qa-writer, qa-engineer) |
 
-### 모델 선택
+### 모델 및 추론 강도 선택
 
-각 에이전트는 작업에 최적화된 모델로 실행됩니다:
+에이전트는 provider 전용 모델 별칭 대신 Codex/OMX capability lane과
+`model_reasoning_effort`를 사용합니다. 실제 모델 ID는 실행 시점에
+`OMX_DEFAULT_FRONTIER_MODEL`, `OMX_DEFAULT_SPARK_MODEL` 또는 활성 Codex/OMX
+설정에서 해석합니다. lane이 설정되지 않으면 생성 TOML은 `model`을 생략해
+낡은 ID를 고정하지 않고 현재 Codex 모델을 상속합니다.
 
-| 모델 | 사용 시점 | 예시 |
-|------|---------|------|
-| `opus` | 복잡한 추론, 아키텍처 | 설계 리뷰, 리서치 종합 |
-| `sonnet` | 구현, 일반 작업 | 코드 생성, 에이전트 생성 |
-| `haiku` | 빠른 검증, 검색 | 파일 검색, 카운트 확인 |
+| Lane | 실행 시점 소스 | 대표 작업 |
+|------|----------------|-----------|
+| `frontier` | `OMX_DEFAULT_FRONTIER_MODEL` 또는 활성 Codex 모델 | 아키텍처, 구현, 검증 |
+| `spark` | `OMX_DEFAULT_SPARK_MODEL` (legacy `OMX_SPARK_MODEL`) | 검색, triage, 가벼운 검증 |
+| `inherit` | 현재 Codex 세션 | 호출자의 모델을 따라야 하는 역할 |
 
-Reasoning sandwich 패턴이 이를 공식화합니다: opus로 사전 분석, sonnet으로 구현, haiku로 사후 검증.
+lane과 별도로 `model_reasoning_effort`(`none`, `minimal`, `low`, `medium`,
+`high`, `xhigh`, `ultra`, `max`; 모델 지원 범위에 따름)를 지정합니다.
+Reasoning sandwich 패턴은 분석·검증의 effort를 높이고 기계적 구현에는 충분한
+최소 effort를 사용합니다.
 
 ### 병렬 실행
 
 독립 작업은 병렬로 실행됩니다 (R009). 메시지당 최대 4개 동시 에이전트:
 
 ```
-Agent(lang-golang-expert):sonnet  ┐
-Agent(lang-python-expert):sonnet  ├─ 하나의 메시지에서 동시 스폰
-Agent(qa-engineer):sonnet         │
-Agent(arch-documenter):haiku      ┘
+Agent(lang-golang-expert):frontier/high  ┐
+Agent(lang-python-expert):frontier/high  ├─ 하나의 메시지에서 동시 스폰
+Agent(qa-engineer):frontier/medium       │
+Agent(arch-documenter):spark/low         ┘
 ```
 
 ---
@@ -317,7 +324,7 @@ your-project/
 
 - 이 저장소 자체는 패키지 authoring용 스킬을 `.codex/skills/`에 유지합니다. 이것은 설치된 프로젝트의 런타임 스킬 경로와 다릅니다.
 - 설치된 프로젝트는 관리 대상 스킬을 `.agents/skills/`, 관리 대상 Codex 에이전트를 `.codex/agents/*.toml`에 둡니다.
-- `.codex/agents/*.md`와 `templates/.claude/agents/*.md`의 저장소/패키지 정의는 upstream 호환 소스 입력이며, `omcustomcodex`가 이를 관리 대상 TOML 런타임 표면으로 컴파일합니다. Markdown 정의 자체는 설치 후 활성 역할이 아닙니다.
+- `.codex/agents/*.md` 저장소 정의와 `templates/.claude/agents/*.md` 패키지 정의는 서로 다른 upstream 호환 소스 입력입니다. 전자는 native `model_lane`과 `model_reasoning_effort`를 사용하고 후자는 명시적인 Claude 호환 스키마를 유지합니다. `omcustomcodex`는 두 스키마를 동일한 관리 대상 TOML 런타임 계약으로 컴파일하며, 어느 Markdown 형식도 설치 후 활성 역할은 아닙니다.
 - 그 밖의 `templates/.claude/`와 `templates/CLAUDE.md*` 파일은 upstream 호환 템플릿 입력면으로 남아 있으며, 설치 후 활성 Codex 런타임 표면은 아닙니다.
 - `.codex/hooks/`에는 관리 대상 스크립트와 명시적인 Claude 호환성 레코드가 있으며, `omcustomcodex`는 검증된 native 하위 집합을 Codex가 탐색하는 `.codex/hooks.json` 프로젝트 레지스트리로 컴파일합니다.
 - Custom 및 OMX native 역할은 `.codex/agents/*.toml`에 공존할 수 있으며, `omcustomcodex`는 자체 생성한 관리 대상 TOML 역할을 동기화하면서 이들을 보존합니다.

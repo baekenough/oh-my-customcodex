@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.12] - 2026-07-13
+
+### Changed
+- Replace active Claude model aliases with Codex/OMX `model_lane` and `model_reasoning_effort` metadata, resolving concrete models from the current runtime configuration while retaining aliases only at explicit compatibility boundaries (#1593).
+- Route Web agent, skill, and guide generation through Codex first, with Claude as an explicit compatibility fallback and keyword generation as the final degraded mode (#1598).
+
+### Fixed
+- Align generated native agent TOML, Web model inventory, eval recommendations, ontology metadata, and active guidance with one Codex/OMX model-resolution contract (#1593).
+- Replace shell-string Web provider calls with bounded argv-based processes, isolated generation directories, truthful provider diagnostics, and Codex-only route coverage (#1598).
+
 ## [1.0.11] - 2026-07-13
 
 ### Changed

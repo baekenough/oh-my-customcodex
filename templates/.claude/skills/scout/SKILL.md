@@ -75,7 +75,7 @@ Before execution, show the plan:
 [Scout] {url}
 ├── Phase 1: 콘텐츠 수집 및 요약
 ├── Phase 2: 프로젝트 철학 로드
-├── Phase 3: 적합성 분석 (sonnet)
+├── Phase 3: 적합성 분석 (frontier/medium)
 └── Phase 4: 이슈 생성
 
 예상: ~1분 | 비용: ~$0.5-1.5
@@ -109,7 +109,7 @@ Before execution, show the plan:
 
 ### Phase 3: Fit Analysis
 
-Spawn 1 sonnet agent with the following analysis prompt.
+Spawn 1 frontier/medium agent with the following analysis prompt.
 
 > **MUST**: When spawning the analysis agent, pass `mode: "bypassPermissions"` in the Agent tool call if the session uses bypassPermissions. Without explicit mode, CC defaults to `acceptEdits` and may interrupt unattended execution.
 
@@ -234,13 +234,13 @@ When verdict is `INTERNALIZE` and integration effort is M or L:
 └── 에스컬레이션: {/research 권장 | 없음}
 ```
 
-## Model Selection
+## Capability Routing
 
-| Phase | Model | Rationale |
+| Phase | Lane / Effort | Rationale |
 |-------|-------|-----------|
 | Phase 1 (Fetch) | orchestrator | Simple WebFetch, no agent needed |
 | Phase 2 (Load) | orchestrator | Simple Read/Glob, no agent needed |
-| Phase 3 (Analysis) | sonnet | Balanced reasoning for fit analysis |
+| Phase 3 (Analysis) | frontier/medium | Balanced reasoning for fit analysis |
 | Phase 4 (Issue) | orchestrator | gh issue create via Bash |
 
 ## Integration
@@ -248,7 +248,7 @@ When verdict is `INTERNALIZE` and integration effort is M or L:
 | Rule | How |
 |------|-----|
 | R009 | Single agent in Phase 3 — no parallelism needed |
-| R010 | Orchestrator manages phases 1/2/4; analysis delegated to sonnet agent in Phase 3 |
+| R010 | Orchestrator manages phases 1/2/4; analysis delegated to frontier/medium agent in Phase 3 |
 | R015 | Display scout plan before execution (Display Format section) |
 
 ## When NOT to Use
@@ -266,7 +266,7 @@ When verdict is `INTERNALIZE` and integration effort is M or L:
 |--------|--------|-----------|
 | Purpose | Quick fit evaluation | Deep multi-dimensional analysis |
 | Teams | 1 agent | 10 teams |
-| Cost | ~$0.5-1.5 | ~$8-15 |
+| Cost | Runtime-dependent, one analysis role | Runtime-dependent, bounded team workflow |
 | Duration | 1-2 min | 10-20 min |
 | Output | Issue with verdict | Full report with ADOPT/ADAPT/AVOID |
 | When | First contact with new link | Deep dive after scout recommends |

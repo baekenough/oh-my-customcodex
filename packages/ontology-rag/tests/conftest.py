@@ -35,9 +35,9 @@ def sample_ontology_dir(tmp_path):
             "lang-golang-expert": {
                 "class": "LanguageExpert",
                 "description": "Expert Go developer",
-                "model": "sonnet",
+                "model_lane": "frontier",
                 "memory": "project",
-                "effort": "high",
+                "model_reasoning_effort": "high",
                 "skills": ["go-best-practices"],
                 "tools": ["Read", "Write", "Edit"],
                 "summary": "Go language expert for idiomatic code",
@@ -47,7 +47,8 @@ def sample_ontology_dir(tmp_path):
             "lang-python-expert": {
                 "class": "LanguageExpert",
                 "description": "Expert Python developer",
-                "model": "sonnet",
+                "model_lane": "frontier",
+                "model_reasoning_effort": "high",
                 "memory": "project",
                 "skills": ["python-best-practices"],
                 "tools": ["Read", "Write", "Edit"],
@@ -58,7 +59,8 @@ def sample_ontology_dir(tmp_path):
             "mgr-creator": {
                 "class": "ManagerAgent",
                 "description": "Create new agents",
-                "model": "sonnet",
+                "model_lane": "frontier",
+                "model_reasoning_effort": "medium",
                 "skills": ["create-agent"],
                 "tools": ["Read", "Write"],
                 "summary": "Creates new agent definitions",

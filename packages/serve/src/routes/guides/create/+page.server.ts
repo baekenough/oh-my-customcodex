@@ -4,15 +4,18 @@ import { join, resolve } from 'path';
 import type { Actions, PageServerLoad } from './$types';
 import { getProjectRoot, getGuides } from '$lib/server/data';
 import { parseGuideNaturalLanguage, sanitizeGuideName } from '$lib/server/guide-generator';
-import { isClaudeAvailable, generateGuideWithClaude } from '$lib/server/claude-cli';
+import {
+	generateArtifact,
+	getGenerationProviderStatus
+} from '$lib/server/generation-provider';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { root } = await parent();
 	const guides = await getGuides(root);
-	const claudeAvailable = await isClaudeAvailable();
+	const generationProviders = await getGenerationProviderStatus();
 	return {
 		guideNames: guides.map((g) => g.name),
-		claudeAvailable
+		generationProviders
 	};
 };
 
@@ -27,42 +30,19 @@ export const actions: Actions = {
 		}
 
 		const root = await getProjectRoot();
-		const claudeAvailable = await isClaudeAvailable();
+		const generated = parseGuideNaturalLanguage(input);
+		const generation = await generateArtifact('guide', input, root, {
+			keywordFallback: () => generated.body,
+			validateContent: validateGeneratedGuide
+		});
 
-		if (claudeAvailable) {
-			try {
-				const rawOutput = await generateGuideWithClaude(input, root);
-
-				// Extract name from keyword parser (heading is unused)
-				const keywordGuide = parseGuideNaturalLanguage(input);
-				const name = keywordGuide.name; // always use keyword parser for name
-
-				return {
-					success: true,
-					mode: 'claude' as const,
-					name,
-					body: rawOutput
-				};
-			} catch (err) {
-				// Claude CLI failed — fall back to keyword parser
-				console.warn('[claude-cli] Claude generation failed, falling back to keyword parser:', err);
-				const generated = parseGuideNaturalLanguage(input);
-				return {
-					success: true,
-					mode: 'keyword-fallback' as const,
-					name: generated.name,
-					body: generated.body
-				};
-			}
-		} else {
-			const generated = parseGuideNaturalLanguage(input);
-			return {
-				success: true,
-				mode: 'keyword' as const,
-				name: generated.name,
-				body: generated.body
-			};
-		}
+		return {
+			success: true,
+			mode: generation.mode,
+			diagnostics: generation.diagnostics,
+			name: generated.name,
+			body: generation.content
+		};
 	},
 
 	// Save guide file
@@ -112,3 +92,9 @@ export const actions: Actions = {
 		throw redirect(303, `/guides/${name}`);
 	}
 };
+
+function validateGeneratedGuide(content: string): void {
+	if (!/^#\s+\S/m.test(content) || content.trimStart().startsWith('---')) {
+		throw new Error('generated guide must be frontmatter-free markdown with a title');
+	}
+}

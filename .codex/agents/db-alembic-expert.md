@@ -1,10 +1,10 @@
 ---
 name: db-alembic-expert
 description: Alembic migration specialist for generating, reviewing, fixing, and advising on SQLAlchemy database migrations
-model: sonnet
+model_lane: frontier
 domain: backend
 memory: project
-effort: high
+model_reasoning_effort: high
 tools:
   - Read
   - Write
@@ -17,7 +17,7 @@ skills:
   - postgres-best-practices
 escalation:
   enabled: true
-  path: sonnet → opus
+  model_reasoning_effort_path: medium → high → xhigh
   threshold: 2
 limitations:
   - "cannot apply migrations directly to production databases"

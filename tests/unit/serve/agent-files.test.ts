@@ -178,6 +178,7 @@ describe('serve agent files', () => {
     expect(agents.map((agent) => agent.name)).toEqual(['executor', 'literal-reviewer']);
     expect(agents.find((agent) => agent.name === 'executor')).toMatchObject({
       model: 'gpt-5.6-sol',
+      modelReasoningEffort: 'medium',
       skills: ['release-review'],
       body: '<identity>\nYou are Executor. Convert a scoped task into a working, verified outcome.\n</identity>\n\nKeep going until the task is fully resolved.Verify with fresh evidence.\n',
     });

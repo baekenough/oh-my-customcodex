@@ -125,7 +125,7 @@ rules:
     categories: [agent-design]
     title: "Agent Design Rules"
     filename: "MUST-agent-design.md"
-    summary: "Agent file format with required frontmatter (name/description/model/tools), memory scopes, separation of concerns."
+    summary: "Agent file format with required frontmatter (name/description/model_lane/tools), reasoning effort, memory scopes, and separation of concerns."
     keywords: [agent, frontmatter, memory, scope, user, project, local, separation, skills]
     token_estimate: 300
     applies_to: [agent-creation, agent-modification]
@@ -145,8 +145,8 @@ rules:
     categories: [agent-design]
     title: "Tool Usage Identification Rules"
     filename: "MUST-tool-identification.md"
-    summary: "Every tool call MUST be prefixed with [agent-name][model] → Tool/Target identification."
-    keywords: [tool, identification, agent-name, model, opus, sonnet, haiku, prefix]
+    summary: "Every tool call MUST be prefixed with [agent-name][role/lane] → Tool/Target identification."
+    keywords: [tool, identification, agent-name, role, model-lane, reasoning-effort, prefix]
     token_estimate: 363
     applies_to: [all]
 

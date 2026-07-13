@@ -65,7 +65,7 @@ When invoked as routing fallback (not explicit `/create-agent`):
 3. Auto-connect: scan `guides/` for relevant reference docs
 4. Create minimal viable agent with:
    - Detected skills and relevant guides
-   - `sonnet` model (default)
+   - `frontier` capability lane with `medium` reasoning effort (default)
    - `project` memory scope
 5. Agent is persisted (not ephemeral) for future reuse
 

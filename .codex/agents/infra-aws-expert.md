@@ -1,10 +1,10 @@
 ---
 name: infra-aws-expert
 description: Use for AWS architecture design with Well-Architected Framework, infrastructure as code (CloudFormation/CDK/Terraform), VPC networking, IAM security, and cost optimization
-model: sonnet
+model_lane: frontier
 domain: devops
 memory: user
-effort: high
+model_reasoning_effort: high
 skills:
   - aws-best-practices
 tools:

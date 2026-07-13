@@ -1,10 +1,10 @@
 ---
 name: mgr-creator
 description: Use when you need to create new agents following design guidelines. Automatically researches authoritative references before agent creation to ensure high-quality knowledge base
-model: sonnet
+model_lane: frontier
 domain: universal
 memory: project
-effort: high
+model_reasoning_effort: high
 skills:
   - create-agent
   - agent-eval-framework
@@ -65,7 +65,7 @@ When invoked as routing fallback (not explicit `/create-agent`):
 3. Auto-connect: scan `guides/` for relevant reference docs
 4. Create minimal viable agent with:
    - Detected skills and relevant guides
-   - `sonnet` model (default)
+   - `frontier` capability lane with `medium` reasoning effort (default)
    - `project` memory scope
 5. Agent is persisted (not ephemeral) for future reuse
 

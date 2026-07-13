@@ -35,12 +35,14 @@ pipeline:
 
 worker:
   agent: lang-typescript-expert    # or appropriate specialist
-  model: sonnet
+  model_lane: frontier
+  model_reasoning_effort: medium
   prompt: "Implement the feature based on requirements"
 
 reviewer:
   agent: lang-typescript-expert    # can be same or different specialist
-  model: opus                      # often higher model for review
+  model_lane: frontier                      # often higher model for review
+  model_reasoning_effort: high
   prompt: "Review implementation for correctness, security, performance"
 
 config:
@@ -130,22 +132,22 @@ Before execution, display:
 
 ### Security-Critical Feature
 ```yaml
-worker: {agent: lang-typescript-expert, model: sonnet}
-reviewer: {agent: lang-typescript-expert, model: opus}
+worker: {agent: lang-typescript-expert, model_lane: frontier, model_reasoning_effort: medium}
+reviewer: {agent: lang-typescript-expert, model_lane: frontier, model_reasoning_effort: high}
 config: {max_iterations: 3, quality_gate: all_pass}
 ```
 
 ### Cross-Language Integration
 ```yaml
-worker: {agent: lang-golang-expert, model: sonnet}
-reviewer: {agent: be-go-backend-expert, model: opus}
+worker: {agent: lang-golang-expert, model_lane: frontier, model_reasoning_effort: medium}
+reviewer: {agent: be-go-backend-expert, model_lane: frontier, model_reasoning_effort: high}
 config: {max_iterations: 2, quality_gate: all_pass}
 ```
 
 ### Quick Review
 ```yaml
-worker: {agent: lang-python-expert, model: sonnet}
-reviewer: {agent: lang-python-expert, model: sonnet}
+worker: {agent: lang-python-expert, model_lane: frontier, model_reasoning_effort: medium}
+reviewer: {agent: lang-python-expert, model_lane: frontier, model_reasoning_effort: medium}
 config: {max_iterations: 1, quality_gate: majority_pass}
 ```
 

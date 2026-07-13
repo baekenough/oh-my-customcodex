@@ -470,29 +470,32 @@ When routing detects no matching agent for a specialized task:
 This is the core oh-my-customcodex philosophy:
 > "No expert? CREATE one, connect knowledge, and USE it."
 
-<!-- DETAIL: Model Selection
+<!-- DETAIL: Capability and Effort Selection
 ```
-Available models:
-  - opus   : Complex reasoning, architecture design
-  - sonnet : Balanced performance (default)
-  - haiku  : Fast, simple tasks, file search
+Available lane/effort pairs:
+  - frontier/high   : Complex reasoning, architecture design
+  - frontier/medium : Balanced performance (default)
+  - spark/low  : Fast, simple tasks, file search
   - inherit: Use parent conversation's model
 
-Usage:
-  Agent(
-    subagent_type: "general-purpose",
-    prompt: "Analyze architecture",
-    model: "opus"
+Native usage:
+  spawn_agent(
+    agent_type: "architect",
+    message: "Analyze architecture"
   )
+
+The native dispatch call selects only `agent_type`. Configure the role's lane and
+reasoning effort in `.codex/agents/architect.toml` or the active OMX model contract;
+`model_lane` and `model_reasoning_effort` are not per-call Task/Agent parameters.
 ```
 
-| Task Type | Model |
+| Task Type | Lane / Effort |
 |-----------|-------|
-| Architecture analysis | `opus` |
-| Code review | `opus` or `sonnet` |
-| Code implementation | `sonnet` |
-| Manager agents | `sonnet` |
-| File search/validation | `haiku` |
+| Architecture analysis | `frontier/high` |
+| Code review | `frontier/high` or `frontier/medium` |
+| Code implementation | `frontier/medium` |
+| Manager agents | `frontier/medium` |
+| File search/validation | `spark/low` |
 -->
 
 ## Git Operations

@@ -1,10 +1,10 @@
 ---
 name: fe-flutter-agent
 description: Use for Flutter/Dart cross-platform app development, widget composition, state management (Riverpod/BLoC), and performance optimization
-model: sonnet
+model_lane: frontier
 domain: frontend
 memory: project
-effort: medium
+model_reasoning_effort: medium
 skills:
   - flutter-best-practices
 tools:
