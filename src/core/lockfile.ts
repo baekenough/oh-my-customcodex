@@ -377,8 +377,14 @@ async function computeSafeFileMetadata(
       throw new Error(`Unsafe lockfile path: file identity changed before hashing "${filePath}"`);
     }
     const hash = createHash('sha256');
-    const stream = handle.createReadStream({ autoClose: false });
-    for await (const chunk of stream) hash.update(chunk);
+    const buffer = Buffer.allocUnsafe(64 * 1024);
+    let position = 0;
+    while (true) {
+      const { bytesRead } = await handle.read(buffer, 0, buffer.length, position);
+      if (bytesRead === 0) break;
+      hash.update(buffer.subarray(0, bytesRead));
+      position += bytesRead;
+    }
     const after = await handle.stat();
     if (
       before.dev !== after.dev ||

@@ -99,6 +99,26 @@ describe('lockfile', () => {
   });
 
   describe('computeLockfileEntryMetadata', () => {
+    it('releases its file descriptor across repeated safe hashes', async () => {
+      const rulesDir = join(tempDir, '.codex', 'rules');
+      const relativePath = '.codex/rules/MUST-safe.md';
+      const content = 'safe descriptor lifecycle';
+      await mkdir(rulesDir, { recursive: true });
+      await writeFile(join(tempDir, relativePath), content);
+      const entry = {
+        templateHash: expectedSha256(content),
+        size: content.length,
+        component: 'rules',
+      };
+
+      for (let attempt = 0; attempt < 300; attempt += 1) {
+        await expect(computeLockfileEntryMetadata(tempDir, relativePath, entry)).resolves.toEqual({
+          templateHash: entry.templateHash,
+          size: entry.size,
+        });
+      }
+    });
+
     it('rejects an ancestor symlink replacement between inspection and open', async () => {
       const hooksDir = join(tempDir, '.codex', 'hooks');
       const originalHooksDir = join(tempDir, '.codex', 'hooks-original');
