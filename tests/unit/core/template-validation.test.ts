@@ -232,6 +232,57 @@ async function validateAgentFrontmatter(
 }
 
 describe('Template Validation', () => {
+  describe('Codex-native guidance', () => {
+    it('uses explicit skill invocation and distinguishes both policy file formats', async () => {
+      const guidanceFiles = [
+        'README.md',
+        'README_ko.md',
+        'templates/AGENTS.md.en',
+        'templates/AGENTS.md.ko',
+      ];
+
+      for (const relativePath of guidanceFiles) {
+        const content = await readFile(join(PROJECT_ROOT, relativePath), 'utf-8');
+        expect(content).toContain('$dev-review');
+        expect(content).toContain('/skills');
+        expect(content).not.toContain('`/dev-review`');
+      }
+
+      for (const relativePath of [
+        'templates/AGENTS.md.en',
+        'templates/AGENTS.md.ko',
+        'docs/reference/rules.md',
+      ]) {
+        const content = await readFile(join(PROJECT_ROOT, relativePath), 'utf-8');
+        expect(content).toContain('.codex/rules/*.md');
+        expect(content).toContain('.codex/rules/*.rules');
+        expect(content).toMatch(/Starlark/);
+      }
+    });
+
+    it('keeps the tracked ontology launcher on the Codex-native directory', async () => {
+      const mcpConfig = JSON.parse(await readFile(join(PROJECT_ROOT, '.mcp.json'), 'utf-8')) as {
+        mcpServers: { 'ontology-rag': { env: { ONTOLOGY_DIR: string } } };
+      };
+
+      expect(mcpConfig.mcpServers['ontology-rag'].env.ONTOLOGY_DIR).toBe('.codex/ontology');
+    });
+
+    it('uses OMX HUD and the native Codex footer as the active status surfaces', async () => {
+      for (const relativePath of [
+        '.codex/rules/SHOULD-hud-statusline.md',
+        'templates/.claude/rules/SHOULD-hud-statusline.md',
+      ]) {
+        const content = await readFile(join(PROJECT_ROOT, relativePath), 'utf-8');
+        expect(content).toContain('omx hud');
+        expect(content).toContain('/statusline');
+        expect(content).toContain('[tui].status_line');
+        expect(content).not.toContain('Config in `.codex/settings.local.json`');
+        expect(content).not.toContain('Internal statusline (`.codex/statusline.sh`)');
+      }
+    });
+  });
+
   describe('Manifest consistency', () => {
     it('should have a valid manifest.json with required fields', async () => {
       const manifestPath = join(TEMPLATES_DIR, 'manifest.json');
@@ -575,8 +626,8 @@ describe('Template Validation', () => {
       const readmePath = resolve(import.meta.dir, '../../../README.md');
       const readmeContent = await readFile(readmePath, 'utf-8');
 
-      // Match "### Rules (18)" pattern
-      const rulesHeaderMatch = readmeContent.match(/###\s+Rules\s+\((\d+)\)/);
+      // Match the explicitly labeled harness behavioral policy count.
+      const rulesHeaderMatch = readmeContent.match(/###\s+Harness Behavioral Policies\s+\((\d+)\)/);
       expect(rulesHeaderMatch).not.toBeNull();
 
       const readmeRulesCount = parseInt(rulesHeaderMatch?.[1] ?? '0', 10);

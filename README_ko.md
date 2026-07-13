@@ -29,7 +29,7 @@ npm install -g oh-my-customcodex && cd your-project && omcustomcodex init
 
 | 기능 | 설명 |
 |------|------|
-| **`/token-efficiency-audit`** | Claude/Codex 설정을 점검하고 토큰 낭비를 줄이기 위한 감사/적용 워크플로우 |
+| **`$token-efficiency-audit`** | Claude/Codex 설정을 점검하고 토큰 낭비를 줄이기 위한 감사/적용 워크플로우 |
 | **Token Efficiency Layers guide** | 플러그인, 런타임, 설정 레이어를 분리한 토큰 효율 최적화 가이드 |
 | **cc-token-saver cross-reference** | 기존 플러그인 가이드에서 Layer 3 설정 기반 최적화로 바로 이동 가능 |
 | **CLI flags cross-reference** | Claude Code CLI 플래그 문서에서 토큰 효율 가이드로 바로 이동 가능 |
@@ -48,7 +48,7 @@ oh-my-customcodex는 두 가지 아이디어 위에 세워졌습니다.
 | 설치 런타임 스킬 | `.agents/skills/` — 관리 대상 프로젝트에 배포되는 재사용 가능한 지식과 워크플로우 |
 | 빌드 결과물 | `.codex/agents/` — 스킬을 조합한 실행 가능한 전문가 |
 | 컴파일러 | `mgr-sauron` (R017) — 구조 검증과 정합성 보장 |
-| 스펙 | `.codex/rules/` — 제약 조건과 빌드 규칙 |
+| 하네스 정책 | `.codex/rules/*.md` — `AGENTS.md`가 명시적으로 참조하는 행동 제약 |
 | 링커 | Routing skills — 에이전트를 작업에 연결 |
 | 표준 라이브러리 | `guides/` — 공유 레퍼런스 문서 |
 
@@ -178,70 +178,75 @@ Agent(arch-documenter):spark/low         ┘
 
 ---
 
-## 커맨드
+## 스킬 호출
 
-모든 커맨드는 oh-my-customcodex의 GPT Codex + OMX 세션 내에서 호출합니다.
+설치된 스킬은 `$skill-name`으로 명시적으로 호출합니다. 현재 Codex 세션에서
+사용 가능한 스킬은 네이티브 `/skills` 명령으로 탐색합니다. 아래 항목은 사용자
+정의 슬래시 커맨드가 아니라 스킬 호출 예시입니다.
 
 ### 개발
 
 | 커맨드 | 기능 |
 |--------|------|
-| `/dev-review` | 베스트 프랙티스 기반 코드 리뷰 |
-| `/dev-refactor` | 구조와 패턴 개선 리팩토링 |
-| `/structured-dev-cycle` | 6단계 개발: plan → verify → implement → verify → compound → done |
-| `/deep-plan` | 연구 검증 기반 계획 수립 |
-| `/research` | 10-team 병렬 분석 및 교차 검증 |
-| `/sdd-dev` | Spec-Driven Development 워크플로우 |
-| `/ambiguity-gate` | 사전 라우팅 모호성 분석 |
-| `/pre-generation-arch-check` | 구현 전 아키텍처 위험 점검 |
-| `/adversarial-review` | 공격자 관점 보안 코드 리뷰 |
-| `/omcustomcodex:goal` | 구체 목표를 계획, 실행, 검증까지 유지 |
-| `/omcustomcodex:fsd` | `/pipeline auto-dev` + `/homework`를 eligible 이슈가 소진될 때까지 반복 |
-| `/pipeline` | YAML 파이프라인 실행 |
-| `/pipeline resume` | 중단된 파이프라인 재개 |
+| `$dev-review` | 베스트 프랙티스 기반 코드 리뷰 |
+| `$dev-refactor` | 구조와 패턴 개선 리팩토링 |
+| `$structured-dev-cycle` | 6단계 개발: plan → verify → implement → verify → compound → done |
+| `$deep-plan` | 연구 검증 기반 계획 수립 |
+| `$research` | 10-team 병렬 분석 및 교차 검증 |
+| `$sdd-dev` | Spec-Driven Development 워크플로우 |
+| `$ambiguity-gate` | 사전 라우팅 모호성 분석 |
+| `$pre-generation-arch-check` | 구현 전 아키텍처 위험 점검 |
+| `$adversarial-review` | 공격자 관점 보안 코드 리뷰 |
+| `$omcustomcodex:goal` | 구체 목표를 계획, 실행, 검증까지 유지 |
+| `$omcustomcodex:fsd` | `$pipeline auto-dev` + `$homework`를 eligible 이슈가 소진될 때까지 반복 |
+| `$pipeline` | YAML 파이프라인 실행 |
+| `$pipeline resume` | 중단된 파이프라인 재개 |
 
 ### 에이전트 관리
 
 | 커맨드 | 기능 |
 |--------|------|
-| `/omcustomcodex:analysis` | 프로젝트 분석, 에이전트·스킬 자동 구성 |
-| `/omcustomcodex:create-agent` | 새 에이전트 생성 |
-| `/omcustomcodex:takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
-| `/idea` | 자연어 아이디어를 구조화된 이슈 스펙으로 변환 |
-| `/omcustomcodex:audit-agents` | 에이전트 의존성 감사 |
-| `/omcustomcodex:update-docs` | 프로젝트 구조와 문서 동기화 |
-| `/omcustomcodex:sauron-watch` | 전체 구조 검증 (5+3 라운드) |
-| `/omcustomcodex:feedback` | 피드백을 GitHub 이슈로 등록 |
+| `$omcustomcodex:analysis` | 프로젝트 분석, 에이전트·스킬 자동 구성 |
+| `$omcustomcodex:create-agent` | 새 에이전트 생성 |
+| `$omcustomcodex:takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
+| `$idea` | 자연어 아이디어를 구조화된 이슈 스펙으로 변환 |
+| `$omcustomcodex:audit-agents` | 에이전트 의존성 감사 |
+| `$omcustomcodex:update-docs` | 프로젝트 구조와 문서 동기화 |
+| `$omcustomcodex:sauron-watch` | 전체 구조 검증 (5+3 라운드) |
+| `$omcustomcodex:feedback` | 피드백을 GitHub 이슈로 등록 |
 
 ### Web UI
 
 | 커맨드 | 기능 |
 |--------|------|
-| `/omcustomcodex:web` | 내장 Web UI 제어 (start, stop, status, open) |
+| `$omcustomcodex:web` | 내장 Web UI 제어 (start, stop, status, open) |
 
 ### 패키지 & 릴리즈
 
 | 커맨드 | 기능 |
 |--------|------|
-| `/omcustomcodex:npm-publish` | npm 배포 |
-| `/omcustomcodex:npm-version` | 시맨틱 버전 관리 |
-| `/omcustomcodex:npm-audit` | 의존성 보안 감사 |
-| `/omcustomcodex-release-notes` | git 히스토리 기반 릴리즈 노트 생성 |
+| `$omcustomcodex:npm-publish` | npm 배포 |
+| `$omcustomcodex:npm-version` | 시맨틱 버전 관리 |
+| `$omcustomcodex:npm-audit` | 의존성 보안 감사 |
+| `$omcustomcodex-release-notes` | git 히스토리 기반 릴리즈 노트 생성 |
 
 ### 메모리 & 시스템
 
 | 커맨드 | 기능 |
 |--------|------|
-| `/memory-save` | 세션 컨텍스트 저장 |
-| `/memory-recall` | 메모리 검색 및 리콜 |
-| `/omcustomcodex:monitoring-setup` | OTel 모니터링 토글 |
-| `/token-efficiency-audit` | 토큰 효율 설정 감사 및 조정 |
-| `/omcustomcodex:lists` | 전체 커맨드 표시 |
-| `/omcustomcodex:status` | 시스템 상태 확인 |
+| `$memory-save` | 세션 컨텍스트 저장 |
+| `$memory-recall` | 메모리 검색 및 리콜 |
+| `$omcustomcodex:monitoring-setup` | OTel 모니터링 토글 |
+| `$token-efficiency-audit` | 토큰 효율 설정 감사 및 조정 |
+| `$omcustomcodex:lists` | 전체 커맨드 표시 |
+| `$omcustomcodex:status` | 시스템 상태 확인 |
 
 ---
 
-## 규칙 (22개)
+## 하네스 행동 정책 (22개)
+
+이 Markdown 정책은 `AGENTS.md` 지침 계층을 통해 로드되며 Codex native
+Starlark 명령 규칙이 아닙니다.
 
 | 우선순위 | 수 | 목적 |
 |---------|-----|------|
@@ -309,7 +314,7 @@ your-project/
 ├── AGENTS.md                   # 진입점
 ├── .codex/
 │   ├── agents/                 # 50개 에이전트 정의
-│   ├── rules/                  # 23개 거버넌스 규칙
+│   ├── rules/                  # 하네스 Markdown 정책; 선택적 native *.rules 실행 정책
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마
 │   ├── specs/                  # 추출된 canonical spec
@@ -324,6 +329,8 @@ your-project/
 
 - 이 저장소 자체는 패키지 authoring용 스킬을 `.codex/skills/`에 유지합니다. 이것은 설치된 프로젝트의 런타임 스킬 경로와 다릅니다.
 - 설치된 프로젝트는 관리 대상 스킬을 `.agents/skills/`, 관리 대상 Codex 에이전트를 `.codex/agents/*.toml`에 둡니다.
+- 설치된 `.codex/rules/*.md`는 하네스 행동 정책입니다. `AGENTS.md`가 해당 파일을 명시적으로 로드하거나 참조하기 때문에 적용되며, Codex가 이 디렉터리의 Markdown을 네이티브 명령 정책으로 자동 해석하는 것은 아닙니다.
+- 네이티브 Codex 명령 실행 정책은 `.codex/rules/*.rules` Starlark 파일을 사용합니다. 이 파일은 셸 명령의 허용·확인·금지를 제어하며 하네스 Markdown 정책과 별개입니다.
 - `.codex/agents/*.md` 저장소 정의와 `templates/.claude/agents/*.md` 패키지 정의는 서로 다른 upstream 호환 소스 입력입니다. 전자는 native `model_lane`과 `model_reasoning_effort`를 사용하고 후자는 명시적인 Claude 호환 스키마를 유지합니다. `omcustomcodex`는 두 스키마를 동일한 관리 대상 TOML 런타임 계약으로 컴파일하며, 어느 Markdown 형식도 설치 후 활성 역할은 아닙니다.
 - 그 밖의 `templates/.claude/`와 `templates/CLAUDE.md*` 파일은 upstream 호환 템플릿 입력면으로 남아 있으며, 설치 후 활성 Codex 런타임 표면은 아닙니다.
 - `.codex/hooks/`에는 관리 대상 스크립트와 명시적인 Claude 호환성 레코드가 있으며, `omcustomcodex`는 검증된 native 하위 집합을 Codex가 탐색하는 `.codex/hooks.json` 프로젝트 레지스트리로 컴파일합니다.

@@ -52,9 +52,13 @@ oh-my-customcodex로 구동됩니다.
 
 ---
 
-## 전역 규칙 (필수 준수)
+## 하네스 행동 정책 (필수 준수)
 
-> `.codex/rules/` 참조
+> `AGENTS.md`가 활성 지침 표면입니다. 범위 작업 전에 관련
+> `.codex/rules/*.md`를 명시적으로 로드하거나 참조해야 합니다. 이 Markdown
+> 파일은 하네스 행동 정책이며 Codex native exec rule이 아닙니다. 명령의
+> 허용·확인·금지가 필요하면 별도의 `.codex/rules/*.rules` Starlark 정책을
+> 사용합니다.
 
 ### MUST (절대 위반 금지)
 | ID | 규칙 | 설명 |
@@ -88,39 +92,42 @@ oh-my-customcodex로 구동됩니다.
 |----|------|------|
 | R005 | 최적화 | 효율성, 토큰 최적화 |
 
-## 커맨드
+## 스킬
 
-### 슬래시 커맨드 (스킬 기반)
+알고 있는 스킬은 `$skill-name`으로 명시적으로 호출합니다. 현재 세션에서
+사용 가능한 스킬은 네이티브 `/skills` 명령으로 탐색합니다.
+
+### 명시적 스킬 호출
 
 | 커맨드 | 설명 |
 |--------|------|
-| `/omcustomcodex:analysis` | 프로젝트 분석 및 자동 커스터마이징 |
-| `/omcustomcodex:create-agent` | 새 에이전트 생성 |
-| `/omcustomcodex:update-docs` | 프로젝트 구조와 문서 동기화 |
-| `/omcustomcodex:update-external` | 외부 소스에서 에이전트 업데이트 |
-| `/omcustomcodex:audit-agents` | 에이전트 의존성 감사 |
-| `/omcustomcodex:fix-refs` | 깨진 참조 수정 |
-| `/omcustomcodex-takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
-| `/dev-review` | 코드 베스트 프랙티스 리뷰 |
-| `/dev-refactor` | 코드 리팩토링 |
-| `/memory-save` | 세션 컨텍스트를 omx-memory에 저장 |
-| `/memory-recall` | 메모리 검색 및 리콜 |
-| `/omcustomcodex:monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
-| `/omcustomcodex:npm-publish` | npm 레지스트리에 패키지 배포 |
-| `/omcustomcodex:npm-version` | 시맨틱 버전 관리 |
-| `/omcustomcodex:npm-audit` | 의존성 감사 |
-| `/omcustomcodex-release-notes` | 릴리즈 노트 생성 (git 히스토리 기반) |
-| `/optimize-analyze` | 번들 및 성능 분석 |
-| `/optimize-bundle` | 번들 크기 최적화 |
-| `/optimize-report` | 최적화 리포트 생성 |
-| `/research` | 10-team 병렬 딥 분석 및 교차 검증 |
-| `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
-| `/omcustomcodex:sauron-watch` | 전체 R017 검증 |
-| `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
-| `/omcustomcodex:goal` | 구체 목표를 계획, 실행, 검증까지 유지 |
-| `/omcustomcodex:lists` | 모든 사용 가능한 커맨드 표시 |
-| `/omcustomcodex:status` | 시스템 상태 표시 |
-| `/omcustomcodex:help` | 도움말 표시 |
+| `$omcustomcodex:analysis` | 프로젝트 분석 및 자동 커스터마이징 |
+| `$omcustomcodex:create-agent` | 새 에이전트 생성 |
+| `$omcustomcodex:update-docs` | 프로젝트 구조와 문서 동기화 |
+| `$omcustomcodex:update-external` | 외부 소스에서 에이전트 업데이트 |
+| `$omcustomcodex:audit-agents` | 에이전트 의존성 감사 |
+| `$omcustomcodex:fix-refs` | 깨진 참조 수정 |
+| `$omcustomcodex:takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
+| `$dev-review` | 코드 베스트 프랙티스 리뷰 |
+| `$dev-refactor` | 코드 리팩토링 |
+| `$memory-save` | 세션 컨텍스트를 omx-memory에 저장 |
+| `$memory-recall` | 메모리 검색 및 리콜 |
+| `$omcustomcodex:monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
+| `$omcustomcodex:npm-publish` | npm 레지스트리에 패키지 배포 |
+| `$omcustomcodex:npm-version` | 시맨틱 버전 관리 |
+| `$omcustomcodex:npm-audit` | 의존성 감사 |
+| `$omcustomcodex-release-notes` | 릴리즈 노트 생성 (git 히스토리 기반) |
+| `$optimize-analyze` | 번들 및 성능 분석 |
+| `$optimize-bundle` | 번들 크기 최적화 |
+| `$optimize-report` | 최적화 리포트 생성 |
+| `$research` | 10-team 병렬 딥 분석 및 교차 검증 |
+| `$deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
+| `$omcustomcodex:sauron-watch` | 전체 R017 검증 |
+| `$structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
+| `$omcustomcodex:goal` | 구체 목표를 계획, 실행, 검증까지 유지 |
+| `$omcustomcodex:lists` | 모든 사용 가능한 커맨드 표시 |
+| `$omcustomcodex:status` | 시스템 상태 표시 |
+| `$omcustomcodex:help` | 도움말 표시 |
 
 ## 프로젝트 구조
 
@@ -129,7 +136,7 @@ project/
 +-- AGENTS.md                    # 진입점
 +-- .codex/
 |   +-- agents/                  # 서브에이전트 정의 (50 파일)
-|   +-- rules/                   # 전역 규칙 (R000-R023)
+|   +-- rules/                   # 하네스 *.md 정책; 선택적 native *.rules 실행 정책
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
 +-- .agents/
@@ -202,27 +209,27 @@ Codex CLI의 Agent Teams 기능이 활성화되어 있으면 (`OMCODEX_AGENT_TEA
 
 ## 빠른 참조
 
-```bash
+```text
 # 프로젝트 분석
-/omcustomcodex:analysis
+$omcustomcodex:analysis
 
 # 모든 커맨드 표시
-/omcustomcodex:lists
+$omcustomcodex:lists
 
 # 에이전트 관리
-/omcustomcodex:create-agent my-agent
-/omcustomcodex:update-docs
-/omcustomcodex:audit-agents
+$omcustomcodex:create-agent my-agent
+$omcustomcodex:update-docs
+$omcustomcodex:audit-agents
 
 # 코드 리뷰
-/dev-review src/main.go
+$dev-review src/main.go
 
 # 메모리 관리
-/memory-save
-/memory-recall authentication
+$memory-save
+$memory-recall authentication
 
 # 검증
-/omcustomcodex:sauron-watch
+$omcustomcodex:sauron-watch
 ```
 
 ## 외부 의존성
@@ -256,6 +263,6 @@ claude mcp add-json aws-mcp --scope user '{"command":"uvx","args":["mcp-proxy-fo
 
 Claude Code 플러그인 생태계를 쓰는 프로젝트에서는 `superpowers`, `openai-docs`, `elements-of-style`, `context7` 같은 플러그인을 별도로 설치할 수 있습니다. Codex 초기화의 필수 단계는 아닙니다.
 
-Claude Code v2.1.139+에서는 `claude agents`로 통합 에이전트 목록을 확인하고, `claude plugin details <name>`으로 플러그인 구성 요소와 예상 토큰 비용을 점검하며, `/scroll-speed`로 로컬 스크롤 속도를 조정할 수 있습니다. 네이티브 `/goal`은 Claude Code 완료 추적기용으로 남기고, oh-my-customcodex 워크플로우는 `/omcustomcodex:goal`을 사용합니다.
+Claude Code v2.1.139+에서는 `claude agents`로 통합 에이전트 목록을 확인하고, `claude plugin details <name>`으로 플러그인 구성 요소와 예상 토큰 비용을 점검하며, `/scroll-speed`로 로컬 스크롤 속도를 조정할 수 있습니다. 네이티브 `/goal`은 Claude Code 완료 추적기용으로 남기고, oh-my-customcodex 워크플로우는 `$omcustomcodex:goal`을 사용합니다.
 
 <!-- omcodex:git-workflow -->

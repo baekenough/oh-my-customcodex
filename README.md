@@ -33,7 +33,7 @@ oh-my-customcodex is built on two ideas:
 | Installed runtime skills | `.agents/skills/` — reusable knowledge and workflows deployed into managed projects |
 | Build artifacts | `.codex/agents/` — executable specialists assembled from skills |
 | Compiler | `mgr-sauron` (R017) — structural verification and integrity |
-| Spec | `.codex/rules/` — constraints and build rules |
+| Harness policy | `.codex/rules/*.md` — behavioral constraints explicitly referenced by `AGENTS.md` |
 | Linker | Routing skills — connect agents to tasks |
 | Standard library | `guides/` — shared reference documentation |
 
@@ -161,71 +161,76 @@ Skills use a 3-tier scope system: `core` (universal), `harness` (agent/skill mai
 
 ---
 
-## Commands
+## Skill Invocations
 
-All commands are invoked inside the oh-my-customcodex GPT Codex + OMX session.
+Use `$skill-name` to invoke an installed skill explicitly. Use the native `/skills`
+command to browse skills available to the current Codex session. The entries below
+are skill invocations, not custom slash commands.
 
 ### Development
 
 | Command | What it does |
 |---------|-------------|
-| `/dev-review` | Code review against best practices |
-| `/dev-refactor` | Refactor for structure and patterns |
-| `/structured-dev-cycle` | 6-stage development: plan → verify → implement → verify → compound → done |
-| `/deep-plan` | Research-validated planning |
-| `/research` | 10-team parallel analysis with cross-verification |
-| `/sdd-dev` | Spec-Driven Development workflow |
-| `/ambiguity-gate` | Pre-routing ambiguity analysis |
-| `/pre-generation-arch-check` | Check architecture risks before implementation |
-| `/adversarial-review` | Attacker-mindset security code review |
-| `/omcustomcodex:goal` | Keep a concrete objective in view through planning, execution, and verification |
-| `/omcustomcodex:fsd` | Full Self Driving release loop: repeat `/pipeline auto-dev` + `/homework` until eligible issues are exhausted |
-| `/pipeline` | Execute YAML-defined pipelines |
-| `/pipeline resume` | Resume a halted pipeline from last failure point |
+| `$dev-review` | Code review against best practices |
+| `$dev-refactor` | Refactor for structure and patterns |
+| `$structured-dev-cycle` | 6-stage development: plan → verify → implement → verify → compound → done |
+| `$deep-plan` | Research-validated planning |
+| `$research` | 10-team parallel analysis with cross-verification |
+| `$sdd-dev` | Spec-Driven Development workflow |
+| `$ambiguity-gate` | Pre-routing ambiguity analysis |
+| `$pre-generation-arch-check` | Check architecture risks before implementation |
+| `$adversarial-review` | Attacker-mindset security code review |
+| `$omcustomcodex:goal` | Keep a concrete objective in view through planning, execution, and verification |
+| `$omcustomcodex:fsd` | Full Self Driving release loop: repeat `$pipeline auto-dev` + `$homework` until eligible issues are exhausted |
+| `$pipeline` | Execute YAML-defined pipelines |
+| `$pipeline resume` | Resume a halted pipeline from last failure point |
 
 ### Agent Management
 
 | Command | What it does |
 |---------|-------------|
-| `/omcustomcodex:analysis` | Analyze project, auto-configure agents and skills |
-| `/omcustomcodex:create-agent` | Create a new agent |
-| `/omcustomcodex:takeover` | Extract canonical spec from existing agent or skill |
-| `/idea` | Turn a natural-language idea into structured issue specs |
-| `/omcustomcodex:audit-agents` | Audit agent dependencies |
-| `/omcustomcodex:update-docs` | Sync project structure and documentation |
-| `/omcustomcodex:sauron-watch` | Full structural verification (5+3 rounds) |
-| `/omcustomcodex:feedback` | Submit feedback as GitHub issue |
+| `$omcustomcodex:analysis` | Analyze project, auto-configure agents and skills |
+| `$omcustomcodex:create-agent` | Create a new agent |
+| `$omcustomcodex:takeover` | Extract canonical spec from existing agent or skill |
+| `$idea` | Turn a natural-language idea into structured issue specs |
+| `$omcustomcodex:audit-agents` | Audit agent dependencies |
+| `$omcustomcodex:update-docs` | Sync project structure and documentation |
+| `$omcustomcodex:sauron-watch` | Full structural verification (5+3 rounds) |
+| `$omcustomcodex:feedback` | Submit feedback as GitHub issue |
 
 ### Web UI
 
 | Command | What it does |
 |---------|-------------|
-| `/omcustomcodex:web` | Control built-in Web UI (start, stop, status, open) |
+| `$omcustomcodex:web` | Control built-in Web UI (start, stop, status, open) |
 
 ### Package & Release
 
 | Command | What it does |
 |---------|-------------|
-| `/omcustomcodex:npm-publish` | Publish to npm |
-| `/omcustomcodex:npm-version` | Semantic versioning |
-| `/omcustomcodex:npm-audit` | Dependency security audit |
-| `/omcustomcodex-release-notes` | Generate release notes from git history |
+| `$omcustomcodex:npm-publish` | Publish to npm |
+| `$omcustomcodex:npm-version` | Semantic versioning |
+| `$omcustomcodex:npm-audit` | Dependency security audit |
+| `$omcustomcodex-release-notes` | Generate release notes from git history |
 
 ### Memory & System
 
 | Command | What it does |
 |---------|-------------|
-| `/memory-save` | Save session context |
-| `/memory-recall` | Search and recall memories |
-| `/omcustomcodex:monitoring-setup` | OTel monitoring toggle |
-| `/token-efficiency-audit` | Audit and tune token-efficiency settings |
-| `/omcustomcodex:loop` | Auto-continue background agent workflows (3-continue safety limit) |
-| `/omcustomcodex:lists` | Show all commands |
-| `/omcustomcodex:status` | System health check |
+| `$memory-save` | Save session context |
+| `$memory-recall` | Search and recall memories |
+| `$omcustomcodex:monitoring-setup` | OTel monitoring toggle |
+| `$token-efficiency-audit` | Audit and tune token-efficiency settings |
+| `$omcustomcodex:loop` | Auto-continue background agent workflows (3-continue safety limit) |
+| `$omcustomcodex:lists` | Show all commands |
+| `$omcustomcodex:status` | System health check |
 
 ---
 
-### Rules (23)
+### Harness Behavioral Policies (23)
+
+These Markdown policies are loaded through the `AGENTS.md` instruction hierarchy;
+they are not Codex-native Starlark command rules.
 
 | Priority | Count | Purpose |
 |----------|-------|---------|
@@ -297,7 +302,7 @@ your-project/
 ├── AGENTS.md                   # Entry point
 ├── .codex/
 │   ├── agents/                 # 50 agent definitions
-│   ├── rules/                  # 23 governance rules (R000-R023)
+│   ├── rules/                  # Harness Markdown policies; optional native *.rules exec policy
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas
 │   ├── specs/                  # Extracted canonical specs
@@ -312,6 +317,8 @@ your-project/
 
 - This repository keeps package-authoring skills in `.codex/skills/`; that is a source-repo surface, not the installed project skill path.
 - Installed projects use `.agents/skills/` for managed skills and `.codex/agents/*.toml` for managed Codex agents.
+- Installed `.codex/rules/*.md` files are harness behavioral policies. They apply because `AGENTS.md` explicitly loads or references them; Codex does not treat Markdown in this directory as native command policy.
+- Native Codex command execution policy uses Starlark files at `.codex/rules/*.rules`. These files govern whether shell commands are allowed, prompted, or forbidden and are separate from the harness Markdown policies.
 - Repository definitions in `.codex/agents/*.md` and packaged `templates/.claude/agents/*.md` are distinct upstream-compatible source inputs: the former uses native `model_lane` plus `model_reasoning_effort`, while the latter remains the explicit Claude-compatible schema. `omcustomcodex` compiles both to the same managed TOML runtime contract; neither Markdown form is an active installed role.
 - Other `templates/.claude/` and `templates/CLAUDE.md*` files remain upstream-compatible template inputs; they are not the active Codex runtime surface after install.
 - `.codex/hooks/` contains managed scripts and explicit Claude-compatibility records; `omcustomcodex` compiles the validated native subset into the discoverable project registry at `.codex/hooks.json`.

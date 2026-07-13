@@ -116,7 +116,8 @@ describe('doctor command', () => {
 
       expect(result.status).toBe('pass');
       expect(result.name).toBe('Rules');
-      expect(result.message).toContain('2 files');
+      expect(result.message).toContain('2 harness Markdown policies');
+      expect(result.message).toContain('0 native Starlark exec policies');
     });
 
     it('should fail when .codex/rules directory is missing', async () => {
@@ -137,7 +138,20 @@ describe('doctor command', () => {
       const result = await checkRules(tempDir);
 
       expect(result.status).toBe('warn');
-      expect(result.message).toContain('0 files');
+      expect(result.message).toContain('0 harness Markdown policies');
+    });
+
+    it('should report native Starlark exec policy separately from harness Markdown policy', async () => {
+      const rulesDir = join(tempDir, '.codex', 'rules');
+      await mkdir(rulesDir, { recursive: true });
+      await writeFile(join(rulesDir, 'MUST-safety.md'), '# Safety Rules');
+      await writeFile(join(rulesDir, 'default.rules'), 'prefix_rule(pattern = ["git"]);');
+
+      const result = await checkRules(tempDir);
+
+      expect(result.status).toBe('pass');
+      expect(result.message).toContain('1 harness Markdown policies');
+      expect(result.message).toContain('1 native Starlark exec policies');
     });
   });
 
@@ -234,17 +248,20 @@ describe('doctor command', () => {
   });
 
   describe('checkSkills', () => {
-    it('should pass when skills directory exists with categories', async () => {
-      // Setup: create skills directory with categories (official Codex-native format)
+    it('should pass when installed skills contain discoverable SKILL.md definitions', async () => {
       const skillsDir = join(tempDir, '.agents', 'skills');
       await mkdir(join(skillsDir, 'development'), { recursive: true });
       await mkdir(join(skillsDir, 'backend'), { recursive: true });
+      await writeFile(join(skillsDir, 'development', 'SKILL.md'), '# Development');
+      await writeFile(join(skillsDir, 'backend', 'SKILL.md'), '# Backend');
 
       const result = await checkSkills(tempDir);
 
       expect(result.status).toBe('pass');
       expect(result.name).toBe('Skills');
-      expect(result.message).toContain('2 categories');
+      expect(result.message).toContain('2 discoverable skills');
+      expect(result.message).toContain('$skill-name');
+      expect(result.message).toContain('/skills');
     });
 
     it('should fail when skills directory is missing', async () => {
@@ -264,7 +281,7 @@ describe('doctor command', () => {
       const result = await checkSkills(tempDir);
 
       expect(result.status).toBe('warn');
-      expect(result.message).toContain('0 categories');
+      expect(result.message).toContain('0 discoverable skills');
     });
   });
 
@@ -647,6 +664,7 @@ describe('doctor command', () => {
         join(skillDir, 'index.yaml'),
         'metadata:\n  name: test-skill\n  type: skill\n'
       );
+      await writeFile(join(skillDir, 'SKILL.md'), '# Test Skill');
 
       // Run all checks
       const results = await Promise.all([
@@ -1142,43 +1160,32 @@ describe('doctor command', () => {
     });
   });
 
-  describe('countDirectories error handling', () => {
-    it('should return 0 when directory does not exist', async () => {
-      // checkSkills internally uses countDirectories
-      // When skills directory doesn't exist, it should return fail (not error)
+  describe('skill discovery error handling', () => {
+    it('should fail when the installed skills directory does not exist', async () => {
       const result = await checkSkills(join(tempDir, 'nonexistent'));
 
       expect(result.status).toBe('fail');
     });
 
-    it('should handle permission errors in countDirectories gracefully', async () => {
-      // Create skills directory but with a file instead of directory inside
-      // This will cause readdir to fail
+    it('should ignore files that are not SKILL.md definitions', async () => {
       const skillsDir = join(tempDir, '.agents', 'skills');
       await mkdir(skillsDir, { recursive: true });
 
-      // Create a file that looks like a directory (to trigger errors)
       await writeFile(join(skillsDir, 'fake-dir'), 'this is a file');
 
-      // The function should handle errors and return 0 categories
-      // since it counts only real directories
       const result = await checkSkills(tempDir);
 
-      // Should warn with 0 categories (file is not counted as directory)
       expect(result.status).toBe('warn');
-      expect(result.message).toContain('0 categories');
+      expect(result.message).toContain('0 discoverable skills');
     });
 
-    it('should handle fs.readdir errors in countDirectories', async () => {
-      // Test with a path that will cause readdir to fail
-      // Using a file path instead of directory path
-      const skillsPath = join(tempDir, 'skills-file');
+    it('should fail when the installed skills path is not a directory', async () => {
+      await mkdir(join(tempDir, '.agents'), { recursive: true });
+      const skillsPath = join(tempDir, '.agents', 'skills');
       await writeFile(skillsPath, 'not a directory');
 
-      // checkSkills should handle this gracefully
       const result = await checkSkills(tempDir);
 
-      // Should fail since skills directory doesn't exist
       expect(result.status).toBe('fail');
     });
   });
@@ -1230,48 +1237,36 @@ describe('doctor command', () => {
     });
   });
 
-  describe('countDirectories with errors', () => {
-    it('should return 0 when readdir throws ENOENT', async () => {
-      // Test line 177-178: catch block in countDirectories
-      // When a directory doesn't exist, readdir throws ENOENT
+  describe('skill discovery with invalid filesystem entries', () => {
+    it('should fail when the project root is absent', async () => {
       const nonExistentDir = join(tempDir, 'this-directory-does-not-exist');
 
-      // checkSkills will call countDirectories on a non-existent path
       const result = await checkSkills(nonExistentDir);
 
-      // Should fail with appropriate message
       expect(result.status).toBe('fail');
     });
 
-    it('should return 0 when readdir throws ENOTDIR', async () => {
-      // Test line 177-178: when trying to readdir on a file (not a directory)
+    it('should fail when .agents/skills is a file', async () => {
       const skillsFile = join(tempDir, '.agents', 'skills');
       await mkdir(join(tempDir, '.agents'), { recursive: true });
       await writeFile(skillsFile, 'this is a file, not a directory');
 
-      // checkSkills will try to call isDirectory which will return false
       const result = await checkSkills(tempDir);
 
-      // Should fail since skills is a file, not a directory
       expect(result.status).toBe('fail');
     });
 
-    it('should handle permission errors in readdir', async () => {
-      // Test line 177-178: permission errors in countDirectories
+    it('should ignore a non-SKILL file named like a category', async () => {
       const skillsDir = join(tempDir, '.agents', 'skills');
       await mkdir(skillsDir, { recursive: true });
 
-      // On Unix-like systems, we can't easily test permission errors in tests
-      // But we can test with a file that will cause readdir to fail
       const fakeDir = join(skillsDir, 'category');
       await writeFile(fakeDir, 'not a directory');
 
       const result = await checkSkills(tempDir);
 
-      // Should return 0 categories since readdir on 'category' will fail
-      // but the file won't be counted as a directory by filter
       expect(result.status).toBe('warn');
-      expect(result.message).toContain('0 categories');
+      expect(result.message).toContain('0 discoverable skills');
     });
   });
 
@@ -1318,36 +1313,26 @@ describe('doctor command', () => {
     });
   });
 
-  describe('countDirectories error path coverage', () => {
-    it('should trigger error path by mocking readdir failure', async () => {
-      // This test specifically triggers the catch block in countDirectories
-      // by using a non-existent path, which causes readdir to throw ENOENT
+  describe('skill discovery missing-root coverage', () => {
+    it('should return a diagnostic instead of throwing for a missing root', async () => {
       const nonExistentPath = join(tempDir, 'completely-nonexistent-path-12345');
 
-      // checkSkills will call countDirectories on this path, triggering the error
       const result = await checkSkills(nonExistentPath);
 
-      // When the skills directory doesn't exist, it should fail
       expect(result.status).toBe('fail');
-      expect(result.message).toContain('Skills directory is missing');
+      expect(result.message).toContain('discoverable SKILL.md');
     });
   });
 
   describe('edge cases for uncovered lines', () => {
-    it('should handle empty skills directory to trigger countDirectories error path', async () => {
-      // Explicitly test the error path in countDirectories (lines 177-178)
-      // Create skills directory with no subdirectories to test the warning path
+    it('should warn for an empty installed skills directory', async () => {
       const skillsDir = join(tempDir, '.agents', 'skills');
       await mkdir(skillsDir, { recursive: true });
 
-      // Since countDirectories does readdir on skillsDir, and we can't easily
-      // make readdir fail in a test environment, we test via checkSkills
-      // which will call countDirectories and should handle errors gracefully
       const result = await checkSkills(tempDir);
 
-      // Should warn because there are 0 categories (empty directory)
       expect(result.status).toBe('warn');
-      expect(result.message).toContain('0 categories');
+      expect(result.message).toContain('0 discoverable skills');
     });
 
     it('should test skills with broken internal structure', async () => {
@@ -1361,37 +1346,18 @@ describe('doctor command', () => {
 
       const result = await checkSkills(tempDir);
 
-      // Files won't be counted as directories, should warn with 0 categories
       expect(result.status).toBe('warn');
-      expect(result.message).toContain('0 categories');
+      expect(result.message).toContain('0 discoverable skills');
     });
 
-    it('should test defensive error handling in countDirectories (lines 177-178)', async () => {
-      // NOTE: Lines 177-178 are defensive error handling for readdir failures.
-      // These lines are covered by the following scenarios, even if coverage
-      // tools don't always detect it:
-      //
-      // 1. Permission errors (can't create in test environment reliably)
-      // 2. Race conditions (directory deleted between isDirectory and readdir)
-      // 3. Filesystem errors (disk full, network filesystem issues)
-      //
-      // The function is designed to gracefully return 0 on any error, which is
-      // the correct defensive behavior. The existence of this test documents
-      // that this path exists and is intentionally handled.
-
-      // Create an empty skills directory
+    it('should keep empty discovery results non-fatal', async () => {
       const skillsDir = join(tempDir, '.agents', 'skills');
       await mkdir(skillsDir, { recursive: true });
 
       const result = await checkSkills(tempDir);
 
-      // Empty directory returns 0 categories (warn), which exercises
-      // the successful path of countDirectories
       expect(result.status).toBe('warn');
-      expect(result.message).toContain('0 categories');
-
-      // The catch block (lines 177-178) is defensive code that protects
-      // against errors. It's tested in integration with the overall system.
+      expect(result.message).toContain('0 discoverable skills');
     });
 
     it('should test defensive code in isValidSymlink for non-symlinks (line 81)', async () => {

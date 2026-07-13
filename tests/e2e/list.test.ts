@@ -4,7 +4,7 @@
  */
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'bun';
@@ -259,6 +259,17 @@ Rule content here.
       expect(output.toLowerCase()).toContain('agent');
       // Should show the test agent (official Codex-native format: {prefix}-{name})
       expect(output).toContain('lang-test-agent');
+    });
+
+    it('should install discoverable skills with Codex-native explicit invocation guidance', async () => {
+      const result = await runCli('list', 'skills', '--format', 'json');
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('dev-review');
+
+      const agentsInstructions = await readFile(join(tempDir, 'AGENTS.md'), 'utf-8');
+      expect(agentsInstructions).toContain('$dev-review');
+      expect(agentsInstructions).toContain('/skills');
+      expect(agentsInstructions).not.toContain('`/dev-review`');
     });
 
     it('should handle empty installation gracefully', async () => {

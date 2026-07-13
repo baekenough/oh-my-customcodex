@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.14",
-  "generatedAt": "2026-07-13T15:25:34.496Z",
-  "templateVersion": "1.0.14",
+  "generatorVersion": "1.0.15",
+  "generatedAt": "2026-07-13T22:52:32.081Z",
+  "templateVersion": "1.0.15",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e2690ef49068c522f452b7bc26089687adf98b1039841704dfcac64a6fa8a65b",
@@ -10,8 +10,8 @@
       "component": "rules"
     },
     ".codex/rules/SHOULD-hud-statusline.md": {
-      "templateHash": "38fc2e06b27f6e4a38239eb27d6eefef686c1f2165fced58d8dc32b579dae5af",
-      "size": 4173,
+      "templateHash": "ffc857c89ef35e5d9615b1c061049a1ee0041c7b5c5f1984f044603963269bab",
+      "size": 2484,
       "component": "rules"
     },
     ".codex/rules/MUST-orchestrator-coordination.md": {
@@ -700,8 +700,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "0b22fba629f5822aac79b35945a033b83e4468b1d411c2744f01d9543af3f5b3",
-      "size": 41361,
+      "templateHash": "bba4a537aceefd0d5158aa83d132ce0b298f3c643336b0bf10aaaab0da251528",
+      "size": 41363,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {
@@ -855,8 +855,8 @@
       "component": "guides"
     },
     "guides/cc-token-saver/README.md": {
-      "templateHash": "999ec7dc0ac4768f62b5c00fe4934f6b5da44134a4d4af632e840470341393e4",
-      "size": 4029,
+      "templateHash": "70a6af04d3e659a5681d748e8cb06794ba51e50cf60458ab7d72c379fd3bb76e",
+      "size": 4085,
       "component": "guides"
     },
     "guides/dbt/README.md": {

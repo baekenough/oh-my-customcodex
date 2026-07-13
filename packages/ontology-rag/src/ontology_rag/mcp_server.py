@@ -29,36 +29,56 @@ from ontology_rag.watcher import OntologyWatcher
 
 logger = logging.getLogger(__name__)
 
+_ONTOLOGY_DISCOVERY_PATHS = (
+    Path(".codex") / "ontology",
+    Path(".claude") / "ontology",
+)
+_MAX_ONTOLOGY_SEARCH_DEPTH = 10
+
 
 def discover_ontology_dir() -> Path:
     """Discover the ontology directory.
 
     Search order:
     1. ONTOLOGY_DIR environment variable
-    2. Search upward from cwd for .claude/ontology/
-    3. Fallback: cwd/.claude/ontology/
+    2. Search each ancestor for .codex/ontology/
+    3. At each ancestor, fall back to .claude/ontology/ for compatibility
+    4. Fallback: cwd/.codex/ontology/
 
     Returns:
         Path to the ontology directory.
+
+    Raises:
+        FileNotFoundError: ONTOLOGY_DIR does not exist.
+        NotADirectoryError: ONTOLOGY_DIR does not identify a directory.
     """
     # 1. Environment variable
     env_dir = os.environ.get("ONTOLOGY_DIR")
     if env_dir:
-        return Path(env_dir)
+        explicit_dir = Path(env_dir).expanduser().resolve()
+        if not explicit_dir.exists():
+            raise FileNotFoundError(f"ONTOLOGY_DIR does not exist: {explicit_dir}")
+        if not explicit_dir.is_dir():
+            raise NotADirectoryError(
+                f"ONTOLOGY_DIR is not a directory: {explicit_dir}"
+            )
+        return explicit_dir
 
     # 2. Search upward from cwd
-    current = Path.cwd()
-    for _ in range(10):  # Max 10 levels up
-        candidate = current / ".claude" / "ontology"
-        if candidate.is_dir():
-            return candidate
+    cwd = Path.cwd()
+    current = cwd
+    for _ in range(_MAX_ONTOLOGY_SEARCH_DEPTH):
+        for relative_path in _ONTOLOGY_DISCOVERY_PATHS:
+            candidate = current / relative_path
+            if candidate.is_dir():
+                return candidate
         parent = current.parent
         if parent == current:
             break
         current = parent
 
-    # 3. Fallback
-    return Path.cwd() / ".claude" / "ontology"
+    # 4. Fallback
+    return cwd / _ONTOLOGY_DISCOVERY_PATHS[0]
 
 
 class OntologyMCPServer:
@@ -230,12 +250,23 @@ async def async_main():
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
-    ontology_dir = discover_ontology_dir()
+    try:
+        ontology_dir = discover_ontology_dir()
+    except (FileNotFoundError, NotADirectoryError) as error:
+        logger.error("%s", error)
+        logger.error(
+            "Set ONTOLOGY_DIR to an existing directory or run from a project "
+            "with .codex/ontology/"
+        )
+        return
     logger.info("Ontology directory: %s", ontology_dir)
 
     if not ontology_dir.is_dir():
         logger.error("Ontology directory not found: %s", ontology_dir)
-        logger.error("Set ONTOLOGY_DIR environment variable or run from a project with .claude/ontology/")
+        logger.error(
+            "Set ONTOLOGY_DIR to an existing directory or run from a project "
+            "with .codex/ontology/"
+        )
         return
 
     server = OntologyMCPServer(ontology_dir)

@@ -1,6 +1,6 @@
 /**
  * omcodex list command
- * Lists installed agents, skills, guides, and rules
+ * Lists installed agents, skills, guides, and policy surfaces
  */
 
 import { basename, dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
@@ -201,6 +201,9 @@ function extractRulePriorityFromFilename(filename: string): string {
   const parts = name.split('-');
   return parts[0] || 'unknown';
 }
+
+const HARNESS_POLICY_SURFACE = 'harness-policy';
+const NATIVE_EXEC_POLICY_SURFACE = 'native-exec-policy';
 
 /**
  * Options for extracting description from markdown content
@@ -531,7 +534,9 @@ export async function getGuides(targetDir: string, config?: OmccConfig): Promise
 const RULE_PRIORITY_ORDER: Record<string, number> = { MUST: 0, SHOULD: 1, MAY: 2 };
 
 /**
- * Get list of installed rules
+ * Get the policy files installed in the shared rules directory.
+ * Markdown files are harness behavioral policy; .rules files are Codex-native
+ * Starlark command execution policy.
  * @param targetDir - Target directory to scan
  * @param rootDir - Root directory (default: .claude)
  * @param config - Optional pre-loaded config (avoids redundant loadConfig calls)
@@ -554,19 +559,25 @@ export async function getRules(
       customComponents.filter((c) => c.type === 'rule').map((c) => c.path)
     );
 
-    const ruleMdFiles = await listFiles(rulesDir, { recursive: false, pattern: '*.md' });
+    const policyFiles = (await listFiles(rulesDir, { recursive: false })).filter((policyPath) => {
+      const extension = extname(policyPath);
+      return extension === '.md' || extension === '.rules';
+    });
 
     const rules = await Promise.all(
-      ruleMdFiles.map(async (ruleMdPath) => {
-        const filename = basename(ruleMdPath);
-        const description = await tryExtractMarkdownDescription(ruleMdPath, {
-          cleanFormatting: true,
-        });
-        const relativePath = relative(targetDir, ruleMdPath);
+      policyFiles.map(async (policyPath) => {
+        const filename = basename(policyPath);
+        const extension = extname(filename);
+        const isNativeExecPolicy = extension === '.rules';
+        const description = isNativeExecPolicy
+          ? 'Codex-native Starlark command execution policy'
+          : await tryExtractMarkdownDescription(policyPath, { cleanFormatting: true });
+        const relativePath = relative(targetDir, policyPath);
 
         return {
-          name: basename(ruleMdPath, '.md'),
-          type: extractRulePriorityFromFilename(filename),
+          name: basename(policyPath, extension),
+          type: isNativeExecPolicy ? 'native-exec' : extractRulePriorityFromFilename(filename),
+          category: isNativeExecPolicy ? NATIVE_EXEC_POLICY_SURFACE : HARNESS_POLICY_SURFACE,
           path: relativePath,
           description,
           managed: !customRulePaths.has(relativePath),
@@ -575,6 +586,10 @@ export async function getRules(
     );
 
     return rules.sort((a, b) => {
+      const surfaceDiff =
+        (a.category === HARNESS_POLICY_SURFACE ? 0 : 1) -
+        (b.category === HARNESS_POLICY_SURFACE ? 0 : 1);
+      if (surfaceDiff !== 0) return surfaceDiff;
       const priorityDiff = (RULE_PRIORITY_ORDER[a.type] ?? 3) - (RULE_PRIORITY_ORDER[b.type] ?? 3);
       return priorityDiff !== 0 ? priorityDiff : a.name.localeCompare(b.name);
     });
@@ -589,8 +604,14 @@ export async function getRules(
  * @param type - Type of components
  */
 export function formatAsTable(components: ComponentInfo[], type: ListType): void {
+  const displayType =
+    type === 'rules'
+      ? translateListMessage('cli.list.policySurfaces', {}, 'policy surfaces')
+      : type;
   if (components.length === 0) {
-    console.log(translateListMessage('cli.list.empty', { type }, `No ${type} found.`));
+    console.log(
+      translateListMessage('cli.list.empty', { type: displayType }, `No ${displayType} found.`)
+    );
     return;
   }
 
@@ -599,8 +620,8 @@ export function formatAsTable(components: ComponentInfo[], type: ListType): void
   console.log(
     translateListMessage(
       'cli.list.header',
-      { type, count: components.length },
-      `${type} (${components.length} installed)`
+      { type: displayType, count: components.length },
+      `${displayType} (${components.length} installed)`
     )
   );
   console.log('\u2500'.repeat(80));
@@ -611,7 +632,13 @@ export function formatAsTable(components: ComponentInfo[], type: ListType): void
 
   // Print column headers
   const nameHeader = 'Name'.padEnd(nameWidth);
-  const typeHeader = (type === 'skills' ? 'Category' : 'Type').padEnd(typeWidth);
+  const typeHeader = (
+    type === 'skills'
+      ? 'Category'
+      : type === 'rules'
+        ? translateListMessage('cli.list.surface', {}, 'Surface')
+        : 'Type'
+  ).padEnd(typeWidth);
   console.log(`  ${nameHeader}  ${typeHeader}  Description`);
   console.log(
     `  ${'\u2500'.repeat(nameWidth)}  ${'\u2500'.repeat(typeWidth)}  ${'\u2500'.repeat(40)}`
@@ -630,8 +657,8 @@ export function formatAsTable(components: ComponentInfo[], type: ListType): void
   console.log(
     translateListMessage(
       'cli.list.total',
-      { count: components.length, type },
-      `Total: ${components.length} ${type}`
+      { count: components.length, type: displayType },
+      `Total: ${components.length} ${displayType}`
     )
   );
   console.log('');
@@ -643,12 +670,18 @@ export function formatAsTable(components: ComponentInfo[], type: ListType): void
  * @param type - Type of components
  */
 export function formatAsSimple(components: ComponentInfo[], type: ListType): void {
+  const displayType =
+    type === 'rules'
+      ? translateListMessage('cli.list.policySurfaces', {}, 'policy surfaces')
+      : type;
   if (components.length === 0) {
-    console.log(translateListMessage('cli.list.empty', { type }, `No ${type} found.`));
+    console.log(
+      translateListMessage('cli.list.empty', { type: displayType }, `No ${displayType} found.`)
+    );
     return;
   }
 
-  console.log(`\n${type} (${components.length}):`);
+  console.log(`\n${displayType} (${components.length}):`);
   for (const component of components) {
     const typeInfo = component.category || component.type;
     const managedTag = component.managed === false ? ' [custom]' : '';
