@@ -2,9 +2,11 @@
  * File system utilities
  */
 
-import type { Dirent } from 'node:fs';
+import { type Dirent, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, sep, win32 } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+const PACKAGE_NAMES = new Set(['oh-my-customcodex', '@baekenough/oh-my-customcodex']);
 
 /**
  * Result of path validation
@@ -517,16 +519,41 @@ export async function remove(path: string): Promise<void> {
 }
 
 /**
- * Get the package root directory
+ * Find the package root from a source or bundled module directory.
+ *
+ * Library and CLI bundles are emitted at different depths (`dist/` and
+ * `dist/cli/`), so a fixed number of parent traversals cannot serve both.
+ */
+export function findPackageRoot(startDirectory: string): string {
+  let candidate = resolve(startDirectory);
+
+  while (true) {
+    try {
+      const packageJson = JSON.parse(readFileSync(join(candidate, 'package.json'), 'utf8')) as {
+        name?: string;
+      };
+      if (packageJson.name && PACKAGE_NAMES.has(packageJson.name)) {
+        return candidate;
+      }
+    } catch {
+      // Keep walking until the package metadata is found or the filesystem root is reached.
+    }
+
+    const parent = dirname(candidate);
+    if (parent === candidate) {
+      break;
+    }
+    candidate = parent;
+  }
+
+  throw new Error(`Could not locate the oh-my-customcodex package root from ${startDirectory}`);
+}
+
+/**
+ * Get the package root directory.
  */
 export function getPackageRoot(): string {
-  // In ESM, we need to derive the package root from import.meta.url
-  // This works both in development and when installed as a package
-  const currentFile = fileURLToPath(import.meta.url);
-  const currentDir = dirname(currentFile);
-
-  // Navigate up from src/utils to package root
-  return resolve(currentDir, '..', '..');
+  return findPackageRoot(dirname(fileURLToPath(import.meta.url)));
 }
 
 /**

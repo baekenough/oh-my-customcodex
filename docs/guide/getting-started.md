@@ -4,7 +4,7 @@ This guide will help you install and set up oh-my-customcodex in your project.
 
 ## Prerequisites
 
-- **Node.js** >= 18.0.0
+- **Node.js** 20.17+/22.13+/23.5+
 - **Codex CLI / OMX environment** installed and configured
 
 ## Installation

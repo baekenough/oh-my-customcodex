@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.9] - 2026-07-13
+
+### Added
+- Ship the production Web UI runtime in both npm and GitHub Packages artifacts, with clean-install lifecycle and representative route verification (#1583).
+- Generate public library declarations and verify byte-for-byte runtime parity between the unscoped npm and scoped GitHub Packages tarballs (#1584).
+
+### Changed
+- Align the published Node engine range, package-root discovery, and exported `VERSION` with the clean-installed package contract (#1584).
+
+### Fixed
+- Install repository hooks through Git-native hook paths so normal checkouts and OMX Team linked worktrees behave truthfully (#1608).
+
 ## [1.0.8] - 2026-07-13
 
 ### Fixed

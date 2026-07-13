@@ -339,7 +339,7 @@ bun test             # 테스트 실행
 bun run build        # 프로덕션 빌드
 ```
 
-요구사항: Node.js >= 18.0.0, Codex CLI.
+요구사항: Node.js 20.17+/22.13+/23.5+, Codex CLI.
 
 ### @omcodex/eval-core
 
