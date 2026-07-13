@@ -128,10 +128,22 @@ export interface UpdateCheckResult {
   checkedAt: string;
 }
 
-type UpdateTransactionFs = Pick<
-  typeof import('node:fs/promises'),
-  'lstat' | 'mkdir' | 'mkdtemp' | 'realpath' | 'rename' | 'rm' | 'rmdir' | 'writeFile'
->;
+interface UpdateTransactionFileStats {
+  isSymbolicLink(): boolean;
+  isDirectory(): boolean;
+  isFile(): boolean;
+}
+
+interface UpdateTransactionFs {
+  lstat(path: string): Promise<UpdateTransactionFileStats>;
+  mkdir(path: string): Promise<unknown>;
+  mkdtemp(prefix: string): Promise<string>;
+  realpath(path: string): Promise<string>;
+  rename(oldPath: string, newPath: string): Promise<unknown>;
+  rm(path: string, options?: { recursive?: boolean; force?: boolean }): Promise<unknown>;
+  rmdir(path: string): Promise<unknown>;
+  writeFile(path: string, content: string, encoding: 'utf-8'): Promise<unknown>;
+}
 
 export interface ApplyUpdatesDependencies {
   /** Injectable filesystem boundary for deterministic transaction-failure tests. */
@@ -1089,7 +1101,7 @@ interface PreparedFileUpdate {
   committed: boolean;
 }
 
-function assertSafeDirectory(stats: import('node:fs').Stats, directory: string): void {
+function assertSafeDirectory(stats: UpdateTransactionFileStats, directory: string): void {
   if (stats.isSymbolicLink() || !stats.isDirectory()) {
     throw new Error(`Unsafe update target parent: "${directory}"`);
   }
@@ -1236,7 +1248,7 @@ export async function preserveCustomizations(
 }
 
 function assertSafePathSegmentStats(
-  stats: import('node:fs').Stats,
+  stats: UpdateTransactionFileStats,
   isLast: boolean,
   filePath: string
 ): void {
@@ -1258,7 +1270,7 @@ async function assertSafeExistingPathSegments(
   targetDir: string,
   relativePath: string,
   filePath: string,
-  fs: Pick<typeof import('node:fs/promises'), 'lstat'>
+  fs: Pick<UpdateTransactionFs, 'lstat'>
 ): Promise<void> {
   const path = await import('node:path');
   const segments = relativePath.split(path.sep);
@@ -1281,7 +1293,7 @@ async function assertSafeExistingPathSegments(
 async function resolveSafeProjectPath(
   targetDir: string,
   filePath: string,
-  fileSystem?: Pick<typeof import('node:fs/promises'), 'lstat' | 'realpath'>
+  fileSystem?: Pick<UpdateTransactionFs, 'lstat' | 'realpath'>
 ): Promise<string> {
   const fs = fileSystem ?? (await import('node:fs/promises'));
   const canonicalRoot = await fs.realpath(targetDir);

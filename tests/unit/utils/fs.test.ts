@@ -24,6 +24,7 @@ import {
   ensureDirectory,
   fileExists,
   filesAreIdentical,
+  findPackageRoot,
   getFileStats,
   getPackageRoot,
   getRelativePath,
@@ -854,6 +855,32 @@ describe('fs utilities', () => {
 
       const packageJson = JSON.parse(await readFile(join(root, 'package.json'), 'utf-8'));
       expect(packageJson.name).toBe('oh-my-customcodex');
+    });
+  });
+
+  describe('findPackageRoot', () => {
+    it('should resolve source, library bundle, and CLI bundle depths', async () => {
+      await writeFile(join(tempDir, 'package.json'), JSON.stringify({ name: 'oh-my-customcodex' }));
+
+      for (const startDirectory of [
+        join(tempDir, 'src', 'utils'),
+        join(tempDir, 'dist'),
+        join(tempDir, 'dist', 'cli'),
+      ]) {
+        await mkdir(startDirectory, { recursive: true });
+        expect(findPackageRoot(startDirectory)).toBe(tempDir);
+      }
+    });
+
+    it('should support the GitHub Packages scoped package name', async () => {
+      const bundleDirectory = join(tempDir, 'dist');
+      await mkdir(bundleDirectory);
+      await writeFile(
+        join(tempDir, 'package.json'),
+        JSON.stringify({ name: '@baekenough/oh-my-customcodex' })
+      );
+
+      expect(findPackageRoot(bundleDirectory)).toBe(tempDir);
     });
   });
 

@@ -17,6 +17,7 @@ import { join, join as pathJoin } from 'node:path';
 import { getDefaultConfig, saveConfig } from '../../../src/core/config.js';
 import { getProviderLayout } from '../../../src/core/layout.js';
 import {
+  type ApplyUpdatesDependencies,
   applyUpdates,
   checkForUpdates,
   extractFrontmatterName,
@@ -1365,8 +1366,11 @@ describe('updater', () => {
     it('should roll back the first file when the second commit fails', async () => {
       const realFs = await import('node:fs/promises');
       await writeFile(join(tempDir, 'first.txt'), 'original');
-      const failingFs = {
-        ...realFs,
+      const failingFs: NonNullable<ApplyUpdatesDependencies['fs']> = {
+        lstat: realFs.lstat,
+        mkdir: realFs.mkdir,
+        mkdtemp: realFs.mkdtemp,
+        realpath: realFs.realpath,
         rename: async (
           from: Parameters<typeof realFs.rename>[0],
           to: Parameters<typeof realFs.rename>[1]
@@ -1381,6 +1385,9 @@ describe('updater', () => {
           }
           await realFs.rename(from, to);
         },
+        rm: realFs.rm,
+        rmdir: realFs.rmdir,
+        writeFile: realFs.writeFile,
       };
 
       await expect(

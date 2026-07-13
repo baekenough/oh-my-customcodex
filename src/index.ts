@@ -4,6 +4,8 @@
  * Main library entry point - exports public API
  */
 
+import packageJson from '../package.json';
+
 export {
   type AgentConfig,
   getConfigPath,
@@ -78,7 +80,7 @@ export {
 } from './utils/logger.js';
 
 // Version
-export const VERSION = '0.0.0';
+export const VERSION = packageJson.version;
 
 // Default export for convenience
 export default {

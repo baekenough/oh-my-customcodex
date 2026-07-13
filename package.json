@@ -3,7 +3,7 @@
   "workspaces": [
     "packages/*"
   ],
-  "version": "1.0.8",
+  "version": "1.0.9",
   "requiresCC": ">=2.1.121",
   "claudeCode": {
     "minimumVersion": "2.1.121",
@@ -18,13 +18,14 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "files": [
     "dist",
-    "templates"
+    "templates",
+    "packages/serve/build"
   ],
   "publishConfig": {
     "access": "public",
@@ -32,7 +33,7 @@
   },
   "scripts": {
     "dev": "bun run src/cli/index.ts",
-    "build": "bun build src/cli/index.ts --outdir dist/cli --target node && bun build src/index.ts --outdir dist --target node && bun run scripts/sync-source-lockfile.ts",
+    "build": "bun build src/cli/index.ts --outdir dist/cli --target node && bun build src/index.ts --outdir dist --target node && tsc --project tsconfig.build.json && bun run --cwd packages/serve build && bun run scripts/sync-source-lockfile.ts",
     "test": "bun test tests/ packages/eval-core/",
     "test:unit": "bun test tests/unit",
     "test:integration": "bun test tests/integration",
@@ -42,15 +43,16 @@
     "lint:fix": "biome check --write src/ tests/ scripts/",
     "format": "biome format --write src/ tests/ scripts/",
     "typecheck": "tsc --noEmit",
+    "verify:package": "node scripts/verify-package-contract.mjs",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "prepare": "sh scripts/setup-hooks.sh || true",
+    "prepare": "sh scripts/setup-hooks.sh",
     "setup:hooks": "sh scripts/setup-hooks.sh",
-    "prepublishOnly": "bun run build && bun run test"
+    "prepublishOnly": "bun run verify:package && bun run test"
   },
   "dependencies": {
     "@clack/prompts": "^1.1.0",
-    "@inquirer/prompts": "^8.3.2",
+    "@inquirer/prompts": "8.3.2",
     "commander": "^14.0.2",
     "i18next": "^26.0.2",
     "yaml": "^2.8.2"
@@ -84,7 +86,7 @@
   },
   "homepage": "https://github.com/baekenough/oh-my-customcodex#readme",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=23.5.0 || ^22.13.0 || ^20.17.0"
   },
   "overrides": {
     "rollup": "^4.59.0",

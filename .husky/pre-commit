@@ -122,6 +122,8 @@ run_bun_batch "cli-doctor-init-list-security" \
 run_bun_batch "core-update-registry-template-hooks" \
     tests/unit/core/hooks-scripts.test.ts \
     tests/unit/core/hooks-validation.test.ts \
+    tests/unit/core/package-contract.test.ts \
+    tests/unit/core/setup-hooks.test.ts \
     tests/unit/core/template-validation.test.ts \
     tests/unit/core/registry.test.ts \
     tests/unit/core/self-update.test.ts \
