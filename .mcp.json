@@ -8,7 +8,7 @@
         "ontology_rag.mcp_server"
       ],
       "env": {
-        "ONTOLOGY_DIR": ".claude/ontology"
+        "ONTOLOGY_DIR": ".codex/ontology"
       }
     },
     "eraser": {

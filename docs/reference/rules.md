@@ -1,6 +1,22 @@
-# Rules Reference
+# Harness Behavioral Policy Reference
 
-Rules define coding standards, workflow patterns, and agent behavior for oh-my-customcodex. This page is a reference overview, not the canonical source-of-truth for rule counts.
+Harness policies define coding standards, workflow patterns, and agent behavior
+for oh-my-customcodex. This page is a reference overview, not the canonical
+source-of-truth for policy counts.
+
+## Codex Surface Contract
+
+Two different policy formats share `.codex/rules/` but have different loaders and
+purposes:
+
+| Files | Surface | Loading contract |
+|-------|---------|------------------|
+| `.codex/rules/*.md` | oh-my-customcodex behavioral policy | `AGENTS.md` explicitly requires agents and routing skills to load or reference the relevant Markdown before scoped work. Markdown here is not applied automatically as a native Codex rule. |
+| `.codex/rules/*.rules` | Codex-native command execution policy | Codex loads the Starlark policy to allow, prompt for, or forbid matching shell commands. Create these files only for command-execution policy. |
+
+Do not translate general agent behavior into Starlark command rules. Keep behavior
+in the `AGENTS.md` hierarchy or a referenced skill/harness Markdown policy, and
+reserve `*.rules` for executable command decisions.
 
 ## Overview
 
@@ -181,12 +197,12 @@ Memory integration with omx-memory:
 
 **ID**: R012
 
-HUD statusline display:
+Native HUD and status-line policy:
 
-- Real-time status information
-- Progress tracking
-- Update triggers
-- Component format
+- OMX HUD for harness workflow state
+- Codex `/statusline` and `[tui].status_line` for the native footer
+- Native hook notifications for bounded progress events
+- Claude command statusline assets kept behind compatibility boundaries
 
 ### SHOULD-ecomode
 
@@ -254,9 +270,9 @@ Details and examples.
 Good and bad patterns.
 ```
 
-## Rule Locations
+## Harness Policy Locations
 
-Rules are stored in `.codex/rules/`:
+Harness behavioral policies remain in `.codex/rules/*.md`:
 
 ```
 .codex/rules/
@@ -281,7 +297,7 @@ Rules are stored in `.codex/rules/`:
 └── MAY-optimization.md
 ```
 
-## Modifying Rules
+## Modifying Harness Policies
 
 Edit rules directly or create new ones:
 
@@ -293,10 +309,12 @@ code .codex/rules/MUST-safety.md
 code .codex/rules/SHOULD-my-rule.md
 ```
 
-## Rule Enforcement
+## Policy Enforcement
 
-- MUST rules are enforced by agents
-- SHOULD rules trigger warnings if violated
-- MAY rules are suggestions only
+- `AGENTS.md` and referenced skills load applicable Markdown policies into agent context.
+- MUST policies are mandatory once loaded by that instruction hierarchy.
+- SHOULD policies trigger warnings if violated.
+- MAY policies are suggestions only.
+- Native `*.rules` files are evaluated separately by Codex for command execution decisions.
 
 See [Customization](/guide/customization) for creating your own rules.

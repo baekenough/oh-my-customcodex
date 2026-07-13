@@ -23,6 +23,7 @@ import {
   checkForUpdates,
   extractFrontmatterName,
   getAgentVersions,
+  isKnownHarnessStatusLineHash,
   preserveCustomizations,
   saveCustomizationManifest,
   type UpdateComponent,
@@ -33,6 +34,10 @@ import {
 const MANIFEST_VERSION = JSON.parse(
   readFileSync(pathJoin(import.meta.dir, '../../../templates/manifest.json'), 'utf-8')
 ).version;
+const LEGACY_STATUSLINE_TEMPLATE = readFileSync(
+  pathJoin(import.meta.dir, '../../../templates/.claude/statusline.sh'),
+  'utf-8'
+);
 
 describe('updater', () => {
   let tempDir: string;
@@ -217,7 +222,7 @@ describe('updater', () => {
       expect(result.skippedComponents.length).toBe(7); // All components skipped
     });
 
-    it('should reject no-update statusLine backfill when provider root is a symlink outside the project', async () => {
+    it('should reject no-update statusLine migration when provider root is a symlink outside the project', async () => {
       await createConfig(MANIFEST_VERSION, {
         rules: MANIFEST_VERSION,
         agents: MANIFEST_VERSION,
@@ -603,7 +608,7 @@ describe('updater', () => {
       );
     });
 
-    it('should reject root-level sync when destination is a symlink outside the project', async () => {
+    it('should reject legacy statusline migration when destination is a symlink outside the project', async () => {
       await createConfig('0.1.0');
       const layout = getProviderLayout();
       const outsideFile = join(tempDir, 'outside-statusline.sh');
@@ -1555,7 +1560,7 @@ describe('updater', () => {
   });
 
   describe('syncRootLevelFiles (Bug #201)', () => {
-    it('should sync root-level files during full update', async () => {
+    it('should sync hook scripts but not the Claude statusline during full update', async () => {
       await createConfig('0.1.0');
 
       const layout = getProviderLayout();
@@ -1569,8 +1574,12 @@ describe('updater', () => {
       expect(result.success).toBe(true);
       expect(result.syncedRootFiles).toBeDefined();
       expect(result.syncedRootFiles.length).toBeGreaterThan(0);
-      // statusline.sh should be synced
-      expect(result.syncedRootFiles).toContain('statusline.sh');
+      expect(result.syncedRootFiles).toContain('install-hooks.sh');
+      expect(result.syncedRootFiles).toContain('uninstall-hooks.sh');
+      expect(result.syncedRootFiles).not.toContain('statusline.sh');
+      expect(
+        await readFile(join(tempDir, layout.rootDir, 'statusline.sh'), 'utf-8').catch(() => null)
+      ).toBeNull();
     });
 
     it('should not sync root-level files when specific components are updated', async () => {
@@ -1588,7 +1597,7 @@ describe('updater', () => {
       expect(result.syncedRootFiles.length).toBe(0);
     });
 
-    it('should preserve execute permissions on .sh files', async () => {
+    it('should preserve execute permissions on synced hook scripts', async () => {
       await createConfig('0.1.0');
 
       const layout = getProviderLayout();
@@ -1598,10 +1607,9 @@ describe('updater', () => {
         targetDir: tempDir,
       });
 
-      // Check that statusline.sh has execute permissions
       const fs = await import('node:fs/promises');
-      const statuslinePath = join(tempDir, layout.rootDir, 'statusline.sh');
-      const stats = await fs.stat(statuslinePath);
+      const hookScriptPath = join(tempDir, layout.rootDir, 'install-hooks.sh');
+      const stats = await fs.stat(hookScriptPath);
       // Check owner execute bit (0o100)
       expect(stats.mode & 0o100).toBeTruthy();
     });
@@ -1619,6 +1627,7 @@ describe('updater', () => {
 
       expect(result.success).toBe(true);
       expect(result.syncedRootFiles.length).toBeGreaterThan(0);
+      expect(result.syncedRootFiles).not.toContain('statusline.sh');
 
       // Files should NOT actually exist (dry run)
       const statuslinePath = join(tempDir, layout.rootDir, 'statusline.sh');
@@ -1627,8 +1636,64 @@ describe('updater', () => {
     });
   });
 
-  describe('statusLine settings backfill', () => {
-    it('should add refreshInterval to existing statusLine settings during full update', async () => {
+  describe('legacy Codex statusLine migration', () => {
+    it('should recognize statusline hashes shipped by earlier releases', () => {
+      expect(
+        isKnownHarnessStatusLineHash(
+          '2002d2fb1605f1d139b4e6102c7deb2a716761b5c86d7255ff27fdd8bf47a551'
+        )
+      ).toBe(true);
+      expect(
+        isKnownHarnessStatusLineHash(
+          createHash('sha256').update('#!/bin/sh\necho user-owned\n').digest('hex')
+        )
+      ).toBe(false);
+    });
+
+    it('should remove harness status artifacts while preserving unrelated JSON and config.toml', async () => {
+      await createConfig(MANIFEST_VERSION, {
+        rules: MANIFEST_VERSION,
+        agents: MANIFEST_VERSION,
+        skills: MANIFEST_VERSION,
+        guides: MANIFEST_VERSION,
+        hooks: MANIFEST_VERSION,
+        contexts: MANIFEST_VERSION,
+        ontology: MANIFEST_VERSION,
+      });
+
+      const layout = getProviderLayout();
+      const nativeConfig = '# user formatting must survive\n[tui]\nstatus_line=["model"]\n';
+      await createDirStructure({
+        [`${layout.rootDir}/statusline.sh`]: LEGACY_STATUSLINE_TEMPLATE,
+        [`${layout.rootDir}/settings.local.json`]: JSON.stringify({
+          statusLine: {
+            type: 'command',
+            command: `${layout.rootDir}/statusline.sh`,
+            padding: 0,
+            refreshInterval: 10,
+          },
+          enableAllProjectMcpServers: true,
+        }),
+        [`${layout.rootDir}/config.toml`]: nativeConfig,
+      });
+
+      const result = await update({ targetDir: tempDir });
+
+      const settings = JSON.parse(
+        await readFile(join(tempDir, layout.rootDir, 'settings.local.json'), 'utf-8')
+      );
+      expect(result.success).toBe(true);
+      expect(settings.statusLine).toBeUndefined();
+      expect(settings.enableAllProjectMcpServers).toBe(true);
+      expect(
+        await readFile(join(tempDir, layout.rootDir, 'statusline.sh'), 'utf-8').catch(() => null)
+      ).toBeNull();
+      expect(await readFile(join(tempDir, layout.rootDir, 'config.toml'), 'utf-8')).toBe(
+        nativeConfig
+      );
+    });
+
+    it('should remove a settings.local.json owned only by the legacy statusLine', async () => {
       await createConfig(MANIFEST_VERSION, {
         rules: MANIFEST_VERSION,
         agents: MANIFEST_VERSION,
@@ -1644,26 +1709,22 @@ describe('updater', () => {
         [`${layout.rootDir}/settings.local.json`]: JSON.stringify({
           statusLine: {
             type: 'command',
-            command: `${layout.rootDir}/custom-statusline.sh`,
-            padding: 2,
+            command: `${layout.rootDir}/statusline.sh`,
           },
-          enableAllProjectMcpServers: true,
         }),
       });
 
       const result = await update({ targetDir: tempDir });
 
-      const settings = JSON.parse(
-        await readFile(join(tempDir, layout.rootDir, 'settings.local.json'), 'utf-8')
-      );
       expect(result.success).toBe(true);
-      expect(settings.statusLine.command).toBe(`${layout.rootDir}/custom-statusline.sh`);
-      expect(settings.statusLine.padding).toBe(2);
-      expect(settings.statusLine.refreshInterval).toBe(10);
-      expect(settings.enableAllProjectMcpServers).toBe(true);
+      expect(
+        await readFile(join(tempDir, layout.rootDir, 'settings.local.json'), 'utf-8').catch(
+          () => null
+        )
+      ).toBeNull();
     });
 
-    it('should create statusLine settings during full update when settings.local.json is missing', async () => {
+    it('should preserve custom statusLine commands and unrelated JSON byte-for-byte', async () => {
       await createConfig(MANIFEST_VERSION, {
         rules: MANIFEST_VERSION,
         agents: MANIFEST_VERSION,
@@ -1675,16 +1736,129 @@ describe('updater', () => {
       });
 
       const layout = getProviderLayout();
+      const customSettings =
+        '{\n  "statusLine": { "type": "command", "command": ".codex/custom-statusline.sh" },\n  "user": true\n}\n';
+      const customStatusline = '#!/bin/sh\necho custom\n';
+      await createDirStructure({
+        [`${layout.rootDir}/settings.local.json`]: customSettings,
+        [`${layout.rootDir}/custom-statusline.sh`]: customStatusline,
+      });
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(result.success).toBe(true);
+      expect(await readFile(join(tempDir, layout.rootDir, 'settings.local.json'), 'utf-8')).toBe(
+        customSettings
+      );
+      expect(await readFile(join(tempDir, layout.rootDir, 'custom-statusline.sh'), 'utf-8')).toBe(
+        customStatusline
+      );
+    });
+
+    it('should preserve exact-path statusLine objects with custom fields', async () => {
+      await createConfig(MANIFEST_VERSION, {
+        rules: MANIFEST_VERSION,
+        agents: MANIFEST_VERSION,
+        skills: MANIFEST_VERSION,
+        guides: MANIFEST_VERSION,
+        hooks: MANIFEST_VERSION,
+        contexts: MANIFEST_VERSION,
+        ontology: MANIFEST_VERSION,
+      });
+
+      const layout = getProviderLayout();
+      const customSettings =
+        '{\n  "statusLine": { "type": "command", "command": ".codex/statusline.sh", "padding": 0, "theme": "user" }\n}\n';
+      await createDirStructure({
+        [`${layout.rootDir}/settings.local.json`]: customSettings,
+      });
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(result.success).toBe(true);
+      expect(await readFile(join(tempDir, layout.rootDir, 'settings.local.json'), 'utf-8')).toBe(
+        customSettings
+      );
+    });
+
+    it('should preserve exact-path statusLine objects with customized padding', async () => {
+      await createConfig(MANIFEST_VERSION, {
+        rules: MANIFEST_VERSION,
+        agents: MANIFEST_VERSION,
+        skills: MANIFEST_VERSION,
+        guides: MANIFEST_VERSION,
+        hooks: MANIFEST_VERSION,
+        contexts: MANIFEST_VERSION,
+        ontology: MANIFEST_VERSION,
+      });
+
+      const layout = getProviderLayout();
+      const customSettings =
+        '{\n  "statusLine": { "type": "command", "command": ".codex/statusline.sh", "padding": 2 }\n}\n';
+      await createDirStructure({
+        [`${layout.rootDir}/settings.local.json`]: customSettings,
+      });
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(result.success).toBe(true);
+      expect(await readFile(join(tempDir, layout.rootDir, 'settings.local.json'), 'utf-8')).toBe(
+        customSettings
+      );
+    });
+
+    it('should preserve custom content at the former harness statusline path', async () => {
+      await createConfig(MANIFEST_VERSION, {
+        rules: MANIFEST_VERSION,
+        agents: MANIFEST_VERSION,
+        skills: MANIFEST_VERSION,
+        guides: MANIFEST_VERSION,
+        hooks: MANIFEST_VERSION,
+        contexts: MANIFEST_VERSION,
+        ontology: MANIFEST_VERSION,
+      });
+
+      const layout = getProviderLayout();
+      const customStatusline = '#!/bin/sh\necho user-owned\n';
+      const customSettings = JSON.stringify({
+        statusLine: {
+          type: 'command',
+          command: `${layout.rootDir}/statusline.sh`,
+        },
+        user: true,
+      });
+      await createDirStructure({
+        [`${layout.rootDir}/statusline.sh`]: customStatusline,
+        [`${layout.rootDir}/settings.local.json`]: customSettings,
+      });
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(result.success).toBe(true);
+      expect(await readFile(join(tempDir, layout.rootDir, 'statusline.sh'), 'utf-8')).toBe(
+        customStatusline
+      );
+      expect(await readFile(join(tempDir, layout.rootDir, 'settings.local.json'), 'utf-8')).toBe(
+        customSettings
+      );
+    });
+
+    it('should not create statusLine settings when settings.local.json is missing', async () => {
+      await createConfig('0.1.0');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({ targetDir: tempDir });
 
-      const settings = JSON.parse(
-        await readFile(join(tempDir, layout.rootDir, 'settings.local.json'), 'utf-8')
-      );
       expect(result.success).toBe(true);
-      expect(settings.statusLine.command).toBe(`${layout.rootDir}/statusline.sh`);
-      expect(settings.statusLine.refreshInterval).toBe(10);
+      expect(
+        await readFile(join(tempDir, layout.rootDir, 'settings.local.json'), 'utf-8').catch(
+          () => null
+        )
+      ).toBeNull();
+      expect(
+        await readFile(join(tempDir, layout.rootDir, 'statusline.sh'), 'utf-8').catch(() => null)
+      ).toBeNull();
     });
   });
 

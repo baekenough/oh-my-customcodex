@@ -25,16 +25,20 @@ claude plugin install cc-token-saver
 
 ### Live Status Line (R012 Priority)
 
-oh-my-customcodex runs its own statusline via `.codex/statusline.sh` (R012). Two simultaneous status bars create visual clutter.
+Codex sessions use OMX HUD for harness workflow state and the native Codex
+`/statusline` footer for user-selected TUI items. They do not install a command
+statusline under `.codex`.
 
-**Resolution**: R012 statusline has priority. Disable cc-token-saver's Live Status Line:
+cc-token-saver is a Claude Code plugin. In an explicit Claude compatibility
+session, choose one persistent footer to avoid visual clutter:
 
 ```bash
-# In cc-token-saver config (if supported), or ignore its statusline output
-# oh-my-customcodex statusline is configured in .codex/settings.local.json
+# Keep cc-token-saver's footer, or bind the packaged Claude compatibility
+# template; do not enable both.
 ```
 
-The R012 statusline already covers: Cost, Rate Limit %, Weekly Limit %, Context %. cc-token-saver's Live Status Line is redundant when R012 is active.
+`templates/.claude/statusline.sh` remains a compatibility asset for the Claude
+JSON-stdin protocol. It is not copied to `.codex` by init or update.
 
 ### SubTask Delegation (R009/R010/R018 Priority)
 

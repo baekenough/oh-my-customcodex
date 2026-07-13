@@ -48,7 +48,7 @@ Source: upstream oh-my-customcode v1.1.3 / #1561.
 |--------|------------------------------|--------|
 | Built-in Explore agent inherits the main session model and subagents/compaction inherit extended-thinking settings | Improves Claude-template exploration/delegation quality. | Record as Claude compatibility only; Codex-native subagents still use installed OMX roles and model metadata. |
 | Background agents can auto-commit/push/open draft PRs after completing work, with better transient-network retry behavior | Reduces false blockers for Claude background-agent flows. | Document in R010; keep release branches and PR state explicitly verified by Git/GitHub evidence. |
-| Background agent notifications fire for needs-input and completed states | Better observability for long-running Claude compatibility sessions. | Document in R012; Codex/OMX status remains native runtime state plus `.codex/statusline.sh`. |
+| Background agent notifications fire for needs-input and completed states | Better observability for long-running Claude compatibility sessions. | Document in R012; Codex/OMX status remains native OMX HUD and Codex TUI footer state. |
 | Agent Teams reports teammate API failures and wakes stuck teammates on message | Improves retry behavior but does not make SendMessage self-report authoritative. | Document in R018 and keep deterministic ground-truth checks. |
 
 ## Claude Fable 5 prompting guide
@@ -85,7 +85,7 @@ Source: upstream oh-my-customcode v1.0.9 / #1391, Codex-port issue #1524.
 
 | Change | Impact | oh-my-customcodex action |
 |--------|--------|---------------------------|
-| `footerLinksRegexes` renders regex-matched footer link badges; session titles are generated in the conversation language when configured | Useful for packaged Claude compatibility statusline UX. | Document in R012; keep `.codex/statusline.sh` as the Codex/OMX primary status surface. |
+| `footerLinksRegexes` renders regex-matched footer link badges; session titles are generated in the conversation language when configured | Useful for packaged Claude compatibility statusline UX. | Document in R012 as compatibility-only; Codex uses OMX HUD and the native `/statusline` footer. |
 
 ## v2.1.175
 

@@ -52,9 +52,13 @@ NO EXCEPTIONS. NO EXCUSES.
 
 ---
 
-## Global Rules (MUST comply)
+## Harness Behavioral Policies (MUST comply)
 
-> See `.codex/rules/`
+> `AGENTS.md` is the active instruction surface. It explicitly requires agents to
+> load or reference the relevant `.codex/rules/*.md` files before scoped work.
+> Those Markdown files are harness behavioral policy, not Codex-native exec rules.
+> Native command allow/prompt/forbid policy, when needed, lives separately in
+> `.codex/rules/*.rules` as Starlark.
 
 ### MUST (Never violate)
 | ID | Rule | Description |
@@ -88,39 +92,42 @@ NO EXCEPTIONS. NO EXCUSES.
 |----|------|-------------|
 | R005 | Optimization | Efficiency, token optimization |
 
-## Commands
+## Skills
 
-### Slash Commands (from Skills)
+Invoke a known skill explicitly with `$skill-name`. Use the native `/skills`
+command to discover skills available in the current session.
+
+### Explicit Skill Invocations
 
 | Command | Description |
 |---------|-------------|
-| `/omcustomcodex:analysis` | Analyze project and auto-configure customizations |
-| `/omcustomcodex:create-agent` | Create a new agent |
-| `/omcustomcodex:update-docs` | Sync documentation with project structure |
-| `/omcustomcodex:update-external` | Update agents from external sources |
-| `/omcustomcodex:audit-agents` | Audit agent dependencies |
-| `/omcustomcodex:fix-refs` | Fix broken references |
-| `/omcustomcodex-takeover` | Extract canonical spec from existing agent/skill |
-| `/dev-review` | Review code for best practices |
-| `/dev-refactor` | Refactor code |
-| `/memory-save` | Save session context to omx-memory |
-| `/memory-recall` | Search and recall memories |
-| `/omcustomcodex:monitoring-setup` | Enable/disable OTel console monitoring |
-| `/omcustomcodex:npm-publish` | Publish package to npm registry |
-| `/omcustomcodex:npm-version` | Manage semantic versions |
-| `/omcustomcodex:npm-audit` | Audit dependencies |
-| `/omcustomcodex-release-notes` | Generate release notes from git history |
-| `/optimize-analyze` | Analyze bundle and performance |
-| `/optimize-bundle` | Optimize bundle size |
-| `/optimize-report` | Generate optimization report |
-| `/research` | 10-team parallel deep analysis and cross-verification |
-| `/deep-plan` | Research-validated planning (research → plan → verify) |
-| `/omcustomcodex:sauron-watch` | Full R017 verification |
-| `/structured-dev-cycle` | 6-stage structured development cycle (Plan → Verify → Implement → Verify → Compound → Done) |
-| `/omcustomcodex:goal` | Keep a concrete objective through planning, execution, and verification |
-| `/omcustomcodex:lists` | Show all available commands |
-| `/omcustomcodex:status` | Show system status |
-| `/omcustomcodex:help` | Show help information |
+| `$omcustomcodex:analysis` | Analyze project and auto-configure customizations |
+| `$omcustomcodex:create-agent` | Create a new agent |
+| `$omcustomcodex:update-docs` | Sync documentation with project structure |
+| `$omcustomcodex:update-external` | Update agents from external sources |
+| `$omcustomcodex:audit-agents` | Audit agent dependencies |
+| `$omcustomcodex:fix-refs` | Fix broken references |
+| `$omcustomcodex:takeover` | Extract canonical spec from existing agent/skill |
+| `$dev-review` | Review code for best practices |
+| `$dev-refactor` | Refactor code |
+| `$memory-save` | Save session context to omx-memory |
+| `$memory-recall` | Search and recall memories |
+| `$omcustomcodex:monitoring-setup` | Enable/disable OTel console monitoring |
+| `$omcustomcodex:npm-publish` | Publish package to npm registry |
+| `$omcustomcodex:npm-version` | Manage semantic versions |
+| `$omcustomcodex:npm-audit` | Audit dependencies |
+| `$omcustomcodex-release-notes` | Generate release notes from git history |
+| `$optimize-analyze` | Analyze bundle and performance |
+| `$optimize-bundle` | Optimize bundle size |
+| `$optimize-report` | Generate optimization report |
+| `$research` | 10-team parallel deep analysis and cross-verification |
+| `$deep-plan` | Research-validated planning (research → plan → verify) |
+| `$omcustomcodex:sauron-watch` | Full R017 verification |
+| `$structured-dev-cycle` | 6-stage structured development cycle (Plan → Verify → Implement → Verify → Compound → Done) |
+| `$omcustomcodex:goal` | Keep a concrete objective through planning, execution, and verification |
+| `$omcustomcodex:lists` | Show all available commands |
+| `$omcustomcodex:status` | Show system status |
+| `$omcustomcodex:help` | Show help information |
 
 ## Project Structure
 
@@ -129,7 +136,7 @@ project/
 +-- AGENTS.md                    # Entry point
 +-- .codex/
 |   +-- agents/                  # Subagent definitions (50 files)
-|   +-- rules/                   # Global rules (R000-R023)
+|   +-- rules/                   # Harness *.md policy; optional native *.rules exec policy
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (ecomode)
 +-- .agents/
@@ -202,27 +209,27 @@ Codex native subagents plus routing skills remain the fallback for simple/cost-s
 
 ## Quick Reference
 
-```bash
+```text
 # Project analysis
-/omcustomcodex:analysis
+$omcustomcodex:analysis
 
 # Show all commands
-/omcustomcodex:lists
+$omcustomcodex:lists
 
 # Agent management
-/omcustomcodex:create-agent my-agent
-/omcustomcodex:update-docs
-/omcustomcodex:audit-agents
+$omcustomcodex:create-agent my-agent
+$omcustomcodex:update-docs
+$omcustomcodex:audit-agents
 
 # Code review
-/dev-review src/main.go
+$dev-review src/main.go
 
 # Memory management
-/memory-save
-/memory-recall authentication
+$memory-save
+$memory-recall authentication
 
 # Verification
-/omcustomcodex:sauron-watch
+$omcustomcodex:sauron-watch
 ```
 
 ## External Dependencies
@@ -256,6 +263,6 @@ claude mcp add-json aws-mcp --scope user '{"command":"uvx","args":["mcp-proxy-fo
 
 Projects that run in the Claude Code plugin ecosystem may separately install plugins such as `superpowers`, `openai-docs`, `elements-of-style`, and `context7`. They are not required Codex init steps.
 
-On Claude Code v2.1.139+, use `claude agents` to inspect the unified agent list, `claude plugin details <name>` to inspect plugin components and projected token cost, and `/scroll-speed` for local scroll tuning. The native `/goal` command is reserved for Claude Code's completion tracker; use `/omcustomcodex:goal` for the oh-my-customcodex workflow.
+On Claude Code v2.1.139+, use `claude agents` to inspect the unified agent list, `claude plugin details <name>` to inspect plugin components and projected token cost, and `/scroll-speed` for local scroll tuning. The native `/goal` command is reserved for Claude Code's completion tracker; use `$omcustomcodex:goal` for the oh-my-customcodex workflow.
 
 <!-- omcodex:git-workflow -->

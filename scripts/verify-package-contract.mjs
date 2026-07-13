@@ -75,6 +75,12 @@ function pass(message) {
   console.log(`[package-contract] PASS ${message}`);
 }
 
+function rootWorkspaceName(lockfile) {
+  const match = lockfile.match(/"workspaces"\s*:\s*\{\s*""\s*:\s*\{\s*"name"\s*:\s*"([^"]+)"/);
+  assert(match, 'bun.lock is missing the root workspace name');
+  return match[1];
+}
+
 function packageRelativePath(target, label) {
   assert.equal(typeof target, 'string', `${label} must be a string path`);
   const relativePath = target.replace(/^\.\//, '');
@@ -686,6 +692,15 @@ async function verifyCleanConsumer({ packageName, artifact, consumerDir, homeDir
   pass(
     `${packageName} packed native hook footprint (${installedHookScripts.length} active scripts)`
   );
+  assert(
+    !existsSync(join(hookFixtureDir, '.codex', 'statusline.sh')),
+    'packed installer copied the Claude command statusline into .codex'
+  );
+  assert(
+    !existsSync(join(hookFixtureDir, '.codex', 'settings.local.json')),
+    'packed installer wrote Claude statusLine settings into .codex'
+  );
+  pass(`${packageName} packed Codex-native status surface`);
 
   const port = await reservePort();
   const webUrl = `http://localhost:${port}`;
@@ -769,6 +784,8 @@ async function main() {
   const tempRoot = await mkdtemp(join(tmpdir(), 'omcustomcodex-package-contract-'));
   const repositoryPackageJsonPath = join(REPO_ROOT, 'package.json');
   const repositoryPackageJsonBefore = await readFile(repositoryPackageJsonPath);
+  const repositoryPackageJson = JSON.parse(repositoryPackageJsonBefore.toString('utf8'));
+  const repositoryBunLock = await readFile(join(REPO_ROOT, 'bun.lock'), 'utf8');
   const unscopedPackDir = join(tempRoot, 'pack', 'npm');
   const scopedPackDir = join(tempRoot, 'pack', 'github');
   const unscopedUnpackDir = join(tempRoot, 'unpacked', 'npm');
@@ -776,6 +793,14 @@ async function main() {
   const scopedSourceDir = join(tempRoot, 'scoped-source');
 
   try {
+    assert.equal(repositoryPackageJson.name, PACKAGE_NAME, 'package.json has the wrong root name');
+    assert.equal(
+      rootWorkspaceName(repositoryBunLock),
+      PACKAGE_NAME,
+      'bun.lock root workspace name must match package.json'
+    );
+    pass(`root workspace identity (${PACKAGE_NAME})`);
+
     if (!skipBuild) {
       run('bun', ['run', 'build']);
       pass('release build completed');

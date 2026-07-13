@@ -182,7 +182,9 @@
       "available": "Available",
       "corrupted": "Corrupted",
       "filterBy": "Filter by: {{filter}}",
-      "showAll": "Showing all agents"
+      "showAll": "Showing all agents",
+      "policySurfaces": "policy surfaces",
+      "surface": "Surface"
     },
     "doctor": {
       "description": "Check and fix configuration issues",
@@ -236,16 +238,18 @@
           "fail": "{{entry}} not found"
         },
         "rules": {
-          "pass": "Rules directory is valid",
-          "fail": "Rules directory is missing or incomplete"
+          "pass": "Harness behavioral policy directory is valid",
+          "fail": "Harness behavioral policy directory is missing or has no Markdown policies",
+          "summary": "{{markdown}} harness Markdown policies; {{native}} native Starlark exec policies"
         },
         "agents": {
           "pass": "Agents directory is valid",
           "fail": "Agents directory is missing or incomplete"
         },
         "skills": {
-          "pass": "Skills directory is valid",
-          "fail": "Skills directory is missing or incomplete"
+          "pass": "Installed skill discovery is valid",
+          "fail": "Installed skills directory is missing or has no discoverable SKILL.md definitions",
+          "summary": "{{count}} discoverable skills; invoke with $skill-name or browse /skills"
         },
         "symlinks": {
           "pass": "All symlinks are valid",

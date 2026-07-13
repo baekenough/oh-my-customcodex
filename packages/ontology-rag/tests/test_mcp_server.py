@@ -1,11 +1,14 @@
 """Tests for MCP server entry point."""
 
-import os
-from pathlib import Path
+import logging
 
 import pytest
 
-from ontology_rag.mcp_server import OntologyMCPServer, discover_ontology_dir
+from ontology_rag.mcp_server import (
+    OntologyMCPServer,
+    async_main,
+    discover_ontology_dir,
+)
 
 
 class TestDiscoverOntologyDir:
@@ -20,8 +23,60 @@ class TestDiscoverOntologyDir:
         result = discover_ontology_dir()
         assert result == custom_dir
 
-    def test_search_upward_finds_claude(self, tmp_path, monkeypatch):
-        """Test upward search finds .claude/ontology/ directory."""
+    def test_env_var_expands_user_and_resolves_path(self, tmp_path, monkeypatch):
+        """Test ONTOLOGY_DIR expands ~ and returns a resolved path."""
+        home = tmp_path / "home"
+        custom_dir = home / "custom-ontology"
+        custom_dir.mkdir(parents=True)
+        monkeypatch.setenv("HOME", str(home))
+        monkeypatch.setenv("ONTOLOGY_DIR", "~/custom-ontology")
+
+        result = discover_ontology_dir()
+        assert result == custom_dir.resolve()
+
+    def test_env_var_with_relative_path_is_resolved(self, tmp_path, monkeypatch):
+        """Test relative ONTOLOGY_DIR is resolved against the current directory."""
+        monkeypatch.chdir(tmp_path)
+        custom_dir = tmp_path / "custom-ontology"
+        custom_dir.mkdir()
+        monkeypatch.setenv("ONTOLOGY_DIR", "./custom-ontology")
+
+        result = discover_ontology_dir()
+        assert result == custom_dir.resolve()
+
+    def test_env_var_must_exist(self, tmp_path, monkeypatch):
+        """Test an explicit missing ontology directory is rejected."""
+        missing_dir = tmp_path / "missing-ontology"
+        monkeypatch.setenv("ONTOLOGY_DIR", str(missing_dir))
+
+        with pytest.raises(FileNotFoundError, match="ONTOLOGY_DIR does not exist"):
+            discover_ontology_dir()
+
+    def test_env_var_must_be_directory(self, tmp_path, monkeypatch):
+        """Test an explicit ontology file is rejected."""
+        ontology_file = tmp_path / "ontology.yaml"
+        ontology_file.write_text("agents: {}\n")
+        monkeypatch.setenv("ONTOLOGY_DIR", str(ontology_file))
+
+        with pytest.raises(NotADirectoryError, match="ONTOLOGY_DIR is not a directory"):
+            discover_ontology_dir()
+
+    def test_search_upward_finds_codex(self, tmp_path, monkeypatch):
+        """Test upward search finds the Codex-native ontology directory."""
+        monkeypatch.delenv("ONTOLOGY_DIR", raising=False)
+        ontology_dir = tmp_path / ".codex" / "ontology"
+        ontology_dir.mkdir(parents=True)
+        nested = tmp_path / "a" / "b" / "c"
+        nested.mkdir(parents=True)
+        monkeypatch.chdir(nested)
+
+        result = discover_ontology_dir()
+        assert result == ontology_dir
+
+    def test_search_upward_finds_claude_compatibility_fallback(
+        self, tmp_path, monkeypatch
+    ):
+        """Test upward search retains .claude/ontology compatibility."""
         monkeypatch.delenv("ONTOLOGY_DIR", raising=False)
         ontology_dir = tmp_path / ".claude" / "ontology"
         ontology_dir.mkdir(parents=True)
@@ -32,8 +87,22 @@ class TestDiscoverOntologyDir:
         result = discover_ontology_dir()
         assert result == ontology_dir
 
-    def test_fallback_to_cwd_claude(self, tmp_path, monkeypatch):
-        """Test fallback returns cwd/.claude/ontology/ when nothing found."""
+    def test_codex_wins_when_both_providers_exist(self, tmp_path, monkeypatch):
+        """Test .codex/ontology wins over .claude/ontology at one ancestor."""
+        monkeypatch.delenv("ONTOLOGY_DIR", raising=False)
+        codex_dir = tmp_path / ".codex" / "ontology"
+        claude_dir = tmp_path / ".claude" / "ontology"
+        codex_dir.mkdir(parents=True)
+        claude_dir.mkdir(parents=True)
+        nested = tmp_path / "nested"
+        nested.mkdir()
+        monkeypatch.chdir(nested)
+
+        result = discover_ontology_dir()
+        assert result == codex_dir
+
+    def test_fallback_to_cwd_codex(self, tmp_path, monkeypatch):
+        """Test fallback returns cwd/.codex/ontology/ when nothing is found."""
         monkeypatch.delenv("ONTOLOGY_DIR", raising=False)
         # Create an empty project dir with no ontology
         empty_project = tmp_path / "empty"
@@ -41,13 +110,7 @@ class TestDiscoverOntologyDir:
         monkeypatch.chdir(empty_project)
 
         result = discover_ontology_dir()
-        assert result == empty_project / ".claude" / "ontology"
-
-    def test_env_var_returns_path_object(self, tmp_path, monkeypatch):
-        """Test that env var result is a Path object."""
-        monkeypatch.setenv("ONTOLOGY_DIR", "/some/path")
-        result = discover_ontology_dir()
-        assert isinstance(result, Path)
+        assert result == empty_project / ".codex" / "ontology"
 
     def test_search_upward_stops_at_max_depth(self, tmp_path, monkeypatch):
         """Test that upward search stops after 10 levels."""
@@ -59,15 +122,15 @@ class TestDiscoverOntologyDir:
         deep_dir.mkdir(parents=True)
 
         # Put ontology at root level
-        ontology_dir = tmp_path / ".claude" / "ontology"
+        ontology_dir = tmp_path / ".codex" / "ontology"
         ontology_dir.mkdir(parents=True)
 
         # Start from deepest level
         monkeypatch.chdir(deep_dir)
 
         result = discover_ontology_dir()
-        # Should fallback to cwd/.claude/ontology since we're too deep
-        assert result == deep_dir / ".claude" / "ontology"
+        # Should fallback to cwd/.codex/ontology since we're too deep
+        assert result == deep_dir / ".codex" / "ontology"
 
     def test_search_upward_stops_at_filesystem_root(self, tmp_path, monkeypatch):
         """Test that upward search handles filesystem root correctly."""
@@ -77,25 +140,12 @@ class TestDiscoverOntologyDir:
 
         result = discover_ontology_dir()
         # Should fallback when reaching root
-        assert result == tmp_path / ".claude" / "ontology"
-
-    def test_env_var_with_relative_path(self, tmp_path, monkeypatch):
-        """Test that env var works with relative paths."""
-        monkeypatch.delenv("ONTOLOGY_DIR", raising=False)
-        monkeypatch.chdir(tmp_path)
-        custom_dir = tmp_path / "custom-ontology"
-        custom_dir.mkdir()
-        monkeypatch.setenv("ONTOLOGY_DIR", "./custom-ontology")
-
-        result = discover_ontology_dir()
-        # Path should handle relative paths correctly
-        assert result == Path("./custom-ontology")
+        assert result == tmp_path / ".codex" / "ontology"
 
     def test_search_finds_nearest_ancestor(self, tmp_path, monkeypatch):
-        """Test that search finds the nearest ancestor, not the furthest."""
+        """Test nearest ancestor wins even when it uses compatibility layout."""
         monkeypatch.delenv("ONTOLOGY_DIR", raising=False)
-        # Create nested ontology dirs
-        far_ontology = tmp_path / ".claude" / "ontology"
+        far_ontology = tmp_path / ".codex" / "ontology"
         far_ontology.mkdir(parents=True)
         nested = tmp_path / "project" / "subdir"
         nested.mkdir(parents=True)
@@ -105,8 +155,38 @@ class TestDiscoverOntologyDir:
         monkeypatch.chdir(nested)
 
         result = discover_ontology_dir()
-        # Should find the nearer one
         assert result == near_ontology
+
+
+class TestOntologyDirectoryDiagnostics:
+    """Test actionable ontology directory diagnostics."""
+
+    @pytest.mark.asyncio
+    async def test_missing_default_names_codex_as_canonical(
+        self, tmp_path, monkeypatch, caplog
+    ):
+        """Test missing-directory guidance names the Codex-native location."""
+        monkeypatch.delenv("ONTOLOGY_DIR", raising=False)
+        monkeypatch.chdir(tmp_path)
+
+        with caplog.at_level(logging.ERROR):
+            await async_main()
+
+        assert "run from a project with .codex/ontology/" in caplog.text
+        assert "run from a project with .claude/ontology/" not in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_invalid_explicit_path_reports_validation_error(
+        self, tmp_path, monkeypatch, caplog
+    ):
+        """Test invalid ONTOLOGY_DIR produces a targeted diagnostic."""
+        missing_dir = tmp_path / "missing-ontology"
+        monkeypatch.setenv("ONTOLOGY_DIR", str(missing_dir))
+
+        with caplog.at_level(logging.ERROR):
+            await async_main()
+
+        assert f"ONTOLOGY_DIR does not exist: {missing_dir.resolve()}" in caplog.text
 
 
 class TestOntologyMCPServerInit:

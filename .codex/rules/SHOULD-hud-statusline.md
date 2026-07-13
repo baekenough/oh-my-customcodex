@@ -1,61 +1,58 @@
-# [SHOULD] HUD Statusline Rules
+# [SHOULD] Native HUD and Status Line Rules
 
 > **Priority**: SHOULD | **ID**: R012
 
-## Two-System Architecture
+## Canonical Codex/OMX Surfaces
 
-| Aspect | HUD Events | Statusline API |
-|--------|-----------|----------------|
-| Channel | stderr (hooks) | stdout (dedicated statusline) |
-| Location | Inline in conversation log | Persistent bar at screen bottom |
-| Trigger | PreToolUse (Agent/Task matcher) | Message update cycle (~300ms) |
-| Role | Event notifications | Persistent session status |
+| Surface | Owner | Purpose |
+|---------|-------|---------|
+| OMX HUD | `omx hud` / `omx hud --tmux` | Live workflow, team, goal, and session state |
+| Codex TUI status line | `/statusline` and `[tui].status_line` | User-selected persistent footer items |
+| Harness hook events | Native Codex hook registry | Bounded event notifications for parallel or long-running work |
 
-## HUD Events (Hook-based)
+OMX HUD is the harness status surface. The Codex footer is a native user
+preference configured interactively with `/statusline` or in Codex
+`config.toml`; project init and update must not overwrite that preference.
 
-Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` — implemented in `.codex/hooks/hooks.json` (PreToolUse → Agent/Task matcher). Display for multi-step/parallel/long-running ops only.
+Do not install `.codex/statusline.sh` or write Claude `statusLine` JSON into
+`.codex/settings.local.json`. Those are not Codex configuration surfaces.
 
-> **Claude Code v2.1.141+ compatibility**: Hook JSON output can include `terminalSequence` to emit desktop notifications, window title changes, or terminal bells without a controlling terminal. Treat this as an optional companion to stderr HUD events and the command statusline; do not add terminal-control hook behavior until there is a concrete Codex-compatible UX need.
+## HUD Events
 
-> **v2.1.174+ Claude compatibility**: The `/usage` account dialog shows usage attribution for cache misses, long context, subagents, and per-skill/agent/plugin/MCP breakdowns over the last 24 hours or 7 days in VS Code. This complements `monitoring-setup`; it is an interactive Claude-client view, not a Codex/OMX telemetry source.
+Use compact hook notifications for multi-step, parallel, or long-running work.
+Skip them for single brief operations. Runtime state shown by OMX remains the
+source of truth; a hook notification must not invent completion or progress.
 
-> **v2.1.176+ Claude compatibility**: `footerLinksRegexes` can render regex-matched link badges in the footer row, and session titles are generated in the conversation language when configured. Treat these as Claude-template statusline composition options; keep `.codex/statusline.sh` as the Codex/OMX primary status surface.
-
-> **v2.1.172+ Claude compatibility**: The `claude_code.lines_of_code.count` OTEL metric includes a `model` attribute, so lines-of-code telemetry can be sliced by model when monitoring is enabled. This extends the per-dimension slicing configured through the `monitoring-setup` skill.
-
-> **v2.1.198+ Claude compatibility**: background agent notifications fire the `Notification` hook when a session needs input or completes (`agent_needs_input` / `agent_completed`). Combine those notifications with HUD/statusline evidence so long-running Claude compatibility work does not appear silently idle. Codex/OMX status remains driven by native runtime state and `.codex/statusline.sh`.
-
-<!-- DETAIL: HUD Events full spec
-### When to Display: Multi-step tasks, parallel execution, long-running operations. Skip for single brief operations.
-### Parallel Display:
+<!-- DETAIL: HUD event example
 ─── [Agent] secretary | [Parallel] 4 ───
   [1] Agent(mgr-creator):frontier/medium → Create agent
   [2] Agent(lang-golang-expert):spark/low → Code review
 -->
 
-## Statusline API (Command-based)
+## Native Footer Configuration
 
-Format: `{Cost} | {project} | {branch} | RL:{rate_limit}% {countdown} | WL:{weekly_limit}% {countdown} | CTX:{usage}%`
+Use `/statusline` in an interactive Codex session to select footer items. The
+equivalent configuration lives under `[tui].status_line` in Codex
+`config.toml`. Keep this separate from project-installed harness state so user
+formatting and existing native configuration remain byte-for-byte preserved.
 
-Config in `.codex/settings.local.json`: `statusLine.type: "command"`, `statusLine.command: ".codex/statusline.sh"`. Requires CC v2.1.80+ for RL/WL segments. `refreshInterval` setting (v2.1.97+): Auto-refresh interval in seconds for the status line command. Set in `statusLine.refreshInterval` in settings.json.
+## Claude Compatibility Boundary
 
-<!-- DETAIL: Statusline configuration JSON and color coding
-```json
-{ "statusLine": { "type": "command", "command": ".codex/statusline.sh", "padding": 0 } }
-```
-Color coding: Cost (<$1 green, $1-4.99 yellow, >=5 red), RL/WL (<50% green, 50-79% yellow, >=80% red), CTX (<60% green, 60-79% yellow, >=80% red).
-Countdown format: >=1d → "{d}d{h}h", >=1h → "{h}h{m}m", <1h → "{m}m", unavailable → omitted.
-RL/WL segments omitted on CC older than v2.1.80.
--->
+`templates/.claude/statusline.sh` is retained only as a Claude Code
+compatibility asset. It consumes the Claude JSON-stdin statusline protocol and
+may be bound only by an explicit Claude compatibility setup. Codex init and
+update never copy or configure it under `.codex`.
+
+Claude-only footer links, usage views, notification events, and
+`refreshInterval` behavior remain compatibility concerns. Do not describe them
+as Codex/OMX runtime state.
 
 ## Integration
 
-Integrates with R007 (Agent ID), R008 (Tool ID), R009 (Parallel).
+Integrates with R007 (Agent ID), R008 (Tool ID), and R009 (Parallel).
 
-## External Plugin Statusline Conflict
+## External Status Surface Conflicts
 
-| Plugin | Component | Resolution |
-|--------|-----------|------------|
-| cc-token-saver | Live Status Line | R012 `.codex/statusline.sh` has priority. Disable cc-token-saver statusline to avoid duplicate status bars. |
-
-Internal statusline (`.codex/statusline.sh`) is the primary status display. External plugin status lines are supplementary or disabled.
+Use one persistent footer owner. If another plugin installs a footer, keep the
+Codex native status line or the explicitly selected compatibility footer, not
+both. OMX HUD may remain available as the separate workflow-state surface.

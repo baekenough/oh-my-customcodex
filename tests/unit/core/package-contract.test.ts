@@ -16,6 +16,7 @@ const releaseWorkflow = await Bun.file(
 const packageVerifier = await Bun.file(
   new URL('../../../scripts/verify-package-contract.mjs', import.meta.url)
 ).text();
+const bunLock = await Bun.file(new URL('../../../bun.lock', import.meta.url)).text();
 const documentedNodeRequirement = 'Node.js 20.17+/22.13+/23.5+';
 const publicPrerequisiteDocs = await Promise.all(
   ['README.md', 'README_ko.md', 'docs/guide/getting-started.md'].map(async (path) => ({
@@ -27,6 +28,14 @@ const publicPrerequisiteDocs = await Promise.all(
 describe('public package contract', () => {
   it('uses package metadata as the public VERSION source', () => {
     expect(VERSION).toBe(packageJson.version);
+  });
+
+  it('keeps the Bun root workspace identity aligned with the public package', () => {
+    const rootWorkspaceName = bunLock.match(
+      /"workspaces"\s*:\s*\{\s*""\s*:\s*\{\s*"name"\s*:\s*"([^"]+)"/
+    )?.[1];
+
+    expect(rootWorkspaceName).toBe(packageJson.name);
   });
 
   it('pins prompts while declaring the safe transitive Node lanes', () => {

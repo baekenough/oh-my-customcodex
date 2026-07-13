@@ -446,7 +446,8 @@ describe('installer', () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('symbolic link');
+      expect(result.error).toContain('invalid critical file');
+      expect(result.error).toContain('settings.local.json');
       expect(result.backedUpPaths).toEqual([]);
       expect(await hashTree(tempDir)).toBe(beforeHash);
       expect(await listPreservationTempDirs()).toEqual(beforeTemps);
@@ -626,54 +627,42 @@ describe('installer', () => {
     });
   });
 
-  describe('statusline installation', () => {
-    it('should install statusline.sh during init', async () => {
-      await install({ targetDir: tempDir, skipConfirm: true });
-      const statuslinePath = join(tempDir, '.codex', 'statusline.sh');
-      expect(await fileExists(statuslinePath)).toBe(true);
+  describe('Codex-native status configuration', () => {
+    it('should not install Claude statusline artifacts during init', async () => {
+      const result = await install({ targetDir: tempDir, skipConfirm: true });
+
+      expect(result.success).toBe(true);
+      expect(await fileExists(join(tempDir, '.codex', 'statusline.sh'))).toBe(false);
+      expect(await fileExists(join(tempDir, '.codex', 'settings.local.json'))).toBe(false);
     });
 
-    it('should make statusline.sh executable', async () => {
-      await install({ targetDir: tempDir, skipConfirm: true });
+    it('should preserve user status files and Codex config during forced init', async () => {
       const statuslinePath = join(tempDir, '.codex', 'statusline.sh');
-      const fs = await import('node:fs/promises');
-      const stats = await fs.stat(statuslinePath);
-      // Check executable bit (owner execute = 0o100)
-      expect(stats.mode & 0o111).toBeGreaterThan(0);
+      const settingsPath = join(tempDir, '.codex', 'settings.local.json');
+      const configPath = join(tempDir, '.codex', 'config.toml');
+      const customStatusline = '#!/bin/sh\necho custom\n';
+      const customSettings =
+        '{\n  "statusLine": { "type": "command", "command": ".codex/custom.sh" },\n  "user": true\n}\n';
+      const nativeConfig = '[tui]\nstatus_line = ["model", "context-used"]\n';
+      await mkdir(join(tempDir, '.codex'), { recursive: true });
+      await writeFile(statuslinePath, customStatusline);
+      await writeFile(settingsPath, customSettings);
+      await writeFile(configPath, nativeConfig);
+
+      const result = await install({
+        targetDir: tempDir,
+        force: true,
+        skipConfirm: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(await readFile(statuslinePath, 'utf-8')).toBe(customStatusline);
+      expect(await readFile(settingsPath, 'utf-8')).toBe(customSettings);
+      expect(await readFile(configPath, 'utf-8')).toBe(nativeConfig);
     });
 
-    it('should skip statusline.sh if already exists and no force', async () => {
-      // First install
-      await install({ targetDir: tempDir, skipConfirm: true });
-      const statuslinePath = join(tempDir, '.codex', 'statusline.sh');
-
-      // Modify to detect overwrite
-      const fs = await import('node:fs/promises');
-      await fs.writeFile(statuslinePath, '#!/bin/bash\n# custom', 'utf-8');
-
-      // Second install without force
-      await install({ targetDir: tempDir, skipConfirm: true });
-
-      // Should still be our custom content
-      const content = await fs.readFile(statuslinePath, 'utf-8');
-      expect(content).toContain('# custom');
-    });
-
-    it('should overwrite statusline.sh with force option', async () => {
-      // First install
-      await install({ targetDir: tempDir, skipConfirm: true });
-      const statuslinePath = join(tempDir, '.codex', 'statusline.sh');
-
-      // Modify to detect overwrite
-      const fs = await import('node:fs/promises');
-      await fs.writeFile(statuslinePath, '#!/bin/bash\n# custom', 'utf-8');
-
-      // Second install with force
-      await install({ targetDir: tempDir, force: true, skipConfirm: true });
-
-      // Should be overwritten (no longer custom)
-      const content = await fs.readFile(statuslinePath, 'utf-8');
-      expect(content).not.toContain('# custom');
+    it('should retain the Claude statusline compatibility template', async () => {
+      expect(await fileExists(join(getTemplateDir(), '.claude', 'statusline.sh'))).toBe(true);
     });
   });
 
@@ -709,69 +698,6 @@ describe('installer', () => {
       const content = await fs.readFile(testsConfigPath, 'utf-8');
       expect(content).not.toContain('"custom"');
       expect(content).toContain('"extends": "../tsconfig.json"');
-    });
-  });
-
-  describe('settings.local.json installation', () => {
-    it('should create settings.local.json during init', async () => {
-      await install({ targetDir: tempDir, skipConfirm: true });
-      const settingsPath = join(tempDir, '.codex', 'settings.local.json');
-      expect(await fileExists(settingsPath)).toBe(true);
-    });
-
-    it('should include statusLine configuration', async () => {
-      await install({ targetDir: tempDir, skipConfirm: true });
-      const settingsPath = join(tempDir, '.codex', 'settings.local.json');
-      const fs = await import('node:fs/promises');
-      const content = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
-      expect(content.statusLine).toBeDefined();
-      expect(content.statusLine.type).toBe('command');
-      expect(content.statusLine.command).toBe('.codex/statusline.sh');
-      expect(content.statusLine.padding).toBe(0);
-      expect(content.statusLine.refreshInterval).toBe(10);
-    });
-
-    it('should merge statusLine into existing settings.local.json', async () => {
-      // Create existing settings.local.json with other settings
-      const settingsPath = join(tempDir, '.codex', 'settings.local.json');
-      const fs = await import('node:fs/promises');
-      await fs.mkdir(join(tempDir, '.codex'), { recursive: true });
-      await fs.writeFile(
-        settingsPath,
-        JSON.stringify({ enableAllProjectMcpServers: true }),
-        'utf-8'
-      );
-
-      await install({ targetDir: tempDir, skipConfirm: true });
-
-      const content = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
-      // Original setting preserved
-      expect(content.enableAllProjectMcpServers).toBe(true);
-      // statusLine added
-      expect(content.statusLine).toBeDefined();
-      expect(content.statusLine.command).toBe('.codex/statusline.sh');
-    });
-
-    it('should not overwrite existing statusLine configuration', async () => {
-      // Create existing settings with custom statusLine
-      const settingsPath = join(tempDir, '.codex', 'settings.local.json');
-      const fs = await import('node:fs/promises');
-      await fs.mkdir(join(tempDir, '.codex'), { recursive: true });
-      const customSettings = {
-        statusLine: {
-          type: 'command',
-          command: '.codex/custom-statusline.sh',
-          padding: 2,
-        },
-      };
-      await fs.writeFile(settingsPath, JSON.stringify(customSettings), 'utf-8');
-
-      await install({ targetDir: tempDir, skipConfirm: true });
-
-      const content = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
-      // Should keep custom statusLine, not overwrite
-      expect(content.statusLine.command).toBe('.codex/custom-statusline.sh');
-      expect(content.statusLine.padding).toBe(2);
     });
   });
 
@@ -998,29 +924,6 @@ describe('installer', () => {
       renameSpy.mockRestore();
     });
 
-    it('should handle missing statusline template gracefully', async () => {
-      // Mock fileExists to return false for statusline.sh source path in templates
-      const originalFileExists = fsUtils.fileExists;
-      const fileExistsSpy = spyOn(fsUtils, 'fileExists').mockImplementation(async (path) => {
-        const pathStr = String(path);
-        // Return false for statusline.sh template source
-        if (pathStr.includes('templates') && pathStr.endsWith('statusline.sh')) {
-          return false;
-        }
-        return originalFileExists(path);
-      });
-
-      const result = await install({
-        targetDir: tempDir,
-        skipConfirm: true,
-      });
-
-      // Install should still succeed even without statusline template
-      expect(result.success).toBe(true);
-
-      fileExistsSpy.mockRestore();
-    });
-
     it('should skip gracefully when tests/tsconfig.json template is missing', async () => {
       const originalFileExists = fsUtils.fileExists;
       const fileExistsSpy = spyOn(fsUtils, 'fileExists').mockImplementation(async (path) => {
@@ -1041,23 +944,23 @@ describe('installer', () => {
       fileExistsSpy.mockRestore();
     });
 
-    it('should handle malformed settings.local.json gracefully', async () => {
-      // Create a malformed settings.local.json
+    it('should preserve malformed settings.local.json without inspecting it', async () => {
       const fs = await import('node:fs/promises');
       await fs.mkdir(join(tempDir, '.codex'), { recursive: true });
       const settingsPath = join(tempDir, '.codex', 'settings.local.json');
-      await fs.writeFile(settingsPath, '{ invalid json content }', 'utf-8');
+      const malformedSettings = '{ invalid json content }';
+      await fs.writeFile(settingsPath, malformedSettings, 'utf-8');
 
       const result = await install({
         targetDir: tempDir,
         skipConfirm: true,
       });
 
-      // Install should succeed, with a warning about the malformed JSON
       expect(result.success).toBe(true);
+      expect(await fs.readFile(settingsPath, 'utf-8')).toBe(malformedSettings);
       expect(
         result.warnings.some((w) => w.includes('Failed to parse existing settings.local.json'))
-      ).toBe(true);
+      ).toBe(false);
     });
   });
 

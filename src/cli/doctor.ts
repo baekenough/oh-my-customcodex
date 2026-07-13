@@ -314,7 +314,8 @@ export async function checkClaudeMd(targetDir: string): Promise<CheckResult> {
 }
 
 /**
- * Check if rules directory exists and has required files
+ * Check the shared policy directory without conflating harness Markdown policy
+ * with Codex-native Starlark command execution policy.
  * @param targetDir - Target directory
  * @returns Check result
  */
@@ -334,14 +335,18 @@ export async function checkRules(
     };
   }
 
-  // Check if there are any rule files
-  const ruleFiles = await findFiles(rulesDir, /\.md$/);
+  const harnessPolicyFiles = await findFiles(rulesDir, /\.md$/);
+  const nativeExecPolicyFiles = await findFiles(rulesDir, /\.rules$/);
+  const policySummary = i18n.t('cli.doctor.checks.rules.summary', {
+    markdown: harnessPolicyFiles.length,
+    native: nativeExecPolicyFiles.length,
+  });
 
-  if (ruleFiles.length === 0) {
+  if (harnessPolicyFiles.length === 0) {
     return {
       name: 'Rules',
       status: 'warn',
-      message: `${i18n.t('cli.doctor.checks.rules.fail')} (0 files found)`,
+      message: `${i18n.t('cli.doctor.checks.rules.fail')} (${policySummary})`,
       fixable: false,
     };
   }
@@ -349,7 +354,7 @@ export async function checkRules(
   return {
     name: 'Rules',
     status: 'pass',
-    message: `${i18n.t('cli.doctor.checks.rules.pass')} (${ruleFiles.length} files)`,
+    message: `${i18n.t('cli.doctor.checks.rules.pass')} (${policySummary})`,
     fixable: false,
   };
 }
@@ -494,8 +499,8 @@ export async function checkIndexFiles(targetDir: string): Promise<CheckResult> {
 }
 
 /**
- * Check if skills directory exists
- * Official format: {root}/skills/
+ * Check whether installed skills are discoverable through SKILL.md definitions.
+ * Official Codex project format: .agents/skills/{name}/SKILL.md
  * @param targetDir - Target directory
  * @returns Check result
  */
@@ -515,14 +520,16 @@ export async function checkSkills(
     };
   }
 
-  // Count skill categories
-  const categoryCount = await countDirectories(skillsDir);
+  const skillFiles = await findFiles(skillsDir, /^SKILL\.md$/);
+  const skillSummary = i18n.t('cli.doctor.checks.skills.summary', {
+    count: skillFiles.length,
+  });
 
-  if (categoryCount === 0) {
+  if (skillFiles.length === 0) {
     return {
       name: 'Skills',
       status: 'warn',
-      message: `${i18n.t('cli.doctor.checks.skills.fail')} (0 categories found)`,
+      message: `${i18n.t('cli.doctor.checks.skills.fail')} (${skillSummary})`,
       fixable: false,
     };
   }
@@ -530,7 +537,7 @@ export async function checkSkills(
   return {
     name: 'Skills',
     status: 'pass',
-    message: `${i18n.t('cli.doctor.checks.skills.pass')} (${categoryCount} categories)`,
+    message: `${i18n.t('cli.doctor.checks.skills.pass')} (${skillSummary})`,
     fixable: false,
   };
 }

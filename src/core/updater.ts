@@ -505,7 +505,7 @@ async function runFullUpdatePostProcessing(
     result.removedDeprecatedFiles = removed;
 
     if (!options.dryRun) {
-      await ensureStatusLineConfig(options.targetDir);
+      await migrateLegacyStatusLine(options.targetDir);
       await updateEntryDoc(options.targetDir, config, options);
     }
   }
@@ -528,46 +528,102 @@ async function runFullUpdatePostProcessing(
   }
 }
 
-/**
- * Backfill statusLine settings for installations created before
- * refreshInterval was added. Preserve custom commands and padding.
- */
-async function ensureStatusLineConfig(targetDir: string): Promise<void> {
+const LEGACY_CODEX_STATUSLINE_COMMAND = '.codex/statusline.sh';
+const LEGACY_CODEX_STATUSLINE_KEYS = new Set(['type', 'command', 'padding', 'refreshInterval']);
+// SHA-256 hashes of every statusline template previously shipped into `.codex`.
+// An exact allowlist preserves user-authored scripts that reuse the old path.
+const KNOWN_HARNESS_STATUSLINE_HASHES = new Set([
+  '3db3910efa2624ab64c13716d42eebbe9e33ea119abb0b8cc2087b327d45373d',
+  '27a7afe94b91774256adc03075d32abfbea5f79faf56df3927c1fc283a149efe',
+  'd732213f5d54acbff9cddee578064b6ed05f04bbb17f0b9bd4477bbde0feaf48',
+  '2002d2fb1605f1d139b4e6102c7deb2a716761b5c86d7255ff27fdd8bf47a551',
+]);
+
+export function isKnownHarnessStatusLineHash(hash: string): boolean {
+  return KNOWN_HARNESS_STATUSLINE_HASHES.has(hash);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isHarnessOwnedLegacyStatusLineConfig(value: unknown): boolean {
+  if (
+    !isRecord(value) ||
+    Object.keys(value).some((key) => !LEGACY_CODEX_STATUSLINE_KEYS.has(key))
+  ) {
+    return false;
+  }
+
+  return (
+    value.type === 'command' &&
+    value.command === LEGACY_CODEX_STATUSLINE_COMMAND &&
+    (value.padding === undefined || value.padding === 0) &&
+    (value.refreshInterval === undefined || value.refreshInterval === 10)
+  );
+}
+
+async function prevalidateLegacyStatusLineMigration(targetDir: string): Promise<void> {
   const layout = getProviderLayout();
   const settingsPath = join(targetDir, layout.rootDir, 'settings.local.json');
-  const statusLineConfig = {
-    type: 'command' as const,
-    command: `${layout.rootDir}/statusline.sh`,
-    padding: 0,
-    refreshInterval: 10,
-  };
+  const scriptPath = join(targetDir, layout.rootDir, 'statusline.sh');
 
-  await validateSafeWritePath(settingsPath, targetDir);
+  await validateSafeDeleteFilePath(scriptPath, targetDir);
+  await prevalidateSafeWritePath(settingsPath, targetDir);
+}
+
+async function isHarnessOwnedLegacyStatusLine(scriptPath: string): Promise<boolean> {
+  if (!(await fileExists(scriptPath))) return false;
+
+  try {
+    return isKnownHarnessStatusLineHash(await computeSafetyHash(scriptPath));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Remove the Claude statusline artifacts previously installed into `.codex`.
+ * Other JSON properties and custom status commands remain user-owned.
+ */
+async function migrateLegacyStatusLine(targetDir: string): Promise<void> {
+  const layout = getProviderLayout();
+  const scriptPath = join(targetDir, layout.rootDir, 'statusline.sh');
+  const settingsPath = join(targetDir, layout.rootDir, 'settings.local.json');
+  const scriptExists = await fileExists(scriptPath);
+  const harnessOwnedScript = scriptExists && (await isHarnessOwnedLegacyStatusLine(scriptPath));
+
+  if (harnessOwnedScript && (await deleteFile(scriptPath, targetDir))) {
+    debug('update.legacy_statusline_script_removed', { path: LEGACY_CODEX_STATUSLINE_COMMAND });
+  }
 
   if (!(await fileExists(settingsPath))) {
-    await writeJsonFile(
-      settingsPath,
-      { statusLine: statusLineConfig },
-      { trustedWriteRoot: targetDir }
-    );
     return;
   }
 
-  const settings = await readJsonFile<Record<string, unknown>>(settingsPath);
-  const statusLine = settings.statusLine;
-
-  if (!statusLine || typeof statusLine !== 'object' || Array.isArray(statusLine)) {
-    settings.statusLine = statusLineConfig;
-    await writeJsonFile(settingsPath, settings, { trustedWriteRoot: targetDir });
+  let settings: unknown;
+  try {
+    settings = await readJsonFile<unknown>(settingsPath);
+  } catch {
+    debug('update.legacy_statusline_settings_preserved', { reason: 'invalid JSON' });
     return;
   }
 
-  const mergedStatusLine = statusLine as Record<string, unknown>;
-  if (mergedStatusLine.refreshInterval === undefined) {
-    mergedStatusLine.refreshInterval = statusLineConfig.refreshInterval;
-    settings.statusLine = mergedStatusLine;
+  if (
+    !isRecord(settings) ||
+    !isHarnessOwnedLegacyStatusLineConfig(settings.statusLine) ||
+    (scriptExists && !harnessOwnedScript)
+  ) {
+    return;
+  }
+
+  delete settings.statusLine;
+  if (Object.keys(settings).length === 0) {
+    await deleteFile(settingsPath, targetDir);
+  } else {
     await writeJsonFile(settingsPath, settings, { trustedWriteRoot: targetDir });
   }
+  debug('update.legacy_statusline_settings_removed', {});
 }
 
 /**
@@ -865,7 +921,7 @@ function checkAndInstallOmxAfterUpdate(): void {
 async function handleNoUpdateResult(options: UpdateOptions, result: UpdateResult): Promise<void> {
   const isFullUpdate = !options.components || options.components.length === 0;
   if (isFullUpdate && !options.dryRun) {
-    await ensureStatusLineConfig(options.targetDir);
+    await migrateLegacyStatusLine(options.targetDir);
   }
   info('update.no_updates');
   result.success = true;
@@ -927,11 +983,7 @@ async function handleNoUpdateAfterCheck(
   if (!options.dryRun) {
     await prevalidateSafeWritePath(join(options.targetDir, '.omcodexrc.json'), options.targetDir);
     if (isFullUpdate) {
-      const layout = getProviderLayout();
-      await prevalidateSafeWritePath(
-        join(options.targetDir, layout.rootDir, 'settings.local.json'),
-        options.targetDir
-      );
+      await prevalidateLegacyStatusLineMigration(options.targetDir);
     }
   }
   await persistConfigMigrationIfNeeded(options.targetDir, config, !!options.dryRun);
@@ -1809,7 +1861,7 @@ async function updateDirectoryComponent(
  * Root-level files in .claude/ that should be synced during update
  * These are files that exist directly under templates/.claude/ (not in subdirectories)
  */
-const ROOT_LEVEL_FILES = ['statusline.sh', 'install-hooks.sh', 'uninstall-hooks.sh'];
+const ROOT_LEVEL_FILES = ['install-hooks.sh', 'uninstall-hooks.sh'];
 
 async function validateUpdateFinalizationTargets(targetDir: string): Promise<void> {
   await prevalidateSafeWritePath(join(targetDir, '.omcodexrc.json'), targetDir);
@@ -1903,7 +1955,7 @@ async function validateFullUpdateTargets(targetDir: string): Promise<void> {
     }
   }
 
-  await prevalidateSafeWritePath(join(targetDir, layout.rootDir, 'settings.local.json'), targetDir);
+  await prevalidateLegacyStatusLineMigration(targetDir);
   await prevalidateSafeWritePath(join(targetDir, layout.entryFile), targetDir);
   await validateUpdateFinalizationTargets(targetDir);
 }

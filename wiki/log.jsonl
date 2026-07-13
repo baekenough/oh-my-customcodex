@@ -1,1 +1,2 @@
 {"timestamp":"2026-04-12T12:54:35Z","operation":"full_update","target":"all","pages_created":231,"pages_updated":0,"details":{"sources_scanned":203,"generator":"/omcustomcodex:wiki","note":"initial generation"}}
+{"timestamp":"2026-07-13T23:02:00Z","operation":"ingest","target":".codex/rules/SHOULD-hud-statusline.md,guides/cc-token-saver,guides/claude-code","pages_created":0,"pages_updated":3,"details":{"cross_references_updated":1,"reason":"v1.0.15 Codex/OMX native status boundary"}}

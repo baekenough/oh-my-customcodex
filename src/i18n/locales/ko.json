@@ -182,7 +182,9 @@
       "available": "사용 가능",
       "corrupted": "손상됨",
       "filterBy": "필터: {{filter}}",
-      "showAll": "모든 에이전트 표시"
+      "showAll": "모든 에이전트 표시",
+      "policySurfaces": "정책 표면",
+      "surface": "표면"
     },
     "doctor": {
       "description": "설정 문제 확인 및 수정",
@@ -236,16 +238,18 @@
           "fail": "{{entry}}를 찾을 수 없음"
         },
         "rules": {
-          "pass": "Rules 디렉토리 정상",
-          "fail": "Rules 디렉토리가 없거나 불완전함"
+          "pass": "하네스 행동 정책 디렉터리 정상",
+          "fail": "하네스 행동 정책 디렉터리가 없거나 Markdown 정책이 없음",
+          "summary": "하네스 Markdown 정책 {{markdown}}개; native Starlark 실행 정책 {{native}}개"
         },
         "agents": {
           "pass": "Agents 디렉토리 정상",
           "fail": "Agents 디렉토리가 없거나 불완전함"
         },
         "skills": {
-          "pass": "Skills 디렉토리 정상",
-          "fail": "Skills 디렉토리가 없거나 불완전함"
+          "pass": "설치 스킬 탐색 정상",
+          "fail": "설치 스킬 디렉터리가 없거나 탐색 가능한 SKILL.md 정의가 없음",
+          "summary": "탐색 가능한 스킬 {{count}}개; $skill-name으로 호출하거나 /skills에서 탐색"
         },
         "symlinks": {
           "pass": "모든 심볼릭 링크 정상",

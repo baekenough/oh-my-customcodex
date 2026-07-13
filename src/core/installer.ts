@@ -15,7 +15,6 @@ import {
   readJsonFile,
   resolveTemplatePath,
   validateSafeWritePath,
-  writeJsonFile,
   writeTextFile,
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
@@ -394,38 +393,6 @@ async function installSingleComponent(
 }
 
 /**
- * Install statusline.sh to the target directory and make it executable
- */
-async function installStatusline(
-  targetDir: string,
-  options: InstallOptions,
-  _result: InstallResult
-): Promise<void> {
-  const layout = getProviderLayout();
-  const srcPath = resolveTemplatePath(join(layout.templateRootDir, 'statusline.sh'));
-  const destPath = join(targetDir, layout.rootDir, 'statusline.sh');
-
-  if (!(await fileExists(srcPath))) {
-    debug('install.statusline_not_found', { path: srcPath });
-    return;
-  }
-
-  if (await fileExists(destPath)) {
-    if (!options.force && !options.backup) {
-      debug('install.statusline_skipped', { reason: 'exists' });
-      return;
-    }
-  }
-
-  await copyFile(srcPath, destPath, targetDir);
-
-  const fs = await import('node:fs/promises');
-  await fs.chmod(destPath, 0o755);
-
-  debug('install.statusline_installed', {});
-}
-
-/**
  * Install tests/tsconfig.json to the target directory
  */
 async function installTestsConfig(
@@ -450,44 +417,6 @@ async function installTestsConfig(
 
   await copyFile(srcPath, destPath, targetDir);
   debug('install.tests_config_installed', {});
-}
-
-/**
- * Create or merge settings.local.json with statusLine configuration
- */
-async function installSettingsLocal(targetDir: string, result: InstallResult): Promise<void> {
-  const layout = getProviderLayout();
-  const settingsPath = join(targetDir, layout.rootDir, 'settings.local.json');
-
-  const statusLineConfig = {
-    statusLine: {
-      type: 'command' as const,
-      command: `${layout.rootDir}/statusline.sh`,
-      padding: 0,
-      refreshInterval: 10,
-    },
-  };
-
-  if (await fileExists(settingsPath)) {
-    try {
-      const existing = await readJsonFile<Record<string, unknown>>(settingsPath);
-      if (!existing.statusLine) {
-        existing.statusLine = statusLineConfig.statusLine;
-        await writeJsonFile(settingsPath, existing, { trustedWriteRoot: targetDir });
-        debug('install.settings_local_merged', {});
-      } else {
-        debug('install.settings_local_skipped', { reason: 'statusLine exists' });
-      }
-    } catch {
-      result.warnings.push(
-        'Failed to parse existing settings.local.json, skipping statusLine config'
-      );
-    }
-    return;
-  }
-
-  await writeJsonFile(settingsPath, statusLineConfig, { trustedWriteRoot: targetDir });
-  debug('install.settings_local_created', {});
 }
 
 /**
@@ -633,9 +562,7 @@ async function validateInstallWritePlan(targetDir: string, options: InstallOptio
   }
 
   for (const filePath of [
-    join(targetDir, layout.rootDir, 'statusline.sh'),
     join(targetDir, 'tests', 'tsconfig.json'),
-    join(targetDir, layout.rootDir, 'settings.local.json'),
     join(targetDir, layout.entryFile),
     join(targetDir, '.omcodexrc.json'),
     join(targetDir, '.omcodex.lock.json'),
@@ -729,9 +656,7 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
     await checkAndWarnExisting(options.targetDir, !!options.force, !!options.backup, result);
 
     await installAllComponents(options.targetDir, options, result);
-    await installStatusline(options.targetDir, options, result);
     await installTestsConfig(options.targetDir, options, result);
-    await installSettingsLocal(options.targetDir, result);
     await installEntryDocWithTracking(options.targetDir, options, result);
 
     if (await restorePreservationAfterInstall(options.targetDir, preservation, result)) {

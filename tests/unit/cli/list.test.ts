@@ -378,7 +378,30 @@ This is the description of the unit testing guide that provides best practices.`
       expect(rules).toHaveLength(1);
       expect(rules[0].name).toBe('MUST-safety');
       expect(rules[0].type).toBe('MUST');
+      expect(rules[0].category).toBe('harness-policy');
       expect(rules[0].path).toBe('.codex/rules/MUST-safety.md');
+    });
+
+    it('should distinguish native Starlark exec policy from harness Markdown policy', async () => {
+      const rulesDir = join(tempDir, '.codex', 'rules');
+      await mkdir(rulesDir, { recursive: true });
+      await writeFile(join(rulesDir, 'MUST-safety.md'), '# Safety');
+      await writeFile(join(rulesDir, 'default.rules'), 'prefix_rule(pattern = ["git"]);');
+
+      const rules = await getRules(tempDir);
+
+      expect(rules).toHaveLength(2);
+      expect(rules[0]).toMatchObject({
+        name: 'MUST-safety',
+        type: 'MUST',
+        category: 'harness-policy',
+      });
+      expect(rules[1]).toMatchObject({
+        name: 'default',
+        type: 'native-exec',
+        category: 'native-exec-policy',
+        path: '.codex/rules/default.rules',
+      });
     });
 
     it('should extract description and clean formatting', async () => {
@@ -564,6 +587,31 @@ This is the description of the unit testing guide that provides best practices.`
 
         const output = consoleOutput.join('\n');
         expect(output).toContain('Category');
+      });
+
+      it('should label Markdown and Starlark rule files as separate policy surfaces', () => {
+        const policies: ComponentInfo[] = [
+          {
+            name: 'MUST-safety',
+            type: 'MUST',
+            category: 'harness-policy',
+            path: '.codex/rules/MUST-safety.md',
+          },
+          {
+            name: 'default',
+            type: 'native-exec',
+            category: 'native-exec-policy',
+            path: '.codex/rules/default.rules',
+          },
+        ];
+
+        formatAsTable(policies, 'rules');
+
+        const output = consoleOutput.join('\n');
+        expect(output).toMatch(/policy surfaces|정책 표면/);
+        expect(output).toMatch(/Surface|표면/);
+        expect(output).toContain('harness-policy');
+        expect(output).toContain('native-exec-policy');
       });
 
       it('should truncate long descriptions', () => {

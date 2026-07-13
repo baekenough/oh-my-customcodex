@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.15] - 2026-07-14
+
+### Changed
+- Use Codex-native `$skill-name` and `/skills` invocation guidance, and distinguish harness behavioral Markdown from native Starlark `.rules` execution policy (#1594).
+- Stop installing Claude JSON/stdin status-line assets into active Codex projects, migrating only harness-owned legacy artifacts while preserving user configuration (#1596).
+- Discover `.codex/ontology` before the explicit `.claude/ontology` compatibility fallback and validate configured ontology directories (#1597).
+
+### Fixed
+- Align the Bun root workspace identity with `oh-my-customcodex` and enforce that identity in the packed-package contract (#1617).
+
 ## [1.0.14] - 2026-07-13
 
 ### Changed
