@@ -7,7 +7,7 @@ import { existsSync, realpathSync } from 'node:fs';
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { delimiter, dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
@@ -30,6 +30,7 @@ const REQUIRED_NODE_PROBES = [
 ];
 const WEB_ENTRYPOINT = 'packages/serve/build/index.js';
 const WEB_FIXTURE_NAME = 'package-smoke';
+const EVAL_FIXTURE_SESSION = 'pc1599';
 const ACTIVE_NATIVE_HOOK_SCRIPTS = [
   'codex-native-advisory.sh',
   'destructive-git-guard.sh',
@@ -200,6 +201,64 @@ async function reservePort() {
     server.close((error) => (error ? reject(error) : resolvePromise()))
   );
   return port;
+}
+
+async function writeEvaluationFixture(homeDir) {
+  const databasePath = join(homeDir, '.oh-my-customcodex', 'eval-core.sqlite');
+  await mkdir(dirname(databasePath), { recursive: true });
+  const schema = `
+    CREATE TABLE agent_invocations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_ppid TEXT NOT NULL,
+      session_id TEXT,
+      timestamp TEXT NOT NULL,
+      agent_type TEXT NOT NULL,
+      model TEXT NOT NULL,
+      outcome TEXT NOT NULL
+    );
+  `;
+  const row = [
+    EVAL_FIXTURE_SESSION,
+    null,
+    '2026-07-13T00:00:00.000Z',
+    'package-verifier',
+    'gpt-5.6-sol',
+    'success',
+  ];
+
+  const nodeSqlite = await import('node:sqlite').catch(() => null);
+  if (nodeSqlite !== null) {
+    const { DatabaseSync } = nodeSqlite;
+    const database = new DatabaseSync(databasePath);
+    try {
+      database.exec(schema);
+      database
+        .prepare(
+          `INSERT INTO agent_invocations
+             (session_ppid, session_id, timestamp, agent_type, model, outcome)
+           VALUES (?, ?, ?, ?, ?, ?)`
+        )
+        .run(...row);
+    } finally {
+      database.close();
+    }
+  } else {
+    const script = `
+      import { Database } from 'bun:sqlite';
+      const db = new Database(process.argv[1]);
+      try {
+        db.run(${JSON.stringify(schema)});
+        db.query(
+          'INSERT INTO agent_invocations (session_ppid, session_id, timestamp, agent_type, model, outcome) VALUES (?, ?, ?, ?, ?, ?)'
+        ).run(...JSON.parse(process.argv[2]));
+      } finally {
+        db.close();
+      }
+    `;
+    run('bun', ['-e', script, databasePath, JSON.stringify(row)]);
+  }
+
+  return databasePath;
 }
 
 async function waitForHttp(url, expectedReachable, timeoutMs = 30_000) {
@@ -630,14 +689,19 @@ async function verifyCleanConsumer({ packageName, artifact, consumerDir, homeDir
 
   const port = await reservePort();
   const webUrl = `http://localhost:${port}`;
+  await writeEvaluationFixture(homeDir);
   const webEnv = {
     ...process.env,
     HOME: homeDir,
     USERPROFILE: homeDir,
     NO_COLOR: '1',
-    OMCODEX_PORT: String(port),
-    OMCUSTOM_PORT: String(port),
   };
+  delete webEnv.OMCODEX_PORT;
+  delete webEnv.OMCUSTOM_PORT;
+  if (Number(process.versions.node.split('.')[0]) >= 22) {
+    // Prove the packed Node server does not rely on Bun when node:sqlite is available.
+    webEnv.PATH = [dirname(process.execPath), '/usr/bin', '/bin'].join(delimiter);
+  }
 
   try {
     const startResult = run(process.execPath, [cliPath, 'web', 'start', '--port', String(port)], {
@@ -645,6 +709,18 @@ async function verifyCleanConsumer({ packageName, artifact, consumerDir, homeDir
       env: webEnv,
     });
     assert.match(`${startResult.stdout}\n${startResult.stderr}`, new RegExp(String(port)));
+    const persistedServeState = JSON.parse(
+      await readFile(join(homeDir, '.omcodex-serve.pid'), 'utf8')
+    );
+    assert.deepEqual(
+      {
+        version: persistedServeState.version,
+        port: persistedServeState.port,
+        projectRoot: persistedServeState.projectRoot,
+      },
+      { version: 1, port, projectRoot: realpathSync(consumerDir) },
+      'Web start did not persist the authoritative cross-process endpoint'
+    );
     await waitForHttp(webUrl, true);
     const webRoutes = [
       { path: '/graph' },
@@ -654,8 +730,12 @@ async function verifyCleanConsumer({ packageName, artifact, consumerDir, homeDir
         path: `/guides/${WEB_FIXTURE_NAME}-guide/__data.json`,
         expectedBody: 'Packed Guide',
       },
+      { path: '/evaluations', expectedBody: EVAL_FIXTURE_SESSION },
     ];
     await assertHttpRoutes(webUrl, webRoutes);
+    const evaluationResponse = await fetch(`${webUrl}/evaluations`);
+    const evaluationBody = await evaluationResponse.text();
+    assert.match(evaluationBody, /1 invocations/);
     pass(`${packageName} packed Web routes (${webRoutes.map(({ path }) => path).join(', ')})`);
 
     const statusResult = run(process.execPath, [cliPath, 'web', 'status'], {

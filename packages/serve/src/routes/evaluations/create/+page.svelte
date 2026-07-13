@@ -56,6 +56,20 @@
 		<h1 class="mt-3 text-2xl font-bold text-zinc-50">New Evaluation</h1>
 	</div>
 
+	{#if data.evalDiagnostics.length > 0}
+		<div class="mb-4 space-y-2" aria-live="polite">
+			{#each data.evalDiagnostics as diagnostic}
+				<div
+					class="rounded border px-4 py-3 text-sm {diagnostic.severity === 'error'
+						? 'border-red-800 bg-red-900/30 text-red-300'
+						: 'border-amber-800 bg-amber-900/30 text-amber-300'}"
+				>
+					<span class="font-medium">Evaluation storage:</span> {diagnostic.message}
+				</div>
+			{/each}
+		</div>
+	{/if}
+
 	{#if form?.error}
 		<div class="mb-4 rounded border border-red-800 bg-red-900/30 px-4 py-3 text-sm text-red-300">
 			{form.error}

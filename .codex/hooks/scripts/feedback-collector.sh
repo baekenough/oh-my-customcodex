@@ -16,7 +16,7 @@ OUTCOMES_FILE="/tmp/.codex-task-outcomes-${PPID}"
 [ -f "$OUTCOMES_FILE" ] || { echo "$input"; exit 0; }
 
 # DB path
-DB_PATH="${HOME}/.config/oh-my-customcode/eval-core.sqlite"
+DB_PATH="${HOME}/.oh-my-customcodex/eval-core.sqlite"
 [ -f "$DB_PATH" ] || { echo "$input"; exit 0; }
 
 # Log file for error diagnostics

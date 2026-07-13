@@ -9,7 +9,6 @@ import {
   DEFAULT_PORT,
   type FindServeBuildDirOptions,
   findServeBuildDir,
-  isServeRunning,
   startServeBackground,
   stopServe,
 } from './serve.js';
@@ -22,6 +21,8 @@ export interface ServeCommandOptions {
    * Intended for test isolation only — not exposed in the CLI.
    */
   _projectRoot?: string;
+  /** Override the directory containing Web lifecycle state (tests only). */
+  _stateDir?: string;
 }
 
 /**
@@ -30,7 +31,7 @@ export interface ServeCommandOptions {
 export async function serveCommand(options: ServeCommandOptions): Promise<void> {
   const port = options.port !== undefined ? Number(options.port) : DEFAULT_PORT;
 
-  if (!Number.isFinite(port) || port < 1 || port > 65535) {
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
     console.error(`Invalid port: ${options.port}`);
     process.exit(1);
   }
@@ -47,22 +48,35 @@ export async function serveCommand(options: ServeCommandOptions): Promise<void> 
     return;
   }
 
-  await startServeBackground(cwd, port, buildDirOpts);
+  const result = await startServeBackground(cwd, port, buildDirOpts, {
+    stateDir: options._stateDir,
+  });
 
-  const running = await isServeRunning();
-  if (running) {
-    console.log(i18n.t('cli.web.start.started', { port }));
-  } else {
-    console.error(i18n.t('cli.web.start.failed'));
-    process.exit(1);
+  if (result.kind === 'started' || result.kind === 'already-running') {
+    if (result.kind === 'already-running' && result.state.port !== port) {
+      console.warn(
+        i18n.t('cli.web.start.portMismatch', {
+          requestedPort: port,
+          actualPort: result.state.port,
+        })
+      );
+    }
+    if (result.state.portAssumed) {
+      console.warn(i18n.t('cli.web.status.legacyPortAssumed', { port: result.state.port }));
+    }
+    console.log(i18n.t('cli.web.start.started', { port: result.state.port }));
+    return;
   }
+
+  console.error(i18n.t('cli.web.start.failed'));
+  process.exit(1);
 }
 
 /**
  * Handler for `omcodex serve-stop`
  */
-export async function serveStopCommand(): Promise<void> {
-  const stopped = await stopServe();
+export async function serveStopCommand(options: { _stateDir?: string } = {}): Promise<void> {
+  const stopped = await stopServe({ stateDir: options._stateDir });
   if (stopped) {
     console.log(i18n.t('cli.web.stop.stopped'));
   } else {

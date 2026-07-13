@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.13",
-  "generatedAt": "2026-07-13T14:20:12.026Z",
-  "templateVersion": "1.0.13",
+  "generatorVersion": "1.0.14",
+  "generatedAt": "2026-07-13T15:25:34.496Z",
+  "templateVersion": "1.0.14",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e2690ef49068c522f452b7bc26089687adf98b1039841704dfcac64a6fa8a65b",
@@ -535,8 +535,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/feedback-collector.sh": {
-      "templateHash": "279c773830712e36e880f8d11e030307a06c2e02b7c3e33b9d33660f13d2f88a",
-      "size": 3056,
+      "templateHash": "6aa91c12d34af434cc46fabfbcfc079225dabfe66ebc112f5cccc20925ec6fb9",
+      "size": 3050,
       "component": "hooks"
     },
     ".codex/hooks/scripts/stop-console-audit.sh": {

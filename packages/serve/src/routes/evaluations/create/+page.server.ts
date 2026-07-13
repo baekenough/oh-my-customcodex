@@ -1,11 +1,10 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { saveEvaluation } from '$lib/server/eval-reader';
-import { getSessionSummaries } from '$lib/server/eval-reader';
+import { getSessionSummariesWithDiagnostics, saveEvaluation } from '$lib/server/eval-reader';
 
 export const load: PageServerLoad = async () => {
-	const sessions = await getSessionSummaries();
-	return { sessions };
+	const { sessions, diagnostics } = await getSessionSummariesWithDiagnostics();
+	return { sessions, evalDiagnostics: diagnostics };
 };
 
 export const actions: Actions = {

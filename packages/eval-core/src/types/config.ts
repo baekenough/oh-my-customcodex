@@ -7,14 +7,15 @@ export interface EvalCoreConfig {
 export function getDefaultConfig(): EvalCoreConfig {
   return {
     dbDriver: 'sqlite',
-    sqlitePath: resolveHome('~/.omcustom/eval.db'),
+    sqlitePath: resolveHome('~/.oh-my-customcodex/eval-core.sqlite'),
     tokenEstimation: true,
   };
 }
 
 function resolveHome(path: string): string {
   if (path.startsWith('~/')) {
-    return path.replace('~', process.env.HOME ?? '');
+    return path.replace('~', homedir());
   }
   return path;
 }
+import { homedir } from 'node:os';

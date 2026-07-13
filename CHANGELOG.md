@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.14] - 2026-07-13
+
+### Changed
+- Move evaluation database and JSON writes to the canonical `~/.oh-my-customcodex` namespace while retaining read-only legacy history and live-session deduplication (#1599).
+- Persist versioned Web lifecycle state atomically so independent CLI processes use the actual running port and legacy numeric PID files remain readable (#1600).
+
+### Fixed
+- Read persistent evaluation sessions from the published Node Web server through `node:sqlite` with a bounded Bun compatibility adapter, exposing database and adapter failures in the UI instead of silently dropping history (#1599).
+- Launch `web open` through shell-free platform browser argv, use the persisted endpoint, and report launcher failures with a non-zero exit contract (#1601).
+
 ## [1.0.13] - 2026-07-13
 
 ### Changed

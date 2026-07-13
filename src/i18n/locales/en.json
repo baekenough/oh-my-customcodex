@@ -277,7 +277,8 @@
         "openOption": "Open browser automatically after start",
         "foregroundOption": "Run in foreground (not detached)",
         "started": "Web UI started: http://localhost:{{port}}",
-        "failed": "Failed to start Web UI server"
+        "failed": "Failed to start Web UI server",
+        "portMismatch": "Web UI is already running on port {{actualPort}} (requested {{requestedPort}}); using the running endpoint"
       },
       "stop": {
         "description": "Stop the Web UI server",
@@ -288,12 +289,16 @@
         "description": "Show Web UI server status",
         "running": "Web UI is running: http://localhost:{{port}}",
         "notRunning": "Web UI is not running",
-        "startHint": "  Start with: omcustomcodex web start"
+        "startHint": "  Start with: omcustomcodex web start",
+        "legacyPortAssumed": "Legacy Web UI state does not record a port; assuming {{port}}"
       },
       "open": {
         "description": "Open the Web UI in the default browser",
         "portOption": "Port number",
-        "notRunningWarn": "Web UI does not appear to be running. Start it with: omcustomcodex web start"
+        "notRunningWarn": "Web UI does not appear to be running. Start it with: omcustomcodex web start",
+        "portMismatch": "Requested port {{requestedPort}}, but the running Web UI uses {{actualPort}}; opening the running endpoint",
+        "failed": "Failed to open {{url}}: {{reason}}",
+        "opened": "Opened Web UI: {{url}}"
       },
       "deprecated": {
         "serve": "[Deprecated] `omcustomcodex serve` is deprecated. Use `omcustomcodex web start` instead.",
