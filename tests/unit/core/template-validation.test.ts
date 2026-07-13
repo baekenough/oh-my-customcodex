@@ -1259,6 +1259,14 @@ describe('Template Validation', () => {
       expect(content).toContain('Stray skill root markdown file');
       expect(content).toContain('templates/.claude/skills');
       expect(content).toContain('source != template');
+      expect(content).toContain('normalize_compat_agent');
+
+      const result = spawnSync('bash', [scriptPath], {
+        cwd: PROJECT_ROOT,
+        encoding: 'utf-8',
+      });
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('Content drift check');
     });
 
     it('wiki sync script excludes navigation pages from total_pages', async () => {
