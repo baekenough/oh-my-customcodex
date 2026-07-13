@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const PROJECT_ROOT = resolve(import.meta.dir, '../../..');
+const SERVE_ROOT = join(PROJECT_ROOT, 'packages/serve');
 const tempDirectories: string[] = [];
 
 async function tempDirectory(prefix: string): Promise<string> {
@@ -25,9 +26,20 @@ describe('Codex-only create route integration', () => {
     const home = await tempDirectory('omcodex-serve-create-routes-home-');
     const bin = await tempDirectory('omcodex-serve-create-routes-bin-');
     const invocationLog = join(project, 'codex-invocations.log');
+    const tsconfig = join(home, 'serve-route-test-tsconfig.json');
     await mkdir(join(project, '.codex', 'agents'), { recursive: true });
     await mkdir(join(project, '.agents', 'skills'), { recursive: true });
     await writeFile(join(project, 'AGENTS.md'), '# Clean Codex fixture\n', 'utf8');
+    await writeFile(
+      tsconfig,
+      JSON.stringify({
+        compilerOptions: {
+          baseUrl: SERVE_ROOT,
+          paths: { '$lib/*': ['src/lib/*'] },
+        },
+      }),
+      'utf8'
+    );
     await writeFile(
       join(bin, 'codex'),
       `#!/bin/sh
@@ -94,15 +106,9 @@ esac
     await chmod(join(bin, 'codex'), 0o755);
 
     const routes = {
-      agent: pathToFileURL(
-        join(PROJECT_ROOT, 'packages/serve/src/routes/agents/create/+page.server.ts')
-      ).href,
-      skill: pathToFileURL(
-        join(PROJECT_ROOT, 'packages/serve/src/routes/skills/create/+page.server.ts')
-      ).href,
-      guide: pathToFileURL(
-        join(PROJECT_ROOT, 'packages/serve/src/routes/guides/create/+page.server.ts')
-      ).href,
+      agent: pathToFileURL(join(SERVE_ROOT, 'src/routes/agents/create/+page.server.ts')).href,
+      skill: pathToFileURL(join(SERVE_ROOT, 'src/routes/skills/create/+page.server.ts')).href,
+      guide: pathToFileURL(join(SERVE_ROOT, 'src/routes/guides/create/+page.server.ts')).href,
     };
     const runner = `
 const routeUrls = ${JSON.stringify(routes)};
@@ -127,8 +133,8 @@ const results = {
 };
 process.stdout.write(JSON.stringify(results));
 `;
-    const child = Bun.spawn([process.execPath, '-e', runner], {
-      cwd: PROJECT_ROOT,
+    const child = Bun.spawn([process.execPath, `--tsconfig-override=${tsconfig}`, '-e', runner], {
+      cwd: SERVE_ROOT,
       env: {
         PATH: bin,
         HOME: home,
