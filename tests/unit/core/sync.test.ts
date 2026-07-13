@@ -17,10 +17,13 @@ import {
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
+import { createIsolatedGitEnvironment } from '../../../src/core/codex-project-root.js';
 import {
+  computeFileHash,
   LOCKFILE_NAME,
   LOCKFILE_VERSION,
   type Lockfile,
+  readLockfile,
   writeLockfile,
 } from '../../../src/core/lockfile.js';
 import { exportSnapshot, syncCheck } from '../../../src/core/sync.js';
@@ -71,6 +74,16 @@ async function treeDigest(root: string): Promise<string> {
 
   await walk(root);
   return createHash('sha256').update(records.join('\n')).digest('hex');
+}
+
+function git(args: string[], cwd: string): void {
+  const result = Bun.spawnSync(['git', ...args], {
+    cwd,
+    env: createIsolatedGitEnvironment(),
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
+  if (result.exitCode !== 0) throw new Error(new TextDecoder().decode(result.stderr));
 }
 
 // ---------------------------------------------------------------------------
@@ -276,6 +289,68 @@ describe('sync', () => {
       await exportSnapshot(tempDir, outputDir);
 
       expect(existsSync(join(outputDir, LOCKFILE_NAME))).toBe(true);
+    });
+
+    it('exports authoritative main hooks instead of dormant linked-worktree hooks', async () => {
+      const linked = `${tempDir}-linked-export`;
+      try {
+        git(['init', '-q'], tempDir);
+        await writeFile(join(tempDir, 'README.md'), '# fixture\n');
+        git(['add', 'README.md'], tempDir);
+        git(
+          [
+            '-c',
+            'user.name=Fixture',
+            '-c',
+            'user.email=fixture@example.com',
+            'commit',
+            '-qm',
+            'fixture',
+          ],
+          tempDir
+        );
+        git(['worktree', 'add', '-qb', 'linked-export-fixture', linked], tempDir);
+
+        const mainHooks = join(tempDir, '.codex', 'hooks');
+        const linkedHooks = join(linked, '.codex', 'hooks');
+        await Promise.all([
+          mkdir(join(mainHooks, 'scripts'), { recursive: true }),
+          mkdir(join(linkedHooks, 'scripts'), { recursive: true }),
+        ]);
+        await writeFile(join(tempDir, '.codex', 'hooks.json'), '{"hooks":{"safe":[]}}');
+        await writeFile(join(mainHooks, 'scripts', 'managed.sh'), '# main-safe\n');
+        await writeFile(join(linked, '.codex', 'hooks.json'), '{"hooks":{"pwned":[]}}');
+        await writeFile(join(linkedHooks, 'scripts', 'managed.sh'), '# linked-pwned\n');
+        await writeFile(join(linkedHooks, 'scripts', 'linked-only.sh'), '# dormant\n');
+
+        const outputDir = join(tempDir, 'snapshot');
+        const result = await exportSnapshot(linked, outputDir);
+
+        expect(result.success).toBe(true);
+        const exportedRegistry = join(outputDir, '.codex', 'hooks.json');
+        const exportedScript = join(outputDir, '.codex', 'hooks', 'scripts', 'managed.sh');
+        expect(await readFile(exportedRegistry, 'utf-8')).toBe('{"hooks":{"safe":[]}}');
+        expect(await readFile(exportedScript, 'utf-8')).toBe('# main-safe\n');
+        expect(
+          await Bun.file(join(outputDir, '.codex', 'hooks', 'scripts', 'linked-only.sh')).exists()
+        ).toBe(false);
+
+        const exportedLockfile = await readLockfile(outputDir);
+        expect(exportedLockfile?.files['.codex/hooks.json']).toEqual(
+          expect.objectContaining({
+            root: 'codex-project',
+            templateHash: await computeFileHash(exportedRegistry),
+          })
+        );
+        expect(exportedLockfile?.files['.codex/hooks/scripts/managed.sh']).toEqual(
+          expect.objectContaining({
+            root: 'codex-project',
+            templateHash: await computeFileHash(exportedScript),
+          })
+        );
+      } finally {
+        await rm(linked, { recursive: true, force: true });
+      }
     });
 
     it('excludes agent-memory directories from the snapshot', async () => {

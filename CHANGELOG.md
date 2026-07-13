@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.13] - 2026-07-13
+
+### Changed
+- Track native Codex hook registry and active scripts from the authoritative main checkout while keeping linked-worktree lockfiles local to the requested checkout (#1625).
+
+### Fixed
+- Keep doctor, sync, snapshots, and updates on one root-aware lockfile model; preserve modified legacy hooks and reject traversal, symlink, hardlink, and identity-swap escapes (#1625).
+
 ## [1.0.12] - 2026-07-13
 
 ### Changed

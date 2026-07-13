@@ -2,6 +2,30 @@ import { execFileSync } from 'node:child_process';
 import { lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 
+const LOCAL_GIT_ENVIRONMENT_VARIABLES = [
+  'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+  'GIT_CONFIG',
+  'GIT_CONFIG_PARAMETERS',
+  'GIT_CONFIG_COUNT',
+  'GIT_OBJECT_DIRECTORY',
+  'GIT_DIR',
+  'GIT_WORK_TREE',
+  'GIT_IMPLICIT_WORK_TREE',
+  'GIT_GRAFT_FILE',
+  'GIT_INDEX_FILE',
+  'GIT_NO_REPLACE_OBJECTS',
+  'GIT_REPLACE_REF_BASE',
+  'GIT_PREFIX',
+  'GIT_SHALLOW_FILE',
+  'GIT_COMMON_DIR',
+] as const;
+
+export function createIsolatedGitEnvironment(): NodeJS.ProcessEnv {
+  const env = { ...process.env };
+  for (const name of LOCAL_GIT_ENVIRONMENT_VARIABLES) delete env[name];
+  return env;
+}
+
 /** Resolve the requested checkout itself without applying linked-worktree promotion. */
 export function resolveCodexTargetRoot(path: string): string {
   try {
@@ -35,6 +59,7 @@ function hasCheckoutMaterializationEvidence(commonDir: string, candidate: string
   if (entries.length === 0) return false;
 
   try {
+    const env = createIsolatedGitEnvironment();
     const output = execFileSync(
       'git',
       [
@@ -52,6 +77,7 @@ function hasCheckoutMaterializationEvidence(commonDir: string, candidate: string
         cwd: candidate,
         encoding: 'buffer',
         maxBuffer: 64 * 1024,
+        env,
         stdio: ['ignore', 'pipe', 'ignore'],
         timeout: 2_000,
       }
@@ -76,6 +102,7 @@ function hasCheckoutMaterializationEvidence(commonDir: string, candidate: string
       ],
       {
         cwd: candidate,
+        env,
         maxBuffer: 64 * 1024,
         stdio: ['ignore', 'ignore', 'ignore'],
         timeout: 2_000,

@@ -20,6 +20,8 @@ import {
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, relative } from 'node:path';
 import type { InitOptions } from '../../../src/cli/init.js';
+import { installNativeCodexHooks } from '../../../src/core/codex-hooks.js';
+import { createIsolatedGitEnvironment } from '../../../src/core/codex-project-root.js';
 import { computeFileHash, readLockfile } from '../../../src/core/lockfile.js';
 import {
   installFromSnapshot as installFromSnapshotWithDependencies,
@@ -45,6 +47,16 @@ describe('installFromSnapshot', () => {
     dependencies: SnapshotInstallDependencies = readyDependencies
   ) {
     return installFromSnapshotWithDependencies(target, snapshot, options, dependencies);
+  }
+
+  function git(args: string[], cwd: string): void {
+    const result = Bun.spawnSync(['git', ...args], {
+      cwd,
+      env: createIsolatedGitEnvironment(),
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+    if (result.exitCode !== 0) throw new Error(new TextDecoder().decode(result.stderr));
   }
 
   beforeEach(async () => {
@@ -198,6 +210,49 @@ describe('installFromSnapshot', () => {
       expect(lockfile?.files['.codex/hooks.json']?.templateHash).toBe(
         await computeFileHash(hooksPath)
       );
+    });
+
+    it('finalizes a linked snapshot lock against the authoritative main hook assets', async () => {
+      const linked = `${targetDir}-linked`;
+      try {
+        git(['init', '-q'], targetDir);
+        await writeFile(join(targetDir, 'README.md'), '# fixture\n');
+        git(['add', 'README.md'], targetDir);
+        git(
+          [
+            '-c',
+            'user.name=Fixture',
+            '-c',
+            'user.email=fixture@example.com',
+            'commit',
+            '-qm',
+            'fixture',
+          ],
+          targetDir
+        );
+        git(['worktree', 'add', '-qb', 'snapshot-linked-fixture', linked], targetDir);
+        await installNativeCodexHooks(linked, { overwrite: true });
+        await createMinimalSnapshot(snapshotDir);
+
+        const result = await installFromSnapshot(linked, snapshotDir, {}, readyDependencies);
+
+        expect(result.success).toBe(true);
+        const lockfile = await readLockfile(linked);
+        const registryPath = join(targetDir, '.codex', 'hooks.json');
+        expect(lockfile?.files['.codex/hooks.json']).toEqual(
+          expect.objectContaining({
+            root: 'codex-project',
+            templateHash: await computeFileHash(registryPath),
+          })
+        );
+        expect(
+          Object.entries(lockfile?.files ?? {}).filter(([path]) =>
+            path.startsWith('.codex/hooks/scripts/')
+          )
+        ).toHaveLength(5);
+      } finally {
+        await rm(linked, { recursive: true, force: true });
+      }
     });
 
     it('copies .codex/ directory from snapshot', async () => {

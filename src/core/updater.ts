@@ -25,17 +25,23 @@ import {
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
 import { prevalidateNativeAgentSync, syncNativeAgents } from './agent-compiler.js';
-import { installNativeCodexHooks, prevalidateNativeCodexHooks } from './codex-hooks.js';
+import {
+  compileCodexHooks,
+  installNativeCodexHooks,
+  prevalidateNativeCodexHooks,
+} from './codex-hooks.js';
 import { installCodex, isCodexInstalled } from './codex-installer.js';
 import { getConfigCandidatePaths, loadConfig, type OmccConfig, saveConfig } from './config.js';
 import { mergeEntryDoc, wrapInManagedMarkers } from './entry-merger.js';
 import { isProtectedFile } from './file-preservation.js';
 import { getProviderLayout, getTemplateComponentPath } from './layout.js';
 import {
+  computeLockfileEntryMetadata,
   generateLockfile,
   type Lockfile,
   type LockfileEntry,
   readLockfile,
+  resolveLockfileRootContext,
   writeLockfile,
 } from './lockfile.js';
 import { assessOmxInstallation, installOmx, MINIMUM_OMX_VERSION } from './omx-installer.js';
@@ -660,7 +666,34 @@ async function computeSafetyHash(filePath: string): Promise<string> {
     .digest('hex');
 }
 
-async function createTemplateBaseline(relativePath: string): Promise<LockfileEntry | null> {
+async function createNativeRegistryBaseline(
+  targetDir: string,
+  entry: LockfileEntry
+): Promise<LockfileEntry> {
+  const source = await readJsonFile<unknown>(
+    resolveTemplatePath(join('.claude', 'hooks', 'hooks.json'))
+  );
+  const rootContext = resolveLockfileRootContext(targetDir);
+  const registry = compileCodexHooks(source, {
+    authoritativeRoot: rootContext.codexProjectRoot,
+  }).registry;
+  const content = JSON.stringify(registry, null, 2);
+  return {
+    templateHash: createHash('sha256').update(content).digest('hex'),
+    size: Buffer.byteLength(content),
+    component: 'hooks',
+    ...(entry.root ? { root: entry.root } : {}),
+  };
+}
+
+async function createTemplateBaseline(
+  targetDir: string,
+  relativePath: string,
+  entry: LockfileEntry
+): Promise<LockfileEntry | null> {
+  if (relativePath === '.codex/hooks.json') {
+    return createNativeRegistryBaseline(targetDir, entry);
+  }
   const source = resolveTemplateBaselineSource(relativePath);
   if (!source || !(await fileExists(source.sourcePath))) return null;
 
@@ -671,10 +704,12 @@ async function createTemplateBaseline(relativePath: string): Promise<LockfileEnt
     templateHash: await computeSafetyHash(source.sourcePath),
     size: stats.size,
     component: source.component,
+    ...(entry.root ? { root: entry.root } : {}),
   };
 }
 
 async function mergeGeneratedLockfileEntry(
+  targetDir: string,
   generated: Lockfile,
   relativePath: string,
   entry: LockfileEntry,
@@ -690,7 +725,7 @@ async function mergeGeneratedLockfileEntry(
   }
 
   if (!isPathPreserved(relativePath, preservedPaths)) return;
-  const baseline = previousEntry ?? (await createTemplateBaseline(relativePath));
+  const baseline = previousEntry ?? (await createTemplateBaseline(targetDir, relativePath, entry));
   if (baseline) generated.files[relativePath] = baseline;
   else delete generated.files[relativePath];
 }
@@ -712,6 +747,7 @@ function restoreRequiredPreviousEntries(
 }
 
 async function mergeGeneratedLockfileBaselines(
+  targetDir: string,
   generated: Lockfile,
   result: UpdateResult,
   previousLockfile: Lockfile | null
@@ -724,6 +760,7 @@ async function mergeGeneratedLockfileBaselines(
 
   for (const [relativePath, entry] of Object.entries(generated.files)) {
     await mergeGeneratedLockfileEntry(
+      targetDir,
       generated,
       relativePath,
       entry,
@@ -752,7 +789,12 @@ async function regenerateLockfile(
       packageJson.version as string,
       result.newVersion
     );
-    const merged = await mergeGeneratedLockfileBaselines(generated, result, previousLockfile);
+    const merged = await mergeGeneratedLockfileBaselines(
+      targetDir,
+      generated,
+      result,
+      previousLockfile
+    );
     await writeLockfile(targetDir, merged, { trustedWriteRoot: targetDir });
     debug('update.lockfile_regenerated', {
       files: String(Object.keys(merged.files).length),
@@ -1569,22 +1611,87 @@ async function updateComponent(
     return updateNativeAgentComponent(targetDir, customizations, options);
   }
   if (component === 'hooks') {
-    return updateHooksComponent(targetDir);
+    return updateHooksComponent(targetDir, lockfile, !!options.forceOverwriteAll);
   }
 
   return updateDirectoryComponent(targetDir, component, customizations, options, config, lockfile);
 }
 
 async function updateHooksComponent(
-  targetDir: string
+  targetDir: string,
+  lockfile: Lockfile | null,
+  forceOverwriteAll: boolean
 ): Promise<{ customizations: string[]; protected: string[] }> {
+  const modifiedPaths = forceOverwriteAll
+    ? []
+    : await findModifiedHookLockfilePaths(targetDir, lockfile);
   const result = await installNativeCodexHooks(targetDir, {
     overwrite: true,
+    preservePaths: modifiedPaths,
   });
   return {
-    customizations: result.registryPreserved ? ['.codex/hooks.json'] : [],
+    customizations: [
+      ...new Set([...(result.registryPreserved ? ['.codex/hooks.json'] : []), ...modifiedPaths]),
+    ],
     protected: [],
   };
+}
+
+async function findModifiedHookLockfilePaths(
+  targetDir: string,
+  lockfile: Lockfile | null
+): Promise<string[]> {
+  if (!lockfile) return [];
+  const modifiedPaths = new Set<string>();
+  const rootContext = resolveLockfileRootContext(targetDir);
+  await collectChangedBaselinedHooks(targetDir, lockfile, rootContext, modifiedPaths);
+  await collectChangedUnbaselinedHooks(targetDir, lockfile, modifiedPaths);
+  return [...modifiedPaths];
+}
+
+async function collectChangedBaselinedHooks(
+  targetDir: string,
+  lockfile: Lockfile,
+  rootContext: ReturnType<typeof resolveLockfileRootContext>,
+  modifiedPaths: Set<string>
+): Promise<void> {
+  for (const [relativePath, entry] of Object.entries(lockfile.files)) {
+    if (entry.component !== 'hooks') continue;
+    try {
+      const current = await computeLockfileEntryMetadata(
+        targetDir,
+        relativePath,
+        entry,
+        rootContext
+      );
+      if (current.templateHash !== entry.templateHash) modifiedPaths.add(relativePath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+  }
+}
+
+async function collectChangedUnbaselinedHooks(
+  targetDir: string,
+  lockfile: Lockfile,
+  modifiedPaths: Set<string>
+): Promise<void> {
+  // v1.0.12 linked-worktree lockfiles omitted the authoritative main hook
+  // entries entirely. For entries without a prior baseline, compare active
+  // files to the packaged template and preserve only content that cannot be
+  // proven unmodified. This makes the first root-aware update fail safe.
+  const current = await generateLockfile(
+    targetDir,
+    packageJson.version as string,
+    packageJson.version as string
+  );
+  for (const [relativePath, entry] of Object.entries(current.files)) {
+    if (entry.component !== 'hooks' || lockfile.files[relativePath]) continue;
+    const baseline = await createTemplateBaseline(targetDir, relativePath, entry);
+    if (baseline && baseline.templateHash !== entry.templateHash) {
+      modifiedPaths.add(relativePath);
+    }
+  }
 }
 
 async function updateDirectoryComponent(

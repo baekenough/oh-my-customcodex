@@ -14,7 +14,11 @@ import { resolveCodexProjectRoot } from '../core/codex-project-root.js';
 import { loadConfig } from '../core/config.js';
 import { checkFrameworkVersion } from '../core/doctor-framework.js';
 import { getComponentPath, getProviderLayout } from '../core/layout.js';
-import { computeFileHash, readLockfile } from '../core/lockfile.js';
+import {
+  computeLockfileEntryMetadata,
+  readLockfile,
+  resolveLockfileRootContext,
+} from '../core/lockfile.js';
 import {
   assessOmxReadiness,
   ensureOmxProjectReady,
@@ -1155,12 +1159,17 @@ export async function checkLockfileDrift(targetDir: string): Promise<CheckResult
 
   const modified: string[] = [];
   const removed: string[] = [];
+  const rootContext = resolveLockfileRootContext(targetDir);
 
   for (const [relativePath, entry] of Object.entries(lockfile.files)) {
-    const absolutePath = path.join(targetDir, relativePath);
     try {
-      const currentHash = await computeFileHash(absolutePath);
-      if (currentHash !== entry.templateHash) {
+      const current = await computeLockfileEntryMetadata(
+        targetDir,
+        relativePath,
+        entry,
+        rootContext
+      );
+      if (current.templateHash !== entry.templateHash) {
         modified.push(relativePath);
       }
     } catch {

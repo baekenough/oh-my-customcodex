@@ -10,6 +10,7 @@ import { mkdir, realpath } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import {
   copyDirectory,
+  copyFile,
   getPackageRoot,
   prevalidateCopyDirectory,
   prevalidateSafeWritePath,
@@ -22,6 +23,7 @@ import {
   LOCKFILE_NAME,
   type Lockfile,
   readLockfile,
+  resolveLockfileRootContext,
   writeLockfile,
 } from './lockfile.js';
 import { detectProvider } from './provider.js';
@@ -160,8 +162,9 @@ const EXPORT_EXCLUDE_PATTERNS = [
   '*settings.local*',
 ];
 
-function isExcludedExportEntry(name: string): boolean {
+function isExcludedExportEntry(name: string, additionalNames: ReadonlySet<string>): boolean {
   return (
+    additionalNames.has(name) ||
     name === 'agent-memory' ||
     name === 'agent-memory-local' ||
     name === 'outputs' ||
@@ -179,7 +182,12 @@ async function lstatIfPresent(path: string): Promise<import('node:fs').Stats | n
   }
 }
 
-async function assertRegularExportTree(path: string, description: string): Promise<void> {
+async function assertRegularExportTree(
+  path: string,
+  description: string,
+  additionalExcludedNames: ReadonlySet<string> = new Set(),
+  sourceRoot: string = path
+): Promise<void> {
   const fs = await import('node:fs/promises');
   const stats = await lstatIfPresent(path);
   if (!stats) throw new Error(`Snapshot export source disappeared: ${path}`);
@@ -193,17 +201,160 @@ async function assertRegularExportTree(path: string, description: string): Promi
   for (const entry of await fs.readdir(path, { withFileTypes: true })) {
     // Source validation and copy must use the same exclusion contract. An
     // ignored runtime-local tree is neither followed nor copied.
-    if (isExcludedExportEntry(entry.name)) continue;
+    const rootOnlyExcludes = path === sourceRoot ? additionalExcludedNames : new Set<string>();
+    if (isExcludedExportEntry(entry.name, rootOnlyExcludes)) continue;
     const entryPath = join(path, entry.name);
     if (entry.isSymbolicLink()) {
       throw new Error(`Unsafe ${description}: symbolic links are not allowed: ${entryPath}`);
     }
     if (entry.isDirectory()) {
-      await assertRegularExportTree(entryPath, description);
+      await assertRegularExportTree(entryPath, description, additionalExcludedNames, sourceRoot);
       continue;
     }
     if (entry.isFile()) continue;
     throw new Error(`Unsafe ${description}: special files are not allowed: ${entryPath}`);
+  }
+}
+
+async function assertRegularExportFile(path: string, description: string): Promise<void> {
+  const stats = await lstatIfPresent(path);
+  if (!stats) throw new Error(`Snapshot export source disappeared: ${path}`);
+  if (stats.isSymbolicLink() || !stats.isFile() || stats.nlink !== 1) {
+    throw new Error(`Unsafe ${description}: expected a single-link regular file: ${path}`);
+  }
+}
+
+interface SnapshotExportOperation {
+  kind: 'directory' | 'file';
+  source: string;
+  destination: string;
+  exclude?: string[];
+  skipPaths?: string[];
+  excludedSourceNames?: ReadonlySet<string>;
+}
+
+async function appendDirectoryExport(
+  operations: SnapshotExportOperation[],
+  source: string,
+  destination: string,
+  options: Pick<SnapshotExportOperation, 'exclude' | 'skipPaths' | 'excludedSourceNames'> = {}
+): Promise<void> {
+  if (!(await lstatIfPresent(source))) return;
+  operations.push({ kind: 'directory', source, destination, ...options });
+}
+
+async function appendFileExport(
+  operations: SnapshotExportOperation[],
+  source: string,
+  destination: string
+): Promise<void> {
+  if (!(await lstatIfPresent(source))) return;
+  operations.push({ kind: 'file', source, destination });
+}
+
+async function buildSnapshotExportOperations(
+  targetDir: string,
+  outputPath: string,
+  provider: 'codex' | 'claude'
+): Promise<SnapshotExportOperation[]> {
+  const layout = getProviderLayout(provider);
+  const roots = resolveLockfileRootContext(targetDir);
+  const operations: SnapshotExportOperation[] = [];
+  const linked = provider === 'codex' && roots.codexProjectRoot !== roots.targetRoot;
+  const linkedRuntimeExcludes = linked ? new Set(['hooks', 'hooks.json']) : new Set<string>();
+
+  await appendDirectoryExport(
+    operations,
+    join(roots.targetRoot, layout.rootDir),
+    join(outputPath, layout.rootDir),
+    {
+      exclude: EXPORT_EXCLUDE_PATTERNS,
+      skipPaths: linked ? ['hooks/', 'hooks.json'] : undefined,
+      excludedSourceNames: linkedRuntimeExcludes,
+    }
+  );
+  const skillsPath = getComponentPath('skills', provider);
+  await appendDirectoryExport(
+    operations,
+    join(roots.targetRoot, skillsPath),
+    join(outputPath, skillsPath),
+    { exclude: EXPORT_EXCLUDE_PATTERNS }
+  );
+  await appendDirectoryExport(
+    operations,
+    join(roots.targetRoot, 'guides'),
+    join(outputPath, 'guides'),
+    { exclude: EXPORT_EXCLUDE_PATTERNS }
+  );
+  if (linked) {
+    await appendFileExport(
+      operations,
+      join(roots.codexProjectRoot, '.codex', 'hooks.json'),
+      join(outputPath, '.codex', 'hooks.json')
+    );
+    await appendDirectoryExport(
+      operations,
+      join(roots.codexProjectRoot, '.codex', 'hooks'),
+      join(outputPath, '.codex', 'hooks')
+    );
+  }
+  return operations;
+}
+
+async function validateSnapshotExportSources(
+  operations: SnapshotExportOperation[],
+  outputPath: string
+): Promise<void> {
+  for (const operation of operations) {
+    if (operation.kind === 'directory') {
+      await assertRegularExportTree(
+        operation.source,
+        'snapshot export source',
+        operation.excludedSourceNames
+      );
+    } else {
+      await assertRegularExportFile(operation.source, 'snapshot export source');
+    }
+  }
+  await assertNonOverlappingExportPath(
+    outputPath,
+    operations.map(({ source }) => source)
+  );
+}
+
+async function prevalidateSnapshotExportDestinations(
+  operations: SnapshotExportOperation[],
+  planningRoot: string
+): Promise<void> {
+  for (const operation of operations) {
+    if (operation.kind === 'directory') {
+      await prevalidateCopyDirectory(operation.source, operation.destination, {
+        overwrite: true,
+        exclude: operation.exclude,
+        skipPaths: operation.skipPaths,
+        trustedWriteRoot: planningRoot,
+      });
+    } else {
+      await prevalidateSafeWritePath(operation.destination, planningRoot);
+    }
+  }
+}
+
+async function executeSnapshotExportOperations(
+  operations: SnapshotExportOperation[],
+  outputPath: string
+): Promise<void> {
+  for (const operation of operations) {
+    if (operation.kind === 'directory') {
+      await copyDirectory(operation.source, operation.destination, {
+        overwrite: true,
+        exclude: operation.exclude,
+        skipPaths: operation.skipPaths,
+        trustedWriteRoot: outputPath,
+      });
+    } else {
+      await copyFile(operation.source, operation.destination, outputPath);
+    }
   }
 }
 
@@ -326,61 +477,31 @@ export async function exportSnapshot(
   }
 
   const detection = await detectProvider({ targetDir });
-  const layout = getProviderLayout(detection.provider);
-  const runtimeDir = join(targetDir, layout.rootDir);
-  const skillsDir = join(targetDir, getComponentPath('skills', detection.provider));
-  const guidesDir = join(targetDir, 'guides');
-
-  const runtimeStats = await lstatIfPresent(runtimeDir);
-  if (!runtimeStats) {
+  const destinationOperations = await buildSnapshotExportOperations(
+    targetDir,
+    outputPath,
+    detection.provider
+  );
+  if (destinationOperations.length === 0) {
     return { success: false, exportPath: outputPath, fileCount: 0 };
   }
-
-  const sourceDirectories = [runtimeDir];
-  if (await lstatIfPresent(skillsDir)) sourceDirectories.push(skillsDir);
-  if (await lstatIfPresent(guidesDir)) sourceDirectories.push(guidesDir);
-  for (const source of sourceDirectories) {
-    await assertRegularExportTree(source, 'snapshot export source');
-  }
-  await assertNonOverlappingExportPath(outputPath, sourceDirectories);
+  await validateSnapshotExportSources(destinationOperations, outputPath);
 
   // Build all content before preflighting the destination. Lockfile generation
   // is read-only and must never occur after export mutation has begun.
   const lockfile = await generateCurrentLockfile(targetDir);
 
-  const destinationOperations = sourceDirectories.map((source) => {
-    const relativeDestination =
-      source === runtimeDir
-        ? layout.rootDir
-        : source === skillsDir
-          ? getComponentPath('skills', detection.provider)
-          : 'guides';
-    return { source, destination: join(outputPath, relativeDestination) };
-  });
-
   // outputPath may not exist yet. Use the nearest existing real directory only
   // for the read-only full-plan preflight, then make outputPath the explicit
   // trusted root for every actual copy/write.
   const planningRoot = await findExistingTrustedBoundary(outputPath);
-  for (const operation of destinationOperations) {
-    await prevalidateCopyDirectory(operation.source, operation.destination, {
-      overwrite: true,
-      exclude: EXPORT_EXCLUDE_PATTERNS,
-      trustedWriteRoot: planningRoot,
-    });
-  }
+  await prevalidateSnapshotExportDestinations(destinationOperations, planningRoot);
   if (lockfile) {
     await prevalidateSafeWritePath(join(outputPath, LOCKFILE_NAME), planningRoot);
   }
 
   await mkdir(outputPath, { recursive: true });
-  for (const operation of destinationOperations) {
-    await copyDirectory(operation.source, operation.destination, {
-      overwrite: true,
-      exclude: EXPORT_EXCLUDE_PATTERNS,
-      trustedWriteRoot: outputPath,
-    });
-  }
+  await executeSnapshotExportOperations(destinationOperations, outputPath);
   if (lockfile) {
     await writeLockfile(outputPath, lockfile, { trustedWriteRoot: outputPath });
   }

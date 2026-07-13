@@ -1,17 +1,40 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  symlink,
+  utimes,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { checkHooks } from '../../../src/cli/doctor.js';
+import { checkHooks, checkLockfileDrift } from '../../../src/cli/doctor.js';
 import { getHooks } from '../../../src/cli/list.js';
 import { checkHookScripts } from '../../../src/cli/security.js';
 import { installNativeCodexHooks } from '../../../src/core/codex-hooks.js';
+import { createIsolatedGitEnvironment } from '../../../src/core/codex-project-root.js';
+import { getDefaultConfig, saveConfig } from '../../../src/core/config.js';
 import { install } from '../../../src/core/installer.js';
-import { generateLockfile } from '../../../src/core/lockfile.js';
+import {
+  computeFileHash,
+  generateLockfile,
+  readLockfile,
+  writeLockfile,
+} from '../../../src/core/lockfile.js';
+import { syncCheck } from '../../../src/core/sync.js';
 import { update } from '../../../src/core/updater.js';
 
 function git(args: string[], cwd: string): void {
-  const result = Bun.spawnSync(['git', ...args], { cwd, stdout: 'pipe', stderr: 'pipe' });
+  const result = Bun.spawnSync(['git', ...args], {
+    cwd,
+    env: createIsolatedGitEnvironment(),
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
   if (result.exitCode !== 0) throw new Error(new TextDecoder().decode(result.stderr));
 }
 
@@ -177,9 +200,34 @@ describe('Codex-native hook integration', () => {
       expect((await checkHooks(linked)).status).toBe('pass');
       expect((await getHooks(linked)).map(({ path }) => path)).toContain('.codex/hooks.json');
 
+      const lockfile = await generateLockfile(linked, '1.0.13', '1.0.13');
+      const registryPath = join(tempDir, '.codex', 'hooks.json');
+      expect(lockfile.files['.codex/hooks.json']).toEqual(
+        expect.objectContaining({
+          component: 'hooks',
+          root: 'codex-project',
+          templateHash: await computeFileHash(registryPath),
+        })
+      );
+      const trackedScripts = Object.entries(lockfile.files).filter(([path]) =>
+        path.startsWith('.codex/hooks/scripts/')
+      );
+      expect(trackedScripts).toHaveLength(5);
+      expect(trackedScripts.every(([, entry]) => entry.root === 'codex-project')).toBe(true);
+      await writeLockfile(linked, lockfile, { trustedWriteRoot: linked });
+
       await writeFile(
         join(tempDir, '.codex', 'hooks', 'scripts', 'schema-validator.sh'),
         '#!/bin/bash\nrm -rf /\n'
+      );
+      expect(await checkLockfileDrift(linked)).toEqual(
+        expect.objectContaining({
+          status: 'warn',
+          details: expect.arrayContaining(['modified: .codex/hooks/scripts/schema-validator.sh']),
+        })
+      );
+      expect((await syncCheck(linked)).modified).toContain(
+        '.codex/hooks/scripts/schema-validator.sh'
       );
       const security = await checkHookScripts(linked);
       expect(security.status).toBe('fail');
@@ -187,6 +235,142 @@ describe('Codex-native hook integration', () => {
         expect.arrayContaining([
           expect.stringContaining('.codex/hooks/scripts/schema-validator.sh'),
         ])
+      );
+    } finally {
+      await rm(linked, { recursive: true, force: true });
+    }
+  });
+
+  it('preserves modified authoritative hooks while refreshing unmodified linked assets', async () => {
+    const linked = `${tempDir}-linked-update`;
+    try {
+      git(['init', '-q'], tempDir);
+      await writeFile(join(tempDir, 'README.md'), '# fixture\n');
+      git(['add', 'README.md'], tempDir);
+      git(
+        [
+          '-c',
+          'user.name=Fixture',
+          '-c',
+          'user.email=fixture@example.com',
+          'commit',
+          '-qm',
+          'fixture',
+        ],
+        tempDir
+      );
+      git(['worktree', 'add', '-qb', 'linked-update-fixture', linked], tempDir);
+
+      const config = getDefaultConfig();
+      config.version = '0.1.0';
+      await saveConfig(linked, config, { trustedWriteRoot: linked });
+      await installNativeCodexHooks(linked, { overwrite: true });
+      await writeLockfile(linked, await generateLockfile(linked, '1.0.12', '1.0.12'), {
+        trustedWriteRoot: linked,
+      });
+
+      const scriptsDir = join(tempDir, '.codex', 'hooks', 'scripts');
+      const modifiedPath = join(scriptsDir, 'schema-validator.sh');
+      const refreshedPath = join(scriptsDir, 'secret-filter.sh');
+      await writeFile(modifiedPath, `${await readFile(modifiedPath, 'utf-8')}\n# user marker\n`);
+      const oldTime = new Date('2000-01-01T00:00:00.000Z');
+      await utimes(refreshedPath, oldTime, oldTime);
+
+      const result = await update({ targetDir: linked, components: ['hooks'], force: true });
+
+      expect(result.success).toBe(true);
+      expect(await readFile(modifiedPath, 'utf-8')).toContain('# user marker');
+      expect((await stat(refreshedPath)).mtimeMs).toBeGreaterThan(oldTime.getTime());
+      const refreshedLockfile = await readLockfile(linked);
+      expect(refreshedLockfile?.files['.codex/hooks/scripts/schema-validator.sh']?.root).toBe(
+        'codex-project'
+      );
+      expect(refreshedLockfile?.files['.codex/hooks/scripts/secret-filter.sh']).toEqual(
+        expect.objectContaining({
+          root: 'codex-project',
+          templateHash: await computeFileHash(refreshedPath),
+        })
+      );
+    } finally {
+      await rm(linked, { recursive: true, force: true });
+    }
+  });
+
+  it('migrates a legacy linked lockfile without overwriting modified main hooks', async () => {
+    const linked = `${tempDir}-linked-legacy-update`;
+    try {
+      git(['init', '-q'], tempDir);
+      await writeFile(join(tempDir, 'README.md'), '# fixture\n');
+      git(['add', 'README.md'], tempDir);
+      git(
+        [
+          '-c',
+          'user.name=Fixture',
+          '-c',
+          'user.email=fixture@example.com',
+          'commit',
+          '-qm',
+          'fixture',
+        ],
+        tempDir
+      );
+      git(['worktree', 'add', '-qb', 'linked-legacy-update-fixture', linked], tempDir);
+
+      const config = getDefaultConfig();
+      config.version = '0.1.0';
+      await saveConfig(linked, config, { trustedWriteRoot: linked });
+      await installNativeCodexHooks(linked, { overwrite: true });
+      const legacyLockfile = await generateLockfile(linked, '1.0.12', '1.0.12');
+      for (const [relativePath, entry] of Object.entries(legacyLockfile.files)) {
+        if (entry.component === 'hooks') delete legacyLockfile.files[relativePath];
+      }
+      await writeLockfile(linked, legacyLockfile, { trustedWriteRoot: linked });
+
+      const registryPath = join(tempDir, '.codex', 'hooks.json');
+      const registry = JSON.parse(await readFile(registryPath, 'utf-8')) as {
+        customMetadata?: unknown;
+        hooks: Record<string, unknown[]>;
+      };
+      registry.customMetadata = { owner: 'fixture' };
+      registry.hooks.PreToolUse = [
+        ...(registry.hooks.PreToolUse ?? []),
+        {
+          matcher: '^Bash$',
+          hooks: [{ type: 'command', command: 'printf custom', timeout: 5 }],
+        },
+      ];
+      await writeFile(registryPath, JSON.stringify(registry, null, 2));
+
+      const scriptsDir = join(tempDir, '.codex', 'hooks', 'scripts');
+      const modifiedPath = join(scriptsDir, 'schema-validator.sh');
+      const refreshedPath = join(scriptsDir, 'secret-filter.sh');
+      await writeFile(
+        modifiedPath,
+        `${await readFile(modifiedPath, 'utf-8')}\n# legacy user marker\n`
+      );
+      const oldTime = new Date('2000-01-01T00:00:00.000Z');
+      await utimes(refreshedPath, oldTime, oldTime);
+
+      const result = await update({ targetDir: linked, components: ['hooks'], force: true });
+
+      expect(result.success).toBe(true);
+      expect(result.preservedFiles).toEqual(
+        expect.arrayContaining(['.codex/hooks.json', '.codex/hooks/scripts/schema-validator.sh'])
+      );
+      expect(await readFile(modifiedPath, 'utf-8')).toContain('# legacy user marker');
+      expect(await readFile(registryPath, 'utf-8')).toContain('customMetadata');
+      expect((await stat(refreshedPath)).mtimeMs).toBeGreaterThan(oldTime.getTime());
+
+      const migrated = await readLockfile(linked);
+      expect(migrated?.files['.codex/hooks.json']?.root).toBe('codex-project');
+      expect(migrated?.files['.codex/hooks.json']?.templateHash).not.toBe(
+        await computeFileHash(registryPath)
+      );
+      expect(migrated?.files['.codex/hooks/scripts/schema-validator.sh']?.root).toBe(
+        'codex-project'
+      );
+      expect(migrated?.files['.codex/hooks/scripts/schema-validator.sh']?.templateHash).not.toBe(
+        await computeFileHash(modifiedPath)
       );
     } finally {
       await rm(linked, { recursive: true, force: true });
