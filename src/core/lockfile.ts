@@ -94,6 +94,10 @@ const COMPONENT_PATHS: ReadonlyArray<readonly [string, string]> = LOCKFILE_COMPO
   (component) => [getComponentPath(component), component] as const
 );
 
+const STANDALONE_COMPONENT_FILES: ReadonlyArray<readonly [string, string]> = [
+  ['.codex/hooks.json', 'hooks'],
+] as const;
+
 /**
  * Compute SHA-256 hash of a file using a read stream.
  * Returns lowercase hex digest.
@@ -283,6 +287,23 @@ export async function generateLockfile(
       };
 
       debug('lockfile.entry_added', { path: relativePath, component });
+    }
+  }
+
+  for (const [relativePath, component] of STANDALONE_COMPONENT_FILES) {
+    const absolutePath = join(targetDir, relativePath);
+    if (!(await fileExists(absolutePath))) continue;
+    try {
+      const fileStat = await stat(absolutePath);
+      if (!fileStat.isFile()) continue;
+      files[relativePath] = {
+        templateHash: await computeFileHash(absolutePath),
+        size: fileStat.size,
+        component,
+      };
+      debug('lockfile.entry_added', { path: relativePath, component });
+    } catch (err) {
+      warn('lockfile.hash_failed', { path: absolutePath, error: String(err) });
     }
   }
 

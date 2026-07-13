@@ -248,17 +248,25 @@ Agent(arch-documenter):haiku      ┘
 
 ## 보안
 
-15개 라이프사이클 훅이 도구 호출마다 실행됩니다. 그 중 세 가지 보안 훅:
+`omcustomcodex init`은 검증된 어드바이저리 훅만 Codex native 프로젝트
+레지스트리인 `.codex/hooks.json`으로 컴파일합니다:
 
 | 훅 | 트리거 | 동작 |
 |----|--------|------|
-| secret-filter | Bash, Read 출력 | AWS 키, API 토큰, 개인 키, bearer 토큰 감지 |
-| audit-log | Edit, Write, Bash, Agent | `~/.codex/audit.jsonl`에 append-only JSONL 기록 |
-| schema-validator | Write, Edit, Bash 입력 | 도구 입력 검증, 위험 패턴 플래그 |
+| secret-filter | Bash PostToolUse | AWS 키, API 토큰, 개인 키, bearer 토큰 감지 |
+| schema-validator | Bash, apply_patch PreToolUse | 도구 입력 검증 및 위험 패턴 플래그 |
+| destructive-git-guard | Bash PreToolUse | Git 상태를 폐기할 수 있는 명령 사전 경고 |
+| file-change-validator | apply_patch PostToolUse | 설정 파일 및 lockfile 변경 알림 |
 
 모든 보안 훅은 어드바이저리입니다 (exit 0). 경고만 하고 차단하지 않습니다.
 
-**PostCompact 훅**은 컨텍스트 컴팩션 이후 핵심 규칙(R007-R018, R021)을 자동으로 재강화합니다.
+관리 대상 훅을 병합할 때 기존 custom/OMX 핸들러와 순서를 보존합니다.
+먼저 프로젝트의 `.codex/` 설정 레이어를 신뢰한 뒤, init/update 후
+`/hooks`에서 정확한 명령 훅 정의를 검토하고 승인하세요. Codex는 신뢰하지
+않은 프로젝트 훅을 건너뛰며 `omcustomcodex`는 훅 해시를 자동 승인하지
+않습니다.
+`--dangerously-bypass-hook-trust`는 격리되고 사전 검토된 자동화 테스트용이며
+일반 온보딩에 사용하지 않습니다.
 
 ---
 
@@ -308,10 +316,11 @@ your-project/
 ### 소스 리포와 호환성 표면
 
 - 이 저장소 자체는 패키지 authoring용 스킬을 `.codex/skills/`에 유지합니다. 이것은 설치된 프로젝트의 런타임 스킬 경로와 다릅니다.
-- 설치된 프로젝트는 관리 대상 스킬을 `.agents/skills/`, 관리 대상 에이전트를 `.codex/agents/*.md`에 둡니다.
-- `templates/.claude/` 와 `templates/CLAUDE.md*` 는 upstream 호환 템플릿 입력면으로 남아 있으며, 설치 후 활성 런타임 표면은 아닙니다.
-- `.codex/hooks/` 는 이 패키지가 쓰는 OMX 관리 훅 스크립트 레이어입니다. Codex native `hooks.json` discovery는 별도 계약이며, `omcustomcodex`가 현재 직접 생성하는 표면은 아닙니다.
-- Codex native custom subagent인 `.codex/agents/*.toml` 은 공존할 수 있지만, `omcustomcodex`가 현재 관리하는 에이전트 계약은 `.codex/agents/*.md` 입니다.
+- 설치된 프로젝트는 관리 대상 스킬을 `.agents/skills/`, 관리 대상 Codex 에이전트를 `.codex/agents/*.toml`에 둡니다.
+- `.codex/agents/*.md`와 `templates/.claude/agents/*.md`의 저장소/패키지 정의는 upstream 호환 소스 입력이며, `omcustomcodex`가 이를 관리 대상 TOML 런타임 표면으로 컴파일합니다. Markdown 정의 자체는 설치 후 활성 역할이 아닙니다.
+- 그 밖의 `templates/.claude/`와 `templates/CLAUDE.md*` 파일은 upstream 호환 템플릿 입력면으로 남아 있으며, 설치 후 활성 Codex 런타임 표면은 아닙니다.
+- `.codex/hooks/`에는 관리 대상 스크립트와 명시적인 Claude 호환성 레코드가 있으며, `omcustomcodex`는 검증된 native 하위 집합을 Codex가 탐색하는 `.codex/hooks.json` 프로젝트 레지스트리로 컴파일합니다.
+- Custom 및 OMX native 역할은 `.codex/agents/*.toml`에 공존할 수 있으며, `omcustomcodex`는 자체 생성한 관리 대상 TOML 역할을 동기화하면서 이들을 보존합니다.
 - 프로젝트 단위 MCP 설정은 `.codex/config.toml`, 관리 프로젝트 레지스트리는 `~/.oh-my-customcodex/projects.json`을 사용합니다.
 
 ---

@@ -108,31 +108,34 @@ const DANGEROUS_PATTERNS = [
   },
 ];
 
-/**
- * Extract commands from hooks object
- * Complexity is inherent to nested hook structure traversal
- */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Security scanning requires thorough nested traversal
-function extractCommands(hooks: unknown): string[] {
-  const commands: string[] = [];
-  if (!hooks || typeof hooks !== 'object') return commands;
+/** Extract command handlers from both native Codex and legacy hook registries. */
+function extractCommands(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap(extractCommands);
+  }
+  if (!value || typeof value !== 'object') {
+    return [];
+  }
 
-  for (const hookName in hooks) {
-    const hook = (hooks as Record<string, unknown>)[hookName];
-    if (hook && typeof hook === 'object') {
-      for (const eventName in hook) {
-        const event = (hook as Record<string, unknown>)[eventName];
-        if (Array.isArray(event)) {
-          for (const item of event) {
-            if (typeof item === 'object' && item && 'command' in item) {
-              commands.push(String(item.command));
-            }
-          }
-        }
-      }
+  const record = value as Record<string, unknown>;
+  const commands = typeof record.command === 'string' ? [record.command] : [];
+  for (const [key, child] of Object.entries(record)) {
+    if (key !== 'command') {
+      commands.push(...extractCommands(child));
     }
   }
   return commands;
+}
+
+async function resolveHookRegistryPath(targetDir: string, rootDir: string): Promise<string> {
+  const nativeRegistry = path.join(targetDir, rootDir, 'hooks.json');
+  if (await pathExists(nativeRegistry)) {
+    return nativeRegistry;
+  }
+
+  // Preserve security coverage for installations created before the native
+  // registry moved from .codex/hooks/hooks.json to .codex/hooks.json.
+  return path.join(targetDir, rootDir, 'hooks', 'hooks.json');
 }
 
 /**
@@ -163,14 +166,14 @@ function scanCommands(commands: string[]): { findings: string[]; worstSeverity: 
 /**
  * Check hook scripts for dangerous patterns
  * @param targetDir - Target directory
- * @param rootDir - Root directory (.claude)
+ * @param rootDir - Provider root directory (.codex)
  * @returns Check result
  */
 export async function checkHookScripts(
   targetDir: string,
   rootDir: string = '.codex'
 ): Promise<CheckResult> {
-  const hooksFile = path.join(targetDir, rootDir, 'hooks', 'hooks.json');
+  const hooksFile = await resolveHookRegistryPath(targetDir, rootDir);
   const exists = await pathExists(hooksFile);
 
   if (!exists) {

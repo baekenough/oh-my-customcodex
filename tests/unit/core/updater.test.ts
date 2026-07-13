@@ -14,6 +14,7 @@ import {
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, join as pathJoin } from 'node:path';
+import { NATIVE_AGENT_GENERATED_HEADER } from '../../../src/core/agent-compiler.js';
 import { getDefaultConfig, saveConfig } from '../../../src/core/config.js';
 import { getProviderLayout } from '../../../src/core/layout.js';
 import {
@@ -555,10 +556,9 @@ describe('updater', () => {
       config.version = '0.1.0';
       config.preserveFiles = ['.codex/agents/souls/lang-golang-expert.soul.md'];
       await saveConfig(tempDir, config);
-      await update({ targetDir: tempDir, components: ['agents'], forceOverwriteAll: true });
       const nestedPath = join(tempDir, '.codex/agents/souls/lang-golang-expert.soul.md');
-      const original = await readFile(nestedPath, 'utf-8');
-      await writeFile(nestedPath, `${original}\n<!-- nested user marker -->\n`);
+      await mkdir(join(nestedPath, '..'), { recursive: true });
+      await writeFile(nestedPath, '<!-- nested user marker -->\n');
 
       for (let attempt = 0; attempt < 2; attempt++) {
         expect(
@@ -775,19 +775,42 @@ describe('updater', () => {
     it('should preserve config paths that use Windows separators within a component', async () => {
       const config = getDefaultConfig();
       config.version = '0.1.0';
-      config.preserveFiles = ['.codex\\agents\\be-fastapi-expert.md'];
+      config.preserveFiles = ['.codex\\agents\\be-fastapi-expert.toml'];
       await saveConfig(tempDir, config);
       await createDirStructure({
-        '.codex/agents/be-fastapi-expert.md': 'windows separator user content',
+        '.codex/agents/be-fastapi-expert.toml':
+          'name = "be-fastapi-expert"\ndescription = "custom"\ndeveloper_instructions = "custom"\n',
       });
 
       const result = await update({ targetDir: tempDir, components: ['agents'], force: true });
 
       expect(result.success).toBe(true);
-      expect(result.preservedFiles).toContain('.codex\\agents\\be-fastapi-expert.md');
-      expect(await readFile(join(tempDir, '.codex/agents/be-fastapi-expert.md'), 'utf-8')).toBe(
-        'windows separator user content'
-      );
+      expect(result.preservedFiles).toContain('.codex\\agents\\be-fastapi-expert.toml');
+      expect(
+        await readFile(join(tempDir, '.codex/agents/be-fastapi-expert.toml'), 'utf-8')
+      ).toContain('description = "custom"');
+    });
+
+    it('should regenerate managed native-agent drift while preserving custom TOML bytes', async () => {
+      await createConfig('0.1.0');
+      const agentsDir = join(tempDir, '.codex', 'agents');
+      const managedPath = join(agentsDir, 'be-fastapi-expert.toml');
+      const customPath = join(agentsDir, 'custom-local.toml');
+      const customBytes =
+        'name = "custom-local"\ndescription = "custom"\ndeveloper_instructions = "custom"\n';
+      await mkdir(agentsDir, { recursive: true });
+      await writeFile(managedPath, `${NATIVE_AGENT_GENERATED_HEADER}name = "drifted"\n`);
+      await writeFile(customPath, customBytes);
+
+      const result = await update({ targetDir: tempDir, components: ['agents'], force: true });
+
+      expect(result.success).toBe(true);
+      expect(Bun.TOML.parse(await readFile(managedPath, 'utf-8'))).toMatchObject({
+        name: 'be-fastapi-expert',
+      });
+      expect(await readFile(customPath, 'utf-8')).toBe(customBytes);
+      expect(result.preservedFiles).toContain('.codex/agents/custom-local.toml');
+      expect((await readdir(agentsDir)).some((filename) => filename.endsWith('.md'))).toBe(false);
     });
 
     it('should not record template baselines for files under a trailing-slash preserved directory', async () => {
@@ -835,7 +858,7 @@ describe('updater', () => {
       await createConfig('0.1.0');
       await update({ targetDir: tempDir, components: ['agents'], forceOverwriteAll: true });
       const lockfilePath = join(tempDir, '.omcodex.lock.json');
-      const trackedPath = '.codex/agents/be-fastapi-expert.md';
+      const trackedPath = '.codex/agents/be-fastapi-expert.toml';
       const staleHash = '0'.repeat(64);
       const lockfile = JSON.parse(await readFile(lockfilePath, 'utf-8'));
       lockfile.files[trackedPath].templateHash = staleHash;

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import {
   type ComponentInfo,
   formatAsJson,
@@ -15,6 +15,32 @@ import {
   getSkills,
   listCommand,
 } from '../../../src/cli/list.js';
+import { NATIVE_AGENT_GENERATED_HEADER } from '../../../src/core/agent-compiler.js';
+
+function legacyMarkdownDescription(content: string, name: string): string {
+  const withoutFrontmatter = content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
+  for (const line of withoutFrontmatter.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('```')) continue;
+    return trimmed.replace(/^>\s*/, '');
+  }
+  return `${name} native role`;
+}
+
+async function writeNativeAgent(path: string, legacyMarkdown: string): Promise<void> {
+  const name = basename(path, '.md');
+  const nativePath = path.replace(/\.md$/, '.toml');
+  const description = legacyMarkdownDescription(legacyMarkdown, name);
+  await writeFile(
+    nativePath,
+    [
+      `name = ${JSON.stringify(name)}`,
+      `description = ${JSON.stringify(description)}`,
+      `developer_instructions = ${JSON.stringify('Test native role instructions.')}`,
+      '',
+    ].join('\n')
+  );
+}
 
 describe('list command', () => {
   let tempDir: string;
@@ -39,10 +65,10 @@ describe('list command', () => {
       expect(agents).toEqual([]);
     });
 
-    it('should find agent with flat .md file', async () => {
+    it('should find a native agent from a flat TOML file', async () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(
+      await writeNativeAgent(
         join(agentsDir, 'lang-golang-expert.md'),
         '# Golang Expert\n\n> A Go language expert agent\n\nMore content here...'
       );
@@ -52,14 +78,35 @@ describe('list command', () => {
       expect(agents).toHaveLength(1);
       expect(agents[0].name).toBe('lang-golang-expert');
       expect(agents[0].type).toBe('language');
-      expect(agents[0].path).toBe('.codex/agents/lang-golang-expert.md');
+      expect(agents[0].path).toBe('.codex/agents/lang-golang-expert.toml');
       expect(agents[0].description).toBe('A Go language expert agent');
+    });
+
+    it('should ignore legacy Markdown and distinguish generated from custom native TOML', async () => {
+      const agentsDir = join(tempDir, '.codex', 'agents');
+      await mkdir(agentsDir, { recursive: true });
+      await writeFile(join(agentsDir, 'legacy-only.md'), '# Legacy only');
+      await writeFile(
+        join(agentsDir, 'be-generated.toml'),
+        NATIVE_AGENT_GENERATED_HEADER +
+          'name = "be-generated"\ndescription = "generated"\ndeveloper_instructions = "generated"\n'
+      );
+      await writeFile(
+        join(agentsDir, 'custom-local.toml'),
+        'name = "custom-local"\ndescription = "custom"\ndeveloper_instructions = "custom"\n'
+      );
+
+      const agents = await getAgents(tempDir);
+
+      expect(agents.map((agent) => agent.name)).toEqual(['be-generated', 'custom-local']);
+      expect(agents.find((agent) => agent.name === 'be-generated')?.managed).toBe(true);
+      expect(agents.find((agent) => agent.name === 'custom-local')?.managed).toBe(false);
     });
 
     it('should extract description from markdown content', async () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(
+      await writeNativeAgent(
         join(agentsDir, 'mgr-creator.md'),
         '# Creator Agent\n\n> Creates new agents and components\n\nMore content here...'
       );
@@ -77,9 +124,9 @@ describe('list command', () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
 
-      await writeFile(join(agentsDir, 'lang-python-expert.md'), '# Python Expert');
-      await writeFile(join(agentsDir, 'lang-golang-expert.md'), '# Golang Expert');
-      await writeFile(join(agentsDir, 'mgr-creator.md'), '# Creator');
+      await writeNativeAgent(join(agentsDir, 'lang-python-expert.md'), '# Python Expert');
+      await writeNativeAgent(join(agentsDir, 'lang-golang-expert.md'), '# Golang Expert');
+      await writeNativeAgent(join(agentsDir, 'mgr-creator.md'), '# Creator');
 
       const agents = await getAgents(tempDir);
 
@@ -93,7 +140,7 @@ describe('list command', () => {
     it('should extract type from filename prefix', async () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(join(agentsDir, 'be-springboot-expert.md'), '# Spring Boot Expert');
+      await writeNativeAgent(join(agentsDir, 'be-springboot-expert.md'), '# Spring Boot Expert');
 
       const agents = await getAgents(tempDir);
 
@@ -105,7 +152,7 @@ describe('list command', () => {
     it('should classify exact-name coordination reviewers', async () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(join(agentsDir, 'scholastic.md'), '# Scholastic Reviewer');
+      await writeNativeAgent(join(agentsDir, 'scholastic.md'), '# Scholastic Reviewer');
 
       const agents = await getAgents(tempDir);
 
@@ -117,7 +164,7 @@ describe('list command', () => {
     it('should extract description from blockquote in markdown', async () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(
+      await writeNativeAgent(
         join(agentsDir, 'lang-rust-expert.md'),
         `# Rust Expert Agent
 
@@ -139,7 +186,7 @@ This agent specializes in Rust programming.
     it('should extract description from first blockquote', async () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(
+      await writeNativeAgent(
         join(agentsDir, 'lang-kotlin-expert.md'),
         '# Kotlin Expert\n\n> Kotlin language expert for Android and JVM\n\nMore content here...'
       );
@@ -424,7 +471,7 @@ This is the description of the unit testing guide that provides best practices.`
       {
         name: 'lang-golang-expert',
         type: 'language',
-        path: '.codex/agents/lang-golang-expert.md',
+        path: '.codex/agents/lang-golang-expert.toml',
         description: 'Go language expert',
         version: '1.0.0',
       },
@@ -552,7 +599,7 @@ This is the description of the unit testing guide that provides best practices.`
       await mkdir(guideDir, { recursive: true });
       await mkdir(rulesDir, { recursive: true });
 
-      await writeFile(
+      await writeNativeAgent(
         join(agentsDir, 'lang-golang-expert.md'),
         '# Golang Expert\n\n> Go expert\n\nMore content here...'
       );
@@ -592,16 +639,16 @@ This is the description of the unit testing guide that provides best practices.`
       expect(rules[0].description).toBe('Never violate safety rules');
     });
 
-    it('should handle agent files with no description', async () => {
+    it('should provide required native metadata when legacy fixtures omit a description', async () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(join(agentsDir, 'lang-broken-agent.md'), '# Broken Agent\n\n');
+      await writeNativeAgent(join(agentsDir, 'lang-broken-agent.md'), '# Broken Agent\n\n');
 
       const agents = await getAgents(tempDir);
 
       expect(agents).toHaveLength(1);
       expect(agents[0].name).toBe('lang-broken-agent');
-      expect(agents[0].description).toBeUndefined();
+      expect(agents[0].description).toBe('lang-broken-agent native role');
     });
 
     it('should handle directories without expected files', async () => {
@@ -651,7 +698,7 @@ This is the description of the unit testing guide that provides best practices.`
       await mkdir(guideDir, { recursive: true });
       await mkdir(rulesDir, { recursive: true });
 
-      await writeFile(join(agentsDir, 'lang-test-agent.md'), '# Test Agent');
+      await writeNativeAgent(join(agentsDir, 'lang-test-agent.md'), '# Test Agent');
       await writeFile(join(skillDir, 'SKILL.md'), '# Test Skill');
       await writeFile(join(guideDir, 'clean-code.md'), '# Clean Code');
       await writeFile(join(rulesDir, 'MUST-safety.md'), '# Safety Rules');
@@ -670,7 +717,7 @@ This is the description of the unit testing guide that provides best practices.`
       // Setup
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(join(agentsDir, 'lang-test-agent.md'), '# Test Agent');
+      await writeNativeAgent(join(agentsDir, 'lang-test-agent.md'), '# Test Agent');
 
       const result = await listCommand('all', { format: 'json' });
 
@@ -682,7 +729,7 @@ This is the description of the unit testing guide that provides best practices.`
 
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(join(agentsDir, 'lang-test-agent.md'), '# Test Agent');
+      await writeNativeAgent(join(agentsDir, 'lang-test-agent.md'), '# Test Agent');
 
       const result = await listCommand('agents');
 
@@ -738,7 +785,7 @@ This is the description of the unit testing guide that provides best practices.`
 
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(join(agentsDir, 'lang-test-agent.md'), '# Test Agent');
+      await writeNativeAgent(join(agentsDir, 'lang-test-agent.md'), '# Test Agent');
 
       const result = await listCommand('agents', { format: 'simple' });
 
@@ -750,7 +797,7 @@ This is the description of the unit testing guide that provides best practices.`
 
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(join(agentsDir, 'lang-test-agent.md'), '# Test Agent');
+      await writeNativeAgent(join(agentsDir, 'lang-test-agent.md'), '# Test Agent');
 
       const result = await listCommand('agents', { format: 'json' });
 
@@ -828,7 +875,7 @@ This is the description of the unit testing guide that provides best practices.`
     it('should extract description from markdown when no blockquote', async () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(
+      await writeNativeAgent(
         join(agentsDir, 'lang-legacy-agent.md'),
         '# Legacy Agent\n\nA legacy format agent description.\n\nMore content here...'
       );
@@ -842,9 +889,9 @@ This is the description of the unit testing guide that provides best practices.`
     it('should handle different agent type prefixes', async () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(join(agentsDir, 'fe-react-expert.md'), '# React Expert');
-      await writeFile(join(agentsDir, 'be-django-expert.md'), '# Django Expert');
-      await writeFile(join(agentsDir, 'tool-npm-expert.md'), '# NPM Expert');
+      await writeNativeAgent(join(agentsDir, 'fe-react-expert.md'), '# React Expert');
+      await writeNativeAgent(join(agentsDir, 'be-django-expert.md'), '# Django Expert');
+      await writeNativeAgent(join(agentsDir, 'tool-npm-expert.md'), '# NPM Expert');
 
       const agents = await getAgents(tempDir);
 
@@ -857,7 +904,7 @@ This is the description of the unit testing guide that provides best practices.`
     it('should handle unknown agent type prefix', async () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(join(agentsDir, 'custom-agent.md'), '# Custom Agent');
+      await writeNativeAgent(join(agentsDir, 'custom-agent.md'), '# Custom Agent');
 
       const agents = await getAgents(tempDir);
 
@@ -883,7 +930,7 @@ This is the description of the unit testing guide that provides best practices.`
         'tutor',
       ];
       for (const prefix of prefixes) {
-        await writeFile(join(agentsDir, `${prefix}-test.md`), `# ${prefix} Test`);
+        await writeNativeAgent(join(agentsDir, `${prefix}-test.md`), `# ${prefix} Test`);
       }
 
       const agents = await getAgents(tempDir);
@@ -1007,7 +1054,7 @@ Description after code block.`
       await mkdir(agentsDir, { recursive: true });
 
       // Create a file that will fail to read (this scenario is hard to test, but we'll create a valid file)
-      await writeFile(
+      await writeNativeAgent(
         join(agentsDir, 'lang-error-agent.md'),
         '# Error Agent\n\n> Fallback description'
       );
@@ -1305,7 +1352,7 @@ Description after code block.`
     it('should skip YAML frontmatter when extracting description', async () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(
+      await writeNativeAgent(
         join(agentsDir, 'lang-frontmatter-agent.md'),
         `---
 name: frontmatter-agent
@@ -1331,7 +1378,7 @@ More content here.`
     it('should handle agent with frontmatter but no blockquote', async () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(
+      await writeNativeAgent(
         join(agentsDir, 'mgr-frontmatter-test.md'),
         `---
 name: frontmatter-test
@@ -1447,11 +1494,14 @@ scripts:
     it('should handle readTextFile error when reading agent markdown', async () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(join(agentsDir, 'lang-read-error.md'), '# Read Error Agent\n\n> Description');
+      await writeNativeAgent(
+        join(agentsDir, 'lang-read-error.md'),
+        '# Read Error Agent\n\n> Description'
+      );
 
       const fs = await import('../../../src/utils/fs.js');
       const readTextFileSpy = spyOn(fs, 'readTextFile').mockImplementation(async (path) => {
-        if (path.endsWith('lang-read-error.md')) {
+        if (path.endsWith('lang-read-error.toml')) {
           throw new Error('Simulated read error');
         }
         return '';
@@ -1460,9 +1510,8 @@ scripts:
       try {
         const agents = await getAgents(tempDir);
 
-        expect(agents).toHaveLength(1);
-        // When markdown read fails, description should be undefined
-        expect(agents[0].description).toBeUndefined();
+        // Unreadable native role metadata is ignored rather than exposing a partial role.
+        expect(agents).toEqual([]);
       } finally {
         readTextFileSpy.mockRestore();
       }

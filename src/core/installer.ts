@@ -19,6 +19,8 @@ import {
   writeTextFile,
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
+import { prevalidateNativeAgentSync, syncNativeAgents } from './agent-compiler.js';
+import { installNativeCodexHooks, prevalidateNativeCodexHooks } from './codex-hooks.js';
 import { installCodex, isCodexInstalled } from './codex-installer.js';
 import { loadConfig, saveConfig } from './config.js';
 import {
@@ -43,14 +45,14 @@ import {
   type InstallComponent,
 } from './layout.js';
 import { generateAndWriteLockfileForDir } from './lockfile.js';
-import { assessOmxInstallation, installOmx, MINIMUM_OMX_VERSION } from './omx-installer.js';
-import { installRtk, isRtkInstalled } from './rtk-installer.js';
 import {
-  getAgentDomain,
-  getSkillScope,
-  shouldInstallAgent,
-  shouldInstallSkill,
-} from './scope-filter.js';
+  assessOmxInstallation,
+  ensureOmxProjectReady,
+  installOmx,
+  MINIMUM_OMX_VERSION,
+} from './omx-installer.js';
+import { installRtk, isRtkInstalled } from './rtk-installer.js';
+import { getSkillScope, shouldInstallSkill } from './scope-filter.js';
 
 /**
  * Options for installation
@@ -58,6 +60,12 @@ import {
 export interface InstallDependencies {
   /** Injectable lockfile generation boundary for isolated installer tests. */
   generateAndWriteLockfileForDir?: typeof generateAndWriteLockfileForDir;
+  /** Injectable project provisioning boundary for isolated installer/init tests. */
+  ensureOmxProjectReady?: (projectRoot: string) => {
+    success: boolean;
+    command: string;
+    error?: string;
+  };
 }
 
 export interface InstallOptions {
@@ -81,6 +89,8 @@ export interface InstallOptions {
   domain?: string;
   /** Test-only dependency injection boundary. */
   dependencies?: InstallDependencies;
+  /** Provision and verify the project-scoped OMX runtime before reporting success. */
+  provisionOmxProject?: boolean;
 }
 
 /**
@@ -577,6 +587,35 @@ function installOmxIfNeeded(result: InstallResult): void {
   }
 }
 
+async function prevalidateInstallComponent(
+  targetDir: string,
+  component: InstallComponent,
+  options: InstallOptions,
+  overwrite: boolean
+): Promise<void> {
+  const destPath = join(targetDir, getComponentPath(component));
+  const srcPath = resolveTemplatePath(getTemplateComponentPath(component));
+  if (!(await fileExists(srcPath))) {
+    await prevalidateSafeWritePath(join(destPath, '.omcodex-install-probe'), targetDir);
+    return;
+  }
+  if (component === 'agents') {
+    await prevalidateNativeAgentSync({
+      sourceDir: srcPath,
+      destinationDir: destPath,
+      targetRoot: targetDir,
+      domain: options.domain,
+    });
+    return;
+  }
+  await prevalidateCopyDirectory(srcPath, destPath, {
+    overwrite,
+    preserveSymlinks: true,
+    preserveTimestamps: true,
+    trustedWriteRoot: targetDir,
+  });
+}
+
 async function validateInstallWritePlan(targetDir: string, options: InstallOptions): Promise<void> {
   const layout = getProviderLayout();
   const components = options.components || getAllComponents();
@@ -584,20 +623,13 @@ async function validateInstallWritePlan(targetDir: string, options: InstallOptio
 
   for (const component of components) {
     if (component === 'entry-md') continue;
-    const destPath = join(targetDir, getComponentPath(component));
-    if (overwrite || !(await fileExists(destPath))) {
-      const srcPath = resolveTemplatePath(getTemplateComponentPath(component));
-      if (await fileExists(srcPath)) {
-        await prevalidateCopyDirectory(srcPath, destPath, {
-          overwrite,
-          preserveSymlinks: true,
-          preserveTimestamps: true,
-          trustedWriteRoot: targetDir,
-        });
-      } else {
-        await prevalidateSafeWritePath(join(destPath, '.omcodex-install-probe'), targetDir);
-      }
+    if (component === 'hooks') {
+      await prevalidateNativeCodexHooks(targetDir, { overwrite });
+      continue;
     }
+    const destPath = join(targetDir, getComponentPath(component));
+    if (component !== 'agents' && !overwrite && (await fileExists(destPath))) continue;
+    await prevalidateInstallComponent(targetDir, component, options, overwrite);
   }
 
   for (const filePath of [
@@ -643,6 +675,30 @@ async function runInstallFinalization(
 ): Promise<void> {
   await updateInstallConfig(options.targetDir, options, result.installedComponents);
 
+  installRtkIfNeeded(result);
+  installCodexIfNeeded(result);
+
+  if (options.provisionOmxProject) {
+    const provisionOmxProject =
+      options.dependencies?.ensureOmxProjectReady ?? ensureOmxProjectReady;
+    const provision = provisionOmxProject(options.targetDir);
+    if (!provision.success) {
+      throw new Error(
+        provision.error ?? `OMX project setup is incomplete. Run manually: ${provision.command}`
+      );
+    }
+
+    // OMX owns shared project surfaces and may reorder its hook groups during setup.
+    // Re-merge only the harness-managed native hook subset so existing custom/OMX
+    // handlers retain their relative order and the final lockfile hashes this state.
+    const requestedComponents = options.components ?? getAllComponents();
+    if (requestedComponents.includes('hooks')) {
+      await installNativeCodexHooks(options.targetDir, { overwrite: false });
+    }
+  } else {
+    installOmxIfNeeded(result);
+  }
+
   const writeLockfileForDir =
     options.dependencies?.generateAndWriteLockfileForDir ?? generateAndWriteLockfileForDir;
   const lockfileResult = await writeLockfileForDir(options.targetDir, {
@@ -654,10 +710,6 @@ async function runInstallFinalization(
   } else {
     info('install.lockfile_generated', { files: String(lockfileResult.fileCount) });
   }
-
-  installRtkIfNeeded(result);
-  installCodexIfNeeded(result);
-  installOmxIfNeeded(result);
 }
 
 /**
@@ -827,50 +879,6 @@ async function installSkillsWithScopeFilter(
 }
 
 /**
- * Install agents directory with domain-based filtering.
- * When a domain filter is set, agents whose domain does not match and is not 'universal'
- * are excluded. When no domain filter is set, all agents are installed (backward compatible).
- */
-async function installAgentsWithDomainFilter(
-  srcPath: string,
-  destPath: string,
-  options: InstallOptions
-): Promise<void> {
-  await validateSafeWritePath(join(destPath, '.omcodex-directory-probe'), options.targetDir);
-  await ensureDirectory(destPath);
-  const entries = await readdir(srcPath);
-
-  for (const entry of entries) {
-    const entrySrcPath = join(srcPath, entry);
-    const entryStat = await stat(entrySrcPath);
-
-    // Handle subdirectories (e.g., souls/) by copying them as-is
-    if (entryStat.isDirectory()) {
-      await copyDirectory(entrySrcPath, join(destPath, entry), {
-        overwrite: !!(options.force || options.backup),
-        preserveSymlinks: true,
-        preserveTimestamps: true,
-        trustedWriteRoot: options.targetDir,
-      });
-      continue;
-    }
-
-    if (!entry.endsWith('.md')) continue;
-
-    if (options.domain) {
-      const content = await fsReadFile(entrySrcPath, 'utf-8');
-      const agentDomain = getAgentDomain(content);
-      if (!shouldInstallAgent(agentDomain, options.domain)) {
-        debug('install.agent_domain_excluded', { agent: entry, domain: agentDomain });
-        continue;
-      }
-    }
-
-    await copyFile(entrySrcPath, join(destPath, entry), options.targetDir);
-  }
-}
-
-/**
  * Install a single component
  */
 async function installComponent(
@@ -882,12 +890,21 @@ async function installComponent(
     return false;
   }
 
+  if (component === 'hooks') {
+    const overwrite = !!(options.force || options.backup);
+    const installed = await installNativeCodexHooks(targetDir, {
+      overwrite,
+    });
+    if (installed.installed) info('install.hooks_trust_review');
+    return installed.installed;
+  }
+
   const templatePath = getTemplateComponentPath(component);
   const destPath = join(targetDir, getComponentPath(component));
   const destExists = await fileExists(destPath);
 
   // Skip if exists and not forcing/backing up
-  if (destExists && !options.force && !options.backup) {
+  if (component !== 'agents' && destExists && !options.force && !options.backup) {
     debug('install.component_skipped', { component });
     return false;
   }
@@ -901,7 +918,12 @@ async function installComponent(
   if (component === 'skills') {
     await installSkillsWithScopeFilter(srcPath, destPath, options);
   } else if (component === 'agents') {
-    await installAgentsWithDomainFilter(srcPath, destPath, options);
+    await syncNativeAgents({
+      sourceDir: srcPath,
+      destinationDir: destPath,
+      targetRoot: targetDir,
+      domain: options.domain,
+    });
   } else {
     // Copy with symlink preservation for refs/ directories
     await copyDirectory(srcPath, destPath, {

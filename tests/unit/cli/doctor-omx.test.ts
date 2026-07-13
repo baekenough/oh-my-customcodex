@@ -1,237 +1,107 @@
-import { afterEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, describe, expect, it } from 'bun:test';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { checkOmx, checkOmxModelRouting } from '../../../src/cli/doctor.js';
+import type { InstallerDeps } from '../../../src/core/omx-installer.js';
 
-const readyAssessment = {
-  status: 'ready',
-  installed: true,
-  version: 'oh-my-codex v0.19.0',
-  parsedVersion: '0.19.0',
-  minimumVersion: '0.19.0',
-  hasApiCommand: true,
-};
-
-type MockOmxDeps = {
-  exec?: (cmd: string, opts?: unknown) => string | Buffer;
-};
-
-type MockOmxAssessment = {
-  status: string;
-  installed: boolean;
-  version: string | null;
-  parsedVersion: string | null;
-  minimumVersion: string;
-  hasApiCommand: boolean;
-};
-
-function parseMockOmxVersion(versionOutput: string | null): string | null {
-  if (!versionOutput) {
-    return null;
-  }
-
-  const match = versionOutput.match(
-    /\bv?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)\b/
-  );
-  return match ? match[1] : null;
-}
-
-function parseMockVersionParts(version: string): {
-  core: [number, number, number];
-  prerelease: string | null;
-} {
-  const [withoutBuild] = version.split('+');
-  const [coreText, prerelease = null] = withoutBuild.split('-', 2);
-  const coreParts = coreText.split('.').map((part) => Number.parseInt(part, 10));
-
+function depsFor(commands: Record<string, string | Error>): InstallerDeps {
   return {
-    core: [coreParts[0] ?? 0, coreParts[1] ?? 0, coreParts[2] ?? 0],
-    prerelease,
+    exec: (command) => {
+      const result = commands[command];
+      if (result instanceof Error || result === undefined) {
+        throw result ?? new Error(`Unexpected command: ${command}`);
+      }
+      return result;
+    },
+    getPlatform: () => 'linux',
   };
 }
 
-function compareMockOmxVersions(left: string, right: string): number {
-  const a = parseMockVersionParts(left);
-  const b = parseMockVersionParts(right);
-
-  for (let index = 0; index < 3; index += 1) {
-    const diff = a.core[index] - b.core[index];
-    if (diff !== 0) {
-      return diff > 0 ? 1 : -1;
-    }
+async function withProject(run: (projectRoot: string) => Promise<void>): Promise<void> {
+  const projectRoot = await mkdtemp(join(tmpdir(), 'omcodex-doctor-omx-'));
+  try {
+    await run(projectRoot);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
   }
-
-  if (a.prerelease === b.prerelease) {
-    return 0;
-  }
-  if (a.prerelease === null) {
-    return 1;
-  }
-  if (b.prerelease === null) {
-    return -1;
-  }
-
-  return a.prerelease.localeCompare(b.prerelease, undefined, { numeric: true });
 }
 
-function assessOmxFromDepsOr(fallback: () => MockOmxAssessment) {
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: mirrors the OMX status helper for same-process mocks.
-  return (deps?: MockOmxDeps) => {
-    if (!deps?.exec) {
-      return fallback();
-    }
-
-    try {
-      deps.exec('which omx', { stdio: 'pipe', timeout: 3000 });
-    } catch {
-      return {
-        status: 'missing',
-        installed: false,
-        version: null,
-        parsedVersion: null,
-        minimumVersion: '0.19.0',
-        hasApiCommand: false,
-      };
-    }
-
-    let version: string | null = null;
-    try {
-      version = String(
-        deps.exec('omx --version', { encoding: 'utf-8', stdio: 'pipe', timeout: 3000 })
-      ).trim();
-    } catch {
-      version = null;
-    }
-
-    const parsedVersion = parseMockOmxVersion(version);
-    if (parsedVersion && compareMockOmxVersions(parsedVersion, '0.19.0') < 0) {
-      return {
-        status: 'stale',
-        installed: true,
-        version,
-        parsedVersion,
-        minimumVersion: '0.19.0',
-        hasApiCommand: false,
-      };
-    }
-
-    let hasApiCommand = false;
-    try {
-      deps.exec('omx api --help', { encoding: 'utf-8', stdio: 'pipe', timeout: 3000 });
-      hasApiCommand = true;
-    } catch {
-      hasApiCommand = false;
-    }
-
-    if (parsedVersion && !hasApiCommand) {
-      return {
-        status: 'api-missing',
-        installed: true,
-        version,
-        parsedVersion,
-        minimumVersion: '0.19.0',
-        hasApiCommand: false,
-      };
-    }
-
-    if (!parsedVersion && !hasApiCommand) {
-      return {
-        status: 'unknown-version',
-        installed: true,
-        version,
-        parsedVersion: null,
-        minimumVersion: '0.19.0',
-        hasApiCommand: false,
-      };
-    }
-
-    return {
-      status: 'ready',
-      installed: true,
-      version,
-      parsedVersion,
-      minimumVersion: '0.19.0',
-      hasApiCommand,
-    };
-  };
+async function writeCompleteProject(projectRoot: string): Promise<void> {
+  await mkdir(join(projectRoot, '.codex', 'prompts'), { recursive: true });
+  await writeFile(join(projectRoot, '.codex', 'prompts', 'executor.md'), '# Executor\n');
+  await mkdir(join(projectRoot, '.codex', 'skills', 'plan'), { recursive: true });
+  await writeFile(join(projectRoot, '.codex', 'skills', 'plan', 'SKILL.md'), '# Plan\n');
+  await mkdir(join(projectRoot, '.codex', 'agents'), { recursive: true });
+  await writeFile(
+    join(projectRoot, '.codex', 'agents', 'executor.toml'),
+    'name = "executor"\ndescription = "Implement"\ndeveloper_instructions = "Verify."\n'
+  );
+  await writeFile(join(projectRoot, 'AGENTS.md'), '# oh-my-codex\n');
+  await writeFile(
+    join(projectRoot, '.codex', 'config.toml'),
+    '# oh-my-codex\n[mcp_servers.omx_state]\ncommand = "node"\nenabled = true\n'
+  );
+  await writeFile(
+    join(projectRoot, '.codex', 'hooks.json'),
+    JSON.stringify({
+      hooks: {
+        PreToolUse: [{ hooks: [{ type: 'command', command: 'node hook.js', timeout: 30 }] }],
+      },
+    })
+  );
 }
-
-const omxInstallerMockBase = {
-  MINIMUM_OMX_VERSION: '0.19.0',
-  compareOmxVersions: compareMockOmxVersions,
-  hasOmxApiCommand: () => true,
-  isOmxInstalled: () => true,
-  isOmxReady: () => true,
-  isOmxVersionAtLeast: (version: string | null) => {
-    const parsedVersion = parseMockOmxVersion(version);
-    return parsedVersion !== null && compareMockOmxVersions(parsedVersion, '0.19.0') >= 0;
-  },
-  parseOmxVersion: parseMockOmxVersion,
-  getOmxVersion: () => 'oh-my-codex v0.19.0',
-};
 
 describe('doctor OMX baseline checks', () => {
-  afterEach(() => {
-    mock.restore();
-  });
-
   it('warns when OMX is below the required v0.19.0 baseline', async () => {
-    mock.module('../../../src/core/omx-installer.js', () => ({
-      ...omxInstallerMockBase,
-      MINIMUM_OMX_VERSION: '0.19.0',
-      assessOmxInstallation: assessOmxFromDepsOr(() => ({
-        status: 'stale',
-        installed: true,
-        version: 'oh-my-codex v0.17.3',
-        parsedVersion: '0.17.3',
-        minimumVersion: '0.19.0',
-        hasApiCommand: false,
-      })),
-      installOmx: () => true,
-    }));
+    await withProject(async (projectRoot) => {
+      const result = await checkOmx(
+        projectRoot,
+        depsFor({
+          'which omx': '/usr/local/bin/omx',
+          'omx --version': 'oh-my-codex v0.17.3',
+        })
+      );
 
-    const { checkOmx } = await import('../../../src/cli/doctor.js');
-    const result = await checkOmx();
-
-    expect(result.status).toBe('warn');
-    expect(result.fixable).toBe(true);
-    expect(result.message).toContain('v0.19.0');
+      expect(result.status).toBe('warn');
+      expect(result.fixable).toBe(true);
+      expect(result.message).toContain('v0.19.0');
+    });
   });
 
   it('warns when OMX is new enough but lacks omx api', async () => {
-    mock.module('../../../src/core/omx-installer.js', () => ({
-      ...omxInstallerMockBase,
-      MINIMUM_OMX_VERSION: '0.19.0',
-      assessOmxInstallation: assessOmxFromDepsOr(() => ({
-        status: 'api-missing',
-        installed: true,
-        version: 'oh-my-codex v0.19.0',
-        parsedVersion: '0.19.0',
-        minimumVersion: '0.19.0',
-        hasApiCommand: false,
-      })),
-      installOmx: () => true,
-    }));
+    await withProject(async (projectRoot) => {
+      const result = await checkOmx(
+        projectRoot,
+        depsFor({
+          'which omx': '/usr/local/bin/omx',
+          'omx --version': 'oh-my-codex v0.19.0',
+          'omx api --help': new Error('unknown command'),
+        })
+      );
 
-    const { checkOmx } = await import('../../../src/cli/doctor.js');
-    const result = await checkOmx();
-
-    expect(result.status).toBe('warn');
-    expect(result.fixable).toBe(true);
-    expect(result.message).toContain('omx api');
+      expect(result.status).toBe('warn');
+      expect(result.fixable).toBe(true);
+      expect(result.message).toContain('omx api');
+    });
   });
 
-  it('passes when OMX meets the baseline and exposes omx api', async () => {
-    mock.module('../../../src/core/omx-installer.js', () => ({
-      ...omxInstallerMockBase,
-      MINIMUM_OMX_VERSION: '0.19.0',
-      assessOmxInstallation: assessOmxFromDepsOr(() => readyAssessment),
-      installOmx: () => true,
-    }));
+  it('passes only when the binary and project setup both meet the OMX contract', async () => {
+    await withProject(async (projectRoot) => {
+      await writeCompleteProject(projectRoot);
+      const result = await checkOmx(
+        projectRoot,
+        depsFor({
+          'which omx': '/usr/local/bin/omx',
+          'omx --version': 'oh-my-codex v0.19.0',
+          'omx api --help': 'Usage: omx api',
+        })
+      );
 
-    const { checkOmx } = await import('../../../src/cli/doctor.js');
-    const result = await checkOmx();
-
-    expect(result.status).toBe('pass');
-    expect(result.fixable).toBe(false);
-    expect(result.message).toContain('omx api available');
+      expect(result.status).toBe('pass');
+      expect(result.fixable).toBe(false);
+      expect(result.message).toContain('project setup ready');
+    });
   });
 });
 
@@ -247,27 +117,24 @@ describe('doctor OMX model lane diagnostics', () => {
     else process.env.OMX_DEFAULT_SPARK_MODEL = originalSpark;
     if (originalLegacySpark === undefined) delete process.env.OMX_SPARK_MODEL;
     else process.env.OMX_SPARK_MODEL = originalLegacySpark;
-    mock.restore();
   });
 
-  it('reports runtime defaults when model lane env overrides are absent', async () => {
+  it('reports runtime defaults when model lane env overrides are absent', () => {
     delete process.env.OMX_DEFAULT_FRONTIER_MODEL;
     delete process.env.OMX_DEFAULT_SPARK_MODEL;
     delete process.env.OMX_SPARK_MODEL;
 
-    const { checkOmxModelRouting } = await import('../../../src/cli/doctor.js');
     const result = checkOmxModelRouting();
 
     expect(result.status).toBe('pass');
     expect(result.message).toContain('runtime defaults');
   });
 
-  it('warns when frontier and spark lanes are explicitly collapsed to one model', async () => {
+  it('warns when frontier and spark lanes are explicitly collapsed to one model', () => {
     process.env.OMX_DEFAULT_FRONTIER_MODEL = 'gpt-5.5';
     process.env.OMX_DEFAULT_SPARK_MODEL = 'gpt-5.5';
     delete process.env.OMX_SPARK_MODEL;
 
-    const { checkOmxModelRouting } = await import('../../../src/cli/doctor.js');
     const result = checkOmxModelRouting();
 
     expect(result.status).toBe('warn');
@@ -276,12 +143,11 @@ describe('doctor OMX model lane diagnostics', () => {
     expect(result.details).toContain('spark=gpt-5.5');
   });
 
-  it('reports legacy spark env compatibility without failing doctor', async () => {
+  it('reports legacy spark env compatibility without failing doctor', () => {
     process.env.OMX_DEFAULT_FRONTIER_MODEL = 'gpt-5.5';
     delete process.env.OMX_DEFAULT_SPARK_MODEL;
     process.env.OMX_SPARK_MODEL = 'gpt-5.3-codex-spark';
 
-    const { checkOmxModelRouting } = await import('../../../src/cli/doctor.js');
     const result = checkOmxModelRouting();
 
     expect(result.status).toBe('pass');

@@ -1,7 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { writeFile, access } from 'fs/promises';
-import { join, resolve } from 'path';
 import type { Actions, PageServerLoad } from './$types';
+import { AgentFileConflictError, saveAgentMarkdown } from '$lib/server/agent-files';
 import { getProjectRoot, getSkills } from '$lib/server/data';
 import { parseNaturalLanguage, buildAgentMarkdown, sanitizeName } from '$lib/server/agent-generator';
 import { parseFrontmatter } from '$lib/server/frontmatter';
@@ -108,25 +107,16 @@ export const actions: Actions = {
 		}
 
 		const root = await getProjectRoot();
-		const layout = await detectServeProjectLayout(root);
-		const allowedDir = resolve(root, layout.agentsDir);
-		const agentPath = join(allowedDir, `${name}.md`);
-
-		// Path containment check — prevent directory traversal
-		if (!resolve(agentPath).startsWith(allowedDir + '/') && resolve(agentPath) !== allowedDir) {
-			return fail(400, { error: 'Invalid path' });
-		}
-
-		// Check for existing file
 		try {
-			await access(agentPath);
-			// File exists
-			return fail(409, { error: `Agent "${name}" already exists. Choose a different name.` });
-		} catch {
-			// File does not exist — safe to write
+			await saveAgentMarkdown(root, name, content);
+		} catch (error) {
+			if (error instanceof AgentFileConflictError) {
+				return fail(409, { error: error.message });
+			}
+			return fail(400, {
+				error: error instanceof Error ? error.message : String(error)
+			});
 		}
-
-		await writeFile(agentPath, content + '\n', 'utf-8');
 
 		throw redirect(303, `/agents/${name}`);
 	}

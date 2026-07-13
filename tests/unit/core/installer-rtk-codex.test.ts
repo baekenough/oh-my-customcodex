@@ -16,6 +16,7 @@ import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:te
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import * as actualOmxInstaller from '../../../src/core/omx-installer.js';
 
 const readyOmxAssessment = () => ({
   status: 'ready',
@@ -182,15 +183,7 @@ function assessOmxFromDepsOr(fallback: () => MockOmxAssessment) {
 }
 
 const omxInstallerMockBase = {
-  MINIMUM_OMX_VERSION: '0.19.0',
-  compareOmxVersions: compareMockOmxVersions,
-  hasOmxApiCommand: () => true,
-  isOmxReady: () => true,
-  isOmxVersionAtLeast: (version: string | null) => {
-    const parsedVersion = parseMockOmxVersion(version);
-    return parsedVersion !== null && compareMockOmxVersions(parsedVersion, '0.19.0') >= 0;
-  },
-  parseOmxVersion: parseMockOmxVersion,
+  ...actualOmxInstaller,
 };
 
 describe('installer RTK/Codex/OMX paths', () => {
@@ -495,5 +488,65 @@ describe('installer RTK/Codex/OMX paths', () => {
     expect(result.success).toBe(true);
     expect(installCalls).toBe(1);
     expect(result.warnings.some((w) => w.includes('OMX installation/upgrade failed'))).toBe(false);
+  });
+
+  it('provisions OMX before generating the final lockfile', async () => {
+    const calls: string[] = [];
+    const { install } = await import('../../../src/core/installer.js');
+
+    const result = await install({
+      targetDir: tempDir,
+      components: [],
+      skipConfirm: true,
+      provisionOmxProject: true,
+      dependencies: {
+        ensureOmxProjectReady: (projectRoot) => {
+          expect(projectRoot).toBe(tempDir);
+          calls.push('ensure');
+          return {
+            success: true,
+            attempted: true,
+            command: 'omx setup --scope project --merge-agents',
+            assessment: {} as never,
+          };
+        },
+        generateAndWriteLockfileForDir: async () => {
+          calls.push('lockfile');
+          return { fileCount: 0 };
+        },
+      },
+    });
+
+    expect(result.success).toBe(true);
+    expect(calls).toEqual(['ensure', 'lockfile']);
+  });
+
+  it('fails install and skips lockfile generation when OMX provisioning is incomplete', async () => {
+    let lockfileCalled = false;
+    const { install } = await import('../../../src/core/installer.js');
+
+    const result = await install({
+      targetDir: tempDir,
+      components: [],
+      skipConfirm: true,
+      provisionOmxProject: true,
+      dependencies: {
+        ensureOmxProjectReady: () => ({
+          success: false,
+          attempted: true,
+          command: 'omx setup --scope project --merge-agents',
+          error: 'OMX project setup remains incomplete (native agents)',
+          assessment: {} as never,
+        }),
+        generateAndWriteLockfileForDir: async () => {
+          lockfileCalled = true;
+          return { fileCount: 0 };
+        },
+      },
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('OMX project setup remains incomplete');
+    expect(lockfileCalled).toBe(false);
   });
 });

@@ -7,6 +7,7 @@ export const load: PageServerLoad = async ({ parent }) => {
 
 	// Collect unique domains
 	const domains = [...new Set(agents.map((a) => a.domain).filter(Boolean))].sort();
+	const models = [...new Set(agents.map((a) => a.model).filter(Boolean))].sort();
 
-	return { agents, domains };
+	return { agents, domains, models };
 };

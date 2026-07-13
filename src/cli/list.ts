@@ -3,7 +3,11 @@
  * Lists installed agents, skills, guides, and rules
  */
 
-import { basename, dirname, join, relative } from 'node:path';
+import { basename, dirname, extname, join, relative } from 'node:path';
+import {
+  NATIVE_AGENT_GENERATED_HEADER,
+  parseNativeAgentListMetadata,
+} from '../core/agent-compiler.js';
 import { loadConfig, type OmccConfig } from '../core/config.js';
 import { getComponentPath, getProviderLayout } from '../core/layout.js';
 import { i18n } from '../i18n/index.js';
@@ -131,7 +135,8 @@ function translateListMessage(
 }
 
 function extractAgentTypeFromFilename(filename: string): string {
-  const name = basename(filename, '.md');
+  const extension = extname(filename);
+  const name = extension ? basename(filename, extension) : filename;
   const exactNameMap: Record<string, string> = {
     scholastic: 'coordination',
   };
@@ -371,26 +376,51 @@ export async function getAgents(
       customComponents.filter((c) => c.type === 'agent').map((c) => c.path)
     );
 
-    // In official Claude Code format, agents are flat .md files
-    const agentMdFiles = await listFiles(agentsDir, { recursive: false, pattern: '*.md' });
+    if (rootDir === '.claude') {
+      const agentMdFiles = await listFiles(agentsDir, { recursive: false, pattern: '*.md' });
+      const agents = await Promise.all(
+        agentMdFiles.map(async (agentMdPath) => {
+          const filename = basename(agentMdPath);
+          const name = basename(filename, '.md');
+          const description = await tryExtractMarkdownDescription(agentMdPath);
+          const relativePath = relative(targetDir, agentMdPath);
+          return {
+            name,
+            type: extractAgentTypeFromFilename(filename),
+            path: relativePath,
+            description,
+            version: undefined,
+            managed: !customAgentPaths.has(relativePath),
+          };
+        })
+      );
+      return agents.sort((a, b) => a.name.localeCompare(b.name));
+    }
 
-    const agents = await Promise.all(
-      agentMdFiles.map(async (agentMdPath) => {
-        const filename = basename(agentMdPath);
-        const name = basename(filename, '.md');
-        const description = await tryExtractMarkdownDescription(agentMdPath);
-        const relativePath = relative(targetDir, agentMdPath);
-
-        return {
-          name,
-          type: extractAgentTypeFromFilename(filename),
-          path: relativePath,
-          description,
-          version: undefined,
-          managed: !customAgentPaths.has(relativePath),
-        };
-      })
-    );
+    const agentTomlFiles = await listFiles(agentsDir, { recursive: false, pattern: '*.toml' });
+    const agents = (
+      await Promise.all(
+        agentTomlFiles.map(async (agentTomlPath): Promise<ComponentInfo | null> => {
+          try {
+            const content = await readTextFile(agentTomlPath);
+            const metadata = parseNativeAgentListMetadata(content);
+            const relativePath = relative(targetDir, agentTomlPath);
+            return {
+              name: metadata.name,
+              type: extractAgentTypeFromFilename(metadata.name),
+              path: relativePath,
+              description: metadata.description,
+              version: undefined,
+              managed:
+                content.startsWith(NATIVE_AGENT_GENERATED_HEADER) &&
+                !customAgentPaths.has(relativePath),
+            };
+          } catch {
+            return null;
+          }
+        })
+      )
+    ).filter((agent): agent is ComponentInfo => agent !== null);
 
     return agents.sort((a, b) => a.name.localeCompare(b.name));
   } catch {
@@ -642,14 +672,27 @@ export async function getHooks(
   rootDir: string = '.codex'
 ): Promise<ComponentInfo[]> {
   const hooksDir = join(targetDir, rootDir, 'hooks');
+  const rootRegistry = join(targetDir, rootDir, 'hooks.json');
+  const rootRegistryExists = await fileExists(rootRegistry);
+  const hooksDirExists = await fileExists(hooksDir);
 
-  if (!(await fileExists(hooksDir))) return [];
+  if (!rootRegistryExists && !hooksDirExists) return [];
 
   try {
-    const hookFiles = await listFiles(hooksDir, { recursive: true, pattern: '*.sh' });
-    const hookConfigs = await listFiles(hooksDir, { recursive: true, pattern: '*.json' });
-    const hookYamls = await listFiles(hooksDir, { recursive: true, pattern: '*.yaml' });
-    const allFiles = [...hookFiles, ...hookConfigs, ...hookYamls];
+    const hookFiles = hooksDirExists
+      ? await listFiles(hooksDir, { recursive: true, pattern: '*.sh' })
+      : [];
+    const hookConfigs = hooksDirExists
+      ? await listFiles(hooksDir, { recursive: true, pattern: '*.json' })
+      : [];
+    const hookYamls = hooksDirExists
+      ? await listFiles(hooksDir, { recursive: true, pattern: '*.yaml' })
+      : [];
+    const compatibilityPrefix = `compatibility${process.platform === 'win32' ? '\\' : '/'}`;
+    const managedDirectoryFiles = [...hookFiles, ...hookConfigs, ...hookYamls].filter(
+      (hookPath) => !relative(hooksDir, hookPath).startsWith(compatibilityPrefix)
+    );
+    const allFiles = [...(rootRegistryExists ? [rootRegistry] : []), ...managedDirectoryFiles];
 
     return allFiles
       .map((hookPath) => ({
@@ -657,7 +700,7 @@ export async function getHooks(
         type: 'hook',
         path: relative(targetDir, hookPath),
       }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path));
   } catch {
     return [];
   }

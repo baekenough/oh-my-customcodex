@@ -1,5 +1,10 @@
 import { readdir, readFile, stat } from 'fs/promises';
 import { join, basename, dirname } from 'path';
+import {
+	getServeAgent,
+	getServeAgents,
+	type ServeAgentInfo
+} from './agent-files.js';
 import { parseFrontmatter } from './frontmatter.js';
 import { detectServeProjectLayout, findServeProjectRoot } from './runtime-layout.js';
 
@@ -25,16 +30,7 @@ export async function getProjectRoot(): Promise<string> {
 // Types
 // ---------------------------------------------------------------------------
 
-export interface AgentInfo {
-	name: string;
-	description: string;
-	model: string;
-	domain: string;
-	tools: string[];
-	skills: string[];
-	frontmatter: Record<string, unknown>;
-	body: string;
-}
+export type AgentInfo = ServeAgentInfo;
 
 export interface SkillInfo {
 	name: string;
@@ -93,57 +89,11 @@ async function collectSkillFiles(dir: string): Promise<string[]> {
 // ---------------------------------------------------------------------------
 
 export async function getAgents(root: string): Promise<AgentInfo[]> {
-	const layout = await detectServeProjectLayout(root);
-	const dir = join(root, layout.agentsDir);
-	let files: string[];
-	try {
-		files = await readdir(dir);
-	} catch {
-		return [];
-	}
-
-	const agents: AgentInfo[] = [];
-	for (const file of files) {
-		if (!file.endsWith('.md')) continue;
-		const name = basename(file, '.md');
-		const content = await readFile(join(dir, file), 'utf-8');
-		const { frontmatter, body } = parseFrontmatter(content);
-
-		agents.push({
-			name,
-			description: String(frontmatter.description ?? ''),
-			model: String(frontmatter.model ?? 'sonnet'),
-			domain: String(frontmatter.domain ?? ''),
-			tools: arrayField(frontmatter.tools),
-			skills: arrayField(frontmatter.skills),
-			frontmatter,
-			body
-		});
-	}
-
-	return agents.sort((a, b) => a.name.localeCompare(b.name));
+	return getServeAgents(root);
 }
 
 export async function getAgent(root: string, name: string): Promise<AgentInfo | null> {
-	const layout = await detectServeProjectLayout(root);
-	const filePath = join(root, layout.agentsDir, `${name}.md`);
-	let content: string;
-	try {
-		content = await readFile(filePath, 'utf-8');
-	} catch {
-		return null;
-	}
-	const { frontmatter, body } = parseFrontmatter(content);
-	return {
-		name,
-		description: String(frontmatter.description ?? ''),
-		model: String(frontmatter.model ?? 'sonnet'),
-		domain: String(frontmatter.domain ?? ''),
-		tools: arrayField(frontmatter.tools),
-		skills: arrayField(frontmatter.skills),
-		frontmatter,
-		body
-	};
+	return getServeAgent(root, name);
 }
 
 // ---------------------------------------------------------------------------

@@ -1,4 +1,5 @@
 import type { PageServerLoad } from './$types';
+import { countServeAgents } from '$lib/server/agent-files';
 import { getAnalytics, type AnalyticsData } from '$lib/server/analytics';
 import { readdir } from 'fs/promises';
 import { join } from 'path';
@@ -49,7 +50,7 @@ async function getProjectDetail(root: string): Promise<ProjectDetail> {
 	const skillCount = await countSkillDirectories(join(root, layout.skillsDir));
 
 	return {
-		agentCount: await count(join(root, layout.agentsDir), '.md'),
+		agentCount: await countServeAgents(root),
 		skillCount,
 		guideCount: await count(join(root, 'guides')),
 		ruleCount: await count(join(root, layout.rulesDir), '.md')

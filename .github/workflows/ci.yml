@@ -110,19 +110,9 @@ jobs:
             set -e
 
             if [ "$test_exit" -ne 0 ]; then
-              if grep -qE "\\([Ff]ail\\)|[0-9]+ fail" "$log_file"; then
-                echo "::error::${label} failed with exit ${test_exit}"
-                rm -f "$log_file"
-                exit 1
-              fi
-
-              if grep -qE "\\(pass\\)|[0-9]+ pass" "$log_file"; then
-                echo "::warning::${label} exited with ${test_exit} but all observed tests passed (known Bun termination quirk). Continuing..."
-              else
-                echo "::error::${label} exited with ${test_exit} before any passing-test evidence was observed"
-                rm -f "$log_file"
-                exit 1
-              fi
+              echo "::error::${label} failed with exit ${test_exit}"
+              rm -f "$log_file"
+              exit 1
             fi
 
             rm -f "$log_file"
@@ -134,8 +124,10 @@ jobs:
             tests/sync-upstream-release-issues.test.js \
             tests/integration/i18n.test.ts \
             tests/integration/init-flow.test.ts \
+            tests/integration/omx-readiness.test.ts \
             tests/e2e/list.test.ts \
-            tests/e2e/doctor.test.ts
+            tests/e2e/doctor.test.ts \
+            tests/e2e/native-agent-omx.test.ts
 
           # CLI update / project / serve surface
           run_bun_batch "cli-update" tests/unit/cli/update.test.ts
@@ -148,8 +140,11 @@ jobs:
           run_bun_batch "cli-doctor-init-list-security" \
             tests/unit/cli/doctor.test.ts \
             tests/unit/cli/doctor-checks.test.ts \
+            tests/unit/cli/doctor-omx-readiness.test.ts \
+            tests/unit/cli/doctor-omx.test.ts \
             tests/unit/cli/doctor-updates.test.ts \
             tests/unit/cli/init.test.ts \
+            tests/unit/cli/init-orchestration.test.ts \
             tests/unit/cli/init-snapshot.test.ts \
             tests/unit/cli/list.test.ts \
             tests/unit/cli/list-managed.test.ts \
@@ -157,6 +152,8 @@ jobs:
 
           # Core update / registry / template / hook surface
           run_bun_batch "core-update-registry-template-hooks" \
+            tests/unit/core/codex-hooks-integration.test.ts \
+            tests/unit/core/codex-hooks.test.ts \
             tests/unit/core/hooks-scripts.test.ts \
             tests/unit/core/hooks-validation.test.ts \
             tests/unit/core/package-contract.test.ts \
@@ -171,11 +168,13 @@ jobs:
 
           # Core install / config / infra helpers
           run_bun_batch "core-config-installer-utils" \
+            tests/unit/core/agent-compiler.test.ts \
             tests/unit/core/config.test.ts \
             tests/unit/core/installer.test.ts \
             tests/unit/core/installer-rtk-codex.test.ts \
             tests/unit/core/lockfile.test.ts \
             tests/unit/core/mcp-config.test.ts \
+            tests/unit/core/omx-readiness.test.ts \
             tests/unit/core/preflight.test.ts \
             tests/unit/core/preflight-brew.test.ts \
             tests/unit/core/provider.test.ts \
@@ -183,6 +182,12 @@ jobs:
             tests/unit/utils/fs.test.ts \
             tests/unit/utils/logger.test.ts \
             tests/unit/i18n/index.test.ts
+
+          # Native Web agent and workflow inventory guards
+          run_bun_batch "serve-native-agent-files" tests/unit/serve/agent-files.test.ts
+          run_bun_batch "workflow-test-inventory" \
+            tests/unit/core/ci-workflow.test.ts \
+            tests/unit/core/release-workflow.test.ts
 
   package-contract:
     name: Packed Package Contract

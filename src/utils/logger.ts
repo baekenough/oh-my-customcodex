@@ -100,6 +100,8 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.entry_md_skipped': '{{entry}} skipped ({{reason}})',
     'install.lockfile_generated': 'Lockfile generated ({{files}} files tracked)',
     'install.lockfile_failed': 'Failed to generate lockfile: {{error}}',
+    'install.hooks_trust_review':
+      'Review new or changed project hook commands with /hooks; handler hashes are not auto-approved.',
 
     // Lockfile internal messages
     'lockfile.not_found': 'Lockfile not found: {{path}}',
@@ -155,6 +157,8 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.entry_md_skipped': '{{entry}} 건너뜀 ({{reason}})',
     'install.lockfile_generated': '잠금 파일 생성 완료 ({{files}}개 파일 추적)',
     'install.lockfile_failed': '잠금 파일 생성 실패: {{error}}',
+    'install.hooks_trust_review':
+      '새롭거나 변경된 프로젝트 훅 명령을 /hooks에서 검토하세요. 핸들러 해시는 자동 승인되지 않습니다.',
 
     // Lockfile internal messages
     'lockfile.not_found': '잠금 파일 없음: {{path}}',

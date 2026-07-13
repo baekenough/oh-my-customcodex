@@ -19,6 +19,23 @@ import {
 } from '../../../src/cli/doctor.js';
 import { initI18n } from '../../../src/i18n/index.js';
 
+function nativeAgentToml(name: string): string {
+  return `name = "${name}"\ndescription = "${name} description"\ndeveloper_instructions = "Follow the assigned role."\n`;
+}
+
+function nativeHooksRegistry(): string {
+  return JSON.stringify({
+    hooks: {
+      PreToolUse: [
+        {
+          matcher: '^Bash$',
+          hooks: [{ type: 'command', command: 'echo validated', timeout: 5 }],
+        },
+      ],
+    },
+  });
+}
+
 async function hashTree(root: string): Promise<string> {
   const entries: string[] = [];
 
@@ -126,10 +143,10 @@ describe('doctor command', () => {
 
   describe('checkAgents', () => {
     it('should pass when agents directory exists with valid agents', async () => {
-      // Setup: create agents with flat .md files (official Codex-native format)
+      // Setup: create a standalone Codex-native TOML role.
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(join(agentsDir, 'golang-expert.md'), '# Golang Expert\n\nI am a Go expert.');
+      await writeFile(join(agentsDir, 'golang-expert.toml'), nativeAgentToml('golang-expert'));
 
       const result = await checkAgents(tempDir);
 
@@ -149,7 +166,7 @@ describe('doctor command', () => {
     });
 
     it('should warn when agents directory exists but has no valid agents', async () => {
-      // Setup: create agents directory without any .md files
+      // Setup: create agents directory without any native TOML roles.
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
       await writeFile(join(agentsDir, 'index.yaml'), 'name: incomplete');
@@ -160,18 +177,59 @@ describe('doctor command', () => {
       expect(result.message).toContain('0 agents');
     });
 
-    it('should count multiple agents correctly', async () => {
-      // Setup: create multiple agent .md files (official Codex-native format)
+    it('should reject invalid native TOML roles', async () => {
+      const agentsDir = join(tempDir, '.codex', 'agents');
+      await mkdir(agentsDir, { recursive: true });
+      await writeFile(
+        join(agentsDir, 'missing-description.toml'),
+        'name = "missing-description"\ndeveloper_instructions = "Incomplete role."\n'
+      );
+      await writeFile(
+        join(agentsDir, 'missing-instructions.toml'),
+        'name = "missing-instructions"\ndescription = "Incomplete role"\n'
+      );
+
+      const result = await checkAgents(tempDir);
+
+      expect(result.status).toBe('warn');
+      expect(result.message).toContain('0 agents');
+      expect(result.details).toEqual(['missing-description.toml', 'missing-instructions.toml']);
+    });
+
+    it('should not treat Markdown source agents as Codex-native roles', async () => {
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
       await writeFile(join(agentsDir, 'golang-expert.md'), '# Golang Expert');
-      await writeFile(join(agentsDir, 'python-expert.md'), '# Python Expert');
-      await writeFile(join(agentsDir, 'fastapi-expert.md'), '# FastAPI Expert');
+
+      const result = await checkAgents(tempDir);
+
+      expect(result.status).toBe('warn');
+      expect(result.message).toContain('0 agents');
+    });
+
+    it('should count multiple agents correctly', async () => {
+      // Setup: create multiple standalone Codex-native TOML roles.
+      const agentsDir = join(tempDir, '.codex', 'agents');
+      await mkdir(agentsDir, { recursive: true });
+      await writeFile(join(agentsDir, 'golang-expert.toml'), nativeAgentToml('golang-expert'));
+      await writeFile(join(agentsDir, 'python-expert.toml'), nativeAgentToml('python-expert'));
+      await writeFile(join(agentsDir, 'fastapi-expert.toml'), nativeAgentToml('fastapi-expert'));
 
       const result = await checkAgents(tempDir);
 
       expect(result.status).toBe('pass');
       expect(result.message).toContain('3 agents');
+    });
+
+    it('should preserve custom rootDir agent discovery', async () => {
+      const agentsDir = join(tempDir, '.custom-codex', 'agents');
+      await mkdir(agentsDir, { recursive: true });
+      await writeFile(join(agentsDir, 'custom-agent.toml'), nativeAgentToml('custom-agent'));
+
+      const result = await checkAgents(tempDir, '.custom-codex');
+
+      expect(result.status).toBe('pass');
+      expect(result.message).toContain('1 agents');
     });
   });
 
@@ -577,7 +635,7 @@ describe('doctor command', () => {
 
       const agentsDir = join(tempDir, '.codex', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      await writeFile(join(agentsDir, 'test-agent.md'), '# Test Agent\n\nI am a test agent.');
+      await writeFile(join(agentsDir, 'test-agent.toml'), nativeAgentToml('test-agent'));
 
       const skillsDir = join(tempDir, '.agents', 'skills', 'development');
       await mkdir(skillsDir, { recursive: true });
@@ -792,11 +850,14 @@ describe('doctor command', () => {
       await mkdir(join(tempDir, '.codex', 'rules'), { recursive: true });
       await writeFile(join(tempDir, '.codex', 'rules', 'MUST-safety.md'), '# Safety');
       await mkdir(join(tempDir, '.codex', 'agents'), { recursive: true });
-      await writeFile(join(tempDir, '.codex', 'agents', 'test-agent.md'), '# Agent');
+      await writeFile(
+        join(tempDir, '.codex', 'agents', 'test-agent.toml'),
+        nativeAgentToml('test-agent')
+      );
       await mkdir(join(tempDir, '.agents', 'skills', 'development'), { recursive: true });
       await mkdir(join(tempDir, 'guides', 'golang'), { recursive: true });
       await mkdir(join(tempDir, '.codex', 'hooks'), { recursive: true });
-      await writeFile(join(tempDir, '.codex', 'hooks', 'hooks.json'), '{}');
+      await writeFile(join(tempDir, '.codex', 'hooks.json'), nativeHooksRegistry());
       await mkdir(join(tempDir, '.codex', 'contexts'), { recursive: true });
       await writeFile(join(tempDir, '.codex', 'contexts', 'dev.md'), '# Dev');
 
@@ -836,11 +897,14 @@ describe('doctor command', () => {
       await mkdir(join(tempDir, '.codex', 'rules'), { recursive: true });
       await writeFile(join(tempDir, '.codex', 'rules', 'MUST-safety.md'), '# Safety');
       await mkdir(join(tempDir, '.codex', 'agents'), { recursive: true });
-      await writeFile(join(tempDir, '.codex', 'agents', 'test-agent.md'), '# Agent');
+      await writeFile(
+        join(tempDir, '.codex', 'agents', 'test-agent.toml'),
+        nativeAgentToml('test-agent')
+      );
       await mkdir(join(tempDir, '.agents', 'skills', 'development'), { recursive: true });
       await mkdir(join(tempDir, 'guides', 'golang'), { recursive: true });
       await mkdir(join(tempDir, '.codex', 'hooks'), { recursive: true });
-      await writeFile(join(tempDir, '.codex', 'hooks', 'hooks.json'), '{}');
+      await writeFile(join(tempDir, '.codex', 'hooks.json'), nativeHooksRegistry());
       await mkdir(join(tempDir, '.codex', 'contexts'), { recursive: true });
       await writeFile(join(tempDir, '.codex', 'contexts', 'dev.md'), '# Dev');
 
@@ -859,7 +923,7 @@ describe('doctor command', () => {
       await mkdir(join(tempDir, '.codex', 'rules'), { recursive: true });
       // No rule files = warn for rules
       await mkdir(join(tempDir, '.codex', 'agents'), { recursive: true });
-      // No agent .md files = warn for agents
+      // No native agent TOML files = warn for agents
       // Missing skills = fail
 
       const result = await doctorCommand();

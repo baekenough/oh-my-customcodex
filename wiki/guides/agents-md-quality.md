@@ -1,7 +1,7 @@
 ---
 title: "Agent Definition Quality Standards Guide"
 type: guide
-updated: 2026-04-12
+updated: 2026-07-13
 sources:
   - guides/agents-md-quality/README.md
 related:
@@ -14,7 +14,11 @@ related:
 
 # Agent Definition Quality Standards Guide
 
-Quality criteria for `.codex/agents/*.md` files based on ETH Zurich research on LLM-generated agent configurations, adapted to oh-my-customcodex's "create, connect, use" philosophy.
+Quality criteria for Markdown agent sources in `.codex/agents/*.md` and `templates/.claude/agents/*.md`, based on ETH Zurich research on LLM-generated agent configurations and adapted to oh-my-customcodex's "create, connect, use" philosophy. Codex executes compiled `.codex/agents/*.toml` roles rather than these authoring inputs directly.
+
+## Native Runtime Boundary
+
+Markdown remains the upstream-compatible authoring and Claude-legacy source format. During install and update, `omcustomcodex` deterministically compiles those sources into managed native Codex TOML roles at `.codex/agents/*.toml`; custom roles and OMX-owned roles coexist with the managed set and are preserved across synchronization.
 
 ## Core Principle: LLM Generation + Mandatory Verification
 
@@ -72,4 +76,4 @@ Every agent body SHOULD include these conceptual sections:
 
 ## Sources
 
-- `guides/agents-md-quality/README.md` — four-section structure, frontmatter checklist, anti-patterns, quality metrics
+- `guides/agents-md-quality/README.md` — Markdown authoring boundary, native TOML compilation contract, four-section structure, frontmatter checklist, anti-patterns, and quality metrics

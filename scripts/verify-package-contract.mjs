@@ -427,17 +427,21 @@ async function writeConsumerSmokeFiles(consumerDir, packageName) {
       '# Packed Web Fixture\n\nIntegration-only fixture for the packed Web route smoke test.\n'
     ),
     writeFile(
-      join(consumerDir, '.codex', 'agents', `${WEB_FIXTURE_NAME}-agent.md`),
-      `---
-description: Packed agent smoke fixture
-model: gpt-5.6-sol
-domain: verification
-tools: [Read]
-skills: [${WEB_FIXTURE_NAME}-skill]
----
+      join(consumerDir, '.codex', 'agents', `${WEB_FIXTURE_NAME}-agent.toml`),
+      `name = "${WEB_FIXTURE_NAME}-agent"
+description = "Packed agent smoke fixture"
+model = "gpt-5.6-sol"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+developer_instructions = """
 # Packed Agent
 
-This fixture proves packed agent frontmatter and Markdown routes load.
+This fixture proves packed native agent TOML routes load.
+"""
+
+[[skills.config]]
+path = "../../.agents/skills/${WEB_FIXTURE_NAME}-skill/SKILL.md"
+enabled = true
 `
     ),
     writeFile(

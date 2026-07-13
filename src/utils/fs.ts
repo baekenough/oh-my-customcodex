@@ -504,6 +504,18 @@ export async function writeTextFile(
   await fs.writeFile(path, content, 'utf-8');
 }
 
+/** Safely create a text file while atomically refusing an existing destination. */
+export async function writeTextFileExclusive(
+  path: string,
+  content: string,
+  options: SafeWriteOptions = {}
+): Promise<void> {
+  const fs = await import('node:fs/promises');
+  await ensureSafeDirectoryForWrite(dirname(path), options.trustedWriteRoot);
+  await assertSafeFileDestination(path);
+  await fs.writeFile(path, content, { encoding: 'utf-8', flag: 'wx' });
+}
+
 /**
  * Delete a file or directory
  */

@@ -14,7 +14,7 @@ input=$(cat)
 
 # Extract output to scan
 tool_name=$(echo "$input" | jq -r '.tool_name // "unknown"')
-output=$(echo "$input" | jq -r '.tool_output.output // ""')
+output=$(echo "$input" | jq -r '.tool_response.output // .tool_output.output // ""')
 
 # Skip if no output
 if [ -z "$output" ] || [ "$output" = "null" ]; then

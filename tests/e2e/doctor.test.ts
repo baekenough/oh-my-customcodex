@@ -14,7 +14,7 @@ import {
 } from 'bun:test';
 import { access, mkdir, mkdtemp, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { delimiter, join } from 'node:path';
 import { spawn } from 'bun';
 import { unregisterProject } from '../../src/core/registry.js';
 
@@ -24,6 +24,55 @@ setDefaultTimeout(30000);
 describe('E2E: omcodex doctor', () => {
   let tempDir: string;
   let cliPath: string;
+  let fakeBin: string;
+
+  const fakeOmx = `#!/bin/sh
+set -eu
+
+case "\${1:-}" in
+  --version)
+    printf '%s\n' 'oh-my-codex v0.20.1'
+    ;;
+  api)
+    [ "\${2:-}" = '--help' ]
+    printf '%s\n' 'Usage: omx api'
+    ;;
+  setup)
+    [ "\${2:-}" = '--scope' ]
+    [ "\${3:-}" = 'project' ]
+    [ "\${4:-}" = '--merge-agents' ]
+
+    mkdir -p .codex/prompts .codex/skills/plan .codex/agents
+    printf '# Executor\n' > .codex/prompts/executor.md
+    printf '# Plan\n' > .codex/skills/plan/SKILL.md
+    cat > .codex/agents/executor.toml <<'EOF'
+name = "executor"
+description = "Implement scoped work"
+developer_instructions = "Finish and verify the task."
+EOF
+    cat > AGENTS.md <<'EOF'
+# oh-my-codex
+
+<!-- OMX:GUIDANCE:OPERATING:START -->
+EOF
+    cat > .codex/config.toml <<'EOF'
+# oh-my-codex project configuration
+developer_instructions = "You have oh-my-codex installed."
+
+[mcp_servers.omx_state]
+command = "node"
+args = ["state-server.js"]
+enabled = true
+EOF
+    cat > .codex/hooks.json <<'EOF'
+{"hooks":{"PreToolUse":[{"hooks":[{"type":"command","command":"printf fake-omx","timeout":30}]}]}}
+EOF
+    ;;
+  *)
+    exit 2
+    ;;
+esac
+`;
 
   beforeAll(() => {
     // Path to the CLI entry point (run with bun)
@@ -34,6 +83,9 @@ describe('E2E: omcodex doctor', () => {
 
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'omcodex-e2e-doctor-'));
+    fakeBin = join(tempDir, 'bin');
+    await mkdir(fakeBin, { recursive: true });
+    await writeFile(join(fakeBin, 'omx'), fakeOmx, { mode: 0o755 });
     // Change to temp directory for the test
     process.chdir(tempDir);
   });
@@ -56,7 +108,12 @@ describe('E2E: omcodex doctor', () => {
       cwd: tempDir,
       stdout: 'pipe',
       stderr: 'pipe',
-      env: { ...process.env, OMCODEX_REGISTRY_DIR: join(tempDir, '.omcodex-registry') },
+      env: {
+        ...process.env,
+        PATH: `${fakeBin}${delimiter}${process.env.PATH ?? ''}`,
+        OMCODEX_REGISTRY_DIR: join(tempDir, '.omcodex-registry'),
+        ...(args[0] === 'init' ? { NODE_ENV: 'production', BUN_ENV: 'production' } : {}),
+      },
     });
 
     // Add timeout to prevent hanging in CI

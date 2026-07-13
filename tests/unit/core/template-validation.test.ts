@@ -1304,6 +1304,24 @@ describe('Template Validation', () => {
     expect(source).toContain('#1481');
   });
 
+  it('documents Markdown agent sources separately from the native TOML runtime', async () => {
+    const [readme, readmeKo, sourceGuide, templateGuide] = await Promise.all([
+      readFile(join(PROJECT_ROOT, 'README.md'), 'utf-8'),
+      readFile(join(PROJECT_ROOT, 'README_ko.md'), 'utf-8'),
+      readFile(join(PROJECT_ROOT, 'guides/agents-md-quality/README.md'), 'utf-8'),
+      readFile(join(TEMPLATES_DIR, 'guides/agents-md-quality/README.md'), 'utf-8'),
+    ]);
+
+    expect(templateGuide).toBe(sourceGuide);
+    for (const document of [readme, readmeKo, sourceGuide]) {
+      expect(document).toContain('.codex/agents/*.md');
+      expect(document).toContain('.codex/agents/*.toml');
+    }
+    expect(readme).toContain('upstream-compatible source inputs');
+    expect(readmeKo).toContain('upstream 호환 소스 입력');
+    expect(sourceGuide).toContain('custom and OMX TOML roles coexist and are preserved');
+  });
+
   it('should require auto-dev release changelog promotion before tagging', async () => {
     const workflow = await readFile(join(PROJECT_ROOT, 'workflows/auto-dev.yaml'), 'utf-8');
     const templateWorkflow = await readFile(

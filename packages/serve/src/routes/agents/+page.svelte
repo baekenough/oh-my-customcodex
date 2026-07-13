@@ -140,7 +140,7 @@
 	<div class="mb-5">
 		<div class="text-xs text-zinc-600 mb-2 uppercase tracking-wide font-medium">Model</div>
 		<div class="flex gap-2">
-			{#each ['opus', 'sonnet', 'haiku'] as model}
+			{#each data.models as model}
 				<button
 					onclick={() => toggleModel(model)}
 					class="px-3 py-1 rounded text-xs font-semibold border transition-colors {selectedModels.has(model)

@@ -8,6 +8,19 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { checkContexts, checkGuides, checkHooks } from '../../../src/cli/doctor.js';
 
+function nativeHooksRegistry(): string {
+  return JSON.stringify({
+    hooks: {
+      PreToolUse: [
+        {
+          matcher: '^Bash$',
+          hooks: [{ type: 'command', command: 'echo validated', timeout: 5 }],
+        },
+      ],
+    },
+  });
+}
+
 describe('doctor check warning paths', () => {
   let tempDir: string;
 
@@ -57,56 +70,99 @@ describe('doctor check warning paths', () => {
   });
 
   describe('checkHooks', () => {
-    it('should warn when hooks directory exists but is empty', async () => {
-      // Setup: create empty hooks directory
-      const hooksDir = join(tempDir, '.codex', 'hooks');
-      await mkdir(hooksDir, { recursive: true });
-
-      const result = await checkHooks(tempDir);
-
-      expect(result.status).toBe('warn');
-      expect(result.name).toBe('Hooks');
-      expect(result.message).toContain('directory is empty');
-      expect(result.fixable).toBe(false);
-    });
-
-    it('should pass when hooks directory has hook files', async () => {
-      // Setup: create hooks directory with files
-      const hooksDir = join(tempDir, '.codex', 'hooks');
-      await mkdir(hooksDir, { recursive: true });
-      await writeFile(join(hooksDir, 'hooks.json'), '{}');
-      await writeFile(join(hooksDir, 'pre-commit.sh'), '#!/bin/bash\necho "test"');
-
-      const result = await checkHooks(tempDir);
-
-      expect(result.status).toBe('pass');
-      expect(result.message).toContain('2 files');
-    });
-
-    it('should fail when hooks directory does not exist', async () => {
-      // No hooks directory created
+    it('should fail when only native hook scripts exist', async () => {
+      const scriptsDir = join(tempDir, '.codex', 'hooks', 'scripts');
+      await mkdir(scriptsDir, { recursive: true });
+      await writeFile(join(scriptsDir, 'pre-tool-use.sh'), '#!/bin/bash');
 
       const result = await checkHooks(tempDir);
 
       expect(result.status).toBe('fail');
-      expect(result.message).toContain('not found');
-      expect(result.fixable).toBe(true);
+      expect(result.name).toBe('Hooks');
+      expect(result.message).toContain('.codex/hooks.json');
+      expect(result.details).toEqual(['Missing native hook registry: .codex/hooks.json']);
+      expect(result.fixable).toBe(false);
     });
 
-    it('should count only .sh, .json, and .yaml files', async () => {
-      // Setup: create hooks directory with mixed files
-      const hooksDir = join(tempDir, '.codex', 'hooks');
-      await mkdir(hooksDir, { recursive: true });
-      await writeFile(join(hooksDir, 'hooks.json'), '{}');
-      await writeFile(join(hooksDir, 'pre-commit.sh'), '#!/bin/bash');
-      await writeFile(join(hooksDir, 'config.yaml'), 'key: value');
-      await writeFile(join(hooksDir, 'readme.txt'), 'not a hook'); // Should not be counted
-      await writeFile(join(hooksDir, 'readme.md'), '# Hooks'); // Should not be counted
+    it('should fail when only the compatibility registry exists', async () => {
+      const compatibilityDir = join(tempDir, '.codex', 'hooks', 'compatibility');
+      await mkdir(compatibilityDir, { recursive: true });
+      await writeFile(join(compatibilityDir, 'claude-hooks.json'), nativeHooksRegistry());
+
+      const result = await checkHooks(tempDir);
+
+      expect(result.status).toBe('fail');
+      expect(result.details).toEqual(['Missing native hook registry: .codex/hooks.json']);
+    });
+
+    it('should pass when the root native registry is structurally valid', async () => {
+      await mkdir(join(tempDir, '.codex'), { recursive: true });
+      await writeFile(join(tempDir, '.codex', 'hooks.json'), nativeHooksRegistry());
 
       const result = await checkHooks(tempDir);
 
       expect(result.status).toBe('pass');
-      expect(result.message).toContain('3 files'); // Only .sh, .json, .yaml
+      expect(result.message).toContain('1 events');
+    });
+
+    it('should fail with actionable details when the root registry is malformed JSON', async () => {
+      await mkdir(join(tempDir, '.codex'), { recursive: true });
+      await writeFile(join(tempDir, '.codex', 'hooks.json'), '{"hooks":');
+
+      const result = await checkHooks(tempDir);
+
+      expect(result.status).toBe('fail');
+      expect(result.message).toContain('malformed');
+      expect(result.details?.[0]).toContain('Invalid JSON');
+      expect(result.fixable).toBe(false);
+    });
+
+    it('should fail when the root registry violates the native hook contract', async () => {
+      await mkdir(join(tempDir, '.codex'), { recursive: true });
+      await writeFile(
+        join(tempDir, '.codex', 'hooks.json'),
+        JSON.stringify({ hooks: { PreToolUse: [{ matcher: '^Bash$' }] } })
+      );
+
+      const result = await checkHooks(tempDir);
+
+      expect(result.status).toBe('fail');
+      expect(result.details?.[0]).toContain('Invalid Codex hook registry');
+    });
+
+    for (const [label, registry] of [
+      ['has no events', { hooks: {} }],
+      ['has no event groups', { hooks: { PreToolUse: [] } }],
+      ['has no runnable handlers', { hooks: { PreToolUse: [{ matcher: '^Bash$', hooks: [] }] } }],
+    ] as const) {
+      it(`should fail when the root registry ${label}`, async () => {
+        await mkdir(join(tempDir, '.codex'), { recursive: true });
+        await writeFile(join(tempDir, '.codex', 'hooks.json'), JSON.stringify(registry));
+
+        const result = await checkHooks(tempDir);
+
+        expect(result.status).toBe('fail');
+        expect(result.details?.[0]).toContain('at least one runnable command handler');
+      });
+    }
+
+    it('should fail when the root registry uses an unsupported event name', async () => {
+      await mkdir(join(tempDir, '.codex'), { recursive: true });
+      await writeFile(
+        join(tempDir, '.codex', 'hooks.json'),
+        JSON.stringify({
+          hooks: {
+            IgnoredByCodex: [
+              { hooks: [{ type: 'command', command: 'echo never-runs', timeout: 5 }] },
+            ],
+          },
+        })
+      );
+
+      const result = await checkHooks(tempDir);
+
+      expect(result.status).toBe('fail');
+      expect(result.details?.[0]).toContain('Unsupported Codex hook event: IgnoredByCodex');
     });
   });
 
@@ -181,9 +237,8 @@ describe('doctor check warning paths', () => {
     it('should handle custom rootDir parameter for hooks', async () => {
       // Test with custom root directory
       const customRoot = '.custom';
-      const hooksDir = join(tempDir, customRoot, 'hooks');
-      await mkdir(hooksDir, { recursive: true });
-      await writeFile(join(hooksDir, 'hooks.json'), '{}');
+      await mkdir(join(tempDir, customRoot), { recursive: true });
+      await writeFile(join(tempDir, customRoot, 'hooks.json'), nativeHooksRegistry());
 
       const result = await checkHooks(tempDir, customRoot);
 
