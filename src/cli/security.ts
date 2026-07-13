@@ -5,6 +5,7 @@
 
 import { constants, promises as fs } from 'node:fs';
 import path from 'node:path';
+import { resolveCodexProjectRoot } from '../core/codex-project-root.js';
 import {
   extractHookCommands,
   extractHookExecutableReferences,
@@ -171,12 +172,226 @@ function displayPath(targetDir: string, targetPath: string): string {
   return relativePath && !path.isAbsolute(relativePath) ? relativePath : targetPath;
 }
 
-function excerptForPattern(content: string, pattern: RegExp): string {
-  pattern.lastIndex = 0;
-  const match = pattern.exec(content);
-  if (!match || match.index === undefined) return content;
-  const lineStart = content.lastIndexOf('\n', match.index) + 1;
-  const nextLine = content.indexOf('\n', match.index);
+interface ShellDataRange {
+  start: number;
+  end: number;
+}
+
+function findBacktickEnd(content: string, start: number): number | null {
+  for (let index = start; index < content.length; index += 1) {
+    if (content[index] === '\\') {
+      index += 1;
+      continue;
+    }
+    if (content[index] === '`') return index;
+  }
+  return null;
+}
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Bounded shell-substitution matching keeps nested quote state explicit.
+function findCommandSubstitutionEnd(
+  content: string,
+  start: number,
+  nesting: number = 0
+): number | null {
+  if (nesting >= 32) return null;
+  let depth = 1;
+  let quote: '"' | "'" | '`' | null = null;
+
+  for (let index = start; index < content.length; index += 1) {
+    const character = content[index];
+    if (character === '\\' && quote !== "'") {
+      index += 1;
+      continue;
+    }
+    if (quote) {
+      if (character === quote) quote = null;
+      else if (quote !== "'" && character === '$' && content[index + 1] === '(') {
+        const nestedEnd = findCommandSubstitutionEnd(content, index + 2, nesting + 1);
+        if (nestedEnd === null) return null;
+        index = nestedEnd;
+      }
+      continue;
+    }
+    if (character === '"' || character === "'" || character === '`') {
+      quote = character;
+      continue;
+    }
+    if (character === '$' && content[index + 1] === '(') {
+      const nestedEnd = findCommandSubstitutionEnd(content, index + 2, nesting + 1);
+      if (nestedEnd === null) return null;
+      index = nestedEnd;
+      continue;
+    }
+    if (character === '(') {
+      depth += 1;
+      if (depth > 32) return null;
+    } else if (character === ')') {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+  }
+  return null;
+}
+
+function appendNestedShellDataRanges(
+  ranges: ShellDataRange[],
+  content: string,
+  start: number,
+  end: number
+): void {
+  for (const range of shellDataRanges(content.slice(start, end))) {
+    ranges.push({ start: start + range.start, end: start + range.end });
+  }
+}
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Shell quoting, comments, and command-boundary state are intentionally explicit.
+function shellDataRanges(content: string): ShellDataRange[] {
+  const ranges: ShellDataRange[] = [];
+  let quote: '"' | "'" | null = null;
+  let quoteDataStart = -1;
+  let quoteIsCommandWord = false;
+  let commandStart = true;
+  let wordStart = -1;
+  let word = '';
+
+  const finishWord = (): void => {
+    if (wordStart < 0) return;
+    if (commandStart) {
+      const preservesCommandStart =
+        /^[A-Za-z_][A-Za-z0-9_]*=/.test(word) ||
+        [
+          '!',
+          'command',
+          'exec',
+          'builtin',
+          'env',
+          'if',
+          'then',
+          'elif',
+          'while',
+          'until',
+          'do',
+        ].includes(word);
+      if (!preservesCommandStart) commandStart = false;
+    }
+    wordStart = -1;
+    word = '';
+  };
+
+  for (let index = 0; index < content.length; index += 1) {
+    const character = content[index];
+    if (quote) {
+      if (character === '\\' && quote === '"') {
+        index += 1;
+        continue;
+      }
+      if (quote === '"' && character === '$' && content[index + 1] === '(') {
+        if (!quoteIsCommandWord && quoteDataStart < index) {
+          ranges.push({ start: quoteDataStart, end: index });
+        }
+        const nestedStart = index + 2;
+        const nestedEnd = findCommandSubstitutionEnd(content, nestedStart);
+        appendNestedShellDataRanges(ranges, content, nestedStart, nestedEnd ?? content.length);
+        if (nestedEnd === null) {
+          quote = null;
+          quoteDataStart = content.length;
+          break;
+        }
+        index = nestedEnd;
+        quoteDataStart = nestedEnd + 1;
+        continue;
+      }
+      if (quote === '"' && character === '`') {
+        if (!quoteIsCommandWord && quoteDataStart < index) {
+          ranges.push({ start: quoteDataStart, end: index });
+        }
+        const nestedStart = index + 1;
+        const nestedEnd = findBacktickEnd(content, nestedStart);
+        appendNestedShellDataRanges(ranges, content, nestedStart, nestedEnd ?? content.length);
+        if (nestedEnd === null) {
+          quote = null;
+          quoteDataStart = content.length;
+          break;
+        }
+        index = nestedEnd;
+        quoteDataStart = nestedEnd + 1;
+        continue;
+      }
+      if (character === quote) {
+        if (!quoteIsCommandWord && quoteDataStart < index + 1) {
+          ranges.push({ start: quoteDataStart, end: index + 1 });
+        }
+        quote = null;
+      }
+      continue;
+    }
+
+    if (character === '\\') {
+      if (wordStart < 0) wordStart = index;
+      word += character;
+      if (index + 1 < content.length) {
+        word += content[index + 1];
+        index += 1;
+      }
+      continue;
+    }
+
+    if (character === '"' || character === "'") {
+      quote = character;
+      quoteDataStart = index;
+      quoteIsCommandWord = commandStart && wordStart < 0;
+      if (wordStart < 0) wordStart = index;
+      continue;
+    }
+
+    if (character === '#' && wordStart < 0) {
+      const lineEnd = content.indexOf('\n', index);
+      ranges.push({ start: index, end: lineEnd < 0 ? content.length : lineEnd });
+      if (lineEnd < 0) break;
+      index = lineEnd - 1;
+      continue;
+    }
+
+    if (/\s/.test(character)) {
+      finishWord();
+      if (character === '\n') commandStart = true;
+      continue;
+    }
+
+    if (/[;&|()]/.test(character)) {
+      const arrayAssignment = character === '(' && /^[A-Za-z_][A-Za-z0-9_]*\+?=$/.test(word);
+      finishWord();
+      commandStart = character !== ')' && !arrayAssignment;
+      continue;
+    }
+
+    if (wordStart < 0) wordStart = index;
+    word += character;
+  }
+
+  if (quote && !quoteIsCommandWord) ranges.push({ start: quoteDataStart, end: content.length });
+  return ranges;
+}
+
+function firstExecutablePatternMatch(
+  content: string,
+  pattern: RegExp,
+  dataRanges: ShellDataRange[]
+): RegExpExecArray | null {
+  const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+  const scanner = new RegExp(pattern.source, flags);
+  for (let match = scanner.exec(content); match; match = scanner.exec(content)) {
+    const inData = dataRanges.some(({ start, end }) => match.index >= start && match.index < end);
+    if (!inData) return match;
+    if (match[0].length === 0) scanner.lastIndex += 1;
+  }
+  return null;
+}
+
+function excerptAt(content: string, matchIndex: number): string {
+  const lineStart = content.lastIndexOf('\n', matchIndex) + 1;
+  const nextLine = content.indexOf('\n', matchIndex);
   return content.slice(lineStart, nextLine === -1 ? undefined : nextLine).trim();
 }
 
@@ -186,11 +401,12 @@ function scanExecutableBody(
 ): { findings: string[]; worstSeverity: CheckStatus } {
   const findings: string[] = [];
   let worstSeverity: CheckStatus = 'pass';
+  const dataRanges = shellDataRanges(content);
 
   for (const { pattern, name, severity } of DANGEROUS_PATTERNS) {
-    pattern.lastIndex = 0;
-    if (!pattern.test(content)) continue;
-    const excerpt = excerptForPattern(content, pattern).replace(/\s+/g, ' ');
+    const match = firstExecutablePatternMatch(content, pattern, dataRanges);
+    if (!match) continue;
+    const excerpt = excerptAt(content, match.index).replace(/\s+/g, ' ');
     findings.push(
       `${name}: ${relativePath}: ${excerpt.substring(0, 80)}${excerpt.length > 80 ? '...' : ''}`
     );
@@ -349,7 +565,8 @@ export async function checkHookScripts(
   targetDir: string,
   rootDir: string = '.codex'
 ): Promise<CheckResult> {
-  const hooksFile = await resolveHookRegistryPath(targetDir, rootDir);
+  const projectRoot = resolveCodexProjectRoot(targetDir);
+  const hooksFile = await resolveHookRegistryPath(projectRoot, rootDir);
   const exists = await pathExists(hooksFile);
 
   if (!exists) {
@@ -367,7 +584,7 @@ export async function checkHookScripts(
 
     const commands = extractHookCommands(hooks);
     const commandScan = scanCommands(commands);
-    const executableScan = await scanReferencedExecutableBodies(targetDir, rootDir, commands);
+    const executableScan = await scanReferencedExecutableBodies(projectRoot, rootDir, commands);
     const findings = [...commandScan.findings, ...executableScan.findings];
     const worstSeverity = worstStatus(commandScan.worstSeverity, executableScan.worstSeverity);
 

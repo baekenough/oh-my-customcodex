@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { installNativeCodexHooks } from '../../src/core/codex-hooks.ts';
 import {
+  assessOmxProjectSetup,
   type CodexHookRuntimeEntry,
   inspectCodexHooks,
   removeIneffectiveProjectHookTrustState,
@@ -28,7 +29,12 @@ function trustTables(hooks: CodexHookRuntimeEntry[]): string {
     .join('\n');
 }
 
-function userConfig(root: string, linked: string, hooks: CodexHookRuntimeEntry[] = []): string {
+function userConfig(
+  root: string,
+  linked: string,
+  hooks: CodexHookRuntimeEntry[] = [],
+  linkedTrust: 'trusted' | 'untrusted' = 'trusted'
+): string {
   return [
     '[features]',
     'hooks = true',
@@ -37,7 +43,7 @@ function userConfig(root: string, linked: string, hooks: CodexHookRuntimeEntry[]
     'trust_level = "trusted"',
     '',
     `[projects.${JSON.stringify(linked)}]`,
-    'trust_level = "trusted"',
+    `trust_level = ${JSON.stringify(linkedTrust)}`,
     '',
     trustTables(hooks),
   ].join('\n');
@@ -92,8 +98,6 @@ describe('Codex app-server hook interop', () => {
       root
     );
     git(['worktree', 'add', '-qb', 'linked-fixture', linked], root);
-    await installNativeCodexHooks(root, { overwrite: true });
-    await mkdir(join(linked, '.codex'), { recursive: true });
 
     root = await realpath(root);
     linked = await realpath(linked);
@@ -116,6 +120,20 @@ describe('Codex app-server hook interop', () => {
     async () => {
       const userConfigPath = join(home, '.codex', 'config.toml');
       await writeFile(userConfigPath, userConfig(root, linked));
+      expect(await Bun.file(join(root, '.codex', 'hooks.json')).exists()).toBe(false);
+      expect(
+        await stat(join(linked, '.codex')).then(
+          () => true,
+          () => false
+        )
+      ).toBe(false);
+      expect(await Bun.file(join(linked, '.codex', 'hooks.json')).exists()).toBe(false);
+
+      const installed = await installNativeCodexHooks(linked, { overwrite: true });
+      expect(installed.registryPath).toBe(join(root, '.codex', 'hooks.json'));
+      expect(await Bun.file(join(root, '.codex', 'hooks.json')).exists()).toBe(true);
+      expect((await stat(join(linked, '.codex'))).isDirectory()).toBe(true);
+      expect(await Bun.file(join(linked, '.codex', 'hooks.json')).exists()).toBe(false);
 
       const discovered = inspectCodexHooks(linked)?.filter((hook) => hook.source === 'project');
       expect(discovered?.length).toBeGreaterThan(0);
@@ -143,6 +161,29 @@ describe('Codex app-server hook interop', () => {
       )?.command;
       expect(command).toContain(`repo_root="${root}"`);
       expect(await runHook(command ?? '', linked)).toBe(0);
+
+      await writeFile(userConfigPath, userConfig(root, linked, discovered, 'untrusted'));
+      const mainProjectHooks =
+        inspectCodexHooks(root)?.filter((hook) => hook.source === 'project') ?? [];
+      const linkedProjectHooks =
+        inspectCodexHooks(linked)?.filter((hook) => hook.source === 'project') ?? [];
+      expect(mainProjectHooks.length).toBeGreaterThan(0);
+      expect(mainProjectHooks.every((hook) => hook.trustStatus === 'trusted')).toBe(true);
+      expect(linkedProjectHooks).toEqual([]);
+
+      const linkedReadiness = assessOmxProjectSetup(linked, {
+        exec: () => '',
+        getPlatform: () => process.platform,
+        inspectHooks: inspectCodexHooks,
+      });
+      expect(linkedReadiness.hookReadiness).toEqual({
+        status: 'inactive',
+        installed: true,
+        discovered: 0,
+        runnable: 0,
+        approvalNeeded: 0,
+      });
+      expect(linkedReadiness.surfaces.nativeHooks).toBe(false);
     }
   );
 });

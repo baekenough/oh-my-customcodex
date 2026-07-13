@@ -5,19 +5,31 @@
 // execSync is used here with fully hardcoded command strings (no user input),
 // so there is no shell injection risk. Global npm install requires a shell.
 import { type ExecSyncOptions, execFileSync, execSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import {
+  closeSync,
+  constants,
+  fchmodSync,
+  fstatSync,
+  fsyncSync,
   lstatSync,
+  openSync,
   readdirSync,
   readFileSync,
+  readSync,
   realpathSync,
+  renameSync,
+  type Stats,
   statSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { platform } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { info, warn } from '../utils/logger.js';
 import { parseNativeAgentListMetadata } from './agent-compiler.js';
 import type { CodexHookCommandHandler } from './codex-hooks.js';
+import { resolveCodexProjectRoot } from './codex-project-root.js';
 
 export const MINIMUM_OMX_VERSION = '0.19.0';
 export const OMX_PROJECT_SETUP_COMMAND = 'omx setup --scope project --merge-agents';
@@ -336,32 +348,162 @@ function readCodexConfig(projectRoot: string): string | null {
   return readProjectText(join(projectRoot, '.codex', 'config.toml'));
 }
 
-/** Remove OMX trust records that Codex intentionally ignores at project scope. */
-export function removeIneffectiveProjectHookTrustState(projectRoot: string): boolean {
-  const configPath = join(resolve(projectRoot), '.codex', 'config.toml');
-  let stats: ReturnType<typeof lstatSync>;
-  let config: string;
+type FileStats = Stats;
+
+interface SafeProjectConfig {
+  path: string;
+  descriptor: number;
+  stats: FileStats;
+  content: string;
+}
+
+function sameProjectConfigFingerprint(left: FileStats, right: FileStats): boolean {
+  return (
+    left.dev === right.dev &&
+    left.ino === right.ino &&
+    left.mode === right.mode &&
+    left.nlink === right.nlink &&
+    left.size === right.size &&
+    left.mtimeMs === right.mtimeMs &&
+    left.ctimeMs === right.ctimeMs
+  );
+}
+
+function readDescriptorText(descriptor: number): string {
+  const chunks: Buffer[] = [];
+  let position = 0;
+  for (;;) {
+    const chunk = Buffer.allocUnsafe(64 * 1024);
+    const bytesRead = readSync(descriptor, chunk, 0, chunk.length, position);
+    if (bytesRead === 0) break;
+    chunks.push(chunk.subarray(0, bytesRead));
+    position += bytesRead;
+  }
+  return Buffer.concat(chunks).toString('utf8');
+}
+
+function readSafeProjectConfig(projectRoot: string): SafeProjectConfig | null {
+  let descriptor: number | null = null;
   try {
-    stats = lstatSync(configPath);
-    if (!stats.isFile() || stats.isSymbolicLink()) return false;
-    config = readFileSync(configPath, 'utf8');
+    const resolvedRoot = resolve(projectRoot);
+    const rootStats = lstatSync(resolvedRoot);
+    if (rootStats.isSymbolicLink() || !rootStats.isDirectory()) return null;
+    const canonicalRoot = realpathSync(resolvedRoot);
+    const codexDir = join(canonicalRoot, '.codex');
+    const codexStats = lstatSync(codexDir);
+    if (codexStats.isSymbolicLink() || !codexStats.isDirectory()) return null;
+    if (realpathSync(codexDir) !== codexDir) return null;
+
+    const path = join(codexDir, 'config.toml');
+    descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+    const stats = fstatSync(descriptor);
+    const pathStats = lstatSync(path);
+    if (
+      !stats.isFile() ||
+      stats.nlink !== 1 ||
+      pathStats.isSymbolicLink() ||
+      !pathStats.isFile() ||
+      !sameProjectConfigFingerprint(stats, pathStats)
+    ) {
+      return null;
+    }
+    if (realpathSync(path) !== path) return null;
+    const content = readDescriptorText(descriptor);
+    const afterRead = fstatSync(descriptor);
+    if (!sameProjectConfigFingerprint(stats, afterRead)) return null;
+    const config = { path, descriptor, stats: afterRead, content };
+    descriptor = null;
+    return config;
+  } catch {
+    return null;
+  } finally {
+    if (descriptor !== null) closeSync(descriptor);
+  }
+}
+
+function isSameSafeProjectConfig(config: SafeProjectConfig): boolean {
+  try {
+    const descriptorStats = fstatSync(config.descriptor);
+    const pathStats = lstatSync(config.path);
+    if (
+      !descriptorStats.isFile() ||
+      descriptorStats.nlink !== 1 ||
+      pathStats.isSymbolicLink() ||
+      !pathStats.isFile() ||
+      !sameProjectConfigFingerprint(config.stats, descriptorStats) ||
+      !sameProjectConfigFingerprint(config.stats, pathStats)
+    ) {
+      return false;
+    }
+    const content = readDescriptorText(config.descriptor);
+    const afterRead = fstatSync(config.descriptor);
+    return content === config.content && sameProjectConfigFingerprint(config.stats, afterRead);
   } catch {
     return false;
   }
+}
 
-  const start = config.indexOf(OMX_PROJECT_HOOK_TRUST_START);
-  if (start < 0) return false;
-  const endMarker = config.indexOf(OMX_PROJECT_HOOK_TRUST_END, start);
-  if (endMarker < 0) return false;
-  let end = endMarker + OMX_PROJECT_HOOK_TRUST_END.length;
-  if (config.slice(end, end + 2) === '\r\n') end += 2;
-  else if (config[end] === '\n') end += 1;
+function replaceSafeProjectConfig(config: SafeProjectConfig, content: string): boolean {
+  const parentPath = dirname(config.path);
+  const temporaryPath = join(
+    parentPath,
+    `.config.toml.omcustomcodex-${process.pid}-${randomUUID()}.tmp`
+  );
+  let descriptor: number | null = null;
+  let parentDescriptor: number | null = null;
+  try {
+    parentDescriptor = openSync(
+      parentPath,
+      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
+    );
+    if (!fstatSync(parentDescriptor).isDirectory()) return false;
+    descriptor = openSync(
+      temporaryPath,
+      constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY | constants.O_NOFOLLOW,
+      config.stats.mode
+    );
+    writeFileSync(descriptor, content, 'utf8');
+    fchmodSync(descriptor, config.stats.mode);
+    fsyncSync(descriptor);
+    closeSync(descriptor);
+    descriptor = null;
+    if (!isSameSafeProjectConfig(config)) return false;
+    renameSync(temporaryPath, config.path);
+    fsyncSync(parentDescriptor);
+    return true;
+  } catch {
+    return false;
+  } finally {
+    if (descriptor !== null) closeSync(descriptor);
+    if (parentDescriptor !== null) closeSync(parentDescriptor);
+    try {
+      unlinkSync(temporaryPath);
+    } catch {
+      // The successful rename consumes the temporary path.
+    }
+  }
+}
 
-  const before = config.slice(0, start).replace(/[ \t]*$/, '');
-  const after = config.slice(end).replace(/^\r?\n/, '');
-  const next = `${before}${before.endsWith('\n') ? '' : '\n'}${after}`;
-  writeFileSync(configPath, next, 'utf8');
-  return true;
+/** Remove OMX trust records that Codex intentionally ignores at project scope. */
+export function removeIneffectiveProjectHookTrustState(projectRoot: string): boolean {
+  const config = readSafeProjectConfig(projectRoot);
+  if (!config) return false;
+  try {
+    const start = config.content.indexOf(OMX_PROJECT_HOOK_TRUST_START);
+    if (start < 0) return false;
+    const endMarker = config.content.indexOf(OMX_PROJECT_HOOK_TRUST_END, start);
+    if (endMarker < 0) return false;
+    let end = endMarker + OMX_PROJECT_HOOK_TRUST_END.length;
+    if (config.content.slice(end, end + 2) === '\r\n') end += 2;
+    else if (config.content[end] === '\n') end += 1;
+
+    const before = config.content.slice(0, start).replace(/[ \t]*$/, '');
+    const after = config.content.slice(end).replace(/^\r?\n/, '');
+    const next = `${before}${before.endsWith('\n') ? '' : '\n'}${after}`;
+    return replaceSafeProjectConfig(config, next);
+  } finally {
+    closeSync(config.descriptor);
+  }
 }
 
 interface OmxSetupScopeState {
@@ -643,7 +785,12 @@ function assessHookReadiness(
   installed: boolean,
   deps: InstallerDeps
 ): OmxHookReadinessAssessment {
-  if (!installed) {
+  const hooks = deps.inspectHooks?.(projectRoot);
+  const projectHooks =
+    hooks?.filter((hook) => hook.source === 'project' || hook.source === 'plugin') ?? [];
+  const effectiveInstalled = installed || projectHooks.length > 0;
+
+  if (!effectiveInstalled) {
     return {
       status: 'missing',
       installed: false,
@@ -653,7 +800,6 @@ function assessHookReadiness(
     };
   }
 
-  const hooks = deps.inspectHooks?.(projectRoot);
   if (!hooks) {
     return {
       status: 'unverified',
@@ -664,9 +810,6 @@ function assessHookReadiness(
     };
   }
 
-  const projectHooks = hooks.filter(
-    (hook) => hook.source === 'project' || hook.source === 'plugin'
-  );
   const approvalNeeded = projectHooks.filter(
     (hook) => hook.trustStatus === 'untrusted' || hook.trustStatus === 'modified'
   ).length;
@@ -675,9 +818,9 @@ function assessHookReadiness(
   ).length;
 
   let status: OmxHookReadinessStatus;
-  if (projectHooks.length === 0 || approvalNeeded > 0) {
+  if (approvalNeeded > 0) {
     status = 'approval-needed';
-  } else if (runnable !== projectHooks.length) {
+  } else if (projectHooks.length === 0 || runnable !== projectHooks.length) {
     status = 'inactive';
   } else {
     status = 'runnable';
@@ -685,7 +828,7 @@ function assessHookReadiness(
 
   return {
     status,
-    installed: true,
+    installed: effectiveInstalled,
     discovered: projectHooks.length,
     runnable,
     approvalNeeded,
@@ -703,7 +846,8 @@ export function assessOmxProjectSetup(
   const mcpStatus = assessMcpReadiness(setupState, config);
   const pluginDelivery =
     installMode === 'plugin' ? assessPluginDelivery(resolvedRoot, config) : NO_OMX_PLUGIN_DELIVERY;
-  const hooksInstalled = pluginDelivery.hooks || hasValidNativeHooksRegistry(resolvedRoot);
+  const hookRegistryRoot = resolveCodexProjectRoot(resolvedRoot);
+  const hooksInstalled = pluginDelivery.hooks || hasValidNativeHooksRegistry(hookRegistryRoot);
   const hookReadiness = assessHookReadiness(resolvedRoot, hooksInstalled, deps);
   const surfaces: Record<OmxProjectSurface, boolean> = {
     prompts: pluginDelivery.prompts || hasProjectPrompts(resolvedRoot),
@@ -1038,6 +1182,18 @@ export function ensureOmxProjectReady(
       true,
       setupCommand,
       'OMX project hooks are installed but need approval. Trust the project, then review /hooks; project-layer hook hashes are not auto-approved.'
+    );
+  }
+  if (
+    assessment.project.hookReadiness.status === 'inactive' &&
+    assessment.project.hookReadiness.installed &&
+    assessment.project.hookReadiness.discovered === 0
+  ) {
+    return provisionError(
+      assessment,
+      true,
+      setupCommand,
+      `Codex did not discover the installed OMX project hooks. Verify the user-level $CODEX_HOME/config.toml contains [features] hooks = true, then rerun: ${setupCommand}`
     );
   }
   if (!assessment.ready) {

@@ -63,7 +63,7 @@ describe('doctor complete OMX readiness', () => {
   });
 
   it('warns for a binary-only OMX install and gives the exact setup command', async () => {
-    const result = await checkOmx(projectRoot, deps);
+    const result = await checkOmx(projectRoot, { ...deps, inspectHooks: () => [] });
 
     expect(result.status).toBe('warn');
     expect(result.message).toContain('project setup incomplete');
@@ -105,5 +105,18 @@ describe('doctor complete OMX readiness', () => {
     expect(result.message).toContain('need approval');
     expect(result.message).toContain('review /hooks');
     expect(result.details).toContain('Project-layer hook hashes are not auto-approved.');
+  });
+
+  it('reports zero runtime discovery as user-level hook enablement, not approval', async () => {
+    await writeCompleteProject(projectRoot);
+
+    const result = await checkOmx(projectRoot, { ...deps, inspectHooks: () => [] });
+
+    expect(result.status).toBe('warn');
+    expect(result.message).toContain('project setup incomplete');
+    expect(result.details).toContain(
+      'Codex hooks/list discovered 0 project hooks; verify user-level $CODEX_HOME/config.toml contains [features] hooks = true.'
+    );
+    expect(result.message).not.toContain('need approval');
   });
 });

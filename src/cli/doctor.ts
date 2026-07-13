@@ -10,6 +10,7 @@ import { parse as parseYaml } from 'yaml';
 import { parseNativeAgentListMetadata } from '../core/agent-compiler.js';
 import { validateCodexHookRegistry } from '../core/codex-hooks.js';
 import { getCodexVersion, installCodex, isCodexInstalled } from '../core/codex-installer.js';
+import { resolveCodexProjectRoot } from '../core/codex-project-root.js';
 import { loadConfig } from '../core/config.js';
 import { checkFrameworkVersion } from '../core/doctor-framework.js';
 import { getComponentPath, getProviderLayout } from '../core/layout.js';
@@ -572,8 +573,9 @@ export async function checkHooks(
   targetDir: string,
   rootDir: string = '.codex'
 ): Promise<CheckResult> {
-  const registryPath = path.join(targetDir, rootDir, 'hooks.json');
-  const registryLabel = path.relative(targetDir, registryPath);
+  const projectRoot = resolveCodexProjectRoot(targetDir);
+  const registryPath = path.join(projectRoot, rootDir, 'hooks.json');
+  const registryLabel = path.relative(projectRoot, registryPath);
   const exists = await pathExists(registryPath);
 
   if (!exists) {
@@ -724,6 +726,15 @@ export async function checkOmx(
     const details = readiness.project.missingSurfaces.map(
       (surface) => `missing: ${OMX_PROJECT_SURFACE_LABELS[surface]}`
     );
+    if (
+      readiness.project.hookReadiness.status === 'inactive' &&
+      readiness.project.hookReadiness.installed &&
+      readiness.project.hookReadiness.discovered === 0
+    ) {
+      details.unshift(
+        'Codex hooks/list discovered 0 project hooks; verify user-level $CODEX_HOME/config.toml contains [features] hooks = true.'
+      );
+    }
     return {
       name: 'OMX',
       status: 'warn',

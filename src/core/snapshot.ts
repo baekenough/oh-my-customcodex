@@ -3,7 +3,8 @@
  * Handles installing from a pre-configured team snapshot directory
  */
 
-import { realpath } from 'node:fs/promises';
+import { mkdtemp, realpath } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import packageJson from '../../package.json';
 import { readLockFile, writeLockFile } from '../cli/projects.js';
@@ -49,13 +50,22 @@ export interface InitResult {
   errors?: string[];
 }
 
+interface SnapshotOmxProvisionResult {
+  success: boolean;
+  command: string;
+  error?: string;
+  assessment?: {
+    project?: {
+      hookReadiness?: {
+        status?: string;
+      };
+    };
+  };
+}
+
 export interface SnapshotInstallDependencies {
   /** Injectable project provisioning boundary for isolated snapshot tests. */
-  ensureOmxProjectReady?: (projectRoot: string) => {
-    success: boolean;
-    command: string;
-    error?: string;
-  };
+  ensureOmxProjectReady?: (projectRoot: string) => SnapshotOmxProvisionResult;
   /** Injectable final managed-lock boundary for ordering and failure tests. */
   generateAndWriteLockfileForDir?: typeof generateAndWriteLockfileForDir;
   /** Injectable registry boundary so success ordering can be verified without HOME writes. */
@@ -73,6 +83,42 @@ interface SnapshotInstallPlan {
   backupOperations: SnapshotCopyOperation[];
   backupDir?: string;
 }
+
+interface SnapshotRollbackTransaction {
+  directory: string;
+  managedPaths: string[];
+  restoreOperations: SnapshotCopyOperation[];
+  pathMetadata: SnapshotRollbackPathMetadata[];
+  backupDir?: string;
+}
+
+interface SnapshotRollbackSource {
+  kind: SnapshotCopyOperation['kind'];
+  source: string;
+}
+
+interface SnapshotRollbackPathMetadata {
+  kind: SnapshotCopyOperation['kind'];
+  path: string;
+  mode: number;
+}
+
+interface ValidatedRollbackSources {
+  sources: SnapshotRollbackSource[];
+  pathMetadata: SnapshotRollbackPathMetadata[];
+}
+
+const SNAPSHOT_ROLLBACK_PREFIX = 'omcodex-snapshot-rollback-';
+const POSIX_PERMISSION_MASK = 0o7777;
+const SNAPSHOT_MANAGED_ROOT_PATHS = [
+  '.omx',
+  '.gitignore',
+  'guides',
+  '.omcodex.lock.json',
+  '.omcustom.lock.json',
+  '.omcodexrc.json',
+  '.omcustomrc.json',
+] as const;
 
 async function lstatIfPresent(path: string): Promise<import('node:fs').Stats | null> {
   const fs = await import('node:fs/promises');
@@ -385,12 +431,258 @@ async function buildAndValidateInstallPlan(
   // before the first directory or file is created.
   const copyOperations = [...backupOperations, ...installOperations];
   await assertNonOverlappingCopyOperations(copyOperations);
+  if (backupDir && (await lstatIfPresent(backupDir))) {
+    throw new Error(`Unsafe snapshot backup destination already exists: ${backupDir}`);
+  }
   for (const operation of copyOperations) {
     await prevalidateCopyOperation(operation, targetDir);
   }
   await prevalidateSafeWritePath(join(targetDir, '.omcodex.lock.json'), targetDir);
 
   return { installOperations, backupOperations, backupDir };
+}
+
+function getSnapshotManagedPaths(targetDir: string): string[] {
+  const layout = getProviderLayout();
+  const skillsRoot = getComponentPath('skills').split('/')[0];
+  return [
+    ...new Set([layout.rootDir, skillsRoot, layout.entryFile, ...SNAPSHOT_MANAGED_ROOT_PATHS]),
+  ].map((relativePath) => join(targetDir, relativePath));
+}
+
+async function collectRollbackPathMetadata(
+  path: string,
+  pathMetadata: SnapshotRollbackPathMetadata[]
+): Promise<SnapshotCopyOperation['kind']> {
+  const fs = await import('node:fs/promises');
+  const stats = await lstatIfPresent(path);
+  if (!stats) {
+    throw new Error(`Snapshot source disappeared during rollback metadata capture: ${path}`);
+  }
+  if (stats.isSymbolicLink()) {
+    throw new Error(`Unsafe snapshot rollback source: symbolic links are not allowed: ${path}`);
+  }
+  if (stats.isFile()) {
+    pathMetadata.push({ kind: 'file', path, mode: stats.mode & POSIX_PERMISSION_MASK });
+    return 'file';
+  }
+  if (!stats.isDirectory()) {
+    throw new Error(`Unsafe snapshot rollback source: special files are not allowed: ${path}`);
+  }
+
+  pathMetadata.push({ kind: 'directory', path, mode: stats.mode & POSIX_PERMISSION_MASK });
+  for (const entry of await fs.readdir(path)) {
+    await collectRollbackPathMetadata(join(path, entry), pathMetadata);
+  }
+  return 'directory';
+}
+
+async function validateRollbackSources(managedPaths: string[]): Promise<ValidatedRollbackSources> {
+  const sources: SnapshotRollbackSource[] = [];
+  const pathMetadata: SnapshotRollbackPathMetadata[] = [];
+  for (const source of managedPaths) {
+    if (!(await lstatIfPresent(source))) continue;
+    const kind = await collectRollbackPathMetadata(source, pathMetadata);
+    sources.push({ kind, source });
+  }
+  return { sources, pathMetadata };
+}
+
+async function removeRollbackDirectory(directory: string): Promise<void> {
+  const fs = await import('node:fs/promises');
+  const stats = await lstatIfPresent(directory);
+  if (!stats) return;
+  if (stats.isSymbolicLink() || !stats.isDirectory()) {
+    throw new Error(`Unsafe snapshot rollback staging path: ${directory}`);
+  }
+  await fs.rm(directory, { recursive: true, force: true });
+}
+
+async function createSnapshotRollbackTransaction(
+  targetDir: string,
+  backupDir?: string
+): Promise<SnapshotRollbackTransaction> {
+  const managedPaths = getSnapshotManagedPaths(targetDir);
+  const { sources: rollbackSources, pathMetadata } = await validateRollbackSources(managedPaths);
+
+  const directory = await mkdtemp(join(tmpdir(), SNAPSHOT_ROLLBACK_PREFIX));
+  try {
+    const captureOperations = rollbackSources.map(({ kind, source }) =>
+      makeCopyOperation(kind, source, join(directory, relative(targetDir, source)))
+    );
+    await assertNonOverlappingCopyOperations(captureOperations);
+    for (const operation of captureOperations) {
+      // executeCopyOperation performs the destination preflight immediately
+      // before copying into the private staging root. Avoiding a redundant full
+      // tree preflight matters for large .omx state directories.
+      await executeCopyOperation(operation, directory);
+    }
+
+    return {
+      directory,
+      managedPaths,
+      restoreOperations: captureOperations.map((operation) => ({
+        ...operation,
+        source: operation.destination,
+        destination: operation.source,
+      })),
+      pathMetadata,
+      backupDir,
+    };
+  } catch (captureError) {
+    try {
+      await removeRollbackDirectory(directory);
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [captureError, cleanupError],
+        `Snapshot rollback capture failed and staging cleanup was incomplete: ${directory}`
+      );
+    }
+    throw captureError;
+  }
+}
+
+function assertDirectTargetChild(targetDir: string, path: string): void {
+  const pathFromTarget = relative(resolve(targetDir), resolve(path));
+  if (
+    pathFromTarget === '' ||
+    pathFromTarget.startsWith('..') ||
+    isAbsolute(pathFromTarget) ||
+    pathFromTarget.includes(sep)
+  ) {
+    throw new Error(`Unsafe snapshot rollback path outside managed target boundary: ${path}`);
+  }
+}
+
+async function removeManagedTargetPath(targetDir: string, path: string): Promise<void> {
+  const fs = await import('node:fs/promises');
+  assertDirectTargetChild(targetDir, path);
+  await assertTrustedProjectRoot(targetDir);
+  const stats = await lstatIfPresent(path);
+  if (!stats) return;
+
+  // A readiness command may have replaced a managed leaf with a symlink. Unlink
+  // that leaf directly; recursive removal is reserved for a real directory and
+  // therefore never follows the leaf outside the project boundary.
+  if (stats.isDirectory() && !stats.isSymbolicLink()) {
+    await fs.rm(path, { recursive: true, force: true });
+  } else {
+    await fs.unlink(path);
+  }
+}
+
+function targetPathDepth(targetDir: string, path: string): number {
+  return relative(resolve(targetDir), resolve(path)).split(sep).filter(Boolean).length;
+}
+
+async function restoreRollbackPathMetadata(
+  targetDir: string,
+  pathMetadata: SnapshotRollbackPathMetadata[]
+): Promise<void> {
+  const fs = await import('node:fs/promises');
+  const deepestFirst = [...pathMetadata].sort(
+    (left, right) => targetPathDepth(targetDir, right.path) - targetPathDepth(targetDir, left.path)
+  );
+
+  for (const metadata of deepestFirst) {
+    const pathFromTarget = relative(resolve(targetDir), resolve(metadata.path));
+    if (pathFromTarget === '' || pathFromTarget.startsWith('..') || isAbsolute(pathFromTarget)) {
+      throw new Error(`Unsafe snapshot rollback metadata path: ${metadata.path}`);
+    }
+
+    if (metadata.kind === 'directory') {
+      await prevalidateSafeWritePath(
+        join(metadata.path, '.omcodex-rollback-mode-probe'),
+        targetDir
+      );
+    } else {
+      await prevalidateSafeWritePath(metadata.path, targetDir);
+    }
+    const stats = await lstatIfPresent(metadata.path);
+    if (
+      !stats ||
+      stats.isSymbolicLink() ||
+      (metadata.kind === 'directory' ? !stats.isDirectory() : !stats.isFile())
+    ) {
+      throw new Error(`Unsafe snapshot rollback metadata target: ${metadata.path}`);
+    }
+
+    // chmod restores every permission/special bit on POSIX. Node exposes the
+    // same API on Windows, where the platform applies its supported subset.
+    // Any chmod error aborts rollback and is reported beside the original cause.
+    await fs.chmod(metadata.path, metadata.mode);
+  }
+}
+
+async function rollbackSnapshotTransaction(
+  targetDir: string,
+  transaction: SnapshotRollbackTransaction
+): Promise<void> {
+  for (const operation of transaction.restoreOperations) {
+    await validateCopySource(operation, 'snapshot rollback staging source');
+  }
+
+  // The permanent non-force backup belongs to a successful install only. Remove
+  // the exact directory allocated by this attempt before replacing managed roots.
+  if (transaction.backupDir) {
+    await removeManagedTargetPath(targetDir, transaction.backupDir);
+  }
+  for (const managedPath of transaction.managedPaths) {
+    await removeManagedTargetPath(targetDir, managedPath);
+  }
+  for (const operation of transaction.restoreOperations) {
+    await prevalidateCopyOperation(operation, targetDir);
+  }
+  for (const operation of transaction.restoreOperations) {
+    await executeCopyOperation(operation, targetDir);
+  }
+  await restoreRollbackPathMetadata(targetDir, transaction.pathMetadata);
+  await removeRollbackDirectory(transaction.directory);
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function approvalNeededRecovery(
+  targetDir: string,
+  provision: SnapshotOmxProvisionResult
+): string | null {
+  const provisionError = provision.error ?? '';
+  const approvalNeeded =
+    provision.assessment?.project?.hookReadiness?.status === 'approval-needed' ||
+    /(?:approval-needed|needs? approval)/i.test(provisionError);
+  if (!approvalNeeded) return null;
+
+  return [
+    provisionError || 'OMX project hooks are installed but need approval.',
+    'Snapshot installation never auto-trusts project hooks; it attempts exact rollback before returning failure and reports rollback failure separately.',
+    `Recovery for ${targetDir}:`,
+    `(1) run \`${provision.command}\` from the project root to recreate the OMX project surfaces;`,
+    '(2) enable hooks in the user-level $CODEX_HOME/config.toml with `[features] hooks = true`;',
+    '(3) open and trust the project in Codex;',
+    '(4) review and explicitly approve the project hooks with `/hooks`;',
+    '(5) retry snapshot installation.',
+  ].join(' ');
+}
+
+async function errorsAfterSnapshotFailure(
+  targetDir: string,
+  error: unknown,
+  transaction: SnapshotRollbackTransaction | undefined,
+  mutationStarted: boolean
+): Promise<string[]> {
+  const errors = [errorMessage(error)];
+  if (!transaction || !mutationStarted) return errors;
+
+  try {
+    await rollbackSnapshotTransaction(targetDir, transaction);
+  } catch (rollbackError) {
+    errors.push(
+      `Rollback failed: ${errorMessage(rollbackError)}. Recovery staging retained at: ${transaction.directory}`
+    );
+  }
+  return errors;
 }
 
 async function ensureSnapshotRuntimeReady(
@@ -400,8 +692,11 @@ async function ensureSnapshotRuntimeReady(
   const provisionOmxProject = dependencies.ensureOmxProjectReady ?? ensureOmxProjectReady;
   const provision = provisionOmxProject(targetDir);
   if (!provision.success) {
+    const recovery = approvalNeededRecovery(targetDir, provision);
     throw new Error(
-      provision.error ?? `OMX project setup is incomplete. Run manually: ${provision.command}`
+      recovery ??
+        provision.error ??
+        `OMX project setup is incomplete. Run manually: ${provision.command}`
     );
   }
 
@@ -435,8 +730,12 @@ export async function installFromSnapshot(
 
   console.log(`Installing from snapshot: ${snapshotPath}`);
 
+  let transaction: SnapshotRollbackTransaction | undefined;
+  let mutationStarted = false;
   try {
     const plan = await buildAndValidateInstallPlan(targetDir, snapshotPath, options.force === true);
+    transaction = await createSnapshotRollbackTransaction(targetDir, plan.backupDir);
+    mutationStarted = true;
 
     if (plan.backupDir) {
       const { layout } = getSnapshotPaths(snapshotPath);
@@ -463,6 +762,18 @@ export async function installFromSnapshot(
       // Non-blocking after a successful, explicit preflight.
     }
 
+    // The target is now durably committed. Staging cleanup is housekeeping: a
+    // cleanup failure must not turn a committed target into a reported failed
+    // install whose bytes cannot be rolled back after a partial recursive delete.
+    try {
+      await removeRollbackDirectory(transaction.directory);
+    } catch (cleanupError) {
+      console.warn(
+        `Snapshot installed, but rollback staging cleanup failed (${transaction.directory}): ${errorMessage(cleanupError)}`
+      );
+    }
+    transaction = undefined;
+
     // Register project in the local registry (non-blocking)
     try {
       const registerInstalledProject = dependencies.registerProject ?? registerProject;
@@ -479,12 +790,12 @@ export async function installFromSnapshot(
       message: `Installed from snapshot: ${snapshotPath}`,
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(i18n.t('cli.init.failed'), errorMessage);
+    const errors = await errorsAfterSnapshotFailure(targetDir, error, transaction, mutationStarted);
+    console.error(i18n.t('cli.init.failed'), errors.join(' | '));
     return {
       success: false,
       message: i18n.t('cli.init.failed'),
-      errors: [errorMessage],
+      errors,
     };
   }
 }

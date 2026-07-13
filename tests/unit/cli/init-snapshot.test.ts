@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, setSystemTime } from 'bun:test';
 import { createHash, randomUUID } from 'node:crypto';
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, renameSync, symlinkSync, writeFileSync } from 'node:fs';
 import {
+  chmod,
   link,
   lstat,
   mkdir,
@@ -9,9 +10,11 @@ import {
   readdir,
   readFile,
   readlink,
+  rename,
   rm,
   stat,
   symlink,
+  unlink,
   writeFile,
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -68,16 +71,17 @@ describe('installFromSnapshot', () => {
     async function walk(current: string): Promise<void> {
       const stats = await lstat(current);
       const name = relative(root, current) || '.';
+      const mode = (stats.mode & 0o7777).toString(8).padStart(4, '0');
       if (stats.isSymbolicLink()) {
-        records.push(`link:${name}:${await readlink(current)}`);
+        records.push(`link:${name}:${mode}:${await readlink(current)}`);
         return;
       }
       if (stats.isFile()) {
         const content = await readFile(current);
-        records.push(`file:${name}:${createHash('sha256').update(content).digest('hex')}`);
+        records.push(`file:${name}:${mode}:${createHash('sha256').update(content).digest('hex')}`);
         return;
       }
-      records.push(`dir:${name}`);
+      records.push(`dir:${name}:${mode}`);
       for (const entry of (await readdir(current)).sort()) {
         await walk(join(current, entry));
       }
@@ -85,6 +89,43 @@ describe('installFromSnapshot', () => {
 
     await walk(root);
     return createHash('sha256').update(records.join('\n')).digest('hex');
+  }
+
+  async function seedManagedTargetState(): Promise<void> {
+    await Promise.all([
+      mkdir(join(targetDir, '.codex', 'rules'), { recursive: true }),
+      mkdir(join(targetDir, '.agents', 'skills', 'custom'), { recursive: true }),
+      mkdir(join(targetDir, '.omx'), { recursive: true }),
+      mkdir(join(targetDir, 'guides', 'custom'), { recursive: true }),
+    ]);
+    await Promise.all([
+      writeFile(join(targetDir, '.codex', 'rules', 'MUST-sample.md'), 'ORIGINAL-RULE\n'),
+      writeFile(join(targetDir, '.codex', 'rules', 'custom.md'), 'CUSTOM-RULE\n'),
+      writeFile(join(targetDir, '.agents', 'skills', 'custom', 'SKILL.md'), 'CUSTOM-SKILL\n'),
+      writeFile(join(targetDir, '.omx', 'setup-scope.json'), '{"scope":"original"}\n'),
+      writeFile(join(targetDir, 'guides', 'custom', 'README.md'), 'CUSTOM-GUIDE\n'),
+      writeFile(join(targetDir, 'AGENTS.md'), 'ORIGINAL-AGENTS\n'),
+      writeFile(join(targetDir, '.gitignore'), 'ORIGINAL-IGNORE\n'),
+      writeFile(join(targetDir, '.omcodex.lock.json'), '{"original":true}\n'),
+      writeFile(join(targetDir, '.omcodexrc.json'), '{"lang":"ko"}\n'),
+      writeFile(join(targetDir, 'keep.txt'), 'UNMANAGED-KEEP\n'),
+    ]);
+    await Promise.all([
+      chmod(join(targetDir, '.codex'), 0o700),
+      chmod(join(targetDir, '.codex', 'rules'), 0o711),
+      chmod(join(targetDir, '.codex', 'rules', 'MUST-sample.md'), 0o600),
+      chmod(join(targetDir, '.agents', 'skills'), 0o750),
+      chmod(join(targetDir, 'AGENTS.md'), 0o640),
+    ]);
+  }
+
+  function mutateManagedStateDuringReadiness(): void {
+    mkdirSync(join(targetDir, '.codex', 'prompts'), { recursive: true });
+    writeFileSync(join(targetDir, '.codex', 'rules', 'MUST-sample.md'), 'PROVISIONED-RULE\n');
+    writeFileSync(join(targetDir, '.codex', 'prompts', 'executor.md'), 'PROVISIONED-PROMPT\n');
+    writeFileSync(join(targetDir, '.omx', 'generated.json'), '{"generated":true}\n');
+    writeFileSync(join(targetDir, 'AGENTS.md'), 'PROVISIONED-AGENTS\n');
+    writeFileSync(join(targetDir, '.gitignore'), '.omx/\n.codex/*\n', { flag: 'a' });
   }
 
   describe('success cases', () => {
@@ -308,6 +349,193 @@ describe('installFromSnapshot', () => {
       expect(result.success).toBe(false);
       expect(result.errors?.[0]).toContain('injected failure');
       expect(registryCalled).toBe(false);
+    });
+
+    for (const force of [false, true]) {
+      it(`restores the content/type/mode fingerprint after ${force ? 'force' : 'non-force'} readiness failure`, async () => {
+        await createMinimalSnapshot(snapshotDir);
+        await seedManagedTargetState();
+        const before = await treeDigest(targetDir);
+
+        const result = await installFromSnapshot(
+          targetDir,
+          snapshotDir,
+          { force },
+          {
+            ensureOmxProjectReady: () => {
+              mutateManagedStateDuringReadiness();
+              return {
+                success: false,
+                command: 'omx setup --scope project --merge-agents',
+                error: 'injected readiness failure after mutation',
+              };
+            },
+            generateAndWriteLockfileForDir: async () => {
+              throw new Error('final lock must not run');
+            },
+            registerProject: async () => {
+              throw new Error('registry must not run');
+            },
+          }
+        );
+
+        expect(result.success).toBe(false);
+        expect(result.errors?.[0]).toContain('injected readiness failure');
+        expect(await treeDigest(targetDir)).toBe(before);
+        expect((await readdir(targetDir)).some((entry) => entry.startsWith('.codex-backup-'))).toBe(
+          false
+        );
+      });
+
+      it(`restores the content/type/mode fingerprint after ${force ? 'force' : 'non-force'} final lock failure`, async () => {
+        await createMinimalSnapshot(snapshotDir);
+        await seedManagedTargetState();
+        const before = await treeDigest(targetDir);
+        let registryCalled = false;
+
+        const result = await installFromSnapshot(
+          targetDir,
+          snapshotDir,
+          { force },
+          {
+            ensureOmxProjectReady: () => {
+              mutateManagedStateDuringReadiness();
+              return {
+                success: true,
+                command: 'omx setup --scope project --merge-agents',
+              };
+            },
+            generateAndWriteLockfileForDir: async () => {
+              await writeFile(join(targetDir, '.omcodex.lock.json'), 'PARTIAL-LOCK\n');
+              return { fileCount: 0, warning: 'injected final lock failure after mutation' };
+            },
+            registerProject: async () => {
+              registryCalled = true;
+            },
+          }
+        );
+
+        expect(result.success).toBe(false);
+        expect(result.errors?.[0]).toContain('injected final lock failure');
+        expect(registryCalled).toBe(false);
+        expect(await treeDigest(targetDir)).toBe(before);
+        expect((await readdir(targetDir)).some((entry) => entry.startsWith('.codex-backup-'))).toBe(
+          false
+        );
+      });
+    }
+
+    it('removes a newly created .gitignore when readiness fails', async () => {
+      await createMinimalSnapshot(snapshotDir);
+      const before = await treeDigest(targetDir);
+
+      const result = await installFromSnapshot(
+        targetDir,
+        snapshotDir,
+        { force: true },
+        {
+          ensureOmxProjectReady: () => {
+            writeFileSync(join(targetDir, '.gitignore'), '.omx/\n.codex/*\n');
+            return {
+              success: false,
+              command: 'omx setup --scope project --merge-agents',
+              error: 'readiness failed after creating .gitignore',
+            };
+          },
+          registerProject: async () => {},
+        }
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errors?.[0]).toContain('readiness failed');
+      expect(await treeDigest(targetDir)).toBe(before);
+      await expect(lstat(join(targetDir, '.gitignore'))).rejects.toThrow();
+    });
+
+    it('returns actionable user-level hook approval recovery after an exact rollback', async () => {
+      await createMinimalSnapshot(snapshotDir);
+      await seedManagedTargetState();
+      const before = await treeDigest(targetDir);
+
+      const result = await installFromSnapshot(
+        targetDir,
+        snapshotDir,
+        { force: true },
+        {
+          ensureOmxProjectReady: () => {
+            writeFileSync(join(targetDir, '.codex', 'hooks.json'), '{"hooks":{}}\n');
+            writeFileSync(join(targetDir, '.gitignore'), '.omx/\n', { flag: 'a' });
+            return {
+              success: false,
+              command: 'omx setup --scope project --merge-agents',
+              error: 'OMX project hooks are installed but need approval.',
+              assessment: {
+                project: {
+                  hookReadiness: { status: 'approval-needed' },
+                },
+              },
+            };
+          },
+          registerProject: async () => {},
+        }
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errors?.[0]).toContain('attempts exact rollback');
+      expect(result.errors?.[0]).toContain('omx setup --scope project --merge-agents');
+      expect(result.errors?.[0]).toContain('$CODEX_HOME/config.toml');
+      expect(result.errors?.[0]).toContain('[features] hooks = true');
+      expect(result.errors?.[0]).toContain('open and trust the project');
+      expect(result.errors?.[0]).toContain('/hooks');
+      expect(result.errors?.[0]).toContain('never auto-trusts');
+      expect(result.errors?.[0]).toContain('retry snapshot installation');
+      expect(await treeDigest(targetDir)).toBe(before);
+      await expect(lstat(join(targetDir, '.codex', 'hooks.json'))).rejects.toThrow();
+    });
+
+    it('reports rollback failure separately from the original readiness error', async () => {
+      await createMinimalSnapshot(snapshotDir);
+      await seedManagedTargetState();
+      const outsideDir = await mkdtemp(join(tmpdir(), 'omcodex-snapshot-rollback-outside-'));
+      const relocatedTarget = `${targetDir}-relocated`;
+      await writeFile(join(outsideDir, 'sentinel.txt'), 'OUTSIDE-UNCHANGED\n');
+      const outsideBefore = await treeDigest(outsideDir);
+      let recoveryStaging: string | undefined;
+
+      try {
+        const result = await installFromSnapshot(
+          targetDir,
+          snapshotDir,
+          { force: true },
+          {
+            ensureOmxProjectReady: () => {
+              renameSync(targetDir, relocatedTarget);
+              symlinkSync(outsideDir, targetDir, 'dir');
+              return {
+                success: false,
+                command: 'omx setup --scope project --merge-agents',
+                error: 'original readiness failure',
+              };
+            },
+            registerProject: async () => {},
+          }
+        );
+
+        expect(result.success).toBe(false);
+        expect(result.errors?.[0]).toBe('original readiness failure');
+        expect(result.errors?.[1]).toContain('Rollback failed:');
+        expect(result.errors?.[1]).toContain('project root is a symbolic link');
+        expect(result.errors?.[1]).toContain('Recovery staging retained at:');
+        recoveryStaging = result.errors?.[1]?.split('Recovery staging retained at: ')[1];
+        expect(await treeDigest(outsideDir)).toBe(outsideBefore);
+      } finally {
+        await unlink(targetDir).catch(() => {});
+        await rename(relocatedTarget, targetDir).catch(() => {});
+        if (recoveryStaging) {
+          await rm(recoveryStaging, { recursive: true, force: true });
+        }
+        await rm(outsideDir, { recursive: true, force: true });
+      }
     });
 
     it('rejects a snapshot root leaf symlink even when it points to a valid snapshot', async () => {

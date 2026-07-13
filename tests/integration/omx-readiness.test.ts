@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { execSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -20,17 +21,22 @@ function isolatedDeps(home: string, binDir: string): InstallerDeps {
         },
       }),
     getPlatform: () => 'linux',
-    inspectHooks: (projectRoot) => [
-      {
-        key: `${projectRoot}:pre_tool_use:0:0`,
-        command: 'node hook.js',
-        currentHash: 'sha256:test',
-        enabled: true,
-        source: 'project',
-        sourcePath: join(projectRoot, '.codex', 'hooks.json'),
-        trustStatus: 'trusted',
-      },
-    ],
+    inspectHooks: (projectRoot) => {
+      const sourcePath = join(projectRoot, '.codex', 'hooks.json');
+      return existsSync(sourcePath)
+        ? [
+            {
+              key: `${projectRoot}:pre_tool_use:0:0`,
+              command: 'node hook.js',
+              currentHash: 'sha256:test',
+              enabled: true,
+              source: 'project' as const,
+              sourcePath,
+              trustStatus: 'trusted' as const,
+            },
+          ]
+        : [];
+    },
   };
 }
 

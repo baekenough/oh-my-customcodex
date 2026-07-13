@@ -8,6 +8,7 @@ import {
   NATIVE_AGENT_GENERATED_HEADER,
   parseNativeAgentListMetadata,
 } from '../core/agent-compiler.js';
+import { resolveCodexProjectRoot } from '../core/codex-project-root.js';
 import { loadConfig, type OmccConfig } from '../core/config.js';
 import { extractHookCommands, extractHookExecutableReferences } from '../core/hook-references.js';
 import { getComponentPath, getProviderLayout } from '../core/layout.js';
@@ -724,8 +725,9 @@ export async function getHooks(
   targetDir: string,
   rootDir: string = '.codex'
 ): Promise<ComponentInfo[]> {
-  const hooksDir = join(targetDir, rootDir, 'hooks');
-  const rootRegistry = join(targetDir, rootDir, 'hooks.json');
+  const projectRoot = resolveCodexProjectRoot(targetDir);
+  const hooksDir = join(projectRoot, rootDir, 'hooks');
+  const rootRegistry = join(projectRoot, rootDir, 'hooks.json');
   const rootRegistryExists = await fileExists(rootRegistry);
   const hooksDirExists = await fileExists(hooksDir);
 
@@ -739,13 +741,13 @@ export async function getHooks(
         ? legacyRegistry
         : null;
     if (registryPath) {
-      return getActiveDeclaredHooks(targetDir, rootDir, hooksDir, registryPath);
+      return getActiveDeclaredHooks(projectRoot, rootDir, hooksDir, registryPath);
     }
 
     // Registry-less directories predate the native active-declaration model.
     // Keep the compatibility fallback without presenting it when a registry
     // gives us an authoritative reachable set.
-    return hooksDirExists ? await getRegistrylessHooks(targetDir, hooksDir) : [];
+    return hooksDirExists ? await getRegistrylessHooks(projectRoot, hooksDir) : [];
   } catch {
     return [];
   }

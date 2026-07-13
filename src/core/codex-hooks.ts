@@ -8,7 +8,6 @@
 
 import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
-import { realpath } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import {
   copyFile,
@@ -19,6 +18,7 @@ import {
   resolveTemplatePath,
   writeJsonFile,
 } from '../utils/fs.js';
+import { resolveCodexProjectRoot, resolveCodexTargetRoot } from './codex-project-root.js';
 
 const DEFAULT_TIMEOUT_SECONDS = 30;
 
@@ -794,6 +794,8 @@ function registryHasUnmanagedContent(registry: CodexHookRegistry): boolean {
 }
 
 interface NativeCodexHookPaths {
+  targetRoot: string;
+  projectRoot: string;
   sourceRoot: string;
   sourceRegistryPath: string;
   sourceScriptsPath: string;
@@ -809,20 +811,53 @@ function resolveNativeCodexHookPaths(
   targetDir: string,
   options: InstallNativeCodexHooksOptions
 ): NativeCodexHookPaths {
+  const targetRoot = resolveCodexTargetRoot(targetDir);
+  const projectRoot = resolveCodexProjectRoot(targetDir);
   const sourceRoot = options.sourceRoot ?? resolveTemplatePath('.claude/hooks');
-  const hooksPath = join(targetDir, '.codex', 'hooks');
+  const hooksPath = join(projectRoot, '.codex', 'hooks');
   const compatibilityPath = join(hooksPath, 'compatibility');
   return {
+    targetRoot,
+    projectRoot,
     sourceRoot,
     sourceRegistryPath: join(sourceRoot, 'hooks.json'),
     sourceScriptsPath: join(sourceRoot, 'scripts'),
-    registryPath: join(targetDir, '.codex', 'hooks.json'),
+    registryPath: join(projectRoot, '.codex', 'hooks.json'),
     hooksPath,
     scriptsPath: join(hooksPath, 'scripts'),
     compatibilityPath,
     compatibilityRegistryPath: join(compatibilityPath, 'claude-hooks.json'),
     conversionPath: join(compatibilityPath, 'conversion.json'),
   };
+}
+
+function linkedDiscoveryAnchorPath(paths: NativeCodexHookPaths): string | null {
+  return paths.targetRoot === paths.projectRoot ? null : join(paths.targetRoot, '.codex');
+}
+
+async function prevalidateLinkedDiscoveryAnchor(paths: NativeCodexHookPaths): Promise<void> {
+  const anchorPath = linkedDiscoveryAnchorPath(paths);
+  if (!anchorPath) return;
+  try {
+    const stats = await fs.lstat(anchorPath);
+    if (stats.isSymbolicLink() || !stats.isDirectory()) {
+      throw new Error(`Codex discovery anchor must be a regular directory: ${anchorPath}`);
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
+}
+
+async function ensureLinkedDiscoveryAnchor(paths: NativeCodexHookPaths): Promise<void> {
+  const anchorPath = linkedDiscoveryAnchorPath(paths);
+  if (!anchorPath) return;
+  await prevalidateLinkedDiscoveryAnchor(paths);
+  try {
+    await fs.mkdir(anchorPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+  }
+  await prevalidateLinkedDiscoveryAnchor(paths);
 }
 
 interface ManagedHookAsset {
@@ -915,12 +950,10 @@ async function classifyStaleManagedHookAssets(
 
 async function prevalidateActiveManagedHookAssets(
   targetDir: string,
-  activeAssets: ManagedHookAsset[],
-  overwrite: boolean
+  activeAssets: ManagedHookAsset[]
 ): Promise<void> {
   for (const asset of activeAssets) {
     await assertRegularManagedSource(asset);
-    if (!overwrite && (await fileExists(asset.targetPath))) continue;
     await prevalidateSafeWritePath(asset.targetPath, targetDir);
   }
 }
@@ -944,9 +977,14 @@ export async function prevalidateNativeCodexHooks(
   options: InstallNativeCodexHooksOptions = {}
 ): Promise<void> {
   const paths = resolveNativeCodexHookPaths(targetDir, options);
-  await prevalidateSafeWritePath(paths.registryPath, targetDir);
-  await prevalidateSafeWritePath(paths.compatibilityRegistryPath, targetDir);
-  await prevalidateSafeWritePath(paths.conversionPath, targetDir);
+  await prevalidateResolvedNativeCodexHooks(paths);
+}
+
+async function prevalidateResolvedNativeCodexHooks(paths: NativeCodexHookPaths): Promise<void> {
+  await prevalidateLinkedDiscoveryAnchor(paths);
+  await prevalidateSafeWritePath(paths.registryPath, paths.projectRoot);
+  await prevalidateSafeWritePath(paths.compatibilityRegistryPath, paths.projectRoot);
+  await prevalidateSafeWritePath(paths.conversionPath, paths.projectRoot);
   const source = await readJsonFile<unknown>(paths.sourceRegistryPath);
   const compilation = compileCodexHooks(source);
   const activeAssets = activeManagedHookAssets(paths, compilation.registry);
@@ -957,14 +995,14 @@ export async function prevalidateNativeCodexHooks(
   const mergedRegistry = mergeCodexHookRegistries(existingRegistry, compilation.registry);
   const retainedScriptNames = getReferencedHookScriptNames(mergedRegistry);
   const activeScriptNames = new Set(activeAssets.map((asset) => asset.name));
-  await prevalidateActiveManagedHookAssets(targetDir, activeAssets, !!options.overwrite);
+  await prevalidateActiveManagedHookAssets(paths.projectRoot, activeAssets);
   const staleAssets = await classifyStaleManagedHookAssets(
     paths,
     activeScriptNames,
     retainedScriptNames
   );
   for (const asset of staleAssets.removable) {
-    await prevalidateSafeWritePath(asset.targetPath, targetDir);
+    await prevalidateSafeWritePath(asset.targetPath, paths.projectRoot);
   }
 }
 
@@ -978,9 +1016,9 @@ export async function installNativeCodexHooks(
 ): Promise<InstallNativeCodexHooksResult> {
   const paths = resolveNativeCodexHookPaths(targetDir, options);
   const source = await readJsonFile<unknown>(paths.sourceRegistryPath);
-  const authoritativeRoot = await realpath(targetDir);
-  const compilation = compileCodexHooks(source, { authoritativeRoot });
-  await prevalidateNativeCodexHooks(targetDir, options);
+  const compilation = compileCodexHooks(source, { authoritativeRoot: paths.projectRoot });
+  await prevalidateResolvedNativeCodexHooks(paths);
+  await ensureLinkedDiscoveryAnchor(paths);
   const registryExists = await fileExists(paths.registryPath);
   const existingRegistry = registryExists
     ? validateCodexHookRegistry(await readJsonFile<unknown>(paths.registryPath))
@@ -991,20 +1029,22 @@ export async function installNativeCodexHooks(
   const retainedScriptNames = getReferencedHookScriptNames(mergedRegistry);
   const activeScriptNames = new Set(activeAssets.map((asset) => asset.name));
 
-  await copyActiveManagedHookAssets(targetDir, activeAssets, !!options.overwrite);
+  await copyActiveManagedHookAssets(paths.projectRoot, activeAssets, !!options.overwrite);
   const staleAssets = await classifyStaleManagedHookAssets(
     paths,
     activeScriptNames,
     retainedScriptNames
   );
   for (const asset of staleAssets.removable) {
-    await deleteFile(asset.targetPath, targetDir);
+    await deleteFile(asset.targetPath, paths.projectRoot);
   }
-  await writeJsonFile(paths.registryPath, mergedRegistry, { trustedWriteRoot: targetDir });
+  await writeJsonFile(paths.registryPath, mergedRegistry, { trustedWriteRoot: paths.projectRoot });
   await writeJsonFile(paths.conversionPath, compilation.compatibility, {
-    trustedWriteRoot: targetDir,
+    trustedWriteRoot: paths.projectRoot,
   });
-  await writeJsonFile(paths.compatibilityRegistryPath, source, { trustedWriteRoot: targetDir });
+  await writeJsonFile(paths.compatibilityRegistryPath, source, {
+    trustedWriteRoot: paths.projectRoot,
+  });
 
   return {
     installed: true,

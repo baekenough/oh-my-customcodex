@@ -578,22 +578,21 @@ invalid: [[[
   });
 
   describe('integration with init', () => {
-    it('should require explicit hook approval after init without reporting a doctor failure', async () => {
+    it('should diagnose disabled user-level hooks after init without reporting a doctor failure', async () => {
       const initResult = await runCli('init');
       const initOutput = initResult.stdout + initResult.stderr;
 
       expect(initResult.exitCode).toBe(1);
-      expect(initOutput).toContain('Trust the project');
-      expect(initOutput).toContain('review /hooks');
-      expect(initOutput).toContain('not auto-approved');
+      expect(initOutput).toContain('$CODEX_HOME/config.toml');
+      expect(initOutput).toContain('[features] hooks = true');
 
       const doctorResult = await runCli('doctor');
 
       expect(doctorResult.exitCode).toBe(0);
 
       const output = doctorResult.stdout;
-      expect(output).toContain('need approval');
-      expect(output).toContain('review /hooks');
+      expect(output).toContain('discovered 0 project hooks');
+      expect(output).toContain('$CODEX_HOME/config.toml');
       const failCount = (output.match(/\[FAIL\]/gi) || []).length;
       expect(failCount).toBe(0);
     });

@@ -1,5 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import {
+  link,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  realpath,
+  rm,
+  stat,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -8,6 +19,7 @@ import {
   getActiveManagedHookScriptNames,
   installNativeCodexHooks,
   mergeCodexHookRegistries,
+  prevalidateNativeCodexHooks,
   validateCodexHookRegistry,
 } from '../../../src/core/codex-hooks.js';
 import { generateLockfile } from '../../../src/core/lockfile.js';
@@ -242,7 +254,7 @@ describe('Codex-native hooks', () => {
   it('installs the root registry, scripts, and isolated compatibility records', async () => {
     const result = await installNativeCodexHooks(tempDir, { overwrite: true });
 
-    expect(result.registryPath).toBe(join(tempDir, '.codex', 'hooks.json'));
+    expect(result.registryPath).toBe(join(await realpath(tempDir), '.codex', 'hooks.json'));
     expect(await Bun.file(result.registryPath).exists()).toBe(true);
     expect(await Bun.file(join(tempDir, '.codex', 'hooks', 'hooks.json')).exists()).toBe(false);
     expect(
@@ -308,6 +320,60 @@ describe('Codex-native hooks', () => {
     ]);
   });
 
+  it('rejects a preserved active target symlink before activating the native registry', async () => {
+    const scriptsDir = join(tempDir, '.codex', 'hooks', 'scripts');
+    const externalWrapper = join(tempDir, 'external-wrapper.sh');
+    const wrapperPath = join(scriptsDir, 'codex-native-advisory.sh');
+    await mkdir(scriptsDir, { recursive: true });
+    await writeFile(externalWrapper, '#!/bin/bash\nprintf external\n');
+    await symlink(externalWrapper, wrapperPath);
+
+    await expect(installNativeCodexHooks(tempDir)).rejects.toThrow('symbolic link');
+
+    expect(await readFile(externalWrapper, 'utf-8')).toContain('external');
+    expect(await Bun.file(join(tempDir, '.codex', 'hooks.json')).exists()).toBe(false);
+  });
+
+  it('rejects a preserved active target hard link before activating the native registry', async () => {
+    const scriptsDir = join(tempDir, '.codex', 'hooks', 'scripts');
+    const externalWrapper = join(tempDir, 'external-wrapper.sh');
+    const wrapperPath = join(scriptsDir, 'codex-native-advisory.sh');
+    await mkdir(scriptsDir, { recursive: true });
+    await writeFile(externalWrapper, '#!/bin/bash\nprintf external\n');
+    await link(externalWrapper, wrapperPath);
+
+    await expect(installNativeCodexHooks(tempDir)).rejects.toThrow('multiple hard links');
+
+    expect(await readFile(externalWrapper, 'utf-8')).toContain('external');
+    expect(await Bun.file(join(tempDir, '.codex', 'hooks.json')).exists()).toBe(false);
+  });
+
+  it('rejects a preserved active non-file target before activating the native registry', async () => {
+    const scriptsDir = join(tempDir, '.codex', 'hooks', 'scripts');
+    const wrapperPath = join(scriptsDir, 'codex-native-advisory.sh');
+    await mkdir(wrapperPath, { recursive: true });
+
+    await expect(installNativeCodexHooks(tempDir)).rejects.toThrow('not a regular file');
+
+    expect(await Bun.file(join(tempDir, '.codex', 'hooks.json')).exists()).toBe(false);
+  });
+
+  it('preserves a regular custom active target while activating the native registry', async () => {
+    const scriptsDir = join(tempDir, '.codex', 'hooks', 'scripts');
+    const wrapperPath = join(scriptsDir, 'codex-native-advisory.sh');
+    const customWrapper = '#!/bin/bash\nprintf custom-wrapper\n';
+    await mkdir(scriptsDir, { recursive: true });
+    await writeFile(wrapperPath, customWrapper);
+
+    const result = await installNativeCodexHooks(tempDir);
+    const registry = JSON.parse(await readFile(result.registryPath, 'utf-8')) as CodexHookRegistry;
+
+    expect(await readFile(wrapperPath, 'utf-8')).toBe(customWrapper);
+    expect(findHandler(registry, 'schema-validator.sh').command).toContain(
+      '.codex/hooks/scripts/codex-native-advisory.sh'
+    );
+  });
+
   it('removes only byte-identical stale managed scripts and preserves custom hook files', async () => {
     const scriptsDir = join(tempDir, '.codex', 'hooks', 'scripts');
     const sourceScriptsDir = join(import.meta.dir, '../../../templates/.claude/hooks/scripts');
@@ -348,6 +414,7 @@ describe('Codex-native hooks', () => {
     );
 
     const result = await installNativeCodexHooks(tempDir, { overwrite: true });
+    const canonicalRoot = await realpath(tempDir);
 
     expect(await Bun.file(join(scriptsDir, 'stage-blocker.sh')).exists()).toBe(false);
     expect(await Bun.file(join(scriptsDir, 'session-env-check.sh')).text()).toContain('customized');
@@ -358,12 +425,16 @@ describe('Codex-native hooks', () => {
     ).toBe(false);
     expect(result.removedStaleManagedPaths).toEqual(
       expect.arrayContaining([
-        join(scriptsDir, 'stage-blocker.sh'),
-        join(tempDir, '.codex', 'hooks', 'skill-count-reminder.sh'),
+        join(canonicalRoot, '.codex', 'hooks', 'scripts', 'stage-blocker.sh'),
+        join(canonicalRoot, '.codex', 'hooks', 'skill-count-reminder.sh'),
       ])
     );
-    expect(result.preservedCustomPaths).toContain(join(scriptsDir, 'session-env-check.sh'));
-    expect(result.preservedCustomPaths).toContain(join(scriptsDir, 'audit-log.sh'));
+    expect(result.preservedCustomPaths).toContain(
+      join(canonicalRoot, '.codex', 'hooks', 'scripts', 'session-env-check.sh')
+    );
+    expect(result.preservedCustomPaths).toContain(
+      join(canonicalRoot, '.codex', 'hooks', 'scripts', 'audit-log.sh')
+    );
   });
 
   it('validates and stably merges managed handlers without reordering custom or OMX hooks', () => {
@@ -643,14 +714,16 @@ describe('Codex-native hooks', () => {
         }).exitCode
       ).toBe(0);
 
-      await installNativeCodexHooks(tempDir, { overwrite: true });
-      await mkdir(join(linkedWorktree, '.codex'), { recursive: true });
+      const installResult = await installNativeCodexHooks(linkedWorktree, { overwrite: true });
       const registry = JSON.parse(
         await readFile(join(tempDir, '.codex', 'hooks.json'), 'utf8')
       ) as CodexHookRegistry;
       const handler = findHandler(registry, 'schema-validator.sh');
       const canonicalRoot = await realpath(tempDir);
 
+      expect(installResult.registryPath).toBe(join(canonicalRoot, '.codex', 'hooks.json'));
+      expect((await stat(join(linkedWorktree, '.codex'))).isDirectory()).toBe(true);
+      expect(await Bun.file(join(linkedWorktree, '.codex', 'hooks.json')).exists()).toBe(false);
       expect(handler.command).toContain(`repo_root="${canonicalRoot}"`);
       expect(handler.command).not.toContain('git rev-parse --show-toplevel');
       const result = await runHandler(handler.command, linkedWorktree, {
@@ -661,6 +734,99 @@ describe('Codex-native hooks', () => {
       expect(result).toEqual({ exitCode: 0, stdout: '', stderr: '' });
     } finally {
       await rm(linkedWorktree, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps a separate-git-dir linked install off same-name storage materialization', async () => {
+    const targetRoot = join(tempDir, 'target');
+    const storageRoot = join(tempDir, 'storage');
+    const storageGitDir = join(storageRoot, '.git');
+    const linkedWorktree = join(tempDir, 'linked');
+    await mkdir(storageRoot);
+    expect(
+      Bun.spawnSync(['git', 'init', '-q', '--separate-git-dir', storageGitDir, targetRoot], {
+        cwd: tempDir,
+      }).exitCode
+    ).toBe(0);
+    await writeFile(join(targetRoot, 'README.md'), 'tracked-target\n');
+    expect(Bun.spawnSync(['git', 'add', 'README.md'], { cwd: targetRoot }).exitCode).toBe(0);
+    expect(
+      Bun.spawnSync(
+        [
+          'git',
+          '-c',
+          'user.name=Fixture',
+          '-c',
+          'user.email=fixture@example.com',
+          'commit',
+          '-qm',
+          'fixture',
+        ],
+        { cwd: targetRoot }
+      ).exitCode
+    ).toBe(0);
+    expect(
+      Bun.spawnSync(['git', 'worktree', 'add', '-qb', 'separate-fixture', linkedWorktree], {
+        cwd: targetRoot,
+      }).exitCode
+    ).toBe(0);
+    await writeFile(join(storageRoot, 'README.md'), 'unrelated-storage\n');
+
+    const installResult = await installNativeCodexHooks(linkedWorktree, { overwrite: true });
+    const canonicalLinkedRoot = await realpath(linkedWorktree);
+
+    expect(installResult.registryPath).toBe(join(canonicalLinkedRoot, '.codex', 'hooks.json'));
+    expect(await Bun.file(join(linkedWorktree, '.codex', 'hooks.json')).exists()).toBe(true);
+    expect(await Bun.file(join(targetRoot, '.codex', 'hooks.json')).exists()).toBe(false);
+    expect(await Bun.file(join(storageRoot, '.codex', 'hooks.json')).exists()).toBe(false);
+    expect(await readFile(join(targetRoot, 'README.md'), 'utf8')).toBe('tracked-target\n');
+    expect(await readFile(join(linkedWorktree, 'README.md'), 'utf8')).toBe('tracked-target\n');
+    expect(await readFile(join(storageRoot, 'README.md'), 'utf8')).toBe('unrelated-storage\n');
+    expect((await readdir(targetRoot)).sort()).toEqual(['.git', 'README.md']);
+    expect((await readdir(storageRoot)).sort()).toEqual(['.git', 'README.md']);
+  });
+
+  it('rejects a symlinked linked-worktree discovery anchor before writing main assets', async () => {
+    const linkedWorktree = `${tempDir}-anchor-linked`;
+    const outside = `${tempDir}-anchor-outside`;
+    try {
+      expect(Bun.spawnSync(['git', 'init', '-q'], { cwd: tempDir }).exitCode).toBe(0);
+      await writeFile(join(tempDir, 'README.md'), '# fixture\n');
+      expect(Bun.spawnSync(['git', 'add', 'README.md'], { cwd: tempDir }).exitCode).toBe(0);
+      expect(
+        Bun.spawnSync(
+          [
+            'git',
+            '-c',
+            'user.name=Fixture',
+            '-c',
+            'user.email=fixture@example.com',
+            'commit',
+            '-qm',
+            'fixture',
+          ],
+          { cwd: tempDir }
+        ).exitCode
+      ).toBe(0);
+      expect(
+        Bun.spawnSync(['git', 'worktree', 'add', '-qb', 'anchor-fixture', linkedWorktree], {
+          cwd: tempDir,
+        }).exitCode
+      ).toBe(0);
+      await mkdir(outside);
+      await symlink(outside, join(linkedWorktree, '.codex'));
+
+      await expect(prevalidateNativeCodexHooks(linkedWorktree)).rejects.toThrow(
+        'discovery anchor must be a regular directory'
+      );
+      await expect(installNativeCodexHooks(linkedWorktree)).rejects.toThrow(
+        'discovery anchor must be a regular directory'
+      );
+      expect(await Bun.file(join(tempDir, '.codex', 'hooks.json')).exists()).toBe(false);
+      expect((await readdir(outside)).length).toBe(0);
+    } finally {
+      await rm(linkedWorktree, { recursive: true, force: true });
+      await rm(outside, { recursive: true, force: true });
     }
   });
 });
