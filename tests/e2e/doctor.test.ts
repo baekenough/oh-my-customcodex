@@ -74,6 +74,32 @@ EOF
 esac
 `;
 
+  const fakeCodex = `#!/usr/bin/env node
+const args = process.argv.slice(2);
+if (args[0] === '--version') {
+  process.stdout.write('codex-cli 0.144.1\\n');
+  process.exit(0);
+}
+if (args[0] !== 'app-server' || args[1] !== '--stdio') process.exit(2);
+
+const readline = require('node:readline');
+const send = (value) => process.stdout.write(JSON.stringify(value) + '\\n');
+readline.createInterface({ input: process.stdin }).on('line', (line) => {
+  let message;
+  try { message = JSON.parse(line); } catch { return; }
+  if (message.method === 'initialize') {
+    send({ jsonrpc: '2.0', id: message.id, result: { serverInfo: { name: 'fake-codex', version: '0.144.1' } } });
+  } else if (message.method === 'hooks/list') {
+    const cwds = Array.isArray(message.params?.cwds) ? message.params.cwds : [];
+    send({
+      jsonrpc: '2.0',
+      id: message.id,
+      result: { data: cwds.map((cwd) => ({ cwd, hooks: [], errors: [] })) },
+    });
+  }
+});
+`;
+
   beforeAll(() => {
     // Path to the CLI entry point (run with bun)
     // Using dirname to get the project root from the test file location
@@ -86,6 +112,7 @@ esac
     fakeBin = join(tempDir, 'bin');
     await mkdir(fakeBin, { recursive: true });
     await writeFile(join(fakeBin, 'omx'), fakeOmx, { mode: 0o755 });
+    await writeFile(join(fakeBin, 'codex'), fakeCodex, { mode: 0o755 });
     // Change to temp directory for the test
     process.chdir(tempDir);
   });
@@ -111,6 +138,7 @@ esac
       env: {
         ...process.env,
         PATH: `${fakeBin}${delimiter}${process.env.PATH ?? ''}`,
+        CODEX_HOME: join(tempDir, '.codex-home'),
         OMCODEX_REGISTRY_DIR: join(tempDir, '.omcodex-registry'),
         ...(args[0] === 'init' ? { NODE_ENV: 'production', BUN_ENV: 'production' } : {}),
       },
@@ -400,14 +428,7 @@ invalid yaml content:
       // Verify rules directory doesn't exist
       expect(await pathExists(join(tempDir, '.codex', 'rules'))).toBe(false);
 
-      const result = await runCli('doctor', '--fix');
-
-      const output = result.stdout + result.stderr;
-
-      // Should indicate fixing
-      expect(output.toLowerCase().includes('fix') || output.toLowerCase().includes('creat')).toBe(
-        true
-      );
+      await runCli('doctor', '--fix');
 
       // Rules directory should now exist
       expect(await pathExists(join(tempDir, '.codex', 'rules'))).toBe(true);
@@ -475,7 +496,7 @@ invalid yaml content:
       expect(entriesAfter).not.toContain('broken-link');
     });
 
-    it('should report fixed issues in output', async () => {
+    it('should report fresh warnings instead of false fixed labels', async () => {
       // Create structure with missing directories
       await writeFile(join(tempDir, 'AGENTS.md'), '# Test');
       await mkdir(join(tempDir, '.codex'), { recursive: true });
@@ -484,13 +505,8 @@ invalid yaml content:
 
       const output = result.stdout;
 
-      // Should show fixed indicator
-      expect(
-        output.includes('fixed') ||
-          output.includes('Fixed') ||
-          output.includes('(fixed)') ||
-          output.includes('created')
-      ).toBe(true);
+      expect(output).toContain('[WARN]');
+      expect(output).not.toContain('(fixed)');
     });
 
     it('should pass subsequent doctor check after fix', async () => {
@@ -590,18 +606,21 @@ invalid: [[[
   });
 
   describe('integration with init', () => {
-    it('should pass all checks immediately after init', async () => {
-      // Run init
+    it('should diagnose disabled user-level hooks after init without reporting a doctor failure', async () => {
       const initResult = await runCli('init');
-      expect(initResult.exitCode).toBe(0);
+      const initOutput = initResult.stdout + initResult.stderr;
 
-      // Run doctor
+      expect(initResult.exitCode).toBe(1);
+      expect(initOutput).toContain('$CODEX_HOME/config.toml');
+      expect(initOutput).toContain('[features] hooks = true');
+
       const doctorResult = await runCli('doctor');
 
       expect(doctorResult.exitCode).toBe(0);
 
       const output = doctorResult.stdout;
-      // Should not have any failures
+      expect(output).toContain('discovered 0 project hooks');
+      expect(output).toContain('$CODEX_HOME/config.toml');
       const failCount = (output.match(/\[FAIL\]/gi) || []).length;
       expect(failCount).toBe(0);
     });

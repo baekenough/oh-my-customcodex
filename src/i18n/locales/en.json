@@ -312,7 +312,10 @@
       "summary": "Security: {{pass}} passed, {{warn}} warnings, {{fail}} failed",
       "checks": {
         "hooks": {
-          "pass": "Hook scripts are safe",
+          "pass": "Directly referenced hook executable bodies are safe",
+          "coverage": "{{count}} executable bodies scanned; nested runtime dispatch is not followed",
+          "declarationsOnly": "Hook declarations were scanned; no project-local executable bodies were referenced",
+          "notFound": "No hook registry found; no executable bodies were scanned",
           "warn": "Hook scripts have potential concerns",
           "fail": "Hook scripts contain dangerous patterns"
         },

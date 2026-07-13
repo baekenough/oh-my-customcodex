@@ -1,14 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  linkSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   assessOmxReadiness,
   buildOmxProjectSetupCommand,
+  type CodexHookTrustStatus,
   ensureOmxProjectReady,
   type InstallerDeps,
   OMX_PROJECT_SETUP_COMMAND,
+  removeIneffectiveProjectHookTrustState,
 } from '../../../src/core/omx-installer.ts';
 
 const ALL_SURFACES = [
@@ -21,7 +33,10 @@ const ALL_SURFACES = [
   'mcp',
 ];
 
-function readyDeps(onSetup?: (command: string, cwd: string) => void): InstallerDeps {
+function readyDeps(
+  onSetup?: (command: string, cwd: string) => void,
+  hookTrust: CodexHookTrustStatus = 'trusted'
+): InstallerDeps {
   return {
     exec: (command, options) => {
       if (command === 'which omx') return '/tmp/bin/omx';
@@ -34,6 +49,24 @@ function readyDeps(onSetup?: (command: string, cwd: string) => void): InstallerD
       throw new Error(`Unexpected command: ${command}`);
     },
     getPlatform: () => 'linux',
+    inspectHooks: (projectRoot) => [
+      {
+        key: `${projectRoot}:pre_tool_use:0:0`,
+        command: 'node hook.js',
+        currentHash: 'sha256:test',
+        enabled: true,
+        source: 'project',
+        sourcePath: join(projectRoot, '.codex', 'hooks.json'),
+        trustStatus: hookTrust,
+      },
+    ],
+  };
+}
+
+function readyDepsWithoutHooks(onSetup?: (command: string, cwd: string) => void): InstallerDeps {
+  return {
+    ...readyDeps(onSetup),
+    inspectHooks: () => [],
   };
 }
 
@@ -192,7 +225,7 @@ describe('OMX complete project readiness', () => {
   });
 
   it('keeps binary/API capability separate from project setup readiness', () => {
-    const result = assessOmxReadiness(projectRoot, readyDeps());
+    const result = assessOmxReadiness(projectRoot, readyDepsWithoutHooks());
 
     expect(result.capability.status).toBe('ready');
     expect(result.status).toBe('partial');
@@ -215,7 +248,7 @@ describe('OMX complete project readiness', () => {
     writeFileSync(join(projectRoot, '.codex', 'prompts', 'executor.md'), '# Executor\n');
     writeFileSync(join(projectRoot, 'AGENTS.md'), '# oh-my-codex\n');
 
-    const result = assessOmxReadiness(projectRoot, readyDeps());
+    const result = assessOmxReadiness(projectRoot, readyDepsWithoutHooks());
 
     expect(result.status).toBe('partial');
     expect(result.project.surfaces.prompts).toBe(true);
@@ -239,6 +272,214 @@ describe('OMX complete project readiness', () => {
     expect(result.project.status).toBe('ready');
     expect(result.project.mcpStatus).toBe('configured-valid');
     expect(result.project.missingSurfaces).toEqual([]);
+  });
+
+  it('distinguishes installed project hooks that still need approval from runnable hooks', () => {
+    writeCompleteProject(projectRoot);
+
+    const result = assessOmxReadiness(projectRoot, readyDeps(undefined, 'untrusted'));
+
+    expect(result.status).toBe('needs-hook-approval');
+    expect(result.ready).toBe(false);
+    expect(result.project.hookReadiness).toEqual({
+      status: 'approval-needed',
+      installed: true,
+      discovered: 1,
+      runnable: 0,
+      approvalNeeded: 1,
+    });
+    expect(result.project.missingSurfaces).toEqual(['nativeHooks']);
+  });
+
+  it('uses official runtime hooks when no local registry is present', () => {
+    writeCompleteProject(projectRoot);
+    rmSync(join(projectRoot, '.codex', 'hooks.json'));
+
+    const result = assessOmxReadiness(projectRoot, readyDeps());
+
+    expect(result.project.hookReadiness).toEqual({
+      status: 'runnable',
+      installed: true,
+      discovered: 1,
+      runnable: 1,
+      approvalNeeded: 0,
+    });
+    expect(result.project.surfaces.nativeHooks).toBe(true);
+    expect(result.status).toBe('ready');
+  });
+
+  it('reports installed hooks with zero runtime discovery as inactive, not approval-needed', () => {
+    writeCompleteProject(projectRoot);
+
+    const result = assessOmxReadiness(projectRoot, readyDepsWithoutHooks());
+
+    expect(result.project.hookReadiness).toEqual({
+      status: 'inactive',
+      installed: true,
+      discovered: 0,
+      runnable: 0,
+      approvalNeeded: 0,
+    });
+    expect(result.project.status).toBe('partial');
+    expect(result.project.surfaces.nativeHooks).toBe(false);
+  });
+
+  it('directs zero-discovery installs to user-level hooks enablement and setup rerun', () => {
+    const deps = readyDepsWithoutHooks((_command, cwd) => {
+      expect(cwd).toBe(projectRoot);
+      writeCompleteProject(projectRoot);
+    });
+
+    const result = ensureOmxProjectReady(projectRoot, deps);
+
+    expect(result.success).toBe(false);
+    expect(result.attempted).toBe(true);
+    expect(result.assessment.project.hookReadiness.status).toBe('inactive');
+    expect(result.error).toContain('user-level $CODEX_HOME/config.toml');
+    expect(result.error).toContain('[features] hooks = true');
+    expect(result.error).toContain(OMX_PROJECT_SETUP_COMMAND);
+    expect(result.error).not.toContain('review /hooks');
+  });
+
+  it('removes ineffective project-layer trust records and requires manual hook review', () => {
+    const deps = readyDeps((command, cwd) => {
+      expect(command).toBe(OMX_PROJECT_SETUP_COMMAND);
+      expect(cwd).toBe(projectRoot);
+      writeCompleteProject(projectRoot);
+      const configPath = join(projectRoot, '.codex', 'config.toml');
+      writeFileSync(
+        configPath,
+        `${readFileSync(configPath, 'utf8')}\n# OMX-owned Codex hook trust state\n[hooks.state."ignored"]\ntrusted_hash = "sha256:ignored"\n# End OMX-owned Codex hook trust state\n`
+      );
+    }, 'untrusted');
+
+    const result = ensureOmxProjectReady(projectRoot, deps);
+
+    expect(result.success).toBe(false);
+    expect(result.attempted).toBe(true);
+    expect(result.assessment.project.status).toBe('needs-hook-approval');
+    expect(result.error).toContain('Trust the project');
+    expect(result.error).toContain('review /hooks');
+    expect(readFileSync(join(projectRoot, '.codex', 'config.toml'), 'utf8')).not.toContain(
+      'OMX-owned Codex hook trust state'
+    );
+  });
+
+  it('does not remove trust state through a .codex ancestor symlink', () => {
+    const outside = `${projectRoot}-outside`;
+    const outsideConfig = join(outside, 'config.toml');
+    const content =
+      '# before\n# OMX-owned Codex hook trust state\n[hooks.state."outside"]\ntrusted_hash = "sha256:outside"\n# End OMX-owned Codex hook trust state\n';
+    try {
+      mkdirSync(outside);
+      writeFileSync(outsideConfig, content);
+      symlinkSync(outside, join(projectRoot, '.codex'), 'dir');
+
+      expect(removeIneffectiveProjectHookTrustState(projectRoot)).toBe(false);
+      expect(readFileSync(outsideConfig, 'utf8')).toBe(content);
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  it('does not remove trust state through a hard-linked config', () => {
+    const outsideConfig = `${projectRoot}-outside-config.toml`;
+    const configPath = join(projectRoot, '.codex', 'config.toml');
+    const content =
+      '# before\n# OMX-owned Codex hook trust state\n[hooks.state."outside"]\ntrusted_hash = "sha256:outside"\n# End OMX-owned Codex hook trust state\n';
+    try {
+      mkdirSync(join(projectRoot, '.codex'));
+      writeFileSync(outsideConfig, content);
+      linkSync(outsideConfig, configPath);
+
+      expect(removeIneffectiveProjectHookTrustState(projectRoot)).toBe(false);
+      expect(readFileSync(outsideConfig, 'utf8')).toBe(content);
+    } finally {
+      rmSync(outsideConfig, { force: true });
+    }
+  });
+
+  it('does not replace a non-file project config', () => {
+    const configPath = join(projectRoot, '.codex', 'config.toml');
+    const sentinelPath = join(configPath, 'sentinel');
+    mkdirSync(configPath, { recursive: true });
+    writeFileSync(sentinelPath, 'unchanged');
+
+    expect(removeIneffectiveProjectHookTrustState(projectRoot)).toBe(false);
+    expect(readFileSync(sentinelPath, 'utf8')).toBe('unchanged');
+  });
+
+  it('atomically preserves config permissions while removing project trust state', () => {
+    const codexDir = join(projectRoot, '.codex');
+    const configPath = join(codexDir, 'config.toml');
+    mkdirSync(codexDir);
+    writeFileSync(
+      configPath,
+      '# before\n# OMX-owned Codex hook trust state\n[hooks.state."stale"]\ntrusted_hash = "sha256:stale"\n# End OMX-owned Codex hook trust state\n# after\n'
+    );
+    chmodSync(configPath, 0o640);
+
+    expect(removeIneffectiveProjectHookTrustState(projectRoot)).toBe(true);
+    expect(statSync(configPath).mode & 0o777).toBe(0o640);
+    expect(readFileSync(configPath, 'utf8')).toBe('# before\n# after\n');
+    expect(readdirSync(codexDir).some((name) => name.endsWith('.tmp'))).toBe(false);
+  });
+
+  it('fails closed when the project config changes while cleanup is staged', async () => {
+    const codexDir = join(projectRoot, '.codex');
+    const configPath = join(codexDir, 'config.toml');
+    const readyPath = join(projectRoot, 'watcher-ready');
+    mkdirSync(codexDir);
+    writeFileSync(
+      configPath,
+      `# OMX-owned Codex hook trust state\n[hooks.state."stale"]\ntrusted_hash = "sha256:stale"\n# End OMX-owned Codex hook trust state\n${'x'.repeat(64 * 1024 * 1024)}`
+    );
+
+    const watcher = Bun.spawn(
+      [
+        process.execPath,
+        '-e',
+        String.raw`
+const fs = require('node:fs');
+const configPath = process.env.OMCC_CONFIG_PATH;
+const codexDir = process.env.OMCC_CODEX_DIR;
+fs.writeFileSync(process.env.OMCC_READY_PATH, 'ready');
+const deadline = Date.now() + 10_000;
+while (Date.now() < deadline) {
+  const staged = fs.readdirSync(codexDir).some((name) =>
+    name.startsWith('.config.toml.omcustomcodex-') && name.endsWith('.tmp')
+  );
+  if (!staged) continue;
+  const descriptor = fs.openSync(configPath, 'w');
+  fs.writeSync(descriptor, 'CONCURRENT=must survive\n');
+  fs.fsyncSync(descriptor);
+  fs.closeSync(descriptor);
+  process.exit(0);
+}
+process.exit(2);
+`,
+      ],
+      {
+        env: {
+          ...process.env,
+          OMCC_CONFIG_PATH: configPath,
+          OMCC_CODEX_DIR: codexDir,
+          OMCC_READY_PATH: readyPath,
+        },
+        stdout: 'pipe',
+        stderr: 'pipe',
+      }
+    );
+
+    const readyDeadline = Date.now() + 5_000;
+    while (!(await Bun.file(readyPath).exists()) && Date.now() < readyDeadline) {
+      await Bun.sleep(5);
+    }
+    expect(await Bun.file(readyPath).exists()).toBe(true);
+
+    expect(removeIneffectiveProjectHookTrustState(projectRoot)).toBe(false);
+    expect(await watcher.exited).toBe(0);
+    expect(readFileSync(configPath, 'utf8')).toBe('CONCURRENT=must survive\n');
   });
 
   it('rejects native agent TOML that fails the shared metadata parser', () => {
@@ -267,7 +508,7 @@ describe('OMX complete project readiness', () => {
     );
     writeFileSync(join(projectRoot, '.codex', 'hooks.json'), JSON.stringify({ hooks: {} }));
 
-    const result = assessOmxReadiness(projectRoot, readyDeps());
+    const result = assessOmxReadiness(projectRoot, readyDepsWithoutHooks());
 
     expect(result.project.mcpStatus).toBe('configured-broken');
     expect(result.project.surfaces.mcp).toBe(false);
@@ -298,7 +539,9 @@ describe('OMX complete project readiness', () => {
         })
       );
 
-      expect(assessOmxReadiness(projectRoot, readyDeps()).project.surfaces.nativeHooks).toBe(false);
+      expect(
+        assessOmxReadiness(projectRoot, readyDepsWithoutHooks()).project.surfaces.nativeHooks
+      ).toBe(false);
     }
 
     writeFileSync(
@@ -306,7 +549,9 @@ describe('OMX complete project readiness', () => {
       '{"hooks":{"PreToolUse":[{"hooks":[{"type":"command","command":"node hook.js","timeout":1e999}]}]}}'
     );
 
-    expect(assessOmxReadiness(projectRoot, readyDeps()).project.surfaces.nativeHooks).toBe(false);
+    expect(
+      assessOmxReadiness(projectRoot, readyDepsWithoutHooks()).project.surfaces.nativeHooks
+    ).toBe(false);
 
     writeFileSync(
       join(projectRoot, '.codex', 'hooks.json'),
@@ -317,7 +562,9 @@ describe('OMX complete project readiness', () => {
       })
     );
 
-    expect(assessOmxReadiness(projectRoot, readyDeps()).project.surfaces.nativeHooks).toBe(false);
+    expect(
+      assessOmxReadiness(projectRoot, readyDepsWithoutHooks()).project.surfaces.nativeHooks
+    ).toBe(false);
   });
 
   it('accepts an explicit project-scoped MCP none policy as configured', () => {
@@ -382,7 +629,7 @@ describe('OMX complete project readiness', () => {
         })
       );
 
-      const result = assessOmxReadiness(projectRoot, readyDeps());
+      const result = assessOmxReadiness(projectRoot, readyDepsWithoutHooks());
       expect({
         commands,
         nativeHooks: result.project.surfaces.nativeHooks,
@@ -394,7 +641,7 @@ describe('OMX complete project readiness', () => {
   it('rejects a missing plugin source and does not bypass project setup', () => {
     writePluginOnlyProject(projectRoot, join(projectRoot, 'missing-omx-package'));
 
-    const assessment = assessOmxReadiness(projectRoot, readyDeps());
+    const assessment = assessOmxReadiness(projectRoot, readyDepsWithoutHooks());
     expect(assessment.project.surfaces.prompts).toBe(false);
     expect(assessment.project.surfaces.skills).toBe(false);
     expect(assessment.project.surfaces.nativeHooks).toBe(false);
@@ -403,7 +650,7 @@ describe('OMX complete project readiness', () => {
     let setupCalls = 0;
     const provisioned = ensureOmxProjectReady(
       projectRoot,
-      readyDeps(() => {
+      readyDepsWithoutHooks(() => {
         setupCalls += 1;
       })
     );
@@ -427,7 +674,7 @@ describe('OMX complete project readiness', () => {
     );
     rmSync(join(pluginRoot, 'hooks', 'codex-native-hook.mjs'));
 
-    const result = assessOmxReadiness(projectRoot, readyDeps());
+    const result = assessOmxReadiness(projectRoot, readyDepsWithoutHooks());
 
     expect(result.project.surfaces.prompts).toBe(true);
     expect(result.project.surfaces.skills).toBe(true);
@@ -447,7 +694,7 @@ describe('OMX complete project readiness', () => {
       )
     );
 
-    const result = assessOmxReadiness(projectRoot, readyDeps());
+    const result = assessOmxReadiness(projectRoot, readyDepsWithoutHooks());
 
     expect(result.project.surfaces.nativeHooks).toBe(false);
     expect(result.status).toBe('partial');

@@ -8,7 +8,7 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promis
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(SCRIPT_DIR, '..');
@@ -30,6 +30,13 @@ const REQUIRED_NODE_PROBES = [
 ];
 const WEB_ENTRYPOINT = 'packages/serve/build/index.js';
 const WEB_FIXTURE_NAME = 'package-smoke';
+const ACTIVE_NATIVE_HOOK_SCRIPTS = [
+  'codex-native-advisory.sh',
+  'destructive-git-guard.sh',
+  'file-change-validator.sh',
+  'schema-validator.sh',
+  'secret-filter.sh',
+];
 
 const skipBuild = process.argv.includes('--skip-build');
 const keepTemp = process.argv.includes('--keep-temp');
@@ -596,6 +603,30 @@ async function verifyCleanConsumer({ packageName, artifact, consumerDir, homeDir
       : installedPackageJson.bin?.omcustomcodex;
   const cliPath = join(installedRoot, packageRelativePath(installedBin, 'installed CLI bin'));
   assert(existsSync(cliPath), `installed CLI is missing: ${cliPath}`);
+
+  const hookFixtureDir = join(consumerDir, 'native-hook-footprint');
+  await mkdir(hookFixtureDir, { recursive: true });
+  const installedPublicApi = await import(
+    pathToFileURL(join(installedRoot, 'dist', 'index.js')).href
+  );
+  const hookInstall = await installedPublicApi.install({
+    targetDir: hookFixtureDir,
+    components: ['hooks'],
+    force: true,
+    skipConfirm: true,
+  });
+  assert.equal(hookInstall.success, true, hookInstall.error);
+  const installedHookScripts = (
+    await readdir(join(hookFixtureDir, '.codex', 'hooks', 'scripts'))
+  ).sort();
+  assert.deepEqual(installedHookScripts, [...ACTIVE_NATIVE_HOOK_SCRIPTS].sort());
+  assert(
+    !existsSync(join(hookFixtureDir, '.codex', 'hooks', 'skill-count-reminder.sh')),
+    'packed installer copied a dormant Claude-only root hook'
+  );
+  pass(
+    `${packageName} packed native hook footprint (${installedHookScripts.length} active scripts)`
+  );
 
   const port = await reservePort();
   const webUrl = `http://localhost:${port}`;

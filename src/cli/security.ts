@@ -5,6 +5,12 @@
 
 import { constants, promises as fs } from 'node:fs';
 import path from 'node:path';
+import { resolveCodexProjectRoot } from '../core/codex-project-root.js';
+import {
+  extractHookCommands,
+  extractHookExecutableReferences,
+  type HookExecutableReference,
+} from '../core/hook-references.js';
 import { getProviderLayout } from '../core/layout.js';
 import { i18n } from '../i18n/index.js';
 import { type CheckResult, type CheckStatus, printCheck } from './doctor.js';
@@ -108,25 +114,6 @@ const DANGEROUS_PATTERNS = [
   },
 ];
 
-/** Extract command handlers from both native Codex and legacy hook registries. */
-function extractCommands(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.flatMap(extractCommands);
-  }
-  if (!value || typeof value !== 'object') {
-    return [];
-  }
-
-  const record = value as Record<string, unknown>;
-  const commands = typeof record.command === 'string' ? [record.command] : [];
-  for (const [key, child] of Object.entries(record)) {
-    if (key !== 'command') {
-      commands.push(...extractCommands(child));
-    }
-  }
-  return commands;
-}
-
 async function resolveHookRegistryPath(targetDir: string, rootDir: string): Promise<string> {
   const nativeRegistry = path.join(targetDir, rootDir, 'hooks.json');
   if (await pathExists(nativeRegistry)) {
@@ -163,6 +150,411 @@ function scanCommands(commands: string[]): { findings: string[]; worstSeverity: 
   return { findings, worstSeverity };
 }
 
+interface ReferencedExecutableScan {
+  findings: string[];
+  worstSeverity: CheckStatus;
+  scannedPaths: string[];
+}
+
+function worstStatus(left: CheckStatus, right: CheckStatus): CheckStatus {
+  if (left === 'fail' || right === 'fail') return 'fail';
+  if (left === 'warn' || right === 'warn') return 'warn';
+  return 'pass';
+}
+
+function escapesRoot(root: string, candidate: string): boolean {
+  const relativePath = path.relative(root, candidate);
+  return relativePath.startsWith('..') || path.isAbsolute(relativePath);
+}
+
+function displayPath(targetDir: string, targetPath: string): string {
+  const relativePath = path.relative(targetDir, targetPath);
+  return relativePath && !path.isAbsolute(relativePath) ? relativePath : targetPath;
+}
+
+interface ShellDataRange {
+  start: number;
+  end: number;
+}
+
+function findBacktickEnd(content: string, start: number): number | null {
+  for (let index = start; index < content.length; index += 1) {
+    if (content[index] === '\\') {
+      index += 1;
+      continue;
+    }
+    if (content[index] === '`') return index;
+  }
+  return null;
+}
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Bounded shell-substitution matching keeps nested quote state explicit.
+function findCommandSubstitutionEnd(
+  content: string,
+  start: number,
+  nesting: number = 0
+): number | null {
+  if (nesting >= 32) return null;
+  let depth = 1;
+  let quote: '"' | "'" | '`' | null = null;
+
+  for (let index = start; index < content.length; index += 1) {
+    const character = content[index];
+    if (character === '\\' && quote !== "'") {
+      index += 1;
+      continue;
+    }
+    if (quote) {
+      if (character === quote) quote = null;
+      else if (quote !== "'" && character === '$' && content[index + 1] === '(') {
+        const nestedEnd = findCommandSubstitutionEnd(content, index + 2, nesting + 1);
+        if (nestedEnd === null) return null;
+        index = nestedEnd;
+      }
+      continue;
+    }
+    if (character === '"' || character === "'" || character === '`') {
+      quote = character;
+      continue;
+    }
+    if (character === '$' && content[index + 1] === '(') {
+      const nestedEnd = findCommandSubstitutionEnd(content, index + 2, nesting + 1);
+      if (nestedEnd === null) return null;
+      index = nestedEnd;
+      continue;
+    }
+    if (character === '(') {
+      depth += 1;
+      if (depth > 32) return null;
+    } else if (character === ')') {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+  }
+  return null;
+}
+
+function appendNestedShellDataRanges(
+  ranges: ShellDataRange[],
+  content: string,
+  start: number,
+  end: number
+): void {
+  for (const range of shellDataRanges(content.slice(start, end))) {
+    ranges.push({ start: start + range.start, end: start + range.end });
+  }
+}
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Shell quoting, comments, and command-boundary state are intentionally explicit.
+function shellDataRanges(content: string): ShellDataRange[] {
+  const ranges: ShellDataRange[] = [];
+  let quote: '"' | "'" | null = null;
+  let quoteDataStart = -1;
+  let quoteIsCommandWord = false;
+  let commandStart = true;
+  let wordStart = -1;
+  let word = '';
+
+  const finishWord = (): void => {
+    if (wordStart < 0) return;
+    if (commandStart) {
+      const preservesCommandStart =
+        /^[A-Za-z_][A-Za-z0-9_]*=/.test(word) ||
+        [
+          '!',
+          'command',
+          'exec',
+          'builtin',
+          'env',
+          'if',
+          'then',
+          'elif',
+          'while',
+          'until',
+          'do',
+        ].includes(word);
+      if (!preservesCommandStart) commandStart = false;
+    }
+    wordStart = -1;
+    word = '';
+  };
+
+  for (let index = 0; index < content.length; index += 1) {
+    const character = content[index];
+    if (quote) {
+      if (character === '\\' && quote === '"') {
+        index += 1;
+        continue;
+      }
+      if (quote === '"' && character === '$' && content[index + 1] === '(') {
+        if (!quoteIsCommandWord && quoteDataStart < index) {
+          ranges.push({ start: quoteDataStart, end: index });
+        }
+        const nestedStart = index + 2;
+        const nestedEnd = findCommandSubstitutionEnd(content, nestedStart);
+        appendNestedShellDataRanges(ranges, content, nestedStart, nestedEnd ?? content.length);
+        if (nestedEnd === null) {
+          quote = null;
+          quoteDataStart = content.length;
+          break;
+        }
+        index = nestedEnd;
+        quoteDataStart = nestedEnd + 1;
+        continue;
+      }
+      if (quote === '"' && character === '`') {
+        if (!quoteIsCommandWord && quoteDataStart < index) {
+          ranges.push({ start: quoteDataStart, end: index });
+        }
+        const nestedStart = index + 1;
+        const nestedEnd = findBacktickEnd(content, nestedStart);
+        appendNestedShellDataRanges(ranges, content, nestedStart, nestedEnd ?? content.length);
+        if (nestedEnd === null) {
+          quote = null;
+          quoteDataStart = content.length;
+          break;
+        }
+        index = nestedEnd;
+        quoteDataStart = nestedEnd + 1;
+        continue;
+      }
+      if (character === quote) {
+        if (!quoteIsCommandWord && quoteDataStart < index + 1) {
+          ranges.push({ start: quoteDataStart, end: index + 1 });
+        }
+        quote = null;
+      }
+      continue;
+    }
+
+    if (character === '\\') {
+      if (wordStart < 0) wordStart = index;
+      word += character;
+      if (index + 1 < content.length) {
+        word += content[index + 1];
+        index += 1;
+      }
+      continue;
+    }
+
+    if (character === '"' || character === "'") {
+      quote = character;
+      quoteDataStart = index;
+      quoteIsCommandWord = commandStart && wordStart < 0;
+      if (wordStart < 0) wordStart = index;
+      continue;
+    }
+
+    if (character === '#' && wordStart < 0) {
+      const lineEnd = content.indexOf('\n', index);
+      ranges.push({ start: index, end: lineEnd < 0 ? content.length : lineEnd });
+      if (lineEnd < 0) break;
+      index = lineEnd - 1;
+      continue;
+    }
+
+    if (/\s/.test(character)) {
+      finishWord();
+      if (character === '\n') commandStart = true;
+      continue;
+    }
+
+    if (/[;&|()]/.test(character)) {
+      const arrayAssignment = character === '(' && /^[A-Za-z_][A-Za-z0-9_]*\+?=$/.test(word);
+      finishWord();
+      commandStart = character !== ')' && !arrayAssignment;
+      continue;
+    }
+
+    if (wordStart < 0) wordStart = index;
+    word += character;
+  }
+
+  if (quote && !quoteIsCommandWord) ranges.push({ start: quoteDataStart, end: content.length });
+  return ranges;
+}
+
+function firstExecutablePatternMatch(
+  content: string,
+  pattern: RegExp,
+  dataRanges: ShellDataRange[]
+): RegExpExecArray | null {
+  const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+  const scanner = new RegExp(pattern.source, flags);
+  for (let match = scanner.exec(content); match; match = scanner.exec(content)) {
+    const inData = dataRanges.some(({ start, end }) => match.index >= start && match.index < end);
+    if (!inData) return match;
+    if (match[0].length === 0) scanner.lastIndex += 1;
+  }
+  return null;
+}
+
+function excerptAt(content: string, matchIndex: number): string {
+  const lineStart = content.lastIndexOf('\n', matchIndex) + 1;
+  const nextLine = content.indexOf('\n', matchIndex);
+  return content.slice(lineStart, nextLine === -1 ? undefined : nextLine).trim();
+}
+
+function scanExecutableBody(
+  content: string,
+  relativePath: string
+): { findings: string[]; worstSeverity: CheckStatus } {
+  const findings: string[] = [];
+  let worstSeverity: CheckStatus = 'pass';
+  const dataRanges = shellDataRanges(content);
+
+  for (const { pattern, name, severity } of DANGEROUS_PATTERNS) {
+    const match = firstExecutablePatternMatch(content, pattern, dataRanges);
+    if (!match) continue;
+    const excerpt = excerptAt(content, match.index).replace(/\s+/g, ' ');
+    findings.push(
+      `${name}: ${relativePath}: ${excerpt.substring(0, 80)}${excerpt.length > 80 ? '...' : ''}`
+    );
+    worstSeverity = worstStatus(worstSeverity, severity);
+  }
+
+  return { findings, worstSeverity };
+}
+
+function uniqueExecutableReferences(
+  commands: string[],
+  rootDir: string
+): HookExecutableReference[] {
+  const unique = new Map<string, HookExecutableReference>();
+  for (const command of commands) {
+    for (const reference of extractHookExecutableReferences(command, rootDir)) {
+      const key = reference.path ?? `${reference.source}:${reference.raw}`;
+      if (!unique.has(key)) unique.set(key, reference);
+    }
+  }
+  return [...unique.values()];
+}
+
+async function readTrustedHookRoot(
+  hooksRoot: string
+): Promise<{ available: boolean; realPath: string; finding?: string }> {
+  try {
+    const stats = await fs.lstat(hooksRoot);
+    if (stats.isSymbolicLink()) {
+      return {
+        available: false,
+        realPath: hooksRoot,
+        finding: `Trusted hook root is a symbolic link and was not scanned: ${hooksRoot}`,
+      };
+    }
+    if (!stats.isDirectory()) {
+      return {
+        available: false,
+        realPath: hooksRoot,
+        finding: `Trusted hook root is not a directory and was not scanned: ${hooksRoot}`,
+      };
+    }
+    return { available: true, realPath: await fs.realpath(hooksRoot) };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { available: false, realPath: hooksRoot };
+    }
+    return {
+      available: false,
+      realPath: hooksRoot,
+      finding: `Trusted hook root could not be inspected: ${hooksRoot}`,
+    };
+  }
+}
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Security classification keeps each conservative path outcome explicit.
+async function scanReferencedExecutableBodies(
+  targetDir: string,
+  rootDir: string,
+  commands: string[]
+): Promise<ReferencedExecutableScan> {
+  const findings: string[] = [];
+  let worstSeverity: CheckStatus = 'pass';
+  const scannedPaths = new Set<string>();
+  const references = uniqueExecutableReferences(commands, rootDir);
+  if (references.length === 0) return { findings, worstSeverity, scannedPaths: [] };
+
+  const projectRoot = path.resolve(targetDir);
+  const hooksRoot = path.resolve(targetDir, rootDir, 'hooks');
+  const trustedRoot = await readTrustedHookRoot(hooksRoot);
+  if (trustedRoot.finding) {
+    findings.push(trustedRoot.finding);
+    worstSeverity = 'fail';
+  }
+
+  for (const reference of references) {
+    if (!reference.path) {
+      findings.push(`Dynamic hook executable path was not scanned: ${reference.raw}`);
+      worstSeverity = worstStatus(worstSeverity, 'warn');
+      continue;
+    }
+
+    const candidate = path.isAbsolute(reference.path)
+      ? path.resolve(reference.path)
+      : path.resolve(targetDir, reference.path);
+    if (escapesRoot(hooksRoot, candidate)) {
+      if (escapesRoot(projectRoot, candidate)) {
+        findings.push(`External hook executable was not scanned: ${reference.raw}`);
+        worstSeverity = worstStatus(worstSeverity, 'warn');
+      } else {
+        findings.push(`Hook executable escapes trusted hook root: ${reference.raw}`);
+        worstSeverity = 'fail';
+      }
+      continue;
+    }
+
+    try {
+      const lexicalStats = await fs.lstat(candidate);
+      const realCandidate = await fs.realpath(candidate);
+      if (!trustedRoot.available || escapesRoot(trustedRoot.realPath, realCandidate)) {
+        const kind = lexicalStats.isSymbolicLink() ? 'symbolic link' : 'path';
+        findings.push(
+          `Hook executable ${kind} escapes trusted hook root: ${displayPath(targetDir, candidate)}`
+        );
+        worstSeverity = 'fail';
+        continue;
+      }
+
+      const stats = await fs.stat(realCandidate);
+      if (!stats.isFile()) {
+        findings.push(
+          `Referenced hook executable is not a regular file: ${displayPath(targetDir, candidate)}`
+        );
+        worstSeverity = worstStatus(worstSeverity, 'warn');
+        continue;
+      }
+
+      const content = await fs.readFile(realCandidate);
+      if (!isValidUtf8Text(content)) {
+        findings.push(
+          `Referenced hook executable is not text and was not scanned: ${displayPath(
+            targetDir,
+            candidate
+          )}`
+        );
+        worstSeverity = worstStatus(worstSeverity, 'warn');
+        continue;
+      }
+
+      const relativePath = displayPath(targetDir, candidate);
+      scannedPaths.add(relativePath);
+      const bodyScan = scanExecutableBody(content.toString('utf-8'), relativePath);
+      findings.push(...bodyScan.findings);
+      worstSeverity = worstStatus(worstSeverity, bodyScan.worstSeverity);
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      findings.push(
+        code === 'ENOENT'
+          ? `Referenced hook executable is missing: ${displayPath(targetDir, candidate)}`
+          : `Referenced hook executable could not be scanned: ${displayPath(targetDir, candidate)}`
+      );
+      worstSeverity = worstStatus(worstSeverity, 'warn');
+    }
+  }
+
+  return { findings, worstSeverity, scannedPaths: [...scannedPaths].sort() };
+}
+
 /**
  * Check hook scripts for dangerous patterns
  * @param targetDir - Target directory
@@ -173,14 +565,15 @@ export async function checkHookScripts(
   targetDir: string,
   rootDir: string = '.codex'
 ): Promise<CheckResult> {
-  const hooksFile = await resolveHookRegistryPath(targetDir, rootDir);
+  const projectRoot = resolveCodexProjectRoot(targetDir);
+  const hooksFile = await resolveHookRegistryPath(projectRoot, rootDir);
   const exists = await pathExists(hooksFile);
 
   if (!exists) {
     return {
       name: 'Hook scripts',
       status: 'pass',
-      message: i18n.t('cli.security.checks.hooks.pass'),
+      message: i18n.t('cli.security.checks.hooks.notFound'),
       fixable: false,
     };
   }
@@ -189,8 +582,11 @@ export async function checkHookScripts(
     const content = await fs.readFile(hooksFile, 'utf-8');
     const hooks = JSON.parse(content);
 
-    const commands = extractCommands(hooks);
-    const { findings, worstSeverity } = scanCommands(commands);
+    const commands = extractHookCommands(hooks);
+    const commandScan = scanCommands(commands);
+    const executableScan = await scanReferencedExecutableBodies(projectRoot, rootDir, commands);
+    const findings = [...commandScan.findings, ...executableScan.findings];
+    const worstSeverity = worstStatus(commandScan.worstSeverity, executableScan.worstSeverity);
 
     if (findings.length > 0) {
       const message =
@@ -210,7 +606,13 @@ export async function checkHookScripts(
     return {
       name: 'Hook scripts',
       status: 'pass',
-      message: i18n.t('cli.security.checks.hooks.pass'),
+      message:
+        executableScan.scannedPaths.length > 0
+          ? `${i18n.t('cli.security.checks.hooks.pass')} (${i18n.t(
+              'cli.security.checks.hooks.coverage',
+              { count: executableScan.scannedPaths.length }
+            )})`
+          : i18n.t('cli.security.checks.hooks.declarationsOnly'),
       fixable: false,
     };
   } catch (error: unknown) {

@@ -7,17 +7,18 @@
  */
 
 import { createHash } from 'node:crypto';
-import { join } from 'node:path';
+import { promises as fs } from 'node:fs';
+import { join, resolve } from 'node:path';
 import {
-  copyDirectory,
   copyFile,
+  deleteFile,
   fileExists,
-  prevalidateCopyDirectory,
   prevalidateSafeWritePath,
   readJsonFile,
   resolveTemplatePath,
   writeJsonFile,
 } from '../utils/fs.js';
+import { resolveCodexProjectRoot, resolveCodexTargetRoot } from './codex-project-root.js';
 
 const DEFAULT_TIMEOUT_SECONDS = 30;
 
@@ -37,12 +38,14 @@ const NATIVE_EVENTS = new Set([
 const TOOL_MATCHER_EVENTS = new Set(['PreToolUse', 'PermissionRequest', 'PostToolUse']);
 const MATCHER_IGNORED_EVENTS = new Set(['UserPromptSubmit', 'Stop']);
 const SELF_FILTERING_PREDICATE_SCRIPTS = new Set(['destructive-git-guard.sh']);
-const NATIVE_VALIDATED_SCRIPTS = new Set([
+const NATIVE_VALIDATED_SCRIPT_NAMES = [
   'destructive-git-guard.sh',
   'file-change-validator.sh',
   'schema-validator.sh',
   'secret-filter.sh',
-]);
+] as const;
+const NATIVE_VALIDATED_SCRIPTS = new Set<string>(NATIVE_VALIDATED_SCRIPT_NAMES);
+export const CODEX_NATIVE_HOOK_WRAPPER_SCRIPT = 'codex-native-advisory.sh';
 
 const NATIVE_TOOL_NAMES: Record<string, string> = {
   Bash: 'Bash',
@@ -111,6 +114,11 @@ export interface CodexHooksCompilation {
   compatibility: CodexHookCompatibilityRecord;
 }
 
+export interface CompileCodexHooksOptions {
+  /** Canonical checkout that owns the emitted registry and managed scripts. */
+  authoritativeRoot?: string;
+}
+
 interface SourceHandler {
   type?: unknown;
   command?: unknown;
@@ -143,6 +151,9 @@ export interface InstallNativeCodexHooksResult {
   scriptsPath: string;
   compatibilityPath: string;
   registryPreserved: boolean;
+  activeScriptPaths: string[];
+  removedStaleManagedPaths: string[];
+  preservedCustomPaths: string[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -187,7 +198,14 @@ function shellQuoteDouble(value: string): string {
   return value.replace(/["\\$`]/g, '\\$&');
 }
 
-function rewriteManagedHookCommand(command: string): string {
+function managedRootPrelude(authoritativeRoot?: string): string {
+  const rootAssignment = authoritativeRoot
+    ? `repo_root="${shellQuoteDouble(resolve(authoritativeRoot))}"`
+    : 'repo_root="$(git rev-parse --show-toplevel)"';
+  return `${rootAssignment} && cd "$repo_root"`;
+}
+
+function rewriteManagedHookCommand(command: string, authoritativeRoot?: string): string {
   const match = command.match(/^(?:(bash)\s+)?\.codex\/hooks\/([^\s"';&|]+)([\s\S]*)$/);
   if (!match) return command;
 
@@ -195,7 +213,7 @@ function rewriteManagedHookCommand(command: string): string {
   const invocation = interpreter
     ? `${interpreter} "$repo_root/.codex/hooks/${shellQuoteDouble(relativePath)}"`
     : `"$repo_root/.codex/hooks/${shellQuoteDouble(relativePath)}"`;
-  return `repo_root="$(git rev-parse --show-toplevel)" && cd "$repo_root" && ${invocation}${suffix}`;
+  return `${managedRootPrelude(authoritativeRoot)} && ${invocation}${suffix}`;
 }
 
 function commandScriptName(command: string): string | null {
@@ -205,29 +223,35 @@ function commandScriptName(command: string): string | null {
   return match?.[1] ?? null;
 }
 
-function nativeWrapperCommand(scriptName: string): string {
+function nativeWrapperCommand(scriptName: string, authoritativeRoot?: string): string {
   const escaped = shellQuoteDouble(scriptName);
-  return `repo_root="$(git rev-parse --show-toplevel)" && cd "$repo_root" && bash "$repo_root/.codex/hooks/scripts/codex-native-advisory.sh" "${escaped}" # omcustomcodex-hook:${escaped}`;
+  return `${managedRootPrelude(authoritativeRoot)} && bash "$repo_root/.codex/hooks/scripts/codex-native-advisory.sh" "${escaped}" # omcustomcodex-hook:${escaped}`;
 }
 
-function convertHandler(handler: SourceHandler): CodexHookCommandHandler | null {
+function convertHandler(
+  handler: SourceHandler,
+  authoritativeRoot?: string
+): CodexHookCommandHandler | null {
   if (handler.type !== undefined && handler.type !== 'command') return null;
   if (typeof handler.command !== 'string' || handler.command.trim() === '') return null;
 
   return {
     type: 'command',
-    command: rewriteManagedHookCommand(handler.command),
+    command: rewriteManagedHookCommand(handler.command, authoritativeRoot),
     timeout: finiteTimeout(handler.timeout),
   };
 }
 
-function validatedNativeHandler(handler: SourceHandler): CodexHookCommandHandler | null {
-  const converted = convertHandler(handler);
+function validatedNativeHandler(
+  handler: SourceHandler,
+  authoritativeRoot?: string
+): CodexHookCommandHandler | null {
+  const converted = convertHandler(handler, authoritativeRoot);
   if (!converted) return null;
   const scriptName = commandScriptName(converted.command);
   if (!scriptName || !NATIVE_VALIDATED_SCRIPTS.has(scriptName)) return null;
 
-  return { ...converted, command: nativeWrapperCommand(scriptName) };
+  return { ...converted, command: nativeWrapperCommand(scriptName, authoritativeRoot) };
 }
 
 function regexEscape(value: string): string {
@@ -319,15 +343,16 @@ function recordUnsupportedHandlers(
 function compileFileChangedCompatibility(
   group: SourceMatcherGroup,
   registry: CodexHookRegistry,
-  compatibility: CodexHookCompatibilityRecord
+  compatibility: CodexHookCompatibilityRecord,
+  authoritativeRoot?: string
 ): void {
   const matcher = typeof group.matcher === 'string' ? group.matcher : undefined;
   const handlers = sourceHandlers(group);
   recordUnsupportedHandlers('FileChanged', matcher, handlers, compatibility);
 
   for (const handler of handlers) {
-    const converted = convertHandler(handler);
-    const validated = validatedNativeHandler(handler);
+    const converted = convertHandler(handler, authoritativeRoot);
+    const validated = validatedNativeHandler(handler, authoritativeRoot);
     if (!validated || commandScriptName(validated.command) !== 'file-change-validator.sh') {
       if (converted) {
         compatibility.excluded.push({
@@ -354,12 +379,13 @@ function compilePredicateGroup(
   matcher: string,
   handlers: SourceHandler[],
   registry: CodexHookRegistry,
-  compatibility: CodexHookCompatibilityRecord
+  compatibility: CodexHookCompatibilityRecord,
+  authoritativeRoot?: string
 ): void {
   const toolMatcher = nativeToolMatcher(extractToolNames(matcher));
   for (const handler of handlers) {
-    const converted = convertHandler(handler);
-    const validated = validatedNativeHandler(handler);
+    const converted = convertHandler(handler, authoritativeRoot);
+    const validated = validatedNativeHandler(handler, authoritativeRoot);
     const scriptName = validated ? commandScriptName(validated.command) : null;
     if (
       validated &&
@@ -391,11 +417,12 @@ function recordUnvalidatedNativeHandlers(
   event: string,
   matcher: string | undefined,
   handlers: SourceHandler[],
-  compatibility: CodexHookCompatibilityRecord
+  compatibility: CodexHookCompatibilityRecord,
+  authoritativeRoot?: string
 ): void {
   for (const handler of handlers) {
-    const converted = convertHandler(handler);
-    if (converted && !validatedNativeHandler(handler)) {
+    const converted = convertHandler(handler, authoritativeRoot);
+    if (converted && !validatedNativeHandler(handler, authoritativeRoot)) {
       compatibility.excluded.push({
         event,
         matcher,
@@ -446,10 +473,11 @@ function excludeConvertedHandlers(
   matcher: string | undefined,
   handlers: SourceHandler[],
   reason: HookCompatibilityEntry['reason'],
-  compatibility: CodexHookCompatibilityRecord
+  compatibility: CodexHookCompatibilityRecord,
+  authoritativeRoot?: string
 ): void {
   for (const handler of handlers) {
-    const converted = convertHandler(handler);
+    const converted = convertHandler(handler, authoritativeRoot);
     if (converted) {
       compatibility.excluded.push({ event, matcher, reason, command: converted.command });
     }
@@ -459,12 +487,20 @@ function excludeConvertedHandlers(
 function compileUnsupportedEventGroup(
   event: string,
   group: SourceMatcherGroup,
-  compatibility: CodexHookCompatibilityRecord
+  compatibility: CodexHookCompatibilityRecord,
+  authoritativeRoot?: string
 ): void {
   const matcher = normalizedSourceMatcher(group);
   const handlers = sourceHandlers(group);
   recordUnsupportedHandlers(event, matcher, handlers, compatibility);
-  excludeConvertedHandlers(event, matcher, handlers, 'unsupported_event', compatibility);
+  excludeConvertedHandlers(
+    event,
+    matcher,
+    handlers,
+    'unsupported_event',
+    compatibility,
+    authoritativeRoot
+  );
 }
 
 interface NativeMatcherResolution {
@@ -476,7 +512,8 @@ function resolveNativeMatcher(
   event: string,
   matcher: string | undefined,
   handlers: SourceHandler[],
-  compatibility: CodexHookCompatibilityRecord
+  compatibility: CodexHookCompatibilityRecord,
+  authoritativeRoot?: string
 ): NativeMatcherResolution {
   if (!TOOL_MATCHER_EVENTS.has(event) || !matcher) {
     return { accepted: true, matcher: MATCHER_IGNORED_EVENTS.has(event) ? undefined : matcher };
@@ -489,7 +526,8 @@ function resolveNativeMatcher(
       matcher,
       handlers,
       'unsupported_match_predicate',
-      compatibility
+      compatibility,
+      authoritativeRoot
     );
     return { accepted: false };
   }
@@ -509,23 +547,30 @@ function compileNativeGroup(
   event: string,
   group: SourceMatcherGroup,
   registry: CodexHookRegistry,
-  compatibility: CodexHookCompatibilityRecord
+  compatibility: CodexHookCompatibilityRecord,
+  authoritativeRoot?: string
 ): void {
   const matcher = normalizedSourceMatcher(group);
   const handlers = sourceHandlers(group);
   recordUnsupportedHandlers(event, matcher, handlers, compatibility);
 
   if (matcher?.includes('tool_input')) {
-    compilePredicateGroup(event, matcher, handlers, registry, compatibility);
+    compilePredicateGroup(event, matcher, handlers, registry, compatibility, authoritativeRoot);
     return;
   }
 
-  const nativeMatcher = resolveNativeMatcher(event, matcher, handlers, compatibility);
+  const nativeMatcher = resolveNativeMatcher(
+    event,
+    matcher,
+    handlers,
+    compatibility,
+    authoritativeRoot
+  );
   if (!nativeMatcher.accepted) return;
 
-  recordUnvalidatedNativeHandlers(event, matcher, handlers, compatibility);
+  recordUnvalidatedNativeHandlers(event, matcher, handlers, compatibility, authoritativeRoot);
   const convertedHandlers = handlers
-    .map(validatedNativeHandler)
+    .map((handler) => validatedNativeHandler(handler, authoritativeRoot))
     .filter((handler): handler is CodexHookCommandHandler => handler !== null);
   addGroup(registry, event, nativeMatcher.matcher, convertedHandlers);
 }
@@ -535,17 +580,18 @@ function compileSourceGroup(
   sourceGroupIndex: number,
   group: SourceMatcherGroup,
   registry: CodexHookRegistry,
-  compatibility: CodexHookCompatibilityRecord
+  compatibility: CodexHookCompatibilityRecord,
+  authoritativeRoot?: string
 ): void {
   const nativeCountBefore = nativeHandlerCount(registry);
   const migrationCountBefore = compatibility.migrated.length;
 
   if (event === 'FileChanged') {
-    compileFileChangedCompatibility(group, registry, compatibility);
+    compileFileChangedCompatibility(group, registry, compatibility, authoritativeRoot);
   } else if (!NATIVE_EVENTS.has(event)) {
-    compileUnsupportedEventGroup(event, group, compatibility);
+    compileUnsupportedEventGroup(event, group, compatibility, authoritativeRoot);
   } else {
-    compileNativeGroup(event, group, registry, compatibility);
+    compileNativeGroup(event, group, registry, compatibility, authoritativeRoot);
   }
 
   recordGroupCompatibility(
@@ -559,7 +605,10 @@ function compileSourceGroup(
 }
 
 /** Compile a Claude compatibility registry into a deterministic Codex-native registry. */
-export function compileCodexHooks(source: unknown): CodexHooksCompilation {
+export function compileCodexHooks(
+  source: unknown,
+  options: CompileCodexHooksOptions = {}
+): CodexHooksCompilation {
   const registry: CodexHookRegistry = { hooks: {} };
   const compatibility: CodexHookCompatibilityRecord = {
     version: 1,
@@ -574,7 +623,14 @@ export function compileCodexHooks(source: unknown): CodexHooksCompilation {
   for (const event of Object.keys(hooks).sort((left, right) => left.localeCompare(right))) {
     const groups = hooks[event];
     for (const [sourceGroupIndex, group] of groups.entries()) {
-      compileSourceGroup(event, sourceGroupIndex, group, registry, compatibility);
+      compileSourceGroup(
+        event,
+        sourceGroupIndex,
+        group,
+        registry,
+        compatibility,
+        options.authoritativeRoot
+      );
     }
   }
 
@@ -640,6 +696,36 @@ function managedHandlerIdentity(handler: CodexHookCommandHandler): string | null
   return scriptName && NATIVE_VALIDATED_SCRIPTS.has(scriptName)
     ? `omcustomcodex:${scriptName}`
     : null;
+}
+
+/** Return the exact managed script footprint reachable from a compiled registry. */
+export function getActiveManagedHookScriptNames(registry: CodexHookRegistry): string[] {
+  const scriptNames = new Set<string>();
+  for (const groups of Object.values(registry.hooks)) {
+    for (const group of groups) {
+      for (const handler of group.hooks) {
+        const scriptName = commandScriptName(handler.command);
+        if (scriptName && NATIVE_VALIDATED_SCRIPTS.has(scriptName)) {
+          scriptNames.add(scriptName);
+        }
+      }
+    }
+  }
+  if (scriptNames.size > 0) scriptNames.add(CODEX_NATIVE_HOOK_WRAPPER_SCRIPT);
+  return [...scriptNames].sort((left, right) => left.localeCompare(right));
+}
+
+function getReferencedHookScriptNames(registry: CodexHookRegistry): Set<string> {
+  const scriptNames = new Set<string>();
+  for (const groups of Object.values(registry.hooks)) {
+    for (const group of groups) {
+      for (const handler of group.hooks) {
+        const scriptName = commandScriptName(handler.command);
+        if (scriptName) scriptNames.add(scriptName);
+      }
+    }
+  }
+  return scriptNames;
 }
 
 function sameMatcher(left: CodexHookMatcherGroup, right: CodexHookMatcherGroup): boolean {
@@ -708,39 +794,181 @@ function registryHasUnmanagedContent(registry: CodexHookRegistry): boolean {
 }
 
 interface NativeCodexHookPaths {
+  targetRoot: string;
+  projectRoot: string;
   sourceRoot: string;
   sourceRegistryPath: string;
   sourceScriptsPath: string;
-  sourceRootScriptPath: string;
   registryPath: string;
   hooksPath: string;
   scriptsPath: string;
   compatibilityPath: string;
   compatibilityRegistryPath: string;
   conversionPath: string;
-  targetRootScriptPath: string;
 }
 
 function resolveNativeCodexHookPaths(
   targetDir: string,
   options: InstallNativeCodexHooksOptions
 ): NativeCodexHookPaths {
+  const targetRoot = resolveCodexTargetRoot(targetDir);
+  const projectRoot = resolveCodexProjectRoot(targetDir);
   const sourceRoot = options.sourceRoot ?? resolveTemplatePath('.claude/hooks');
-  const hooksPath = join(targetDir, '.codex', 'hooks');
+  const hooksPath = join(projectRoot, '.codex', 'hooks');
   const compatibilityPath = join(hooksPath, 'compatibility');
   return {
+    targetRoot,
+    projectRoot,
     sourceRoot,
     sourceRegistryPath: join(sourceRoot, 'hooks.json'),
     sourceScriptsPath: join(sourceRoot, 'scripts'),
-    sourceRootScriptPath: join(sourceRoot, 'skill-count-reminder.sh'),
-    registryPath: join(targetDir, '.codex', 'hooks.json'),
+    registryPath: join(projectRoot, '.codex', 'hooks.json'),
     hooksPath,
     scriptsPath: join(hooksPath, 'scripts'),
     compatibilityPath,
     compatibilityRegistryPath: join(compatibilityPath, 'claude-hooks.json'),
     conversionPath: join(compatibilityPath, 'conversion.json'),
-    targetRootScriptPath: join(hooksPath, 'skill-count-reminder.sh'),
   };
+}
+
+function linkedDiscoveryAnchorPath(paths: NativeCodexHookPaths): string | null {
+  return paths.targetRoot === paths.projectRoot ? null : join(paths.targetRoot, '.codex');
+}
+
+async function prevalidateLinkedDiscoveryAnchor(paths: NativeCodexHookPaths): Promise<void> {
+  const anchorPath = linkedDiscoveryAnchorPath(paths);
+  if (!anchorPath) return;
+  try {
+    const stats = await fs.lstat(anchorPath);
+    if (stats.isSymbolicLink() || !stats.isDirectory()) {
+      throw new Error(`Codex discovery anchor must be a regular directory: ${anchorPath}`);
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
+}
+
+async function ensureLinkedDiscoveryAnchor(paths: NativeCodexHookPaths): Promise<void> {
+  const anchorPath = linkedDiscoveryAnchorPath(paths);
+  if (!anchorPath) return;
+  await prevalidateLinkedDiscoveryAnchor(paths);
+  try {
+    await fs.mkdir(anchorPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+  }
+  await prevalidateLinkedDiscoveryAnchor(paths);
+}
+
+interface ManagedHookAsset {
+  name: string;
+  sourcePath: string;
+  targetPath: string;
+}
+
+interface StaleManagedHookAssets {
+  removable: ManagedHookAsset[];
+  preserved: ManagedHookAsset[];
+}
+
+function activeManagedHookAssets(
+  paths: NativeCodexHookPaths,
+  registry: CodexHookRegistry
+): ManagedHookAsset[] {
+  return getActiveManagedHookScriptNames(registry).map((name) => ({
+    name,
+    sourcePath: join(paths.sourceScriptsPath, name),
+    targetPath: join(paths.scriptsPath, name),
+  }));
+}
+
+async function sourceManagedHookAssets(paths: NativeCodexHookPaths): Promise<ManagedHookAsset[]> {
+  const entries = await fs.readdir(paths.sourceScriptsPath, { withFileTypes: true });
+  const assets = entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => ({
+      name: entry.name,
+      sourcePath: join(paths.sourceScriptsPath, entry.name),
+      targetPath: join(paths.scriptsPath, entry.name),
+    }));
+  const legacyRootSource = join(paths.sourceRoot, 'skill-count-reminder.sh');
+  try {
+    const stats = await fs.lstat(legacyRootSource);
+    if (stats.isFile() && !stats.isSymbolicLink()) {
+      assets.push({
+        name: 'skill-count-reminder.sh',
+        sourcePath: legacyRootSource,
+        targetPath: join(paths.hooksPath, 'skill-count-reminder.sh'),
+      });
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
+  return assets;
+}
+
+async function assertRegularManagedSource(asset: ManagedHookAsset): Promise<void> {
+  const stats = await fs.lstat(asset.sourcePath);
+  if (stats.isSymbolicLink() || !stats.isFile()) {
+    throw new Error(`Managed hook source must be a regular file: ${asset.sourcePath}`);
+  }
+}
+
+async function classifyStaleManagedHookAssets(
+  paths: NativeCodexHookPaths,
+  activeNames: Set<string>,
+  retainedNames: Set<string> = activeNames
+): Promise<StaleManagedHookAssets> {
+  const removable: ManagedHookAsset[] = [];
+  const preserved: ManagedHookAsset[] = [];
+
+  for (const asset of await sourceManagedHookAssets(paths)) {
+    if (activeNames.has(asset.name)) continue;
+    if (retainedNames.has(asset.name)) {
+      preserved.push(asset);
+      continue;
+    }
+    try {
+      const targetStats = await fs.lstat(asset.targetPath);
+      if (targetStats.isSymbolicLink() || !targetStats.isFile() || targetStats.nlink > 1) {
+        preserved.push(asset);
+        continue;
+      }
+      const [sourceContent, targetContent] = await Promise.all([
+        fs.readFile(asset.sourcePath),
+        fs.readFile(asset.targetPath),
+      ]);
+      if (sourceContent.equals(targetContent)) removable.push(asset);
+      else preserved.push(asset);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+  }
+
+  return { removable, preserved };
+}
+
+async function prevalidateActiveManagedHookAssets(
+  targetDir: string,
+  activeAssets: ManagedHookAsset[]
+): Promise<void> {
+  for (const asset of activeAssets) {
+    await assertRegularManagedSource(asset);
+    await prevalidateSafeWritePath(asset.targetPath, targetDir);
+  }
+}
+
+async function copyActiveManagedHookAssets(
+  targetDir: string,
+  activeAssets: ManagedHookAsset[],
+  overwrite: boolean
+): Promise<void> {
+  for (const asset of activeAssets) {
+    if (!overwrite && (await fileExists(asset.targetPath))) continue;
+    await copyFile(asset.sourcePath, asset.targetPath, targetDir);
+    const stats = await fs.stat(asset.sourcePath);
+    await fs.utimes(asset.targetPath, stats.atime, stats.mtime);
+  }
 }
 
 /** Prevalidate every native-hook target before an installer/update mutates the project. */
@@ -749,16 +977,32 @@ export async function prevalidateNativeCodexHooks(
   options: InstallNativeCodexHooksOptions = {}
 ): Promise<void> {
   const paths = resolveNativeCodexHookPaths(targetDir, options);
-  await prevalidateSafeWritePath(paths.registryPath, targetDir);
-  await prevalidateSafeWritePath(paths.compatibilityRegistryPath, targetDir);
-  await prevalidateSafeWritePath(paths.conversionPath, targetDir);
-  await prevalidateCopyDirectory(paths.sourceScriptsPath, paths.scriptsPath, {
-    overwrite: options.overwrite,
-    preserveSymlinks: true,
-    trustedWriteRoot: targetDir,
-  });
-  if (await fileExists(paths.sourceRootScriptPath)) {
-    await prevalidateSafeWritePath(paths.targetRootScriptPath, targetDir);
+  await prevalidateResolvedNativeCodexHooks(paths);
+}
+
+async function prevalidateResolvedNativeCodexHooks(paths: NativeCodexHookPaths): Promise<void> {
+  await prevalidateLinkedDiscoveryAnchor(paths);
+  await prevalidateSafeWritePath(paths.registryPath, paths.projectRoot);
+  await prevalidateSafeWritePath(paths.compatibilityRegistryPath, paths.projectRoot);
+  await prevalidateSafeWritePath(paths.conversionPath, paths.projectRoot);
+  const source = await readJsonFile<unknown>(paths.sourceRegistryPath);
+  const compilation = compileCodexHooks(source);
+  const activeAssets = activeManagedHookAssets(paths, compilation.registry);
+  const registryExists = await fileExists(paths.registryPath);
+  const existingRegistry = registryExists
+    ? validateCodexHookRegistry(await readJsonFile<unknown>(paths.registryPath))
+    : ({ hooks: {} } satisfies CodexHookRegistry);
+  const mergedRegistry = mergeCodexHookRegistries(existingRegistry, compilation.registry);
+  const retainedScriptNames = getReferencedHookScriptNames(mergedRegistry);
+  const activeScriptNames = new Set(activeAssets.map((asset) => asset.name));
+  await prevalidateActiveManagedHookAssets(paths.projectRoot, activeAssets);
+  const staleAssets = await classifyStaleManagedHookAssets(
+    paths,
+    activeScriptNames,
+    retainedScriptNames
+  );
+  for (const asset of staleAssets.removable) {
+    await prevalidateSafeWritePath(asset.targetPath, paths.projectRoot);
   }
 }
 
@@ -772,32 +1016,35 @@ export async function installNativeCodexHooks(
 ): Promise<InstallNativeCodexHooksResult> {
   const paths = resolveNativeCodexHookPaths(targetDir, options);
   const source = await readJsonFile<unknown>(paths.sourceRegistryPath);
-  const compilation = compileCodexHooks(source);
-  await prevalidateNativeCodexHooks(targetDir, options);
+  const compilation = compileCodexHooks(source, { authoritativeRoot: paths.projectRoot });
+  await prevalidateResolvedNativeCodexHooks(paths);
+  await ensureLinkedDiscoveryAnchor(paths);
   const registryExists = await fileExists(paths.registryPath);
   const existingRegistry = registryExists
     ? validateCodexHookRegistry(await readJsonFile<unknown>(paths.registryPath))
     : ({ hooks: {} } satisfies CodexHookRegistry);
   const registryPreserved = registryExists && registryHasUnmanagedContent(existingRegistry);
   const mergedRegistry = mergeCodexHookRegistries(existingRegistry, compilation.registry);
+  const activeAssets = activeManagedHookAssets(paths, compilation.registry);
+  const retainedScriptNames = getReferencedHookScriptNames(mergedRegistry);
+  const activeScriptNames = new Set(activeAssets.map((asset) => asset.name));
 
-  await copyDirectory(paths.sourceScriptsPath, paths.scriptsPath, {
-    overwrite: options.overwrite,
-    preserveSymlinks: true,
-    preserveTimestamps: true,
-    trustedWriteRoot: targetDir,
-  });
-  if (
-    (await fileExists(paths.sourceRootScriptPath)) &&
-    (options.overwrite || !(await fileExists(paths.targetRootScriptPath)))
-  ) {
-    await copyFile(paths.sourceRootScriptPath, paths.targetRootScriptPath, targetDir);
+  await copyActiveManagedHookAssets(paths.projectRoot, activeAssets, !!options.overwrite);
+  const staleAssets = await classifyStaleManagedHookAssets(
+    paths,
+    activeScriptNames,
+    retainedScriptNames
+  );
+  for (const asset of staleAssets.removable) {
+    await deleteFile(asset.targetPath, paths.projectRoot);
   }
-  await writeJsonFile(paths.registryPath, mergedRegistry, { trustedWriteRoot: targetDir });
+  await writeJsonFile(paths.registryPath, mergedRegistry, { trustedWriteRoot: paths.projectRoot });
   await writeJsonFile(paths.conversionPath, compilation.compatibility, {
-    trustedWriteRoot: targetDir,
+    trustedWriteRoot: paths.projectRoot,
   });
-  await writeJsonFile(paths.compatibilityRegistryPath, source, { trustedWriteRoot: targetDir });
+  await writeJsonFile(paths.compatibilityRegistryPath, source, {
+    trustedWriteRoot: paths.projectRoot,
+  });
 
   return {
     installed: true,
@@ -805,5 +1052,8 @@ export async function installNativeCodexHooks(
     scriptsPath: paths.scriptsPath,
     compatibilityPath: paths.compatibilityPath,
     registryPreserved,
+    activeScriptPaths: activeAssets.map((asset) => asset.targetPath),
+    removedStaleManagedPaths: staleAssets.removable.map((asset) => asset.targetPath),
+    preservedCustomPaths: staleAssets.preserved.map((asset) => asset.targetPath),
   };
 }

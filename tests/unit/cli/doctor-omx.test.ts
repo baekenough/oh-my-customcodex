@@ -15,6 +15,17 @@ function depsFor(commands: Record<string, string | Error>): InstallerDeps {
       return result;
     },
     getPlatform: () => 'linux',
+    inspectHooks: () => [
+      {
+        key: 'project:PreToolUse:0:0',
+        command: 'node hook.js',
+        currentHash: 'sha256:trusted',
+        enabled: true,
+        source: 'project',
+        sourcePath: '.codex/hooks.json',
+        trustStatus: 'trusted',
+      },
+    ],
   };
 }
 

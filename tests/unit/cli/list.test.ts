@@ -1237,6 +1237,45 @@ Description after code block.`
       expect(hooks[3].name).toBe('pre-commit.sh');
     });
 
+    it('should report only scripts reachable from the native root registry', async () => {
+      const hooksDir = join(tempDir, '.codex', 'hooks');
+      const scriptsDir = join(hooksDir, 'scripts');
+      await mkdir(scriptsDir, { recursive: true });
+      await writeFile(join(scriptsDir, 'codex-native-advisory.sh'), '#!/bin/bash');
+      await writeFile(join(scriptsDir, 'schema-validator.sh'), '#!/bin/bash');
+      await writeFile(join(scriptsDir, 'dormant-claude-only.sh'), '#!/bin/bash');
+      await writeFile(join(scriptsDir, 'custom-active.sh'), '#!/bin/bash');
+      await writeFile(
+        join(tempDir, '.codex', 'hooks.json'),
+        JSON.stringify({
+          hooks: {
+            PreToolUse: [
+              {
+                hooks: [
+                  {
+                    command:
+                      'bash "$repo_root/.codex/hooks/scripts/codex-native-advisory.sh" "schema-validator.sh" # omcustomcodex-hook:schema-validator.sh',
+                  },
+                  { command: 'bash .codex/hooks/scripts/custom-active.sh' },
+                ],
+              },
+            ],
+          },
+        })
+      );
+
+      const hooks = await getHooks(tempDir);
+
+      expect(hooks.map(({ path }) => path)).toEqual([
+        '.codex/hooks/scripts/codex-native-advisory.sh',
+        '.codex/hooks/scripts/custom-active.sh',
+        '.codex/hooks.json',
+        '.codex/hooks/scripts/schema-validator.sh',
+      ]);
+      expect(hooks.every(({ category }) => category === 'active')).toBe(true);
+      expect(hooks.map(({ name }) => name)).not.toContain('dormant-claude-only.sh');
+    });
+
     it('should handle errors and return empty array', async () => {
       const fs = await import('../../../src/utils/fs.js');
       const listFilesSpy = spyOn(fs, 'listFiles').mockImplementation(async () => {

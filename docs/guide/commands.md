@@ -10,6 +10,7 @@ oh-my-customcodex provides a CLI tool (`omcustomcodex`) for managing the child-p
 | `omcustomcodex update` | Update managed components to latest templates |
 | `omcustomcodex list` | List installed components |
 | `omcustomcodex doctor` | Verify installation health |
+| `omcustomcodex security` | Scan hook declarations, referenced executable bodies, configs, and templates |
 
 ## init
 
@@ -71,6 +72,12 @@ omcustomcodex update --dry-run
 omcustomcodex update --agents --skills
 ```
 
+Hook updates install only the scripts reachable from the compiled native
+`.codex/hooks.json` registry: the managed native subset and its advisory
+wrapper. During migration, a dormant legacy managed script is removed only
+when its bytes still match the packaged source. Modified or unrelated custom
+hook files are preserved.
+
 ## list
 
 List installed components.
@@ -83,7 +90,7 @@ omcustomcodex list [options] [type]
 
 | Argument | Description |
 |----------|-------------|
-| `type` | One of `agents`, `skills`, `guides`, `rules`, or `all` (default: `all`) |
+| `type` | One of `agents`, `skills`, `guides`, `rules`, `hooks`, `contexts`, or `all` (default: `all`) |
 
 ### Options
 
@@ -103,7 +110,30 @@ omcustomcodex list agents
 
 # List skills as JSON
 omcustomcodex list skills --format json
+
+# List the native registry and executable files reachable from it
+omcustomcodex list hooks --format json
 ```
+
+For native projects, `list hooks` reports the root registry and its active
+referenced files. Dormant Claude-compatibility assets are not reported as
+active hooks.
+
+## security
+
+Scan hook declarations, directly referenced project-local executable bodies,
+configuration files, and template permissions.
+
+```bash
+omcustomcodex security
+```
+
+Executable scanning is confined to the project's `.codex/hooks/` tree after
+realpath resolution. Missing, dynamic, external, or escaping references are
+reported conservatively instead of being called safe. The scanner follows the
+single `omcustomcodex-hook` marker hop emitted by the managed advisory wrapper;
+it does not recursively follow arbitrary commands dispatched later by script
+bodies.
 
 ## doctor
 

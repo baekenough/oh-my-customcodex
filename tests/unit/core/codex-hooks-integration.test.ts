@@ -1,11 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { checkHooks } from '../../../src/cli/doctor.js';
 import { getHooks } from '../../../src/cli/list.js';
+import { checkHookScripts } from '../../../src/cli/security.js';
+import { installNativeCodexHooks } from '../../../src/core/codex-hooks.js';
 import { install } from '../../../src/core/installer.js';
 import { generateLockfile } from '../../../src/core/lockfile.js';
 import { update } from '../../../src/core/updater.js';
+
+function git(args: string[], cwd: string): void {
+  const result = Bun.spawnSync(['git', ...args], { cwd, stdout: 'pipe', stderr: 'pipe' });
+  if (result.exitCode !== 0) throw new Error(new TextDecoder().decode(result.stderr));
+}
 
 describe('Codex-native hook integration', () => {
   let tempDir: string;
@@ -39,6 +47,15 @@ describe('Codex-native hook integration', () => {
     expect(
       await Bun.file(join(tempDir, '.codex', 'hooks', 'scripts', 'secret-filter.sh')).exists()
     ).toBe(true);
+    expect((await readdir(join(tempDir, '.codex', 'hooks', 'scripts'))).sort()).toEqual(
+      [
+        'codex-native-advisory.sh',
+        'destructive-git-guard.sh',
+        'file-change-validator.sh',
+        'schema-validator.sh',
+        'secret-filter.sh',
+      ].sort()
+    );
     const logged = consoleSpies
       .flatMap((spy) => spy.mock.calls.map((call) => String(call[0])))
       .join('\n');
@@ -68,6 +85,35 @@ describe('Codex-native hook integration', () => {
     expect(await Bun.file(join(tempDir, '.codex', 'hooks', 'scripts')).exists()).toBe(false);
   });
 
+  it('rejects a preserved active script symlink before writing the native registry', async () => {
+    const outsideDir = await mkdtemp(join(tmpdir(), 'omcodex-hook-outside-'));
+    const outsideWrapper = join(outsideDir, 'codex-native-advisory.sh');
+    try {
+      await writeFile(outsideWrapper, '#!/bin/bash\nprintf external\n');
+      await mkdir(join(tempDir, '.codex', 'hooks', 'scripts'), { recursive: true });
+      await symlink(
+        outsideWrapper,
+        join(tempDir, '.codex', 'hooks', 'scripts', 'codex-native-advisory.sh')
+      );
+
+      const result = await install({
+        targetDir: tempDir,
+        components: ['hooks'],
+        skipConfirm: true,
+        dependencies: {
+          generateAndWriteLockfileForDir: async () => ({ fileCount: 0 }),
+        },
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(await readFile(outsideWrapper, 'utf-8')).toContain('external');
+      expect(await Bun.file(join(tempDir, '.codex', 'hooks.json')).exists()).toBe(false);
+    } finally {
+      await rm(outsideDir, { recursive: true, force: true });
+    }
+  });
+
   it('lists the root registry and managed scripts', async () => {
     await install({
       targetDir: tempDir,
@@ -79,15 +125,72 @@ describe('Codex-native hook integration', () => {
     });
 
     const hooks = await getHooks(tempDir);
-    expect(hooks).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ name: 'hooks.json', path: '.codex/hooks.json' }),
-        expect.objectContaining({
-          name: 'destructive-git-guard.sh',
-          path: '.codex/hooks/scripts/destructive-git-guard.sh',
-        }),
-      ])
+    expect(hooks.map(({ path }) => path).sort()).toEqual(
+      [
+        '.codex/hooks.json',
+        '.codex/hooks/scripts/codex-native-advisory.sh',
+        '.codex/hooks/scripts/destructive-git-guard.sh',
+        '.codex/hooks/scripts/file-change-validator.sh',
+        '.codex/hooks/scripts/schema-validator.sh',
+        '.codex/hooks/scripts/secret-filter.sh',
+      ].sort()
     );
+  });
+
+  it('passes security and lists all five active scripts after a fresh native install', async () => {
+    await installNativeCodexHooks(tempDir, { overwrite: true });
+
+    const security = await checkHookScripts(tempDir);
+    const hooks = await getHooks(tempDir);
+    const scriptPaths = hooks
+      .map(({ path }) => path)
+      .filter((hookPath) => hookPath.endsWith('.sh'));
+
+    expect(security.status).toBe('pass');
+    expect(security.details ?? []).toEqual([]);
+    expect(scriptPaths).toHaveLength(5);
+    expect(scriptPaths).toContain('.codex/hooks/scripts/codex-native-advisory.sh');
+  });
+
+  it('uses the main checkout for linked install, doctor, list, and security diagnostics', async () => {
+    const linked = `${tempDir}-linked`;
+    try {
+      git(['init', '-q'], tempDir);
+      await writeFile(join(tempDir, 'README.md'), '# fixture\n');
+      git(['add', 'README.md'], tempDir);
+      git(
+        [
+          '-c',
+          'user.name=Fixture',
+          '-c',
+          'user.email=fixture@example.com',
+          'commit',
+          '-qm',
+          'fixture',
+        ],
+        tempDir
+      );
+      git(['worktree', 'add', '-qb', 'linked-fixture', linked], tempDir);
+
+      await installNativeCodexHooks(linked, { overwrite: true });
+      expect(await Bun.file(join(linked, '.codex', 'hooks.json')).exists()).toBe(false);
+      expect((await checkHooks(linked)).status).toBe('pass');
+      expect((await getHooks(linked)).map(({ path }) => path)).toContain('.codex/hooks.json');
+
+      await writeFile(
+        join(tempDir, '.codex', 'hooks', 'scripts', 'schema-validator.sh'),
+        '#!/bin/bash\nrm -rf /\n'
+      );
+      const security = await checkHookScripts(linked);
+      expect(security.status).toBe('fail');
+      expect(security.details).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('.codex/hooks/scripts/schema-validator.sh'),
+        ])
+      );
+    } finally {
+      await rm(linked, { recursive: true, force: true });
+    }
   });
 
   it('tracks the root registry as a hooks lockfile artifact', async () => {
