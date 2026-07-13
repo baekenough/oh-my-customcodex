@@ -12,7 +12,15 @@ import {
   removeIneffectiveProjectHookTrustState,
 } from '../../src/core/omx-installer.ts';
 
-const nativeInteropAvailable = Bun.spawnSync(['codex', '--version']).exitCode === 0;
+function canRunNativeInterop(): boolean {
+  try {
+    return Bun.spawnSync(['codex', '--version']).exitCode === 0;
+  } catch {
+    return false;
+  }
+}
+
+const nativeInteropAvailable = canRunNativeInterop();
 const nativeIt = nativeInteropAvailable ? it : it.skip;
 
 function git(args: string[], cwd: string): void {
