@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.11] - 2026-07-13
+
+### Changed
+- Resolve managed Codex hook assets from the authoritative main checkout only when a standard linked-worktree identity is verified, while keeping separate and nonstandard Git layouts fail-closed (#1613).
+- Install, report, and package only the five scripts reachable from the native Codex hook registry instead of carrying inactive Claude-only lifecycle scripts (#1615).
+
+### Fixed
+- Treat project hook trust as an explicit Codex user action: require user-level hook enablement and live approval state rather than accepting project-written hashes as effective trust (#1611).
+- Make snapshot installation transactional across Codex, OMX, guidance, configuration, and lock surfaces; require post-copy readiness and a final lockfile before success, with exact rollback on failure (#1612).
+- Scan executable hook bodies through wrappers, shell command strings, substitutions, sourced content, builtin mutations, and repository-boundary poisoning before installation (#1614).
+- Recompute doctor health from live disk state after fixes mutate shared OMX surfaces instead of reporting stale pre-fix results (#1616).
+
 ## [1.0.10] - 2026-07-13
 
 ### Added
