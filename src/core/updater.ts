@@ -24,6 +24,8 @@ import {
   writeTextFile,
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
+import { prevalidateNativeAgentSync, syncNativeAgents } from './agent-compiler.js';
+import { installNativeCodexHooks, prevalidateNativeCodexHooks } from './codex-hooks.js';
 import { installCodex, isCodexInstalled } from './codex-installer.js';
 import { getConfigCandidatePaths, loadConfig, type OmccConfig, saveConfig } from './config.js';
 import { mergeEntryDoc, wrapInManagedMarkers } from './entry-merger.js';
@@ -1527,9 +1529,67 @@ async function findProtectedFilesInDir(
 /**
  * Update a single component
  */
+async function updateNativeAgentComponent(
+  targetDir: string,
+  customizations: CustomizationManifest | null,
+  options: UpdateOptions
+): Promise<{ customizations: string[]; protected: string[] }> {
+  const componentPath = getComponentPath('agents');
+  const configuredPreservations =
+    customizations && !options.forceOverwriteAll
+      ? customizations.preserveFiles.filter((filePath) =>
+          isSameOrDescendantPath(filePath, componentPath)
+        )
+      : [];
+  const syncResult = await syncNativeAgents({
+    sourceDir: resolveTemplatePath(getTemplateComponentPath('agents')),
+    destinationDir: join(targetDir, componentPath),
+    targetRoot: targetDir,
+  });
+  return {
+    customizations: [
+      ...new Set([
+        ...configuredPreservations,
+        ...syncResult.preserved.map((filename) => `${componentPath}/${filename}`),
+      ]),
+    ],
+    protected: [],
+  };
+}
+
 async function updateComponent(
   targetDir: string,
   component: UpdateComponent,
+  customizations: CustomizationManifest | null,
+  options: UpdateOptions,
+  config: OmccConfig,
+  lockfile: Lockfile | null
+): Promise<{ customizations: string[]; protected: string[] }> {
+  if (component === 'agents') {
+    return updateNativeAgentComponent(targetDir, customizations, options);
+  }
+  if (component === 'hooks') {
+    return updateHooksComponent(targetDir);
+  }
+
+  return updateDirectoryComponent(targetDir, component, customizations, options, config, lockfile);
+}
+
+async function updateHooksComponent(
+  targetDir: string
+): Promise<{ customizations: string[]; protected: string[] }> {
+  const result = await installNativeCodexHooks(targetDir, {
+    overwrite: true,
+  });
+  return {
+    customizations: result.registryPreserved ? ['.codex/hooks.json'] : [],
+    protected: [],
+  };
+}
+
+async function updateDirectoryComponent(
+  targetDir: string,
+  component: Exclude<UpdateComponent, 'hooks'>,
   customizations: CustomizationManifest | null,
   options: UpdateOptions,
   config: OmccConfig,
@@ -1654,8 +1714,20 @@ async function validateUpdateComponentTargets(
   components: UpdateComponent[]
 ): Promise<void> {
   for (const component of components) {
+    if (component === 'hooks') {
+      await prevalidateNativeCodexHooks(targetDir, { overwrite: true });
+      continue;
+    }
     const srcPath = resolveTemplatePath(getTemplateComponentPath(component));
     if (!(await fileExists(srcPath))) continue;
+    if (component === 'agents') {
+      await prevalidateNativeAgentSync({
+        sourceDir: srcPath,
+        destinationDir: join(targetDir, getComponentPath(component)),
+        targetRoot: targetDir,
+      });
+      continue;
+    }
     await prevalidateCopyDirectory(srcPath, join(targetDir, getComponentPath(component)), {
       overwrite: true,
       trustedWriteRoot: targetDir,

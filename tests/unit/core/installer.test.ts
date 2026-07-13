@@ -279,6 +279,58 @@ describe('installer', () => {
       expect(result).toBeDefined();
     });
 
+    it('should compile domain-filtered native agents and preserve custom TOML', async () => {
+      const agentsDir = join(tempDir, '.codex', 'agents');
+      const customPath = join(agentsDir, 'custom-local.toml');
+      const customBytes =
+        'name = "custom-local"\ndescription = "custom"\ndeveloper_instructions = "custom"\n';
+      await mkdir(agentsDir, { recursive: true });
+      await writeFile(customPath, customBytes);
+
+      const result = await install({
+        targetDir: tempDir,
+        components: ['agents'],
+        domain: 'backend',
+        force: true,
+        skipConfirm: true,
+      });
+
+      expect(result.success).toBe(true);
+      const files = await readdir(agentsDir);
+      expect(files).toContain('be-fastapi-expert.toml');
+      expect(files).toContain('scholastic.toml');
+      expect(files).not.toContain('fe-vuejs-agent.toml');
+      expect(files.some((filename) => filename.endsWith('.md'))).toBe(false);
+      expect(await readFile(customPath, 'utf-8')).toBe(customBytes);
+      expect(
+        Bun.TOML.parse(await readFile(join(agentsDir, 'be-fastapi-expert.toml'), 'utf-8'))
+      ).toMatchObject({ name: 'be-fastapi-expert' });
+    });
+
+    it('should merge managed agents into an existing OMX directory without force', async () => {
+      const agentsDir = join(tempDir, '.codex', 'agents');
+      const customPath = join(agentsDir, 'custom-local.toml');
+      const omxPath = join(agentsDir, 'omx-native.toml');
+      const customBytes =
+        'name = "custom-local"\ndescription = "custom"\ndeveloper_instructions = "custom"\n';
+      const omxBytes = 'name = "omx-native"\ndescription = "OMX"\ndeveloper_instructions = "OMX"\n';
+      await mkdir(agentsDir, { recursive: true });
+      await writeFile(customPath, customBytes);
+      await writeFile(omxPath, omxBytes);
+
+      const result = await install({
+        targetDir: tempDir,
+        components: ['agents'],
+        skipConfirm: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.installedComponents).toContain('agents');
+      expect(await fileExists(join(agentsDir, 'be-fastapi-expert.toml'))).toBe(true);
+      expect(await readFile(customPath, 'utf-8')).toBe(customBytes);
+      expect(await readFile(omxPath, 'utf-8')).toBe(omxBytes);
+    });
+
     it('should reject component writes when provider root is a symlink before mutation', async () => {
       const outside = join(tempDir, 'outside-provider-root');
       await mkdir(join(outside, 'rules'), { recursive: true });
@@ -775,13 +827,13 @@ describe('installer', () => {
 
       const result = await install({
         targetDir: tempDir,
-        components: ['agents'],
+        components: ['rules'],
         force: true,
         skipConfirm: true,
       });
 
       expect(result.warnings.length).toBeGreaterThan(0);
-      expect(result.warnings.some((w) => w.includes('Failed to install agents'))).toBe(true);
+      expect(result.warnings.some((w) => w.includes('Failed to install rules'))).toBe(true);
 
       copyDirectorySpy.mockRestore();
     });

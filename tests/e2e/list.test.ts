@@ -89,7 +89,7 @@ describe('E2E: omcodex list', () => {
 
   /**
    * Helper to create a test agent
-   * Official Claude Code format: .codex/agents/{prefix}-{name}.md (flat structure)
+   * Codex native format: .codex/agents/{prefix}-{name}.toml (flat structure)
    */
   async function createTestAgent(
     type: string,
@@ -135,27 +135,15 @@ describe('E2E: omcodex list', () => {
         prefix = 'mgr';
     }
 
-    // Flat .md file with frontmatter format
-    const agentMd = `---
-type: ${type}
-description: ${options?.description || `A test ${name} agent`}
-${options?.version ? `version: ${options.version}` : ''}
----
-
-# ${name.charAt(0).toUpperCase() + name.slice(1)} Agent
-
-> ${options?.description || `A test ${name} agent`}
-
-## Overview
-
-This is a test agent for end-to-end testing.
-
-## Capabilities
-
-- Test capability 1
-- Test capability 2
-`;
-    await writeFile(join(agentsDir, `${prefix}-${name}.md`), agentMd);
+    const agentName = `${prefix}-${name}`;
+    const description = options?.description || `A test ${name} agent`;
+    const agentToml = [
+      `name = ${JSON.stringify(agentName)}`,
+      `description = ${JSON.stringify(description)}`,
+      `developer_instructions = ${JSON.stringify('This is a test agent for end-to-end testing.')}`,
+      '',
+    ].join('\n');
+    await writeFile(join(agentsDir, `${agentName}.toml`), agentToml);
   }
 
   /**
@@ -270,11 +258,11 @@ Rule content here.
 
     it('should handle empty installation gracefully', async () => {
       // Clear the agents directory content (keep structure)
-      // Official Claude Code format: .codex/agents/ contains flat .md files with prefixes
+      // Official Claude Code format: .codex/agents/ contains flat native TOML files
       const agentsDir = join(tempDir, '.codex', 'agents');
       const entries = await readdir(agentsDir, { withFileTypes: true });
       for (const entry of entries) {
-        if (entry.isFile() && entry.name.endsWith('.md')) {
+        if (entry.isFile() && entry.name.endsWith('.toml')) {
           await rm(join(agentsDir, entry.name), { force: true });
         }
       }
@@ -436,10 +424,10 @@ Rule content here.
       const agent = parsed.find((a) => a.name === 'lang-test-agent');
       expect(agent).toBeDefined();
 
-      // Check structure (flat .md files with frontmatter in .codex/agents/)
+      // Check structure (flat native TOML files in .codex/agents/)
       expect(agent?.name).toBe('lang-test-agent');
       expect(agent?.type).toBe('language');
-      expect(agent?.path).toContain('.codex/agents/lang-test-agent.md');
+      expect(agent?.path).toContain('.codex/agents/lang-test-agent.toml');
       expect(agent?.description).toBeDefined();
       // version may be in frontmatter or undefined
     });
@@ -465,7 +453,7 @@ Rule content here.
       const output = result.stdout;
 
       // Simple format: {prefix}-name [type] (official Codex-native format)
-      expect(output).toMatch(/lang-test-agent\s*\[language\]/);
+      expect(output).toMatch(/lang-test-agent\s*(?:\[custom\]\s*)?\[language\]/);
     });
 
     it('should use short flag -f for format', async () => {
@@ -499,7 +487,7 @@ Rule content here.
       // Clear any files from initProject() to test empty listing
       await rm(agentsDir, { recursive: true, force: true });
       await mkdir(agentsDir, { recursive: true });
-      // No {prefix}-{name}.md files, so should be empty
+      // No {prefix}-{name}.toml files, so should be empty
 
       const result = await runCli('list', 'agents', '--format', 'json');
 

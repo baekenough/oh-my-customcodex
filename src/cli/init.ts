@@ -17,6 +17,11 @@ import { getDefaultWizardResult, isInteractiveMode, runInitWizard } from './wiza
 
 export type { InitOptions, InitResult };
 
+export interface InitCommandDependencies {
+  /** Injectable installer boundary for orchestration tests. */
+  install?: typeof install;
+}
+
 /**
  * Check if provider root directory already exists
  * @param targetDir - Target directory to check
@@ -169,7 +174,10 @@ export async function initFromSnapshot(
  * @param options - Init command options
  * @returns Result of the init operation
  */
-export async function initCommand(options: InitOptions): Promise<InitResult> {
+export async function initCommand(
+  options: InitOptions,
+  dependencies: InitCommandDependencies = {}
+): Promise<InitResult> {
   const targetDir = process.cwd();
 
   // Snapshot mode: skip wizard and install from pre-configured snapshot
@@ -194,12 +202,14 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
     }
 
     console.log(i18n.t('cli.init.copying'));
-    const installResult = await install({
+    const runInstall = dependencies.install ?? install;
+    const installResult = await runInstall({
       targetDir,
       language: resolved.lang,
       force: options.force ?? false,
       backup: exists,
       domain: resolved.domain,
+      provisionOmxProject: true,
     });
 
     if (!installResult.success) {
@@ -208,7 +218,6 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
 
     const installedPaths = buildInstalledPaths(targetDir, installResult.installedComponents);
     logInstallResultInfo(installResult);
-    logSuccessDetails(installedPaths, installResult.skippedComponents);
 
     await setupMcpConfig(targetDir);
 
@@ -227,6 +236,7 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
       // Registry write is informational only — never block init
     }
 
+    logSuccessDetails(installedPaths, installResult.skippedComponents);
     console.log('');
     console.log('Codex setup complete. See AGENTS.md for Codex-native MCP and runtime guidance.');
 

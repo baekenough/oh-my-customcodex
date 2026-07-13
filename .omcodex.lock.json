@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "1.0.9",
-  "generatedAt": "2026-07-13T07:12:07.269Z",
+  "generatedAt": "2026-07-13T09:31:51.909Z",
   "templateVersion": "1.0.9",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
@@ -470,8 +470,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/secret-filter.sh": {
-      "templateHash": "f9e002664ef091328d059e2dcf703eb30929f47ff59e81fdddd201f24783ab1f",
-      "size": 2904,
+      "templateHash": "5d758803ac55fa301407a4ccaef984b6989b5c8f576e6e35e4848f7a70c3752a",
+      "size": 2929,
       "component": "hooks"
     },
     ".codex/hooks/scripts/model-escalation-advisor.sh": {
@@ -485,8 +485,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/schema-validator.sh": {
-      "templateHash": "d6454e5d3af4db6cac9b937c3da9e0e70d196f955f90aaee0b013a6e0c735f93",
-      "size": 3306,
+      "templateHash": "8cb0c28f2e04053dc814c02d705d4a0072f9803d45919a6ad26ea7a95942c71e",
+      "size": 3571,
       "component": "hooks"
     },
     ".codex/hooks/scripts/git-delegation-guard.sh": {
@@ -525,8 +525,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/file-change-validator.sh": {
-      "templateHash": "38e152937874baf37ef89933e3f015369e1563f51354484b365a2132f1afe89a",
-      "size": 749,
+      "templateHash": "4f1c684462f85df16781df816ea91c94537135e318da0c6fa9b6a530dde9752f",
+      "size": 1224,
       "component": "hooks"
     },
     ".codex/hooks/scripts/session-env-check.sh": {
@@ -552,6 +552,11 @@
     ".codex/hooks/scripts/task-outcome-recorder.sh": {
       "templateHash": "9ce4c82fee0f5567c39ad814a9cac5ba35e9e89bcc35091be67ba49a79a18c8b",
       "size": 4697,
+      "component": "hooks"
+    },
+    ".codex/hooks/scripts/codex-native-advisory.sh": {
+      "templateHash": "18187109e6d6e4851b3eeeb4f4c046b01f716d01164520b452cce19a76b02a80",
+      "size": 7001,
       "component": "hooks"
     },
     ".codex/hooks/scripts/agent-capability-precheck.sh": {
@@ -1210,8 +1215,8 @@
       "component": "guides"
     },
     "guides/agents-md-quality/README.md": {
-      "templateHash": "637286208768fe3a8ee12ad53e628f5a3c6df4de87d9e9eef9c27a84b988ec4b",
-      "size": 3840,
+      "templateHash": "339a9da084b6e294c6f05a3119f5b45582ce4a9b2258cd7fb7da04e3dec663bd",
+      "size": 4107,
       "component": "guides"
     }
   }

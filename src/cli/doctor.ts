@@ -7,12 +7,21 @@ import { constants, promises as fs, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
+import { parseNativeAgentListMetadata } from '../core/agent-compiler.js';
+import { validateCodexHookRegistry } from '../core/codex-hooks.js';
 import { getCodexVersion, installCodex, isCodexInstalled } from '../core/codex-installer.js';
 import { loadConfig } from '../core/config.js';
 import { checkFrameworkVersion } from '../core/doctor-framework.js';
 import { getComponentPath, getProviderLayout } from '../core/layout.js';
 import { computeFileHash, readLockfile } from '../core/lockfile.js';
-import { assessOmxInstallation, installOmx, MINIMUM_OMX_VERSION } from '../core/omx-installer.js';
+import {
+  assessOmxReadiness,
+  ensureOmxProjectReady,
+  type InstallerDeps,
+  MINIMUM_OMX_VERSION,
+  OMX_PROJECT_SETUP_COMMAND,
+  OMX_PROJECT_SURFACE_LABELS,
+} from '../core/omx-installer.js';
 import { getRtkVersion, installRtk, isRtkInstalled } from '../core/rtk-installer.js';
 import { checkSelfUpdate } from '../core/self-update.js';
 import { i18n } from '../i18n/index.js';
@@ -58,6 +67,21 @@ export interface DoctorResult {
   failCount: number;
   fixedCount: number;
 }
+
+// Mirrors the native events accepted by the Codex hook compiler. Doctor keeps
+// this local so validation does not widen the hook compiler's public surface.
+const DOCTOR_SUPPORTED_CODEX_HOOK_EVENTS = new Set([
+  'SessionStart',
+  'SubagentStart',
+  'PreToolUse',
+  'PermissionRequest',
+  'PostToolUse',
+  'UserPromptSubmit',
+  'Stop',
+  'SubagentStop',
+  'PreCompact',
+  'PostCompact',
+]);
 
 /**
  * Check if a path exists
@@ -183,27 +207,68 @@ async function countDirectories(dirPath: string): Promise<number> {
   return entries.filter((e) => e.isDirectory()).length;
 }
 
-/**
- * Count agent .md files in flat {root}/agents/ directory
- * Official format: {root}/agents/{prefix}-{name}.md
- */
-async function countAgents(agentsDir: string): Promise<number> {
-  let count = 0;
+function assessRunnableNativeHooks(registry: ReturnType<typeof validateCodexHookRegistry>): {
+  eventCount: number;
+  handlerCount: number;
+} {
+  const events = Object.entries(registry.hooks);
+  let handlerCount = 0;
+
+  for (const [event, groups] of events) {
+    if (!DOCTOR_SUPPORTED_CODEX_HOOK_EVENTS.has(event)) {
+      throw new Error(`Unsupported Codex hook event: ${event}`);
+    }
+    for (const group of groups) handlerCount += group.hooks.length;
+  }
+
+  if (handlerCount === 0) {
+    throw new Error('Native hook registry requires at least one runnable command handler');
+  }
+
+  return { eventCount: events.length, handlerCount };
+}
+
+interface NativeAgentScan {
+  validCount: number;
+  invalidFiles: string[];
+}
+
+function hasRequiredTomlKey(content: string, key: string): boolean {
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(
+    `^${escapedKey}\\s*=\\s*(?:"(?:[^"\\\\]|\\\\.)+"|'[^']+'|'''[\\s\\S]+?'''|"""[\\s\\S]+?""")`,
+    'm'
+  ).test(content);
+}
+
+/** Validate standalone Codex-native TOML roles in a flat {root}/agents directory. */
+async function scanNativeAgents(agentsDir: string): Promise<NativeAgentScan> {
+  const result: NativeAgentScan = { validCount: 0, invalidFiles: [] };
 
   try {
-    const entries = await fs.readdir(agentsDir, { withFileTypes: true });
+    const entries = (await fs.readdir(agentsDir, { withFileTypes: true })).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
 
     for (const entry of entries) {
-      // Count .md files (flat structure in official Claude Code format)
-      if (entry.isFile() && entry.name.endsWith('.md')) {
-        count++;
+      if (!entry.isFile() || !entry.name.endsWith('.toml')) continue;
+
+      try {
+        const content = await fs.readFile(path.join(agentsDir, entry.name), 'utf-8');
+        parseNativeAgentListMetadata(content);
+        if (!hasRequiredTomlKey(content, 'developer_instructions')) {
+          throw new Error('Native agent TOML requires developer_instructions');
+        }
+        result.validCount++;
+      } catch {
+        result.invalidFiles.push(entry.name);
       }
     }
   } catch {
     // Ignore errors
   }
 
-  return count;
+  return result;
 }
 
 /**
@@ -273,8 +338,8 @@ export async function checkRules(
 }
 
 /**
- * Check if agents directory exists and has expected count
- * Official format: {root}/agents/
+ * Check if agents directory contains valid standalone Codex-native TOML roles.
+ * Official format: {root}/agents/*.toml
  * @param targetDir - Target directory
  * @returns Check result
  */
@@ -294,21 +359,32 @@ export async function checkAgents(
     };
   }
 
-  const agentCount = await countAgents(agentsDir);
+  const { validCount, invalidFiles } = await scanNativeAgents(agentsDir);
 
-  if (agentCount === 0) {
+  if (validCount === 0) {
     return {
       name: 'Agents',
       status: 'warn',
       message: `${i18n.t('cli.doctor.checks.agents.fail')} (0 agents found)`,
       fixable: false,
+      details: invalidFiles.length > 0 ? invalidFiles : undefined,
+    };
+  }
+
+  if (invalidFiles.length > 0) {
+    return {
+      name: 'Agents',
+      status: 'warn',
+      message: `${i18n.t('cli.doctor.checks.agents.pass')} (${validCount} agents; ${invalidFiles.length} invalid TOML)`,
+      fixable: false,
+      details: invalidFiles,
     };
   }
 
   return {
     name: 'Agents',
     status: 'pass',
-    message: `${i18n.t('cli.doctor.checks.agents.pass')} (${agentCount} agents)`,
+    message: `${i18n.t('cli.doctor.checks.agents.pass')} (${validCount} agents)`,
     fixable: false,
   };
 }
@@ -479,44 +555,52 @@ export async function checkGuides(targetDir: string): Promise<CheckResult> {
   };
 }
 
-/**
- * Check if hooks directory exists and has expected files
- * @param targetDir - Target directory
- * @returns Check result
- */
+/** Validate the root Codex-native hook registry. */
 export async function checkHooks(
   targetDir: string,
   rootDir: string = '.codex'
 ): Promise<CheckResult> {
-  const hooksDir = path.join(targetDir, rootDir, 'hooks');
-  const exists = await isDirectory(hooksDir);
+  const registryPath = path.join(targetDir, rootDir, 'hooks.json');
+  const registryLabel = path.relative(targetDir, registryPath);
+  const exists = await pathExists(registryPath);
 
   if (!exists) {
     return {
       name: 'Hooks',
       status: 'fail',
-      message: `${rootDir}/hooks/ directory not found`,
-      fixable: true,
+      message: `${registryLabel} native hook registry not found`,
+      fixable: false,
+      details: [`Missing native hook registry: ${registryLabel}`],
     };
   }
 
-  const hookFiles = await findFiles(hooksDir, /\.(sh|json|yaml)$/);
+  try {
+    const content = await fs.readFile(registryPath, 'utf-8');
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      throw new Error('Invalid JSON');
+    }
 
-  if (hookFiles.length === 0) {
+    const registry = validateCodexHookRegistry(parsed);
+    const { eventCount, handlerCount } = assessRunnableNativeHooks(registry);
     return {
       name: 'Hooks',
-      status: 'warn',
-      message: `${rootDir}/hooks/ directory is empty`,
+      status: 'pass',
+      message: `Hooks OK (${eventCount} events, ${handlerCount} handlers)`,
       fixable: false,
     };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return {
+      name: 'Hooks',
+      status: 'fail',
+      message: `${registryLabel} native hook registry is malformed`,
+      fixable: false,
+      details: [`${registryLabel}: ${reason}`],
+    };
   }
-
-  return {
-    name: 'Hooks',
-    status: 'pass',
-    message: `Hooks OK (${hookFiles.length} files)`,
-    fixable: false,
-  };
 }
 
 /**
@@ -564,10 +648,14 @@ export async function checkCodex(): Promise<CheckResult> {
 }
 
 /**
- * Check if OMX CLI is installed for the parent harness dependency
+ * Check OMX binary/API capability and project-scoped setup readiness separately.
  */
-export async function checkOmx(): Promise<CheckResult> {
-  const omx = assessOmxInstallation();
+export async function checkOmx(
+  targetDir: string = process.cwd(),
+  deps?: InstallerDeps
+): Promise<CheckResult> {
+  const readiness = assessOmxReadiness(targetDir, deps);
+  const omx = readiness.capability;
 
   if (omx.status === 'missing') {
     return {
@@ -605,10 +693,23 @@ export async function checkOmx(): Promise<CheckResult> {
     };
   }
 
+  if (!readiness.project.ready) {
+    const details = readiness.project.missingSurfaces.map(
+      (surface) => `missing: ${OMX_PROJECT_SURFACE_LABELS[surface]}`
+    );
+    return {
+      name: 'OMX',
+      status: 'warn',
+      message: `OMX binary/API available, but project setup incomplete — run: ${OMX_PROJECT_SETUP_COMMAND}`,
+      fixable: true,
+      details,
+    };
+  }
+
   return {
     name: 'OMX',
     status: 'pass',
-    message: `OMX OK (${omx.version ?? 'unknown version'}, omx api available)`,
+    message: `OMX OK (${omx.version ?? 'unknown version'}, omx api available, project setup ready)`,
     fixable: false,
   };
 }
@@ -914,7 +1015,7 @@ async function fixSingleIssue(
     },
     RTK: async () => Promise.resolve(installRtk()),
     Codex: async () => Promise.resolve(installCodex()),
-    OMX: async () => Promise.resolve(installOmx()),
+    OMX: async () => Promise.resolve(ensureOmxProjectReady(targetDir).success),
   };
 
   const fixer = fixMap[check.name];
@@ -1149,7 +1250,7 @@ async function runAllChecks(
     checkCustomComponents(targetDir, layout.rootDir),
     checkRtk(),
     checkCodex(),
-    checkOmx(),
+    checkOmx(targetDir),
     checkOmxModelRouting(),
   ]);
 

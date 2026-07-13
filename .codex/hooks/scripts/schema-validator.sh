@@ -16,7 +16,8 @@ input=$(cat)
 tool_name=$(echo "$input" | jq -r '.tool_name // "unknown"')
 tool_input=$(echo "$input" | jq -r '.tool_input // {}')
 
-SCHEMA_FILE=".codex/schemas/tool-inputs.json"
+git_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+SCHEMA_FILE="${git_root}/.codex/schemas/tool-inputs.json"
 
 # Skip if schema file doesn't exist
 if [ ! -f "$SCHEMA_FILE" ]; then
@@ -89,6 +90,13 @@ case "$tool_name" in
     # Broad permission grant
     if echo "$command" | grep -qE 'chmod\s+777'; then
       warnings+=("[Schema] Bash: broad permission grant (chmod 777) detected")
+    fi
+    ;;
+
+  "apply_patch")
+    command=$(echo "$tool_input" | jq -r '.command // ""')
+    if [ -z "$command" ]; then
+      warnings+=("[Schema] apply_patch: command is empty or missing")
     fi
     ;;
 esac

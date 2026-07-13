@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import {
+  CRITICAL_NATIVE_REGRESSION_FILES,
+  extractStableBatchInventory,
+  WORKFLOW_INVENTORY_GUARDS,
+} from './workflow-test-inventory.js';
 
+const CI_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/ci.yml');
 const RELEASE_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/release.yml');
 
 async function readWorkflow(): Promise<string> {
@@ -20,6 +26,27 @@ describe('release.yml — trigger conditions', () => {
     const content = await readWorkflow();
     expect(content).toContain('tags:');
     expect(content).toContain("- 'v*'");
+  });
+});
+
+describe('release.yml — stable Bun test inventory', () => {
+  it('includes every v1.0.10 native regression and both inventory guards', async () => {
+    const inventory = extractStableBatchInventory(await readWorkflow());
+
+    for (const testPath of [...CRITICAL_NATIVE_REGRESSION_FILES, ...WORKFLOW_INVENTORY_GUARDS]) {
+      expect(inventory).toContain(testPath);
+    }
+  });
+
+  it('stays synchronized with the CI workflow inventory', async () => {
+    const [ciContent, releaseContent] = await Promise.all([
+      readFile(CI_WORKFLOW, 'utf-8'),
+      readWorkflow(),
+    ]);
+
+    expect(extractStableBatchInventory(releaseContent)).toEqual(
+      extractStableBatchInventory(ciContent)
+    );
   });
 });
 
