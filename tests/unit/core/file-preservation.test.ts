@@ -391,7 +391,7 @@ describe('file-preservation', () => {
       await writeFile(preservedPath, JSON.stringify({ user: true, shared: 'user' }));
       await writeFile(targetPath, JSON.stringify({ template: true, shared: 'template' }));
 
-      await mergeJsonFile(preservedPath, targetPath);
+      await mergeJsonFile(preservedPath, targetPath, tempDir);
 
       const result = await readJsonFile<Record<string, unknown>>(targetPath);
       expect(result.user).toBe(true);
@@ -405,7 +405,7 @@ describe('file-preservation', () => {
 
       await writeFile(preservedPath, JSON.stringify({ onlyUser: true }));
 
-      await mergeJsonFile(preservedPath, targetPath);
+      await mergeJsonFile(preservedPath, targetPath, tempDir);
 
       const result = await readJsonFile<Record<string, unknown>>(targetPath);
       expect(result.onlyUser).toBe(true);

@@ -1,6 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { createHash } from 'node:crypto';
+import type { Dirent } from 'node:fs';
 import { readFileSync } from 'node:fs';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  readlink,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, join as pathJoin } from 'node:path';
 import { getDefaultConfig, saveConfig } from '../../../src/core/config.js';
@@ -57,6 +68,34 @@ describe('updater', () => {
     const fullPath = join(tempDir, relativePath);
     const content = await readFile(fullPath, 'utf-8');
     expect(content).toBe(expectedContent);
+  }
+
+  async function hashTree(root: string): Promise<string> {
+    const entries: string[] = [];
+    async function recordEntry(entry: Dirent, dir: string, prefix: string) {
+      const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+      const fullPath = join(dir, entry.name);
+      if (entry.isSymbolicLink()) {
+        entries.push(`l:${relativePath}:${await readlink(fullPath)}`);
+        return;
+      }
+      if (entry.isDirectory()) {
+        entries.push(`d:${relativePath}`);
+        await walk(fullPath, relativePath);
+        return;
+      }
+      entries.push(`f:${relativePath}:${await readFile(fullPath, 'hex')}`);
+    }
+
+    async function walk(dir: string, prefix = ''): Promise<void> {
+      for (const entry of (await readdir(dir, { withFileTypes: true })).sort((a, b) =>
+        a.name.localeCompare(b.name)
+      )) {
+        await recordEntry(entry, dir, prefix);
+      }
+    }
+    await walk(root);
+    return createHash('sha256').update(entries.join('\n')).digest('hex');
   }
 
   describe('checkForUpdates', () => {
@@ -174,6 +213,34 @@ describe('updater', () => {
       expect(result.success).toBe(true);
       expect(result.updatedComponents.length).toBe(0);
       expect(result.skippedComponents.length).toBe(7); // All components skipped
+    });
+
+    it('should reject no-update statusLine backfill when provider root is a symlink outside the project', async () => {
+      await createConfig(MANIFEST_VERSION, {
+        rules: MANIFEST_VERSION,
+        agents: MANIFEST_VERSION,
+        skills: MANIFEST_VERSION,
+        guides: MANIFEST_VERSION,
+        hooks: MANIFEST_VERSION,
+        contexts: MANIFEST_VERSION,
+        ontology: MANIFEST_VERSION,
+      });
+      const layout = getProviderLayout();
+      const outsideRoot = join(tempDir, 'outside-status-root');
+      await mkdir(outsideRoot);
+      await writeFile(
+        join(outsideRoot, 'settings.local.json'),
+        '{"statusLine":{"type":"command"}}'
+      );
+      await symlink(outsideRoot, join(tempDir, layout.rootDir));
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(await readFile(join(outsideRoot, 'settings.local.json'), 'utf-8')).toBe(
+        '{"statusLine":{"type":"command"}}'
+      );
     });
 
     it('should force update all components with --force flag', async () => {
@@ -298,6 +365,7 @@ describe('updater', () => {
         targetDir: tempDir,
         components: ['rules'],
         dryRun: true,
+        backup: true,
       });
 
       expect(result.success).toBe(true);
@@ -308,6 +376,60 @@ describe('updater', () => {
       const rulesPath = join(tempDir, layout.rootDir, 'rules');
       const exists = await readFile(rulesPath, 'utf-8').catch(() => null);
       expect(exists).toBeNull();
+      expect(
+        await readFile(join(tempDir, '.omcodex.lock.json'), 'utf-8').catch(() => null)
+      ).toBeNull();
+      expect(
+        (await import('node:fs/promises'))
+          .readdir(tempDir)
+          .then((entries) => entries.some((entry) => entry.startsWith('.omcodex-backup-')))
+      ).resolves.toBe(false);
+    });
+
+    it('should leave the entire project tree and isolated runtime state unchanged in dry-run', async () => {
+      const originalHome = process.env.HOME;
+      const originalPath = process.env.PATH;
+      const originalRegistry = process.env.OMCODEX_REGISTRY_DIR;
+      const projectDir = await mkdtemp(join(process.cwd(), '.omcodex-dry-run-'));
+      const home = join(projectDir, 'home');
+      const fakeBin = join(projectDir, 'fake-bin');
+      const invocationLog = join(home, 'runtime-invocations.log');
+      await mkdir(home, { recursive: true });
+      await mkdir(fakeBin, { recursive: true });
+      await writeFile(
+        join(fakeBin, 'which'),
+        `#!/bin/sh\necho "$@" >> "${invocationLog}"\nexec /usr/bin/which "$@"\n`,
+        { mode: 0o755 }
+      );
+      await writeFile(
+        join(projectDir, '.omcodexrc.json'),
+        JSON.stringify({ configVersion: 0, version: '0.1.0', language: 'en' })
+      );
+      const before = await hashTree(projectDir);
+      process.env.HOME = home;
+      process.env.PATH = `${fakeBin}:/usr/bin:/bin`;
+      process.env.OMCODEX_REGISTRY_DIR = join(home, 'registry');
+
+      try {
+        const result = await update({
+          targetDir: projectDir,
+          dryRun: true,
+          backup: true,
+          force: true,
+        });
+        expect(result.success).toBe(true);
+        expect(await hashTree(projectDir)).toBe(before);
+        expect(await readFile(invocationLog, 'utf-8').catch(() => '')).toBe('');
+        expect(await readdir(join(home, 'registry')).catch(() => [])).toEqual([]);
+      } finally {
+        if (originalHome === undefined) delete process.env.HOME;
+        else process.env.HOME = originalHome;
+        if (originalPath === undefined) delete process.env.PATH;
+        else process.env.PATH = originalPath;
+        if (originalRegistry === undefined) delete process.env.OMCODEX_REGISTRY_DIR;
+        else process.env.OMCODEX_REGISTRY_DIR = originalRegistry;
+        await rm(projectDir, { recursive: true, force: true });
+      }
     });
 
     it('should handle errors gracefully', async () => {
@@ -343,7 +465,7 @@ describe('updater', () => {
       expect(config.lastUpdated).toBeDefined();
     });
 
-    it('should handle component update failure and continue with others', async () => {
+    it('should report component update failure as an unsuccessful update', async () => {
       await createConfig('0.1.0');
 
       // Create target directory structure
@@ -358,11 +480,378 @@ describe('updater', () => {
         components: ['rules', 'hooks'],
       });
 
-      // Update should complete but with warnings
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('not a directory');
+      expect(result.updatedComponents).toEqual([]);
+      expect(result.skippedComponents).toEqual([]);
+    });
+
+    it('should preserve a user-modified protected MUST rule', async () => {
+      await createConfig('0.1.0');
+      const layout = getProviderLayout();
+      await update({ targetDir: tempDir, components: ['rules'], forceOverwriteAll: true });
+      const protectedPath = join(tempDir, layout.rootDir, 'rules', 'MUST-safety.md');
+      const original = await readFile(protectedPath, 'utf-8');
+      await writeFile(protectedPath, `${original}\n<!-- user marker -->\n`);
+
+      const result = await update({ targetDir: tempDir, components: ['rules'], force: true });
+
       expect(result.success).toBe(true);
-      expect(result.warnings.length).toBeGreaterThan(0);
-      expect(result.warnings[0]).toContain('Failed to update rules');
-      expect(result.skippedComponents).toContain('rules' as UpdateComponent);
+      expect(await readFile(protectedPath, 'utf-8')).toContain('<!-- user marker -->');
+
+      const secondResult = await update({
+        targetDir: tempDir,
+        components: ['rules'],
+        force: true,
+      });
+      expect(secondResult.success).toBe(true);
+      expect(await readFile(protectedPath, 'utf-8')).toContain('<!-- user marker -->');
+    });
+
+    it('should retain a protected baseline across an agents-only update', async () => {
+      await createConfig('0.1.0');
+      const layout = getProviderLayout();
+      await update({
+        targetDir: tempDir,
+        components: ['rules', 'agents'],
+        forceOverwriteAll: true,
+      });
+      const protectedPath = join(tempDir, layout.rootDir, 'rules', 'MUST-safety.md');
+      const original = await readFile(protectedPath, 'utf-8');
+      await writeFile(protectedPath, `${original}\n<!-- survives partial update -->\n`);
+
+      expect(
+        (await update({ targetDir: tempDir, components: ['agents'], force: true })).success
+      ).toBe(true);
+      expect(
+        (await update({ targetDir: tempDir, components: ['rules'], force: true })).success
+      ).toBe(true);
+      expect(await readFile(protectedPath, 'utf-8')).toContain('<!-- survives partial update -->');
+    });
+
+    it('should preserve a protected file across repeated updates without a prior lockfile', async () => {
+      await createConfig('0.1.0');
+      const layout = getProviderLayout();
+      const protectedPath = join(tempDir, layout.rootDir, 'rules', 'MUST-safety.md');
+      const sourcePath = join(import.meta.dir, '../../../templates/.claude/rules/MUST-safety.md');
+      await mkdir(join(protectedPath, '..'), { recursive: true });
+      await writeFile(
+        protectedPath,
+        `${await readFile(sourcePath, 'utf-8')}\n<!-- legacy user marker -->\n`
+      );
+
+      expect(
+        (await update({ targetDir: tempDir, components: ['rules'], force: true })).success
+      ).toBe(true);
+      expect(
+        (await update({ targetDir: tempDir, components: ['rules'], force: true })).success
+      ).toBe(true);
+      expect(await readFile(protectedPath, 'utf-8')).toContain('<!-- legacy user marker -->');
+    });
+
+    it('should preserve a nested preserveFiles entry across two updates', async () => {
+      const config = getDefaultConfig();
+      config.version = '0.1.0';
+      config.preserveFiles = ['.codex/agents/souls/lang-golang-expert.soul.md'];
+      await saveConfig(tempDir, config);
+      await update({ targetDir: tempDir, components: ['agents'], forceOverwriteAll: true });
+      const nestedPath = join(tempDir, '.codex/agents/souls/lang-golang-expert.soul.md');
+      const original = await readFile(nestedPath, 'utf-8');
+      await writeFile(nestedPath, `${original}\n<!-- nested user marker -->\n`);
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        expect(
+          (await update({ targetDir: tempDir, components: ['agents'], force: true })).success
+        ).toBe(true);
+      }
+      expect(await readFile(nestedPath, 'utf-8')).toContain('<!-- nested user marker -->');
+    });
+
+    it('should reject component updates when destination is a symlink outside the project', async () => {
+      await createConfig('0.1.0');
+      const layout = getProviderLayout();
+      const outsideDir = join(tempDir, 'outside-rules');
+      await mkdir(outsideDir);
+      await writeFile(join(outsideDir, 'SHOULD-interaction.md'), 'outside sentinel');
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+      await symlink(outsideDir, join(tempDir, layout.rootDir, 'rules'));
+
+      const result = await update({ targetDir: tempDir, components: ['rules'], force: true });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(await readFile(join(outsideDir, 'SHOULD-interaction.md'), 'utf-8')).toBe(
+        'outside sentinel'
+      );
+    });
+
+    it('should reject component updates when an ancestor under target root is a symlink', async () => {
+      await createConfig('0.1.0');
+      const layout = getProviderLayout();
+      const outsideRoot = join(tempDir, 'outside-codex-root');
+      await mkdir(join(outsideRoot, 'rules'), { recursive: true });
+      await writeFile(join(outsideRoot, 'rules', 'MUST-safety.md'), 'outside sentinel');
+      await symlink(outsideRoot, join(tempDir, layout.rootDir));
+
+      const result = await update({ targetDir: tempDir, components: ['rules'], force: true });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(await readFile(join(outsideRoot, 'rules', 'MUST-safety.md'), 'utf-8')).toBe(
+        'outside sentinel'
+      );
+    });
+
+    it('should reject root-level sync when destination is a symlink outside the project', async () => {
+      await createConfig('0.1.0');
+      const layout = getProviderLayout();
+      const outsideFile = join(tempDir, 'outside-statusline.sh');
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+      await writeFile(outsideFile, 'outside sentinel');
+      await symlink(outsideFile, join(tempDir, layout.rootDir, 'statusline.sh'));
+
+      const result = await update({ targetDir: tempDir, force: true });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(result.updatedComponents).toEqual([]);
+      expect(await readFile(outsideFile, 'utf-8')).toBe('outside sentinel');
+      expect(
+        await readFile(join(tempDir, layout.rootDir, 'rules', 'MUST-safety.md'), 'utf-8').catch(
+          () => null
+        )
+      ).toBeNull();
+    });
+
+    it('should prevalidate all requested component destinations before updating an earlier component', async () => {
+      await createConfig('0.1.0');
+      const layout = getProviderLayout();
+      await createDirStructure({
+        [`${layout.rootDir}/agents/be-fastapi-expert.md`]: 'existing agent sentinel',
+      });
+      const outsideHooks = join(tempDir, 'outside-hooks');
+      await mkdir(outsideHooks);
+      await symlink(outsideHooks, join(tempDir, layout.rootDir, 'hooks'));
+      const beforeHash = await hashTree(tempDir);
+
+      const result = await update({
+        targetDir: tempDir,
+        components: ['agents', 'hooks'],
+        force: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(result.updatedComponents).toEqual([]);
+      expect(await hashTree(tempDir)).toBe(beforeHash);
+      expect(
+        await readFile(join(tempDir, layout.rootDir, 'agents', 'be-fastapi-expert.md'), 'utf-8')
+      ).toBe('existing agent sentinel');
+    });
+
+    it('should reject config symlink finalization before component-only updates mutate files', async () => {
+      const outsideConfig = join(tempDir, 'outside-config.json');
+      const config = getDefaultConfig();
+      config.version = '0.1.0';
+      config.componentVersions = { rules: '0.1.0' };
+      await writeFile(outsideConfig, JSON.stringify(config, null, 2));
+      await symlink(outsideConfig, join(tempDir, '.omcodexrc.json'));
+      const beforeHash = await hashTree(tempDir);
+
+      const result = await update({ targetDir: tempDir, components: ['rules'], force: true });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(result.updatedComponents).toEqual([]);
+      expect(await hashTree(tempDir)).toBe(beforeHash);
+      expect(await readFile(outsideConfig, 'utf-8')).toBe(JSON.stringify(config, null, 2));
+      expect(
+        await readFile(join(tempDir, '.codex', 'rules', 'MUST-safety.md'), 'utf-8').catch(
+          () => null
+        )
+      ).toBeNull();
+    });
+
+    it('should reject lockfile symlink finalization before component-only updates mutate files', async () => {
+      await createConfig('0.1.0');
+      const outsideLock = join(tempDir, 'outside-lock.json');
+      await writeFile(outsideLock, 'outside lock sentinel');
+      await symlink(outsideLock, join(tempDir, '.omcodex.lock.json'));
+      const beforeHash = await hashTree(tempDir);
+
+      const result = await update({ targetDir: tempDir, components: ['rules'], force: true });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(result.updatedComponents).toEqual([]);
+      expect(await hashTree(tempDir)).toBe(beforeHash);
+      expect(await readFile(outsideLock, 'utf-8')).toBe('outside lock sentinel');
+      expect(
+        await readFile(join(tempDir, '.codex', 'rules', 'MUST-safety.md'), 'utf-8').catch(
+          () => null
+        )
+      ).toBeNull();
+    });
+
+    it('should not persist config migrations before unsafe component validation fails', async () => {
+      const legacyConfig = {
+        version: '0.1.0',
+        configVersion: 0,
+        componentVersions: { agents: '0.1.0', hooks: '0.1.0' },
+      };
+      await writeFile(join(tempDir, '.omcodexrc.json'), JSON.stringify(legacyConfig, null, 2));
+      const layout = getProviderLayout();
+      const outsideHooks = join(tempDir, 'outside-legacy-hooks');
+      await mkdir(outsideHooks);
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+      await symlink(outsideHooks, join(tempDir, layout.rootDir, 'hooks'));
+      const beforeHash = await hashTree(tempDir);
+
+      const result = await update({
+        targetDir: tempDir,
+        components: ['agents', 'hooks'],
+        force: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(await hashTree(tempDir)).toBe(beforeHash);
+      expect(
+        JSON.parse(await readFile(join(tempDir, '.omcodexrc.json'), 'utf-8')).configVersion
+      ).toBe(0);
+    });
+
+    it('should reject backup source symlinks before creating backup directories or copying outside data', async () => {
+      await createConfig('0.1.0');
+      const outsideAgents = join(tempDir, 'outside-agents-root');
+      await mkdir(join(outsideAgents, 'skills'), { recursive: true });
+      await writeFile(join(outsideAgents, 'secret.md'), 'outside backup sentinel');
+      await symlink(outsideAgents, join(tempDir, '.agents'));
+      const beforeHash = await hashTree(tempDir);
+
+      const result = await update({
+        targetDir: tempDir,
+        components: ['skills'],
+        force: true,
+        backup: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(result.backedUpPaths).toEqual([]);
+      expect(await hashTree(tempDir)).toBe(beforeHash);
+      expect(
+        (await readdir(tempDir)).filter((entry) => entry.startsWith('.omcodex-backup-'))
+      ).toEqual([]);
+      expect(await readFile(join(outsideAgents, 'secret.md'), 'utf-8')).toBe(
+        'outside backup sentinel'
+      );
+    });
+
+    it('should reject backup sources with the wrong file type before creating backup directories', async () => {
+      await createConfig('0.1.0');
+      await writeFile(join(tempDir, '.codex'), 'not a directory');
+      await mkdir(join(tempDir, 'guides'), { recursive: true });
+      await writeFile(join(tempDir, 'guides', 'existing.md'), 'existing guide');
+      const beforeHash = await hashTree(tempDir);
+
+      const result = await update({
+        targetDir: tempDir,
+        components: ['guides'],
+        force: true,
+        backup: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('not a directory');
+      expect(result.backedUpPaths).toEqual([]);
+      expect(await hashTree(tempDir)).toBe(beforeHash);
+      expect(
+        (await readdir(tempDir)).filter((entry) => entry.startsWith('.omcodex-backup-'))
+      ).toEqual([]);
+    });
+
+    it('should preserve config paths that use Windows separators within a component', async () => {
+      const config = getDefaultConfig();
+      config.version = '0.1.0';
+      config.preserveFiles = ['.codex\\agents\\be-fastapi-expert.md'];
+      await saveConfig(tempDir, config);
+      await createDirStructure({
+        '.codex/agents/be-fastapi-expert.md': 'windows separator user content',
+      });
+
+      const result = await update({ targetDir: tempDir, components: ['agents'], force: true });
+
+      expect(result.success).toBe(true);
+      expect(result.preservedFiles).toContain('.codex\\agents\\be-fastapi-expert.md');
+      expect(await readFile(join(tempDir, '.codex/agents/be-fastapi-expert.md'), 'utf-8')).toBe(
+        'windows separator user content'
+      );
+    });
+
+    it('should not record template baselines for files under a trailing-slash preserved directory', async () => {
+      const config = getDefaultConfig();
+      config.version = '0.1.0';
+      config.preserveFiles = ['.codex/rules/custom/'];
+      await saveConfig(tempDir, config);
+      await createDirStructure({
+        '.codex/rules/custom/local.md': 'local-only rule',
+      });
+
+      const result = await update({ targetDir: tempDir, components: ['rules'], force: true });
+
+      expect(result.success).toBe(true);
+      expect(await readFile(join(tempDir, '.codex/rules/custom/local.md'), 'utf-8')).toBe(
+        'local-only rule'
+      );
+      const lockfile = JSON.parse(await readFile(join(tempDir, '.omcodex.lock.json'), 'utf-8'));
+      expect(lockfile.files['.codex/rules/custom/local.md']).toBeUndefined();
+    });
+
+    it('should preserve an entire component directory with trailing slash without adding template files', async () => {
+      const config = getDefaultConfig();
+      config.version = '0.1.0';
+      config.preserveFiles = ['.codex/rules/'];
+      await saveConfig(tempDir, config);
+      await createDirStructure({
+        '.codex/rules/local-only.md': 'local-only rule',
+      });
+      const beforeRules = (await readdir(join(tempDir, '.codex', 'rules'))).sort();
+
+      const result = await update({ targetDir: tempDir, components: ['rules'], force: true });
+
+      expect(result.success).toBe(true);
+      expect(await readFile(join(tempDir, '.codex/rules/local-only.md'), 'utf-8')).toBe(
+        'local-only rule'
+      );
+      expect((await readdir(join(tempDir, '.codex', 'rules'))).sort()).toEqual(beforeRules);
+      expect(
+        await readFile(join(tempDir, '.codex/rules/MUST-safety.md'), 'utf-8').catch(() => null)
+      ).toBeNull();
+    });
+
+    it('should reject an invalid multi-component plan before refreshing lockfile baselines', async () => {
+      await createConfig('0.1.0');
+      await update({ targetDir: tempDir, components: ['agents'], forceOverwriteAll: true });
+      const lockfilePath = join(tempDir, '.omcodex.lock.json');
+      const trackedPath = '.codex/agents/be-fastapi-expert.md';
+      const staleHash = '0'.repeat(64);
+      const lockfile = JSON.parse(await readFile(lockfilePath, 'utf-8'));
+      lockfile.files[trackedPath].templateHash = staleHash;
+      await writeFile(lockfilePath, JSON.stringify(lockfile, null, 2));
+      await writeFile(join(tempDir, '.codex/hooks'), 'not a directory');
+
+      const result = await update({
+        targetDir: tempDir,
+        components: ['agents', 'hooks'],
+        force: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.updatedComponents).toEqual([]);
+      expect(result.skippedComponents).toEqual([]);
+      const refreshed = JSON.parse(await readFile(lockfilePath, 'utf-8'));
+      expect(refreshed.files[trackedPath].templateHash).toBe(staleHash);
     });
 
     it('should disable preservation when preserveCustomizations is false', async () => {
@@ -773,6 +1262,18 @@ describe('updater', () => {
 
       expect(preserved.get('unicode.txt')).toBe('한글 테스트 🎉');
     });
+
+    it('should reject traversal and symlink paths before reading any customization', async () => {
+      await createDirStructure({ 'safe.txt': 'safe', 'real/secret.txt': 'secret' });
+      await symlink(join(tempDir, 'real'), join(tempDir, 'link'));
+
+      await expect(
+        preserveCustomizations(tempDir, ['safe.txt', '../outside.txt'])
+      ).rejects.toThrow();
+      await expect(preserveCustomizations(tempDir, ['link/secret.txt'])).rejects.toThrow(
+        /symbolic link/i
+      );
+    });
   });
 
   describe('applyUpdates', () => {
@@ -811,6 +1312,93 @@ describe('updater', () => {
       await applyUpdates(tempDir, [{ path: 'existing.txt', content: 'new content' }]);
 
       await verifyFileContent('existing.txt', 'new content');
+    });
+
+    it('should validate the complete update plan before writing any file', async () => {
+      await expect(
+        applyUpdates(tempDir, [
+          { path: 'would-have-been-written.txt', content: 'partial' },
+          { path: '../escaped.txt', content: 'escape' },
+        ])
+      ).rejects.toThrow();
+
+      expect(
+        await readFile(join(tempDir, 'would-have-been-written.txt'), 'utf-8').catch(() => null)
+      ).toBeNull();
+    });
+
+    it('should reject absolute paths and paths through symlinks', async () => {
+      await mkdir(join(tempDir, 'real'));
+      await symlink(join(tempDir, 'real'), join(tempDir, 'link'));
+
+      await expect(
+        applyUpdates(tempDir, [{ path: join(tempDir, 'absolute.txt'), content: 'x' }])
+      ).rejects.toThrow();
+      await expect(
+        applyUpdates(tempDir, [{ path: 'link/escaped.txt', content: 'x' }])
+      ).rejects.toThrow(/symbolic link/i);
+      expect(
+        await readFile(join(tempDir, 'real', 'escaped.txt'), 'utf-8').catch(() => null)
+      ).toBeNull();
+    });
+
+    it('should reject dot, directory, and parent-child target conflicts before any write', async () => {
+      await mkdir(join(tempDir, 'existing-directory'));
+
+      for (const plan of [
+        [
+          { path: 'partial.txt', content: 'partial' },
+          { path: '.', content: 'invalid' },
+        ],
+        [{ path: 'existing-directory', content: 'invalid' }],
+        [
+          { path: 'parent', content: 'file' },
+          { path: 'parent/child.txt', content: 'child' },
+        ],
+      ]) {
+        await expect(applyUpdates(tempDir, plan)).rejects.toThrow();
+        expect(await readFile(join(tempDir, 'partial.txt'), 'utf-8').catch(() => null)).toBeNull();
+        expect(await readFile(join(tempDir, 'parent'), 'utf-8').catch(() => null)).toBeNull();
+      }
+    });
+
+    it('should roll back the first file when the second commit fails', async () => {
+      const realFs = await import('node:fs/promises');
+      await writeFile(join(tempDir, 'first.txt'), 'original');
+      const failingFs = {
+        ...realFs,
+        rename: async (
+          from: Parameters<typeof realFs.rename>[0],
+          to: Parameters<typeof realFs.rename>[1]
+        ) => {
+          if (
+            String(from).includes('.omcodex-update-stage-') &&
+            String(to).endsWith('second.txt')
+          ) {
+            const failure = new Error('simulated second commit failure') as NodeJS.ErrnoException;
+            failure.code = 'EIO';
+            throw failure;
+          }
+          await realFs.rename(from, to);
+        },
+      };
+
+      await expect(
+        applyUpdates(
+          tempDir,
+          [
+            { path: 'first.txt', content: 'replacement' },
+            { path: 'second.txt', content: 'second' },
+          ],
+          { fs: failingFs }
+        )
+      ).rejects.toThrow('simulated second commit failure');
+
+      expect(await readFile(join(tempDir, 'first.txt'), 'utf-8')).toBe('original');
+      expect(await readFile(join(tempDir, 'second.txt'), 'utf-8').catch(() => null)).toBeNull();
+      expect(
+        (await readdir(tempDir)).some((entry) => entry.startsWith('.omcodex-update-stage-'))
+      ).toBe(false);
     });
   });
 
@@ -1150,6 +1738,66 @@ describe('updater', () => {
       const deprecatedPath = join(tempDir, layout.rootDir, 'rules', 'SHOULD-agent-teams.md');
       const content = await readFile(deprecatedPath, 'utf-8');
       expect(content).toBe('# Old agent teams rule');
+    });
+
+    it('should not report deprecated removals for an empty Codex project in dry run', async () => {
+      await createConfig('0.1.0');
+
+      const result = await update({ targetDir: tempDir, dryRun: true, force: true });
+
+      expect(result.success).toBe(true);
+      expect(result.removedDeprecatedFiles).toEqual([]);
+    });
+
+    it('should reject deprecated file removal through a symlinked component before updating other components', async () => {
+      await createConfig('0.1.0', {
+        rules: MANIFEST_VERSION,
+        agents: '0.1.0',
+        skills: MANIFEST_VERSION,
+        guides: MANIFEST_VERSION,
+        hooks: MANIFEST_VERSION,
+        contexts: MANIFEST_VERSION,
+        ontology: MANIFEST_VERSION,
+      });
+      const outsideRules = join(tempDir, 'outside-rules');
+      await mkdir(outsideRules);
+      await writeFile(join(outsideRules, 'SHOULD-agent-teams.md'), 'outside deprecated sentinel');
+      await mkdir(join(tempDir, '.codex'), { recursive: true });
+      await symlink(outsideRules, join(tempDir, '.codex', 'rules'));
+      const beforeHash = await hashTree(tempDir);
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(result.updatedComponents).toEqual([]);
+      expect(result.removedDeprecatedFiles).toEqual([]);
+      expect(await hashTree(tempDir)).toBe(beforeHash);
+      expect(await readFile(join(outsideRules, 'SHOULD-agent-teams.md'), 'utf-8')).toBe(
+        'outside deprecated sentinel'
+      );
+      expect(
+        await readFile(join(tempDir, '.codex', 'agents', 'be-fastapi-expert.md'), 'utf-8').catch(
+          () => null
+        )
+      ).toBeNull();
+    });
+
+    it('should reject deprecated file removal when the deprecated leaf is a symlink', async () => {
+      await createConfig('0.1.0');
+      const outsideFile = join(tempDir, 'outside-deprecated.md');
+      await writeFile(outsideFile, 'outside deprecated leaf sentinel');
+      await mkdir(join(tempDir, '.codex', 'rules'), { recursive: true });
+      await symlink(outsideFile, join(tempDir, '.codex', 'rules', 'SHOULD-agent-teams.md'));
+      const beforeHash = await hashTree(tempDir);
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(result.updatedComponents).toEqual([]);
+      expect(await hashTree(tempDir)).toBe(beforeHash);
+      expect(await readFile(outsideFile, 'utf-8')).toBe('outside deprecated leaf sentinel');
     });
   });
 

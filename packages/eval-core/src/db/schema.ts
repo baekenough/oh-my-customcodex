@@ -1,4 +1,4 @@
-import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const improvementActions = sqliteTable('improvement_actions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -80,41 +80,47 @@ export const evalBaselines = sqliteTable('eval_baselines', {
     .$defaultFn(() => new Date().toISOString()),
 });
 
-export const agentInvocations = sqliteTable('agent_invocations', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  sessionPpid: text('session_ppid').notNull(),
-  sessionId: text('session_id'),
-  baselineId: integer('baseline_id').references(() => evalBaselines.id),
-  timestamp: text('timestamp').notNull(),
-  agentType: text('agent_type').notNull(),
-  agentName: text('agent_name'),
-  model: text('model').notNull(),
-  outcome: text('outcome').notNull(),
-  observedSteps: integer('observed_steps'),
-  observedToolCalls: integer('observed_tool_calls'),
-  observedLatencyMs: integer('observed_latency_ms'),
-  correctness: real('correctness'),
-  stepRatio: real('step_ratio'),
-  toolCallRatio: real('tool_call_ratio'),
-  latencyRatio: real('latency_ratio'),
-  startedAt: text('started_at'),
-  completedAt: text('completed_at'),
-  patternUsed: text('pattern_used'),
-  skillName: text('skill_name'),
-  description: text('description'),
-  errorSummary: text('error_summary'),
-  createdAt: text('created_at')
-    .notNull()
-    .$defaultFn(() => new Date().toISOString()),
-});
+export const agentInvocations = sqliteTable(
+  'agent_invocations',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    sessionPpid: text('session_ppid').notNull(),
+    sessionId: text('session_id'),
+    baselineId: integer('baseline_id').references(() => evalBaselines.id),
+    invocationFingerprint: text('invocation_fingerprint'),
+    timestamp: text('timestamp').notNull(),
+    agentType: text('agent_type').notNull(),
+    agentName: text('agent_name'),
+    model: text('model').notNull(),
+    outcome: text('outcome').notNull(),
+    observedSteps: integer('observed_steps'),
+    observedToolCalls: integer('observed_tool_calls'),
+    observedLatencyMs: integer('observed_latency_ms'),
+    durationSeconds: integer('duration_seconds'),
+    correctness: real('correctness'),
+    stepRatio: real('step_ratio'),
+    toolCallRatio: real('tool_call_ratio'),
+    latencyRatio: real('latency_ratio'),
+    startedAt: text('started_at'),
+    completedAt: text('completed_at'),
+    patternUsed: text('pattern_used'),
+    skillName: text('skill_name'),
+    description: text('description'),
+    errorSummary: text('error_summary'),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (table) => [uniqueIndex('idx_invocations_fingerprint_unique').on(table.invocationFingerprint)]
+);
 
 export const evaluations = sqliteTable('evaluations', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   turnId: text('turn_id').references(() => turns.turnId),
   sessionId: text('session_id').references(() => sessions.sessionId),
-  score: integer('score'),              // 1-5
-  verdict: text('verdict'),             // pass | fail | needs_refinement
-  tags: text('tags'),                   // JSON array string: ["good_prompt", "wrong_routing"]
+  score: integer('score'), // 1-5
+  verdict: text('verdict'), // pass | fail | needs_refinement
+  tags: text('tags'), // JSON array string: ["good_prompt", "wrong_routing"]
   comment: text('comment'),
   evaluatedAt: text('evaluated_at').notNull(),
   createdAt: text('created_at')
@@ -127,8 +133,8 @@ export const sessionFeedback = sqliteTable('session_feedback', {
   sessionId: text('session_id')
     .notNull()
     .references(() => sessions.sessionId),
-  rating: integer('rating'),            // 1-5
-  tags: text('tags'),                   // JSON array string
+  rating: integer('rating'), // 1-5
+  tags: text('tags'), // JSON array string
   comment: text('comment'),
   createdAt: text('created_at')
     .notNull()

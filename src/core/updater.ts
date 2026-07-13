@@ -2,31 +2,39 @@
  * Updater module - Update agents from source
  */
 
+import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import packageJson from '../../package.json';
 import { i18n } from '../i18n/index.js';
 import {
   copyDirectory,
+  copyFile,
+  deleteFile,
   ensureDirectory,
   fileExists,
+  prevalidateCopyDirectory,
+  prevalidateSafeWritePath,
   readJsonFile,
   readTextFile,
   resolveTemplatePath,
   validatePreserveFilePath,
+  validateSafeDeleteFilePath,
+  validateSafeWritePath,
   writeJsonFile,
   writeTextFile,
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
 import { installCodex, isCodexInstalled } from './codex-installer.js';
-import { loadConfig, type OmccConfig, saveConfig } from './config.js';
+import { getConfigCandidatePaths, loadConfig, type OmccConfig, saveConfig } from './config.js';
 import { mergeEntryDoc, wrapInManagedMarkers } from './entry-merger.js';
 import { isProtectedFile } from './file-preservation.js';
 import { getProviderLayout, getTemplateComponentPath } from './layout.js';
 import {
-  computeFileHash,
-  generateAndWriteLockfileForDir,
+  generateLockfile,
   type Lockfile,
+  type LockfileEntry,
   readLockfile,
+  writeLockfile,
 } from './lockfile.js';
 import { assessOmxInstallation, installOmx, MINIMUM_OMX_VERSION } from './omx-installer.js';
 import { installRtk, isRtkInstalled } from './rtk-installer.js';
@@ -77,6 +85,8 @@ export interface UpdateResult {
   skippedComponents: UpdateComponent[];
   /** Files that were preserved (user customizations) */
   preservedFiles: string[];
+  /** Protected framework files preserved because they differ from their template baseline */
+  protectedFiles?: string[];
   /** Backed up paths */
   backedUpPaths: string[];
   /** Previous version */
@@ -116,6 +126,16 @@ export interface UpdateCheckResult {
   }[];
   /** Last check timestamp */
   checkedAt: string;
+}
+
+type UpdateTransactionFs = Pick<
+  typeof import('node:fs/promises'),
+  'lstat' | 'mkdir' | 'mkdtemp' | 'realpath' | 'rename' | 'rm' | 'rmdir' | 'writeFile'
+>;
+
+export interface ApplyUpdatesDependencies {
+  /** Injectable filesystem boundary for deterministic transaction-failure tests. */
+  fs?: UpdateTransactionFs;
 }
 
 /**
@@ -169,6 +189,7 @@ function createUpdateResult(): UpdateResult {
     updatedComponents: [],
     skippedComponents: [],
     preservedFiles: [],
+    protectedFiles: [],
     backedUpPaths: [],
     previousVersion: '',
     newVersion: '',
@@ -225,7 +246,8 @@ async function processComponentUpdate(
       lockfile
     );
     result.updatedComponents.push(component);
-    result.preservedFiles.push(...preserved);
+    result.preservedFiles.push(...preserved.customizations);
+    result.protectedFiles?.push(...preserved.protected);
 
     if (options.hard) {
       const synced = await applyNamespaceSync(targetDir, component, lockfile);
@@ -233,7 +255,9 @@ async function processComponentUpdate(
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    result.warnings.push(`Failed to update ${component}: ${message}`);
+    const failure = `Failed to update ${component}: ${message}`;
+    result.warnings.push(failure);
+    result.error ??= failure;
     result.skippedComponents.push(component);
   }
 }
@@ -275,13 +299,12 @@ function getEntryTemplateName(language: 'en' | 'ko'): string {
 /**
  * Backup a file before overwriting it
  */
-async function backupFile(filePath: string): Promise<void> {
-  const fs = await import('node:fs/promises');
+async function backupFile(filePath: string, trustedWriteRoot: string): Promise<void> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const backupPath = `${filePath}.backup-${timestamp}`;
 
   if (await fileExists(filePath)) {
-    await fs.copyFile(filePath, backupPath);
+    await copyFile(filePath, backupPath, trustedWriteRoot);
     debug('update.file_backed_up', { path: filePath, backup: backupPath });
   }
 }
@@ -401,6 +424,8 @@ async function updateEntryDoc(
   const templateName = getEntryTemplateName(config.language);
   const templatePath = resolveTemplatePath(templateName);
 
+  await validateSafeWritePath(entryPath, targetDir);
+
   if (!(await fileExists(templatePath))) {
     warn('update.entry_template_not_found', { template: templateName });
     return;
@@ -411,15 +436,15 @@ async function updateEntryDoc(
   if (await fileExists(entryPath)) {
     if (options.force) {
       // Force: overwrite with backup
-      await backupFile(entryPath);
-      await writeTextFile(entryPath, templateContent);
+      await backupFile(entryPath, targetDir);
+      await writeTextFile(entryPath, templateContent, { trustedWriteRoot: targetDir });
       info('update.entry_doc_force_updated', { path: layout.entryFile });
     } else {
       // Merge: preserve custom sections
       const existingContent = await readTextFile(entryPath);
       const mergeResult = mergeEntryDoc(existingContent, templateContent);
 
-      await writeTextFile(entryPath, mergeResult.content);
+      await writeTextFile(entryPath, mergeResult.content, { trustedWriteRoot: targetDir });
 
       debug('update.entry_doc_merged', {
         path: layout.entryFile,
@@ -435,7 +460,9 @@ async function updateEntryDoc(
     }
   } else {
     // New file: wrap in markers
-    await writeTextFile(entryPath, wrapInManagedMarkers(templateContent));
+    await writeTextFile(entryPath, wrapInManagedMarkers(templateContent), {
+      trustedWriteRoot: targetDir,
+    });
     info('update.entry_doc_created', { path: layout.entryFile });
   }
 }
@@ -466,7 +493,7 @@ async function runFullUpdatePostProcessing(
   if (!options.dryRun) {
     config.version = result.newVersion;
     config.lastUpdated = new Date().toISOString();
-    await saveConfig(options.targetDir, config);
+    await saveConfig(options.targetDir, config, { trustedWriteRoot: options.targetDir });
   }
 
   result.success = true;
@@ -495,9 +522,14 @@ async function ensureStatusLineConfig(targetDir: string): Promise<void> {
     refreshInterval: 10,
   };
 
+  await validateSafeWritePath(settingsPath, targetDir);
+
   if (!(await fileExists(settingsPath))) {
-    await ensureDirectory(join(settingsPath, '..'));
-    await writeJsonFile(settingsPath, { statusLine: statusLineConfig });
+    await writeJsonFile(
+      settingsPath,
+      { statusLine: statusLineConfig },
+      { trustedWriteRoot: targetDir }
+    );
     return;
   }
 
@@ -506,7 +538,7 @@ async function ensureStatusLineConfig(targetDir: string): Promise<void> {
 
   if (!statusLine || typeof statusLine !== 'object' || Array.isArray(statusLine)) {
     settings.statusLine = statusLineConfig;
-    await writeJsonFile(settingsPath, settings);
+    await writeJsonFile(settingsPath, settings, { trustedWriteRoot: targetDir });
     return;
   }
 
@@ -514,7 +546,7 @@ async function ensureStatusLineConfig(targetDir: string): Promise<void> {
   if (mergedStatusLine.refreshInterval === undefined) {
     mergedStatusLine.refreshInterval = statusLineConfig.refreshInterval;
     settings.statusLine = mergedStatusLine;
-    await writeJsonFile(settingsPath, settings);
+    await writeJsonFile(settingsPath, settings, { trustedWriteRoot: targetDir });
   }
 }
 
@@ -559,19 +591,162 @@ async function updateProjectRegistry(targetDir: string, newVersion: string): Pro
   }
 }
 
+function normalizeProjectPath(filePath: string): string {
+  return filePath.replace(/\\/g, '/').replace(/^\.\//, '');
+}
+
+function normalizePreservedPath(filePath: string): { path: string; isDirectory: boolean } {
+  const normalized = normalizeProjectPath(filePath);
+  return {
+    path: normalized.replace(/\/+$/, ''),
+    isDirectory: normalized.endsWith('/'),
+  };
+}
+
+function isSameOrDescendantPath(relativePath: string, candidateParent: string): boolean {
+  const normalizedPath = normalizeProjectPath(relativePath).replace(/\/+$/, '');
+  const normalizedParent = normalizeProjectPath(candidateParent).replace(/\/+$/, '');
+  return normalizedPath === normalizedParent || normalizedPath.startsWith(`${normalizedParent}/`);
+}
+
+function isPathPreserved(relativePath: string, preservedPaths: string[]): boolean {
+  const normalizedRelative = normalizeProjectPath(relativePath).replace(/\/+$/, '');
+  return preservedPaths.some((preservedPath) => {
+    const preserved = normalizePreservedPath(preservedPath);
+    if (preserved.isDirectory) {
+      return isSameOrDescendantPath(normalizedRelative, preserved.path);
+    }
+    return normalizedRelative === preserved.path;
+  });
+}
+
+function resolveTemplateBaselineSource(
+  relativePath: string
+): { component: UpdateComponent; sourcePath: string } | null {
+  const normalized = relativePath.replace(/\\/g, '/');
+  for (const component of getAllUpdateComponents()) {
+    const componentPath = getComponentPath(component).replace(/\\/g, '/');
+    if (!normalized.startsWith(`${componentPath}/`)) continue;
+    const suffix = normalized.slice(componentPath.length + 1);
+    return {
+      component,
+      sourcePath: join(
+        resolveTemplatePath(getTemplateComponentPath(component)),
+        ...suffix.split('/')
+      ),
+    };
+  }
+  return null;
+}
+
+async function computeSafetyHash(filePath: string): Promise<string> {
+  const fs = await import('node:fs/promises');
+  return createHash('sha256')
+    .update(await fs.readFile(filePath))
+    .digest('hex');
+}
+
+async function createTemplateBaseline(relativePath: string): Promise<LockfileEntry | null> {
+  const source = resolveTemplateBaselineSource(relativePath);
+  if (!source || !(await fileExists(source.sourcePath))) return null;
+
+  const fs = await import('node:fs/promises');
+  const stats = await fs.stat(source.sourcePath);
+  if (!stats.isFile()) return null;
+  return {
+    templateHash: await computeSafetyHash(source.sourcePath),
+    size: stats.size,
+    component: source.component,
+  };
+}
+
+async function mergeGeneratedLockfileEntry(
+  generated: Lockfile,
+  relativePath: string,
+  entry: LockfileEntry,
+  previousFiles: Lockfile['files'],
+  updatedComponents: Set<string>,
+  preservedPaths: string[]
+): Promise<void> {
+  const previousEntry = previousFiles[relativePath];
+  if (!updatedComponents.has(entry.component)) {
+    if (previousEntry) generated.files[relativePath] = previousEntry;
+    else delete generated.files[relativePath];
+    return;
+  }
+
+  if (!isPathPreserved(relativePath, preservedPaths)) return;
+  const baseline = previousEntry ?? (await createTemplateBaseline(relativePath));
+  if (baseline) generated.files[relativePath] = baseline;
+  else delete generated.files[relativePath];
+}
+
+function restoreRequiredPreviousEntries(
+  generated: Lockfile,
+  previousFiles: Lockfile['files'],
+  updatedComponents: Set<string>,
+  preservedPaths: string[]
+): void {
+  for (const [relativePath, previousEntry] of Object.entries(previousFiles)) {
+    if (
+      !updatedComponents.has(previousEntry.component) ||
+      isPathPreserved(relativePath, preservedPaths)
+    ) {
+      generated.files[relativePath] = previousEntry;
+    }
+  }
+}
+
+async function mergeGeneratedLockfileBaselines(
+  generated: Lockfile,
+  result: UpdateResult,
+  previousLockfile: Lockfile | null
+): Promise<Lockfile> {
+  const updatedComponents = new Set<string>(result.updatedComponents);
+  const preservedPaths = [...result.preservedFiles, ...(result.protectedFiles ?? [])].map((path) =>
+    path.replace(/\\/g, '/')
+  );
+  const previousFiles = previousLockfile?.files ?? {};
+
+  for (const [relativePath, entry] of Object.entries(generated.files)) {
+    await mergeGeneratedLockfileEntry(
+      generated,
+      relativePath,
+      entry,
+      previousFiles,
+      updatedComponents,
+      preservedPaths
+    );
+  }
+
+  restoreRequiredPreviousEntries(generated, previousFiles, updatedComponents, preservedPaths);
+  return generated;
+}
+
 /**
  * Regenerate and log the lockfile result after a successful update.
  * Extracted to reduce cognitive complexity of update().
  */
-async function regenerateLockfile(targetDir: string, result: UpdateResult): Promise<void> {
-  const lockfileResult = await generateAndWriteLockfileForDir(targetDir);
-  if (lockfileResult.warning) {
-    result.warnings.push(lockfileResult.warning);
-    warn('update.lockfile_failed', { error: lockfileResult.warning });
-  } else {
+async function regenerateLockfile(
+  targetDir: string,
+  result: UpdateResult,
+  previousLockfile: Lockfile | null
+): Promise<void> {
+  try {
+    const generated = await generateLockfile(
+      targetDir,
+      packageJson.version as string,
+      result.newVersion
+    );
+    const merged = await mergeGeneratedLockfileBaselines(generated, result, previousLockfile);
+    await writeLockfile(targetDir, merged, { trustedWriteRoot: targetDir });
     debug('update.lockfile_regenerated', {
-      files: String(lockfileResult.fileCount),
+      files: String(Object.keys(merged.files).length),
     });
+  } catch (error) {
+    const warning = `Lockfile generation failed: ${error instanceof Error ? error.message : String(error)}`;
+    result.warnings.push(warning);
+    warn('update.lockfile_failed', { error: warning });
   }
 }
 
@@ -641,6 +816,83 @@ async function handleNoUpdateResult(options: UpdateOptions, result: UpdateResult
   result.skippedComponents = options.components || getAllUpdateComponents();
 }
 
+function preventDowngradeIfNeeded(result: UpdateResult): boolean {
+  const cliVersion = packageJson.version as string;
+  if (
+    result.previousVersion === '0.0.0' ||
+    compareSemver(result.previousVersion, cliVersion) <= 0
+  ) {
+    return false;
+  }
+
+  result.success = false;
+  result.error = `Downgrade prevented: project has v${result.previousVersion} but CLI is v${cliVersion}. Update the CLI first: npm install -g ${packageJson.name}@latest`;
+  return true;
+}
+
+async function handleComponentUpdateFailure(
+  options: UpdateOptions,
+  result: UpdateResult,
+  lockfile: Lockfile | null
+): Promise<boolean> {
+  if (!result.error) {
+    return false;
+  }
+  if (!options.dryRun && result.updatedComponents.length > 0) {
+    await regenerateLockfile(options.targetDir, result, lockfile);
+  }
+  return true;
+}
+
+async function prevalidateUpdateWritePlan(
+  options: UpdateOptions,
+  components: UpdateComponent[],
+  isFullUpdate: boolean
+): Promise<void> {
+  if (options.dryRun) return;
+
+  await validateUpdateFinalizationTargets(options.targetDir);
+  await validateUpdateComponentTargets(options.targetDir, components);
+  if (isFullUpdate) {
+    await validateFullUpdateTargets(options.targetDir);
+    await prevalidateDeprecatedFileTargets(options.targetDir);
+  }
+  if (options.backup) {
+    await validateBackupSourceRoots(options.targetDir);
+  }
+}
+
+async function handleNoUpdateAfterCheck(
+  options: UpdateOptions,
+  result: UpdateResult,
+  config: OmccConfig,
+  isFullUpdate: boolean
+): Promise<void> {
+  if (!options.dryRun) {
+    await prevalidateSafeWritePath(join(options.targetDir, '.omcodexrc.json'), options.targetDir);
+    if (isFullUpdate) {
+      const layout = getProviderLayout();
+      await prevalidateSafeWritePath(
+        join(options.targetDir, layout.rootDir, 'settings.local.json'),
+        options.targetDir
+      );
+    }
+  }
+  await persistConfigMigrationIfNeeded(options.targetDir, config, !!options.dryRun);
+  await handleNoUpdateResult(options, result);
+}
+
+function getPlannedUpdateComponents(
+  components: UpdateComponent[],
+  updateCheck: UpdateCheckResult,
+  force?: boolean
+): UpdateComponent[] {
+  return components.filter(
+    (component) =>
+      force || updateCheck.updatableComponents.some((update) => update.name === component)
+  );
+}
+
 /**
  * Update the current installation
  */
@@ -650,19 +902,15 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
   try {
     info('update.start', { targetDir: options.targetDir });
 
-    const config = await loadConfig(options.targetDir);
+    const config = await loadConfig(options.targetDir, {
+      persistMigrations: false,
+    });
     result.previousVersion = config.version;
 
     // Guard against version downgrade (#579).
     // If the project's installed version is newer than this CLI's own version,
     // an outdated CLI binary is running. Abort to prevent a downgrade.
-    const cliVersion = packageJson.version as string;
-    if (
-      result.previousVersion !== '0.0.0' &&
-      compareSemver(result.previousVersion, cliVersion) > 0
-    ) {
-      result.success = false;
-      result.error = `Downgrade prevented: project has v${result.previousVersion} but CLI is v${cliVersion}. Update the CLI first: npm install -g ${packageJson.name}@latest`;
+    if (preventDowngradeIfNeeded(result)) {
       return result;
     }
 
@@ -670,15 +918,21 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       return result;
     }
 
-    const updateCheck = await checkForUpdates(options.targetDir);
+    const updateCheck = await checkForUpdates(options.targetDir, {
+      persistMigrations: false,
+    });
     result.newVersion = updateCheck.latestVersion;
 
+    const isFullUpdate = !options.components || options.components.length === 0;
+    const components = options.components || getAllUpdateComponents();
+
     if (!updateCheck.hasUpdates && !options.force) {
-      await handleNoUpdateResult(options, result);
+      await handleNoUpdateAfterCheck(options, result, config, isFullUpdate);
       return result;
     }
 
-    await handleBackupIfRequested(options.targetDir, !!options.backup, result);
+    const plannedComponents = getPlannedUpdateComponents(components, updateCheck, options.force);
+    await prevalidateUpdateWritePlan(options, plannedComponents, isFullUpdate);
 
     // Load preservation config from BOTH sources
     const manifestCustomizations = await resolveManifestCustomizations(options, options.targetDir);
@@ -692,8 +946,11 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     // Read lockfile for smart protected file handling
     const lockfile = await readLockfile(options.targetDir);
 
+    if (!options.dryRun) {
+      await handleBackupIfRequested(options.targetDir, !!options.backup, result);
+    }
+
     // Update all components
-    const components = options.components || getAllUpdateComponents();
     await updateAllComponents(
       options.targetDir,
       components,
@@ -705,19 +962,21 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       lockfile
     );
 
+    if (await handleComponentUpdateFailure(options, result, lockfile)) {
+      return result;
+    }
+
     await runFullUpdatePostProcessing(options, result, config);
 
-    // Regenerate lockfile after successful update (#316)
-    await regenerateLockfile(options.targetDir, result);
+    if (!options.dryRun) {
+      // Regenerate lockfile after successful update (#316)
+      await regenerateLockfile(options.targetDir, result, lockfile);
 
-    // Check RTK after update
-    checkAndInstallRtkAfterUpdate();
-
-    // Check Codex CLI after update
-    checkAndInstallCodexAfterUpdate();
-
-    // Check OMX after update
-    checkAndInstallOmxAfterUpdate();
+      // Runtime installation checks may install or upgrade dependencies.
+      checkAndInstallRtkAfterUpdate();
+      checkAndInstallCodexAfterUpdate();
+      checkAndInstallOmxAfterUpdate();
+    }
 
     // Update project registry with new version (non-blocking)
     if (result.success && !options.dryRun) {
@@ -735,8 +994,11 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
 /**
  * Check for available updates
  */
-export async function checkForUpdates(targetDir: string): Promise<UpdateCheckResult> {
-  const config = await loadConfig(targetDir);
+export async function checkForUpdates(
+  targetDir: string,
+  options: { persistMigrations?: boolean } = {}
+): Promise<UpdateCheckResult> {
+  const config = await loadConfig(targetDir, options);
   const currentVersion = config.version;
 
   // Get latest version from templates
@@ -770,16 +1032,180 @@ export async function checkForUpdates(targetDir: string): Promise<UpdateCheckRes
  */
 export async function applyUpdates(
   targetDir: string,
-  updates: { path: string; content: string }[]
+  updates: { path: string; content: string }[],
+  dependencies: ApplyUpdatesDependencies = {}
 ): Promise<void> {
-  const fs = await import('node:fs/promises');
+  const fs = dependencies.fs ?? (await import('node:fs/promises'));
+  const canonicalRoot = await fs.realpath(targetDir);
 
-  for (const update of updates) {
-    const fullPath = join(targetDir, update.path);
-    await ensureDirectory(join(fullPath, '..'));
-    await fs.writeFile(fullPath, update.content, 'utf-8');
-    debug('update.file_applied', { path: update.path });
+  const validated = await Promise.all(
+    updates.map(async (update) => ({
+      ...update,
+      fullPath: await resolveSafeProjectPath(canonicalRoot, update.path, fs),
+    }))
+  );
+  validateUpdatePlanPaths(validated.map((update) => update.fullPath));
+  if (validated.length === 0) return;
+
+  const stageDir = await fs.mkdtemp(join(canonicalRoot, '.omcodex-update-stage-'));
+  const prepared = validated.map((update, index) => ({
+    ...update,
+    stagedPath: join(stageDir, `${index}.staged`),
+    backupPath: join(stageDir, `${index}.backup`),
+    backupCreated: false,
+    committed: false,
+  }));
+  const createdDirectories = new Set<string>();
+
+  try {
+    for (const update of prepared) {
+      await fs.writeFile(update.stagedPath, update.content, 'utf-8');
+    }
+    await commitPreparedUpdates(canonicalRoot, prepared, createdDirectories, fs);
+    for (const update of prepared) {
+      debug('update.file_applied', { path: update.path });
+    }
+  } catch (commitError) {
+    const rollbackErrors = await rollbackPreparedUpdates(prepared, createdDirectories, fs);
+    if (rollbackErrors.length > 0) {
+      throw new AggregateError(
+        [commitError, ...rollbackErrors],
+        'Update transaction failed and rollback was incomplete'
+      );
+    }
+    throw commitError;
+  } finally {
+    await fs.rm(stageDir, { recursive: true, force: true }).catch(() => {});
   }
+}
+
+interface PreparedFileUpdate {
+  path: string;
+  content: string;
+  fullPath: string;
+  stagedPath: string;
+  backupPath: string;
+  backupCreated: boolean;
+  committed: boolean;
+}
+
+function assertSafeDirectory(stats: import('node:fs').Stats, directory: string): void {
+  if (stats.isSymbolicLink() || !stats.isDirectory()) {
+    throw new Error(`Unsafe update target parent: "${directory}"`);
+  }
+}
+
+async function createDirectoryOrValidateRace(
+  directory: string,
+  createdDirectories: Set<string>,
+  fs: UpdateTransactionFs
+): Promise<void> {
+  try {
+    await fs.mkdir(directory);
+    createdDirectories.add(directory);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    assertSafeDirectory(await fs.lstat(directory), directory);
+  }
+}
+
+async function ensureSafeDirectorySegment(
+  directory: string,
+  createdDirectories: Set<string>,
+  fs: UpdateTransactionFs
+): Promise<void> {
+  try {
+    assertSafeDirectory(await fs.lstat(directory), directory);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    await createDirectoryOrValidateRace(directory, createdDirectories, fs);
+  }
+}
+
+async function ensureSafeParentDirectories(
+  canonicalRoot: string,
+  fullPath: string,
+  createdDirectories: Set<string>,
+  fs: UpdateTransactionFs
+): Promise<void> {
+  const path = await import('node:path');
+  const parentPath = path.dirname(fullPath);
+  const relativeParent = path.relative(canonicalRoot, parentPath);
+  if (relativeParent.startsWith('..') || path.isAbsolute(relativeParent)) {
+    throw new Error(`Invalid update target parent outside project root: "${parentPath}"`);
+  }
+
+  let current = canonicalRoot;
+  for (const segment of relativeParent.split(path.sep).filter(Boolean)) {
+    current = path.join(current, segment);
+    await ensureSafeDirectorySegment(current, createdDirectories, fs);
+  }
+}
+
+async function commitPreparedUpdates(
+  canonicalRoot: string,
+  updates: PreparedFileUpdate[],
+  createdDirectories: Set<string>,
+  fs: UpdateTransactionFs
+): Promise<void> {
+  for (const update of updates) {
+    await ensureSafeParentDirectories(canonicalRoot, update.fullPath, createdDirectories, fs);
+    const revalidated = await resolveSafeProjectPath(canonicalRoot, update.path, fs);
+    if (revalidated !== update.fullPath) {
+      throw new Error(`Update target changed during commit: "${update.path}"`);
+    }
+
+    try {
+      const existing = await fs.lstat(update.fullPath);
+      if (existing.isSymbolicLink() || !existing.isFile()) {
+        throw new Error(`Unsafe update target: "${update.path}"`);
+      }
+      await fs.rename(update.fullPath, update.backupPath);
+      update.backupCreated = true;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+
+    // Node has no portable openat()/renameat() API. Revalidate immediately before
+    // rename to minimize the remaining parent-swap race, then rely on rollback for
+    // ordinary I/O failures. A hostile nanosecond-scale swap cannot be eliminated.
+    const commitTarget = await resolveSafeProjectPath(canonicalRoot, update.path, fs);
+    if (commitTarget !== update.fullPath) {
+      throw new Error(`Update target changed during commit: "${update.path}"`);
+    }
+    await fs.rename(update.stagedPath, update.fullPath);
+    update.committed = true;
+  }
+}
+
+async function rollbackPreparedUpdates(
+  updates: PreparedFileUpdate[],
+  createdDirectories: Set<string>,
+  fs: UpdateTransactionFs
+): Promise<unknown[]> {
+  const errors: unknown[] = [];
+  for (const update of [...updates].reverse()) {
+    try {
+      if (update.committed) {
+        await fs.rm(update.fullPath, { force: true });
+      }
+      if (update.backupCreated) {
+        await fs.rename(update.backupPath, update.fullPath);
+      }
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+
+  for (const directory of [...createdDirectories].sort((a, b) => b.length - a.length)) {
+    try {
+      await fs.rmdir(directory);
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== 'ENOTEMPTY' && code !== 'ENOENT') errors.push(error);
+    }
+  }
+  return errors;
 }
 
 /**
@@ -792,8 +1218,14 @@ export async function preserveCustomizations(
   const preserved = new Map<string, string>();
   const fs = await import('node:fs/promises');
 
-  for (const filePath of customizations) {
-    const fullPath = join(targetDir, filePath);
+  const validated = await Promise.all(
+    customizations.map(async (filePath) => ({
+      filePath,
+      fullPath: await resolveSafeProjectPath(targetDir, filePath),
+    }))
+  );
+
+  for (const { filePath, fullPath } of validated) {
     if (await fileExists(fullPath)) {
       const content = await fs.readFile(fullPath, 'utf-8');
       preserved.set(filePath, content);
@@ -801,6 +1233,93 @@ export async function preserveCustomizations(
   }
 
   return preserved;
+}
+
+function assertSafePathSegmentStats(
+  stats: import('node:fs').Stats,
+  isLast: boolean,
+  filePath: string
+): void {
+  if (stats.isSymbolicLink()) {
+    throw new Error(`Invalid project path "${filePath}": symbolic links are not allowed`);
+  }
+  if (isLast && stats.isDirectory()) {
+    throw new Error(`Invalid project path "${filePath}": path identifies a directory`);
+  }
+  if (isLast && !stats.isFile()) {
+    throw new Error(`Invalid project path "${filePath}": path is not a regular file`);
+  }
+  if (!isLast && !stats.isDirectory()) {
+    throw new Error(`Invalid project path "${filePath}": parent path is not a directory`);
+  }
+}
+
+async function assertSafeExistingPathSegments(
+  targetDir: string,
+  relativePath: string,
+  filePath: string,
+  fs: Pick<typeof import('node:fs/promises'), 'lstat'>
+): Promise<void> {
+  const path = await import('node:path');
+  const segments = relativePath.split(path.sep);
+  let current = targetDir;
+
+  for (const [index, segment] of segments.entries()) {
+    current = path.join(current, segment);
+    try {
+      const stats = await fs.lstat(current);
+      const isLast = index === segments.length - 1;
+      assertSafePathSegmentStats(stats, isLast, filePath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+      throw error;
+    }
+  }
+}
+
+/** Resolve a caller-provided project-relative path without crossing symlinks. */
+async function resolveSafeProjectPath(
+  targetDir: string,
+  filePath: string,
+  fileSystem?: Pick<typeof import('node:fs/promises'), 'lstat' | 'realpath'>
+): Promise<string> {
+  const fs = fileSystem ?? (await import('node:fs/promises'));
+  const canonicalRoot = await fs.realpath(targetDir);
+  const validation = validatePreserveFilePath(filePath, targetDir);
+  if (!validation.valid) {
+    throw new Error(`Invalid project path "${filePath}": ${validation.reason}`);
+  }
+
+  const path = await import('node:path');
+  const resolvedPath = path.resolve(canonicalRoot, filePath);
+  const relativePath = path.relative(canonicalRoot, resolvedPath);
+  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    throw new Error(`Invalid project path "${filePath}": path escapes canonical project root`);
+  }
+  if (!relativePath || relativePath === '.') {
+    throw new Error(`Invalid project path "${filePath}": path must identify a file`);
+  }
+  await assertSafeExistingPathSegments(canonicalRoot, relativePath, filePath, fs);
+  return resolvedPath;
+}
+
+function validateUpdatePlanPaths(paths: string[]): void {
+  const pathSeparator = process.platform === 'win32' ? '\\' : '/';
+  for (const [index, current] of paths.entries()) {
+    for (const candidate of paths.slice(index + 1)) {
+      if (candidate === current) {
+        throw new Error(`Invalid update plan: duplicate target "${current}"`);
+      }
+      if (
+        candidate.startsWith(`${current}${pathSeparator}`) ||
+        current.startsWith(`${candidate}${pathSeparator}`)
+      ) {
+        throw new Error(
+          `Invalid update plan: parent-child target conflict between "${current}" and "${candidate}"`
+        );
+      }
+    }
+  }
 }
 
 /**
@@ -847,29 +1366,17 @@ async function componentHasUpdate(
  * Unmodified protected files are safe to update from templates.
  *
  * Decision table:
- *   - No lockfile            → legacy install, can't verify → preserve (safe default)
- *   - File not in lockfile   → new template file → allow update
  *   - Target file missing    → allow update
  *   - Hash matches lockfile  → file unmodified by user → allow update
+ *   - No baseline entry      → compare with current source template
  *   - Hash differs           → user modified the file → preserve
  */
 async function shouldSkipProtectedFile(
+  sourceFilePath: string,
   targetFilePath: string,
   lockfileKey: string,
   lockfile: Lockfile | null
 ): Promise<boolean> {
-  // No lockfile → legacy install, can't verify → preserve (safe default)
-  if (!lockfile) {
-    return true;
-  }
-
-  const lockfileEntry = lockfile.files[lockfileKey];
-
-  // File not in lockfile → new template file → allow update
-  if (!lockfileEntry) {
-    return false;
-  }
-
   // Target file doesn't exist → allow update
   if (!(await fileExists(targetFilePath))) {
     return false;
@@ -877,10 +1384,15 @@ async function shouldSkipProtectedFile(
 
   // Compare target file hash with lockfile hash
   try {
-    const currentHash = await computeFileHash(targetFilePath);
+    const currentHash = await computeSafetyHash(targetFilePath);
+    const baselineHash = lockfile?.files[lockfileKey]?.templateHash;
+    if (!baselineHash) {
+      if (!(await fileExists(sourceFilePath))) return true;
+      return currentHash !== (await computeSafetyHash(sourceFilePath));
+    }
     // Hash matches → file is unmodified by user → safe to update
     // Hash differs → user modified the file → preserve
-    return currentHash !== lockfileEntry.templateHash;
+    return currentHash !== baselineHash;
   } catch {
     // If hash computation fails, preserve (safe default)
     return true;
@@ -914,11 +1426,17 @@ async function collectProtectedSkipPaths(
   const updatedPaths: string[] = [];
 
   for (const p of protectedRelative) {
+    const sourceFilePath = join(srcPath, p);
     const targetFilePath = join(targetDir, componentPath, p);
     // Lockfile keys use forward-slash paths like ".claude/rules/MUST-safety.md"
     const lockfileKey = `${componentPath}/${p}`.replace(/\\/g, '/');
 
-    const shouldSkip = await shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile);
+    const shouldSkip = await shouldSkipProtectedFile(
+      sourceFilePath,
+      targetFilePath,
+      lockfileKey,
+      lockfile
+    );
 
     if (shouldSkip) {
       skipPaths.push(path.relative(destPath, join(destPath, p)));
@@ -1004,7 +1522,7 @@ async function updateComponent(
   options: UpdateOptions,
   config: OmccConfig,
   lockfile: Lockfile | null
-): Promise<string[]> {
+): Promise<{ customizations: string[]; protected: string[] }> {
   const preservedFiles: string[] = [];
   const componentPath = getComponentPath(component);
   const srcPath = resolveTemplatePath(getTemplateComponentPath(component));
@@ -1021,14 +1539,16 @@ async function updateComponent(
   // Note: preserveCustomizations flag is already handled in update() function
   // when building the customizations object
   if (customizations && !options.forceOverwriteAll) {
-    const toPreserve = customizations.preserveFiles.filter((f) => f.startsWith(componentPath));
+    const toPreserve = customizations.preserveFiles.filter((filePath) =>
+      isSameOrDescendantPath(filePath, componentPath)
+    );
     preservedFiles.push(...toPreserve);
     skipPaths.push(...toPreserve);
   }
 
   // Add custom components in this component path to skipPaths
   for (const cc of customComponents) {
-    if (cc.path.startsWith(componentPath)) {
+    if (isSameOrDescendantPath(cc.path, componentPath)) {
       skipPaths.push(cc.path);
     }
   }
@@ -1064,6 +1584,10 @@ async function updateComponent(
     }
   }
 
+  const protectedFiles = options.forceOverwriteAll
+    ? []
+    : protectedWarnedPaths.map((p) => `${componentPath}/${p}`);
+
   // Log protected files that WILL be updated (unmodified by user, matches lockfile hash)
   for (const updatedPath of protectedUpdatedPaths) {
     info('update.protected_file_updated', {
@@ -1073,12 +1597,16 @@ async function updateComponent(
     });
   }
 
-  // Merge protected skip paths with the existing skip paths (dedup)
-  skipPaths.push(...protectedSkipPaths);
-
-  // Normalize skipPaths to be relative to destPath
-  const path = await import('node:path');
-  const normalizedSkipPaths = skipPaths.map((p) => path.relative(destPath, join(targetDir, p)));
+  // Project-level preservation paths need normalization; protected paths are
+  // already relative to the component destination.
+  const normalizedSkipPaths = skipPaths.map((p) => {
+    const preserved = normalizePreservedPath(p);
+    const relativeToComponent = preserved.path.slice(
+      normalizeProjectPath(componentPath).length + 1
+    );
+    return preserved.isDirectory ? `${relativeToComponent}/` : relativeToComponent;
+  });
+  normalizedSkipPaths.push(...protectedSkipPaths);
 
   // Deduplicate after normalization
   const uniqueSkipPaths = [...new Set(normalizedSkipPaths)];
@@ -1087,6 +1615,7 @@ async function updateComponent(
   await copyDirectory(srcPath, destPath, {
     overwrite: true,
     skipPaths: uniqueSkipPaths.length > 0 ? uniqueSkipPaths : undefined,
+    trustedWriteRoot: targetDir,
   });
 
   debug('update.component_updated', {
@@ -1094,7 +1623,7 @@ async function updateComponent(
     skippedPaths: String(uniqueSkipPaths.length),
     protectedSkipped: String(protectedSkipPaths.length),
   });
-  return preservedFiles;
+  return { customizations: preservedFiles, protected: protectedFiles };
 }
 
 /**
@@ -1102,6 +1631,91 @@ async function updateComponent(
  * These are files that exist directly under templates/.claude/ (not in subdirectories)
  */
 const ROOT_LEVEL_FILES = ['statusline.sh', 'install-hooks.sh', 'uninstall-hooks.sh'];
+
+async function validateUpdateFinalizationTargets(targetDir: string): Promise<void> {
+  await prevalidateSafeWritePath(join(targetDir, '.omcodexrc.json'), targetDir);
+  await prevalidateSafeWritePath(join(targetDir, '.omcodex.lock.json'), targetDir);
+}
+
+async function validateUpdateComponentTargets(
+  targetDir: string,
+  components: UpdateComponent[]
+): Promise<void> {
+  for (const component of components) {
+    const srcPath = resolveTemplatePath(getTemplateComponentPath(component));
+    if (!(await fileExists(srcPath))) continue;
+    await prevalidateCopyDirectory(srcPath, join(targetDir, getComponentPath(component)), {
+      overwrite: true,
+      trustedWriteRoot: targetDir,
+    });
+  }
+}
+
+async function validateBackupSourceRoots(targetDir: string): Promise<void> {
+  const layout = getProviderLayout();
+  const dirsToBackup = [layout.rootDir, 'guides'];
+  if (layout.provider === 'codex') {
+    dirsToBackup.push('.agents');
+  }
+
+  for (const relativePath of dirsToBackup) {
+    await validateBackupSource(join(targetDir, relativePath), 'directory');
+  }
+  await validateBackupSource(join(targetDir, layout.entryFile), 'file');
+}
+
+async function validateBackupSource(
+  srcPath: string,
+  expectedType: 'directory' | 'file'
+): Promise<void> {
+  const fs = await import('node:fs/promises');
+  if (!(await fileExists(srcPath))) return;
+  const stats = await fs.lstat(srcPath);
+  if (stats.isSymbolicLink()) {
+    throw new Error(`Unsafe backup source: symbolic link "${srcPath}"`);
+  }
+  if (expectedType === 'directory' && !stats.isDirectory()) {
+    throw new Error(`Unsafe backup source: not a directory "${srcPath}"`);
+  }
+  if (expectedType === 'file' && !stats.isFile()) {
+    throw new Error(`Unsafe backup source: not a regular file "${srcPath}"`);
+  }
+}
+
+async function persistConfigMigrationIfNeeded(
+  targetDir: string,
+  config: OmccConfig,
+  dryRun: boolean
+): Promise<void> {
+  if (dryRun) return;
+
+  for (const configPath of getConfigCandidatePaths(targetDir)) {
+    if (!(await fileExists(configPath))) continue;
+    try {
+      const raw = await readJsonFile<Partial<OmccConfig>>(configPath);
+      if ((raw.configVersion ?? 0) < config.configVersion) {
+        await saveConfig(targetDir, config, { trustedWriteRoot: targetDir });
+      }
+    } catch {
+      // Preserve loadConfig's graceful invalid-JSON fallback semantics.
+    }
+    return;
+  }
+}
+
+async function validateFullUpdateTargets(targetDir: string): Promise<void> {
+  const layout = getProviderLayout();
+  for (const fileName of ROOT_LEVEL_FILES) {
+    const srcPath = resolveTemplatePath(join(layout.templateRootDir, fileName));
+    if (await fileExists(srcPath)) {
+      await prevalidateSafeWritePath(join(targetDir, layout.rootDir, fileName), targetDir);
+    }
+  }
+
+  await prevalidateSafeWritePath(join(targetDir, layout.rootDir, 'settings.local.json'), targetDir);
+  await prevalidateSafeWritePath(join(targetDir, layout.entryFile), targetDir);
+  await validateUpdateFinalizationTargets(targetDir);
+}
 
 /**
  * Sync root-level files from templates/.claude/ to target .claude/ directory
@@ -1124,8 +1738,7 @@ async function syncRootLevelFiles(targetDir: string, options: UpdateOptions): Pr
     }
 
     const destPath = join(targetDir, layout.rootDir, fileName);
-    await ensureDirectory(join(destPath, '..'));
-    await fs.copyFile(srcPath, destPath);
+    await copyFile(srcPath, destPath, targetDir);
 
     // Preserve execute permissions for shell scripts
     if (fileName.endsWith('.sh')) {
@@ -1162,10 +1775,87 @@ interface DeprecatedFilesManifest {
   files: DeprecatedFileEntry[];
 }
 
+function normalizeDeprecatedFilePath(
+  entryPath: string,
+  layout: ReturnType<typeof getProviderLayout>
+): string {
+  if (
+    layout.rootDir !== layout.templateRootDir &&
+    entryPath.startsWith(`${layout.templateRootDir}/`)
+  ) {
+    return `${layout.rootDir}/${entryPath.slice(layout.templateRootDir.length + 1)}`;
+  }
+  return entryPath;
+}
+
+async function validateDeprecatedFileTarget(
+  targetDir: string,
+  normalizedPath: string
+): Promise<string | null> {
+  const validation = validatePreserveFilePath(normalizedPath, targetDir);
+  if (!validation.valid) {
+    warn('update.deprecated_file_invalid_path', {
+      path: normalizedPath,
+      reason: validation.reason ?? 'Invalid path',
+    });
+    return null;
+  }
+
+  const fullPath = join(targetDir, normalizedPath);
+  const exists = await validateSafeDeleteFilePath(fullPath, targetDir);
+  return exists ? normalizedPath : null;
+}
+
+async function planOrRemoveDeprecatedFile(
+  targetDir: string,
+  entry: DeprecatedFileEntry,
+  normalizedPath: string,
+  dryRun: boolean
+): Promise<string | null> {
+  const safePath = await validateDeprecatedFileTarget(targetDir, normalizedPath);
+  if (!safePath) return null;
+
+  if (!dryRun) {
+    await deleteFile(join(targetDir, normalizedPath), targetDir);
+    info('update.deprecated_file_removed', {
+      path: normalizedPath,
+      reason: entry.reason,
+    });
+  }
+  return normalizedPath;
+}
+
 /**
  * Remove deprecated files from the target directory.
  * Reads templates/deprecated-files.json and removes listed files if they exist.
  */
+async function getDeprecatedFileTargets(targetDir: string): Promise<string[]> {
+  const manifestPath = resolveTemplatePath('deprecated-files.json');
+
+  if (!(await fileExists(manifestPath))) {
+    return [];
+  }
+
+  const layout = getProviderLayout();
+  const manifest = await readJsonFile<DeprecatedFilesManifest>(manifestPath);
+
+  if (!manifest.files || manifest.files.length === 0) {
+    return [];
+  }
+
+  const targets: string[] = [];
+  for (const entry of manifest.files) {
+    const normalizedPath = normalizeDeprecatedFilePath(entry.path, layout);
+    const safePath = await validateDeprecatedFileTarget(targetDir, normalizedPath);
+    if (safePath) targets.push(safePath);
+  }
+  return targets;
+}
+
+async function prevalidateDeprecatedFileTargets(targetDir: string): Promise<void> {
+  await getDeprecatedFileTargets(targetDir);
+}
+
 async function removeDeprecatedFiles(targetDir: string, options: UpdateOptions): Promise<string[]> {
   const manifestPath = resolveTemplatePath('deprecated-files.json');
 
@@ -1180,39 +1870,17 @@ async function removeDeprecatedFiles(targetDir: string, options: UpdateOptions):
     return [];
   }
 
-  if (options.dryRun) {
-    return manifest.files.map((f) => f.path);
-  }
-
-  const fs = await import('node:fs/promises');
   const removed: string[] = [];
 
   for (const entry of manifest.files) {
-    const normalizedPath =
-      layout.rootDir !== layout.templateRootDir &&
-      entry.path.startsWith(`${layout.templateRootDir}/`)
-        ? `${layout.rootDir}/${entry.path.slice(layout.templateRootDir.length + 1)}`
-        : entry.path;
-
-    // Security: validate path is within targetDir
-    const validation = validatePreserveFilePath(normalizedPath, targetDir);
-    if (!validation.valid) {
-      warn('update.deprecated_file_invalid_path', {
-        path: normalizedPath,
-        reason: validation.reason ?? 'Invalid path',
-      });
-      continue;
-    }
-
-    const fullPath = join(targetDir, normalizedPath);
-    if (await fileExists(fullPath)) {
-      await fs.unlink(fullPath);
-      removed.push(normalizedPath);
-      info('update.deprecated_file_removed', {
-        path: normalizedPath,
-        reason: entry.reason,
-      });
-    }
+    const normalizedPath = normalizeDeprecatedFilePath(entry.path, layout);
+    const removedPath = await planOrRemoveDeprecatedFile(
+      targetDir,
+      entry,
+      normalizedPath,
+      !!options.dryRun
+    );
+    if (removedPath) removed.push(removedPath);
   }
 
   if (removed.length > 0) {
@@ -1241,7 +1909,8 @@ export function extractFrontmatterName(content: string): string | null {
  */
 async function syncNamespaceInFile(
   targetFilePath: string,
-  upstreamFilePath: string
+  upstreamFilePath: string,
+  trustedWriteRoot: string
 ): Promise<boolean> {
   const targetContent = await readTextFile(targetFilePath);
   const upstreamContent = await readTextFile(upstreamFilePath);
@@ -1258,7 +1927,7 @@ async function syncNamespaceInFile(
 
   if (updated === targetContent) return false;
 
-  await writeTextFile(targetFilePath, updated);
+  await writeTextFile(targetFilePath, updated, { trustedWriteRoot });
   return true;
 }
 
@@ -1272,7 +1941,8 @@ async function processNamespaceSyncEntry(
   fullSrcPath: string,
   destPath: string,
   componentPath: string,
-  lockfile: Lockfile
+  lockfile: Lockfile,
+  trustedWriteRoot: string
 ): Promise<string | null> {
   if (!entry.isFile() || !entry.name.endsWith('.md')) return null;
 
@@ -1280,12 +1950,17 @@ async function processNamespaceSyncEntry(
   const lockfileKey = `${componentPath}/${relPath}`.replace(/\\/g, '/');
 
   // Only sync unmodified files (hash matches lockfile → safe)
-  const shouldSkip = await shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile);
+  const shouldSkip = await shouldSkipProtectedFile(
+    fullSrcPath,
+    targetFilePath,
+    lockfileKey,
+    lockfile
+  );
   if (shouldSkip) return null;
 
   if (!(await fileExists(targetFilePath))) return null;
 
-  const didSync = await syncNamespaceInFile(targetFilePath, fullSrcPath);
+  const didSync = await syncNamespaceInFile(targetFilePath, fullSrcPath, trustedWriteRoot);
   return didSync ? `${componentPath}/${relPath}` : null;
 }
 
@@ -1337,7 +2012,8 @@ async function applyNamespaceSync(
         fullSrcPath,
         destPath,
         componentPath,
-        lockfile
+        lockfile,
+        targetDir
       );
 
       if (syncedPath) {
@@ -1370,8 +2046,8 @@ function getComponentPath(component: UpdateComponent): string {
 async function backupInstallation(targetDir: string): Promise<string> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const backupDir = join(targetDir, `.omcodex-backup-${timestamp}`);
-  const fs = await import('node:fs/promises');
-
+  await prevalidateSafeWritePath(join(backupDir, '.omcodex-backup-probe'), targetDir);
+  await validateBackupSourceRoots(targetDir);
   await ensureDirectory(backupDir);
 
   // Backup key directories
@@ -1384,14 +2060,14 @@ async function backupInstallation(targetDir: string): Promise<string> {
     const srcPath = join(targetDir, dir);
     if (await fileExists(srcPath)) {
       const destPath = join(backupDir, dir);
-      await copyDirectory(srcPath, destPath, { overwrite: true });
+      await copyDirectory(srcPath, destPath, { overwrite: true, trustedWriteRoot: targetDir });
     }
   }
 
   // Backup entry doc
   const entryPath = join(targetDir, layout.entryFile);
   if (await fileExists(entryPath)) {
-    await fs.copyFile(entryPath, join(backupDir, layout.entryFile));
+    await copyFile(entryPath, join(backupDir, layout.entryFile), targetDir);
   }
 
   return backupDir;
@@ -1418,7 +2094,7 @@ export async function saveCustomizationManifest(
   manifest: CustomizationManifest
 ): Promise<void> {
   const manifestPath = join(targetDir, CUSTOMIZATION_MANIFEST_FILE);
-  await writeJsonFile(manifestPath, manifest);
+  await writeJsonFile(manifestPath, manifest, { trustedWriteRoot: targetDir });
 }
 
 /**

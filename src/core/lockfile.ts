@@ -11,7 +11,13 @@ import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { readdir, stat } from 'node:fs/promises';
 import { join, relative } from 'node:path';
-import { fileExists, getPackageRoot, readJsonFile, writeJsonFile } from '../utils/fs.js';
+import {
+  fileExists,
+  getPackageRoot,
+  readJsonFile,
+  type SafeWriteOptions,
+  writeJsonFile,
+} from '../utils/fs.js';
 import { debug, warn } from '../utils/logger.js';
 import { getComponentPath, type InstallComponent } from './layout.js';
 
@@ -154,9 +160,13 @@ export async function readLockfile(targetDir: string): Promise<Lockfile | null> 
 /**
  * Write a lockfile to targetDir with 2-space indented JSON.
  */
-export async function writeLockfile(targetDir: string, lockfile: Lockfile): Promise<void> {
+export async function writeLockfile(
+  targetDir: string,
+  lockfile: Lockfile,
+  options: SafeWriteOptions = {}
+): Promise<void> {
   const lockfilePath = join(targetDir, LOCKFILE_NAME);
-  await writeJsonFile(lockfilePath, lockfile);
+  await writeJsonFile(lockfilePath, lockfile, options);
   debug('lockfile.written', { path: lockfilePath });
 }
 
@@ -291,7 +301,8 @@ export async function generateLockfile(
  * Non-throwing: returns warnings array on failure.
  */
 export async function generateAndWriteLockfileForDir(
-  targetDir: string
+  targetDir: string,
+  options: SafeWriteOptions = {}
 ): Promise<{ fileCount: number; warning?: string }> {
   try {
     const packageRoot = getPackageRoot();
@@ -302,7 +313,7 @@ export async function generateAndWriteLockfileForDir(
       join(packageRoot, 'package.json')
     );
     const lockfile = await generateLockfile(targetDir, generatorVersion, manifest.version);
-    await writeLockfile(targetDir, lockfile);
+    await writeLockfile(targetDir, lockfile, options);
     return { fileCount: Object.keys(lockfile.files).length };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

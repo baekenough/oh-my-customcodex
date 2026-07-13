@@ -2,29 +2,29 @@
  * Installer module - Install/copy templates
  */
 
-import {
-  readFile as fsReadFile,
-  writeFile as fsWriteFile,
-  readdir,
-  rename,
-  stat,
-} from 'node:fs/promises';
-import { basename, join } from 'node:path';
+import { readFile as fsReadFile, lstat, mkdir, readdir, rename, stat } from 'node:fs/promises';
+import { basename, dirname, isAbsolute, join, relative, resolve, win32 } from 'node:path';
 import {
   copyDirectory,
   copyFile,
   ensureDirectory,
   fileExists,
   getPackageRoot,
+  prevalidateCopyDirectory,
+  prevalidateSafeWritePath,
   readJsonFile,
   resolveTemplatePath,
+  validateSafeWritePath,
   writeJsonFile,
+  writeTextFile,
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
 import { installCodex, isCodexInstalled } from './codex-installer.js';
 import { loadConfig, saveConfig } from './config.js';
 import {
   cleanupPreservation,
+  DEFAULT_CRITICAL_DIRECTORIES,
+  DEFAULT_CRITICAL_FILES,
   extractCriticalFiles,
   type PreservationResult,
   restoreCriticalFiles,
@@ -55,6 +55,11 @@ import {
 /**
  * Options for installation
  */
+export interface InstallDependencies {
+  /** Injectable lockfile generation boundary for isolated installer tests. */
+  generateAndWriteLockfileForDir?: typeof generateAndWriteLockfileForDir;
+}
+
 export interface InstallOptions {
   /** Target directory to install to */
   targetDir: string;
@@ -74,6 +79,8 @@ export interface InstallOptions {
    * When undefined, all agents are installed (backward compatible).
    */
   domain?: string;
+  /** Test-only dependency injection boundary. */
+  dependencies?: InstallDependencies;
 }
 
 /**
@@ -155,16 +162,116 @@ function createInstallResult(targetDir: string): InstallResult {
 /**
  * Ensure target directory exists
  */
-async function ensureTargetDirectory(targetDir: string): Promise<void> {
-  const targetExists = await fileExists(targetDir);
-  if (!targetExists) {
-    await ensureDirectory(targetDir);
+function assertSafeTargetDirectorySegment(
+  stats: Awaited<ReturnType<typeof lstat>>,
+  path: string
+): void {
+  if (stats.isSymbolicLink()) {
+    throw new Error(`Unsafe target directory: symbolic link segment "${path}"`);
   }
+  if (!stats.isDirectory()) {
+    throw new Error(`Unsafe target directory: parent segment is not a directory "${path}"`);
+  }
+}
+
+async function collectMissingTargetSegments(resolvedTarget: string): Promise<string[]> {
+  const missingSegments: string[] = [];
+  let current = resolvedTarget;
+
+  while (true) {
+    try {
+      assertSafeTargetDirectorySegment(await lstat(current), current);
+      return missingSegments;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw err;
+      }
+      missingSegments.push(current);
+      const parent = dirname(current);
+      if (parent === current) {
+        throw new Error(
+          `Unsafe target directory: no existing directory boundary for "${resolvedTarget}"`
+        );
+      }
+      current = parent;
+    }
+  }
+}
+
+async function createMissingTargetSegments(missingSegments: string[]): Promise<void> {
+  for (const segmentPath of missingSegments.reverse()) {
+    try {
+      assertSafeTargetDirectorySegment(await lstat(segmentPath), segmentPath);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw err;
+      }
+      await mkdir(segmentPath);
+    }
+  }
+}
+
+async function ensureTargetDirectory(targetDir: string): Promise<void> {
+  await createMissingTargetSegments(await collectMissingTargetSegments(resolve(targetDir)));
 }
 
 /**
  * Handle backup of existing installation
  */
+async function validateExistingBackupSource(path: string): Promise<void> {
+  const stats = await lstat(path);
+  if (stats.isSymbolicLink()) {
+    throw new Error(`Unsafe backup source: symbolic link "${path}"`);
+  }
+  if (!stats.isDirectory() && !stats.isFile()) {
+    throw new Error(`Unsafe backup source: not a regular file or directory "${path}"`);
+  }
+}
+
+async function validateCriticalPreservationRoot(rootDir: string): Promise<boolean> {
+  if (!(await fileExists(rootDir))) return false;
+  const rootStats = await lstat(rootDir);
+  if (rootStats.isSymbolicLink() || !rootStats.isDirectory()) {
+    throw new Error(`Unsafe preservation source: invalid root directory "${rootDir}"`);
+  }
+  return true;
+}
+
+async function validateCriticalPreservationFile(filePath: string): Promise<void> {
+  if (!(await fileExists(filePath))) return;
+  const stats = await lstat(filePath);
+  if (stats.isSymbolicLink() || !stats.isFile()) {
+    throw new Error(`Unsafe preservation source: invalid critical file "${filePath}"`);
+  }
+}
+
+async function validateCriticalPreservationDirectory(dirPath: string): Promise<void> {
+  if (!(await fileExists(dirPath))) return;
+  const stats = await lstat(dirPath);
+  if (stats.isSymbolicLink() || !stats.isDirectory()) {
+    throw new Error(`Unsafe preservation source: invalid critical directory "${dirPath}"`);
+  }
+}
+
+async function validateCriticalPreservationSources(rootDir: string): Promise<void> {
+  if (!(await validateCriticalPreservationRoot(rootDir))) return;
+  for (const fileName of DEFAULT_CRITICAL_FILES) {
+    await validateCriticalPreservationFile(join(rootDir, fileName));
+  }
+
+  for (const dirName of DEFAULT_CRITICAL_DIRECTORIES) {
+    await validateCriticalPreservationDirectory(join(rootDir, dirName));
+  }
+}
+
+async function validateInstallBackupSources(targetDir: string): Promise<void> {
+  const layout = getProviderLayout();
+  await validateCriticalPreservationSources(join(targetDir, layout.rootDir));
+  for (const relativePath of await checkExistingPaths(targetDir)) {
+    await validateExistingBackupSource(join(targetDir, relativePath));
+  }
+}
+
 async function handleBackup(
   targetDir: string,
   shouldBackup: boolean,
@@ -172,31 +279,40 @@ async function handleBackup(
 ): Promise<PreservationResult | null> {
   if (!shouldBackup) return null;
 
+  await validateInstallBackupSources(targetDir);
+
   const layout = getProviderLayout();
   const rootDir = join(targetDir, layout.rootDir);
 
-  // Extract critical user files BEFORE backup moves .claude/ away
   let preservation: PreservationResult | null = null;
-  if (await fileExists(rootDir)) {
-    const { createTempDir } = await import('../utils/fs.js');
-    const tempDir = await createTempDir('omcodex-preserve-');
-    preservation = await extractCriticalFiles(rootDir, tempDir);
+  try {
+    // Extract critical user files BEFORE backup moves .claude/ away
+    if (await fileExists(rootDir)) {
+      const { createTempDir } = await import('../utils/fs.js');
+      const tempDir = await createTempDir('omcodex-preserve-');
+      preservation = await extractCriticalFiles(rootDir, tempDir);
 
-    if (preservation.extractedFiles.length > 0 || preservation.extractedDirs.length > 0) {
-      info('install.preserved', {
-        files: String(preservation.extractedFiles.length),
-        dirs: String(preservation.extractedDirs.length),
-      });
+      if (preservation.extractedFiles.length > 0 || preservation.extractedDirs.length > 0) {
+        info('install.preserved', {
+          files: String(preservation.extractedFiles.length),
+          dirs: String(preservation.extractedDirs.length),
+        });
+      }
     }
-  }
 
-  const backupPaths = await backupExistingInstallation(targetDir);
-  result.backedUpPaths.push(...backupPaths);
-  if (backupPaths.length > 0) {
-    info('install.backup', { path: backupPaths[0] });
-  }
+    const backupPaths = await backupExistingInstallation(targetDir);
+    result.backedUpPaths.push(...backupPaths);
+    if (backupPaths.length > 0) {
+      info('install.backup', { path: backupPaths[0] });
+    }
 
-  return preservation;
+    return preservation;
+  } catch (err) {
+    if (preservation) {
+      await cleanupPreservation(preservation.tempDir);
+    }
+    throw err;
+  }
 }
 
 /**
@@ -291,7 +407,7 @@ async function installStatusline(
     }
   }
 
-  await copyFile(srcPath, destPath);
+  await copyFile(srcPath, destPath, targetDir);
 
   const fs = await import('node:fs/promises');
   await fs.chmod(destPath, 0o755);
@@ -322,7 +438,7 @@ async function installTestsConfig(
     }
   }
 
-  await copyFile(srcPath, destPath);
+  await copyFile(srcPath, destPath, targetDir);
   debug('install.tests_config_installed', {});
 }
 
@@ -347,7 +463,7 @@ async function installSettingsLocal(targetDir: string, result: InstallResult): P
       const existing = await readJsonFile<Record<string, unknown>>(settingsPath);
       if (!existing.statusLine) {
         existing.statusLine = statusLineConfig.statusLine;
-        await writeJsonFile(settingsPath, existing);
+        await writeJsonFile(settingsPath, existing, { trustedWriteRoot: targetDir });
         debug('install.settings_local_merged', {});
       } else {
         debug('install.settings_local_skipped', { reason: 'statusLine exists' });
@@ -360,7 +476,7 @@ async function installSettingsLocal(targetDir: string, result: InstallResult): P
     return;
   }
 
-  await writeJsonFile(settingsPath, statusLineConfig);
+  await writeJsonFile(settingsPath, statusLineConfig, { trustedWriteRoot: targetDir });
   debug('install.settings_local_created', {});
 }
 
@@ -398,7 +514,7 @@ async function updateInstallConfig(
   config.domain = options.domain;
   config.installedAt = new Date().toISOString();
   config.installedComponents = installedComponents;
-  await saveConfig(targetDir, config);
+  await saveConfig(targetDir, config, { trustedWriteRoot: targetDir });
 }
 
 /**
@@ -461,19 +577,104 @@ function installOmxIfNeeded(result: InstallResult): void {
   }
 }
 
+async function validateInstallWritePlan(targetDir: string, options: InstallOptions): Promise<void> {
+  const layout = getProviderLayout();
+  const components = options.components || getAllComponents();
+  const overwrite = !!(options.force || options.backup);
+
+  for (const component of components) {
+    if (component === 'entry-md') continue;
+    const destPath = join(targetDir, getComponentPath(component));
+    if (overwrite || !(await fileExists(destPath))) {
+      const srcPath = resolveTemplatePath(getTemplateComponentPath(component));
+      if (await fileExists(srcPath)) {
+        await prevalidateCopyDirectory(srcPath, destPath, {
+          overwrite,
+          preserveSymlinks: true,
+          preserveTimestamps: true,
+          trustedWriteRoot: targetDir,
+        });
+      } else {
+        await prevalidateSafeWritePath(join(destPath, '.omcodex-install-probe'), targetDir);
+      }
+    }
+  }
+
+  for (const filePath of [
+    join(targetDir, layout.rootDir, 'statusline.sh'),
+    join(targetDir, 'tests', 'tsconfig.json'),
+    join(targetDir, layout.rootDir, 'settings.local.json'),
+    join(targetDir, layout.entryFile),
+    join(targetDir, '.omcodexrc.json'),
+    join(targetDir, '.omcodex.lock.json'),
+  ]) {
+    await prevalidateSafeWritePath(filePath, targetDir);
+  }
+}
+
+async function restorePreservationAfterInstall(
+  targetDir: string,
+  preservation: PreservationResult | null,
+  result: InstallResult
+): Promise<boolean> {
+  if (!preservation) return false;
+  const layout = getProviderLayout();
+  const rootDir = join(targetDir, layout.rootDir);
+  const restoration = await restoreCriticalFiles(rootDir, preservation);
+
+  if (restoration.restoredFiles.length > 0 || restoration.restoredDirs.length > 0) {
+    info('install.restored', {
+      files: String(restoration.restoredFiles.length),
+      dirs: String(restoration.restoredDirs.length),
+    });
+  }
+
+  for (const failure of restoration.failures) {
+    result.warnings.push(`Failed to restore ${failure.path}: ${failure.reason}`);
+  }
+
+  await cleanupPreservation(preservation.tempDir);
+  return true;
+}
+
+async function runInstallFinalization(
+  options: InstallOptions,
+  result: InstallResult
+): Promise<void> {
+  await updateInstallConfig(options.targetDir, options, result.installedComponents);
+
+  const writeLockfileForDir =
+    options.dependencies?.generateAndWriteLockfileForDir ?? generateAndWriteLockfileForDir;
+  const lockfileResult = await writeLockfileForDir(options.targetDir, {
+    trustedWriteRoot: options.targetDir,
+  });
+  if (lockfileResult.warning) {
+    result.warnings.push(lockfileResult.warning);
+    warn('install.lockfile_failed', { error: lockfileResult.warning });
+  } else {
+    info('install.lockfile_generated', { files: String(lockfileResult.fileCount) });
+  }
+
+  installRtkIfNeeded(result);
+  installCodexIfNeeded(result);
+  installOmxIfNeeded(result);
+}
+
 /**
  * Install oh-my-customcodex templates to target directory
  */
 export async function install(options: InstallOptions): Promise<InstallResult> {
   const result = createInstallResult(options.targetDir);
+  let preservation: PreservationResult | null = null;
 
   try {
     info('install.start', { targetDir: options.targetDir });
 
     await ensureTargetDirectory(options.targetDir);
-    const preservation = await handleBackup(options.targetDir, !!options.backup, result);
-    await checkAndWarnExisting(options.targetDir, !!options.force, !!options.backup, result);
     await verifyTemplateDirectory();
+    await validateInstallWritePlan(options.targetDir, options);
+    preservation = await handleBackup(options.targetDir, !!options.backup, result);
+    await checkAndWarnExisting(options.targetDir, !!options.force, !!options.backup, result);
 
     await installAllComponents(options.targetDir, options, result);
     await installStatusline(options.targetDir, options, result);
@@ -481,51 +682,18 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
     await installSettingsLocal(options.targetDir, result);
     await installEntryDocWithTracking(options.targetDir, options, result);
 
-    // Restore critical user files AFTER installation
-    if (preservation) {
-      const layout = getProviderLayout();
-      const rootDir = join(options.targetDir, layout.rootDir);
-      const restoration = await restoreCriticalFiles(rootDir, preservation);
-
-      if (restoration.restoredFiles.length > 0 || restoration.restoredDirs.length > 0) {
-        info('install.restored', {
-          files: String(restoration.restoredFiles.length),
-          dirs: String(restoration.restoredDirs.length),
-        });
-      }
-
-      if (restoration.failures.length > 0) {
-        for (const failure of restoration.failures) {
-          result.warnings.push(`Failed to restore ${failure.path}: ${failure.reason}`);
-        }
-      }
-
-      await cleanupPreservation(preservation.tempDir);
+    if (await restorePreservationAfterInstall(options.targetDir, preservation, result)) {
+      preservation = null;
     }
 
-    await updateInstallConfig(options.targetDir, options, result.installedComponents);
-
-    // Generate lockfile for three-way merge support (#316)
-    const lockfileResult = await generateAndWriteLockfileForDir(options.targetDir);
-    if (lockfileResult.warning) {
-      result.warnings.push(lockfileResult.warning);
-      warn('install.lockfile_failed', { error: lockfileResult.warning });
-    } else {
-      info('install.lockfile_generated', { files: String(lockfileResult.fileCount) });
-    }
-
-    // Install RTK for token optimization
-    installRtkIfNeeded(result);
-
-    // Install Codex CLI for AI-assisted development
-    installCodexIfNeeded(result);
-
-    // Install OMX CLI for parent harness dependency
-    installOmxIfNeeded(result);
+    await runInstallFinalization(options, result);
 
     result.success = true;
     success('install.success');
   } catch (err) {
+    if (preservation) {
+      await cleanupPreservation(preservation.tempDir);
+    }
     const message = err instanceof Error ? err.message : String(err);
     result.error = message;
     error('install.failed', { error: message });
@@ -537,18 +705,36 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
 /**
  * Copy templates from package to target directory
  */
+function assertRelativeTemplatePath(templatePath: string): void {
+  if (isAbsolute(templatePath) || win32.isAbsolute(templatePath)) {
+    throw new Error(`Template path must be relative: ${templatePath}`);
+  }
+  const templateRoot = resolve(getTemplateDir());
+  const resolved = resolve(templateRoot, templatePath);
+  const fromRoot = relative(templateRoot, resolved);
+  if (fromRoot.startsWith('..') || isAbsolute(fromRoot)) {
+    throw new Error(`Template path cannot traverse outside templates: ${templatePath}`);
+  }
+}
+
 export async function copyTemplates(
   targetDir: string,
   templatePath: string,
   options?: { overwrite?: boolean; preserveSymlinks?: boolean }
 ): Promise<void> {
+  assertRelativeTemplatePath(templatePath);
   const srcPath = resolveTemplatePath(templatePath);
+  if (!(await fileExists(srcPath)) || !(await stat(srcPath)).isDirectory()) {
+    throw new Error(`Template directory not found: ${templatePath}`);
+  }
+  await ensureTargetDirectory(targetDir);
   const destPath = join(targetDir, templatePath);
 
   await copyDirectory(srcPath, destPath, {
     overwrite: options?.overwrite ?? false,
     preserveSymlinks: options?.preserveSymlinks ?? true,
     preserveTimestamps: true,
+    trustedWriteRoot: targetDir,
   });
 }
 
@@ -556,9 +742,16 @@ export async function copyTemplates(
  * Create the directory structure for oh-my-customcodex
  */
 export async function createDirectoryStructure(targetDir: string): Promise<void> {
+  await ensureTargetDirectory(targetDir);
   const layout = getProviderLayout();
-  for (const dir of layout.directoryStructure) {
-    const fullPath = join(targetDir, dir);
+  const directories = layout.directoryStructure.map((dir) => join(targetDir, dir));
+
+  for (const fullPath of directories) {
+    await prevalidateSafeWritePath(join(fullPath, '.omcodex-directory-probe'), targetDir);
+  }
+
+  for (const fullPath of directories) {
+    await validateSafeWritePath(join(fullPath, '.omcodex-directory-probe'), targetDir);
     await ensureDirectory(fullPath);
   }
 }
@@ -606,6 +799,7 @@ async function installSkillsWithScopeFilter(
   destPath: string,
   options: InstallOptions
 ): Promise<void> {
+  await validateSafeWritePath(join(destPath, '.omcodex-directory-probe'), options.targetDir);
   await ensureDirectory(destPath);
   const entries = await readdir(srcPath);
 
@@ -627,6 +821,7 @@ async function installSkillsWithScopeFilter(
       overwrite: !!(options.force || options.backup),
       preserveSymlinks: true,
       preserveTimestamps: true,
+      trustedWriteRoot: options.targetDir,
     });
   }
 }
@@ -641,6 +836,7 @@ async function installAgentsWithDomainFilter(
   destPath: string,
   options: InstallOptions
 ): Promise<void> {
+  await validateSafeWritePath(join(destPath, '.omcodex-directory-probe'), options.targetDir);
   await ensureDirectory(destPath);
   const entries = await readdir(srcPath);
 
@@ -654,6 +850,7 @@ async function installAgentsWithDomainFilter(
         overwrite: !!(options.force || options.backup),
         preserveSymlinks: true,
         preserveTimestamps: true,
+        trustedWriteRoot: options.targetDir,
       });
       continue;
     }
@@ -669,7 +866,7 @@ async function installAgentsWithDomainFilter(
       }
     }
 
-    await copyFile(entrySrcPath, join(destPath, entry));
+    await copyFile(entrySrcPath, join(destPath, entry), options.targetDir);
   }
 }
 
@@ -711,6 +908,7 @@ async function installComponent(
       overwrite: !!(options.force || options.backup),
       preserveSymlinks: true,
       preserveTimestamps: true,
+      trustedWriteRoot: targetDir,
     });
   }
   debug('install.component_installed', { component });
@@ -764,7 +962,7 @@ async function installEntryDoc(
     content = content.replace(GIT_WORKFLOW_PLACEHOLDER, workflowSection);
   }
 
-  await fsWriteFile(destPath, content, 'utf-8');
+  await writeTextFile(destPath, content, { trustedWriteRoot: targetDir });
   debug('install.entry_md_installed', { language, entry: layout.entryFile });
   return true;
 }
@@ -772,9 +970,19 @@ async function installEntryDoc(
 /**
  * Backup existing directory or file
  */
-async function backupExisting(sourcePath: string, backupDir: string): Promise<string> {
+async function backupExisting(
+  sourcePath: string,
+  backupDir: string,
+  trustedWriteRoot: string
+): Promise<string> {
+  const sourceStats = await lstat(sourcePath);
+  if (sourceStats.isSymbolicLink()) {
+    throw new Error(`Unsafe backup source: symbolic link "${sourcePath}"`);
+  }
+
   const name = basename(sourcePath);
   const backupPath = join(backupDir, name);
+  await prevalidateSafeWritePath(backupPath, trustedWriteRoot);
 
   await rename(sourcePath, backupPath);
   return backupPath;
@@ -817,20 +1025,26 @@ async function backupExistingInstallation(targetDir: string): Promise<string[]> 
   // Create backup directory with timestamp
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const backupDir = join(targetDir, `${layout.backupDirPrefix}${timestamp}`);
+  await prevalidateSafeWritePath(join(backupDir, '.omcodex-backup-probe'), targetDir);
+
+  for (const relativePath of existingPaths) {
+    const fullPath = join(targetDir, relativePath);
+    const sourceStats = await lstat(fullPath);
+    if (sourceStats.isSymbolicLink()) {
+      throw new Error(`Unsafe backup source: symbolic link "${fullPath}"`);
+    }
+    await prevalidateSafeWritePath(join(backupDir, basename(fullPath)), targetDir);
+  }
+
   await ensureDirectory(backupDir);
 
   const backedUpPaths: string[] = [];
 
   for (const relativePath of existingPaths) {
     const fullPath = join(targetDir, relativePath);
-    try {
-      const backupPath = await backupExisting(fullPath, backupDir);
-      backedUpPaths.push(backupPath);
-      debug('install.backed_up', { from: relativePath, to: backupPath });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      warn('install.backup_failed', { path: relativePath, error: message });
-    }
+    const backupPath = await backupExisting(fullPath, backupDir, targetDir);
+    backedUpPaths.push(backupPath);
+    debug('install.backed_up', { from: relativePath, to: backupPath });
   }
 
   return backedUpPaths.length > 0 ? [backupDir] : [];

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.8] - 2026-07-13
+
+### Fixed
+- Remove the fixed five-second CLI preflight delay and use cancellable asynchronous version probes for the native Codex and OMX toolchain (#1578).
+- Preserve protected and nested customized files across updates, keep dry runs read-only, and report init, component, and batch failures through truthful API results and non-zero CLI exit status (#1579, #1580, #1581).
+- Emit compact task-outcome JSONL, collect Codex outcomes as the primary eval source with explicit Claude compatibility fallback, surface malformed/duplicate diagnostics, and make repeated database ingestion idempotent (#1582).
+- Enforce target-directory boundaries for public updater read/write helpers and reject unsafe update plans before applying changes (#1585).
+- Preflight snapshot, MCP, doctor-repair, project-config, and project-lock plans before mutation; reject canonical overlap, escaping virtualenv links, unsafe source links, and hard-linked write destinations; and route project writes through explicit trusted roots (#1603, #1604, #1606).
+
 ## [1.0.7] - 2026-07-06
 
 ### Changed

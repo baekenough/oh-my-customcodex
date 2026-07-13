@@ -24,4 +24,5 @@ export interface RawOutcomeRecord {
   skill?: string;
   description?: string;
   error_summary?: string;
+  duration_seconds?: number;
 }

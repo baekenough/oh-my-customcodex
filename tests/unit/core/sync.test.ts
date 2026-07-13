@@ -3,9 +3,20 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import {
+  lstat,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  readlink,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import {
   LOCKFILE_NAME,
   LOCKFILE_VERSION,
@@ -32,6 +43,34 @@ function makeLockfile(overrides: Partial<Lockfile> = {}): Lockfile {
 async function writeTestLockfile(dir: string, overrides: Partial<Lockfile> = {}): Promise<void> {
   const lockfile = makeLockfile(overrides);
   await writeFile(join(dir, LOCKFILE_NAME), JSON.stringify(lockfile, null, 2), 'utf-8');
+}
+
+async function treeDigest(root: string): Promise<string> {
+  const records: string[] = [];
+
+  async function walk(current: string): Promise<void> {
+    const stats = await lstat(current);
+    const name = relative(root, current) || '.';
+    if (stats.isSymbolicLink()) {
+      records.push(`link:${name}:${await readlink(current)}`);
+      return;
+    }
+    if (stats.isFile()) {
+      records.push(
+        `file:${name}:${createHash('sha256')
+          .update(await readFile(current))
+          .digest('hex')}`
+      );
+      return;
+    }
+    records.push(`dir:${name}`);
+    for (const entry of (await readdir(current)).sort()) {
+      await walk(join(current, entry));
+    }
+  }
+
+  await walk(root);
+  return createHash('sha256').update(records.join('\n')).digest('hex');
 }
 
 // ---------------------------------------------------------------------------
@@ -257,6 +296,33 @@ describe('sync', () => {
       expect(existsSync(join(outputDir, '.codex', 'agent-memory'))).toBe(false);
     });
 
+    it('preserves agent-memory-local and settings.local exclusion contracts', async () => {
+      const { existsSync } = await import('node:fs');
+      const outsideDir = await mkdtemp(join(tmpdir(), 'omcodex-sync-excluded-outside-'));
+      try {
+        const rulesDir = join(tempDir, '.codex', 'rules');
+        const localMemoryDir = join(tempDir, '.codex', 'agent-memory-local');
+        await mkdir(rulesDir, { recursive: true });
+        await mkdir(localMemoryDir, { recursive: true });
+        await writeFile(join(rulesDir, 'MUST-safety.md'), '# Safety', 'utf-8');
+        await writeFile(join(localMemoryDir, 'MEMORY.md'), '# Local memory', 'utf-8');
+        await writeFile(join(tempDir, '.codex', 'settings.local.json'), '{}', 'utf-8');
+        await writeFile(join(outsideDir, 'secret.md'), 'EXCLUDED-SECRET\n');
+        await symlink(join(outsideDir, 'secret.md'), join(localMemoryDir, 'secret-link.md'));
+
+        const outputDir = join(tempDir, 'snapshot');
+        const result = await exportSnapshot(tempDir, outputDir);
+
+        expect(result.success).toBe(true);
+        expect(existsSync(join(outputDir, '.codex', 'rules', 'MUST-safety.md'))).toBe(true);
+        expect(existsSync(join(outputDir, '.codex', 'agent-memory-local'))).toBe(false);
+        expect(existsSync(join(outputDir, '.codex', 'settings.local.json'))).toBe(false);
+        expect(await readFile(join(outsideDir, 'secret.md'), 'utf-8')).toBe('EXCLUDED-SECRET\n');
+      } finally {
+        await rm(outsideDir, { recursive: true, force: true });
+      }
+    });
+
     it('excludes outputs directory from the snapshot', async () => {
       const { existsSync } = await import('node:fs');
 
@@ -311,8 +377,129 @@ describe('sync', () => {
       const outputDir = join(tempDir, 'snapshot');
       const result = await exportSnapshot(tempDir, outputDir);
 
-      // At minimum: a.md + b.md + lockfile
-      expect(result.fileCount).toBeGreaterThanOrEqual(3);
+      // a.md + b.md + lockfile
+      expect(result.fileCount).toBe(3);
+    });
+
+    it('rejects a symlink output root before changing source or outside trees', async () => {
+      const outsideDir = await mkdtemp(join(tmpdir(), 'omcodex-sync-outside-'));
+      try {
+        const rulesDir = join(tempDir, '.codex', 'rules');
+        await mkdir(rulesDir, { recursive: true });
+        await writeFile(join(rulesDir, 'MUST-safety.md'), '# Safety', 'utf-8');
+        await writeFile(join(outsideDir, 'sentinel.txt'), 'OUTSIDE-SENTINEL\n');
+        const outputLink = join(tempDir, 'snapshot-link');
+        await symlink(outsideDir, outputLink);
+        const before = {
+          source: await treeDigest(tempDir),
+          outside: await treeDigest(outsideDir),
+        };
+
+        await expect(exportSnapshot(tempDir, outputLink)).rejects.toThrow('Unsafe write path');
+
+        expect(await treeDigest(tempDir)).toBe(before.source);
+        expect(await treeDigest(outsideDir)).toBe(before.outside);
+      } finally {
+        await rm(outsideDir, { recursive: true, force: true });
+      }
+    });
+
+    it('preflights a late lockfile symlink before copying runtime content', async () => {
+      const outsideDir = await mkdtemp(join(tmpdir(), 'omcodex-sync-lock-outside-'));
+      try {
+        const rulesDir = join(tempDir, '.codex', 'rules');
+        await mkdir(rulesDir, { recursive: true });
+        await writeFile(join(rulesDir, 'MUST-safety.md'), '# Safety', 'utf-8');
+        const outputDir = join(tempDir, 'snapshot');
+        await mkdir(outputDir);
+        await writeFile(join(outsideDir, 'sentinel.json'), '{"outside":true}\n');
+        await symlink(join(outsideDir, 'sentinel.json'), join(outputDir, LOCKFILE_NAME));
+        const before = {
+          source: await treeDigest(tempDir),
+          outside: await treeDigest(outsideDir),
+        };
+
+        await expect(exportSnapshot(tempDir, outputDir)).rejects.toThrow('symbolic link');
+
+        expect(await treeDigest(tempDir)).toBe(before.source);
+        expect(await treeDigest(outsideDir)).toBe(before.outside);
+      } finally {
+        await rm(outsideDir, { recursive: true, force: true });
+      }
+    });
+
+    it('rejects source symlinks without creating the output directory', async () => {
+      const outsideDir = await mkdtemp(join(tmpdir(), 'omcodex-sync-source-outside-'));
+      try {
+        const rulesDir = join(tempDir, '.codex', 'rules');
+        await mkdir(rulesDir, { recursive: true });
+        await writeFile(join(outsideDir, 'secret.md'), 'DO-NOT-EXPORT\n');
+        await symlink(join(outsideDir, 'secret.md'), join(rulesDir, 'linked-secret.md'));
+        const outputDir = join(tempDir, 'snapshot');
+        const before = {
+          source: await treeDigest(tempDir),
+          outside: await treeDigest(outsideDir),
+        };
+
+        await expect(exportSnapshot(tempDir, outputDir)).rejects.toThrow(
+          'symbolic links are not allowed'
+        );
+
+        expect(
+          await lstat(outputDir).then(
+            () => true,
+            () => false
+          )
+        ).toBe(false);
+        expect(await treeDigest(tempDir)).toBe(before.source);
+        expect(await treeDigest(outsideDir)).toBe(before.outside);
+      } finally {
+        await rm(outsideDir, { recursive: true, force: true });
+      }
+    });
+
+    it('rejects a non-existent output that canonically overlaps an aliased source', async () => {
+      const workspaceRoot = await mkdtemp(join(tmpdir(), 'omcodex-sync-alias-overlap-'));
+      try {
+        const realProject = join(workspaceRoot, 'real', 'project');
+        await mkdir(join(realProject, '.codex', 'rules'), { recursive: true });
+        await writeFile(join(realProject, '.codex', 'rules', 'MUST-safety.md'), '# Safety');
+        const workspaceAlias = join(workspaceRoot, 'link');
+        await symlink(join(workspaceRoot, 'real'), workspaceAlias);
+        const aliasedProject = join(workspaceAlias, 'project');
+        const outputDir = join(realProject, '.codex', 'nested-snapshot');
+        const before = await treeDigest(workspaceRoot);
+
+        await expect(exportSnapshot(aliasedProject, outputDir)).rejects.toThrow(
+          'output overlaps source tree'
+        );
+
+        expect(await treeDigest(workspaceRoot)).toBe(before);
+        await expect(lstat(outputDir)).rejects.toThrow();
+      } finally {
+        await rm(workspaceRoot, { recursive: true, force: true });
+      }
+    });
+
+    it('allows a symlink workspace root when exporting to a separate real directory', async () => {
+      const workspaceRoot = await mkdtemp(join(tmpdir(), 'omcodex-sync-alias-workspace-'));
+      try {
+        const realProject = join(workspaceRoot, 'project');
+        const outputDir = join(workspaceRoot, 'snapshot');
+        await mkdir(join(realProject, '.codex', 'rules'), { recursive: true });
+        await writeFile(join(realProject, '.codex', 'rules', 'MUST-safety.md'), '# Safety');
+        const projectAlias = join(workspaceRoot, 'project-link');
+        await symlink(realProject, projectAlias);
+
+        const result = await exportSnapshot(projectAlias, outputDir);
+
+        expect(result.success).toBe(true);
+        expect(await readFile(join(outputDir, '.codex', 'rules', 'MUST-safety.md'), 'utf-8')).toBe(
+          '# Safety'
+        );
+      } finally {
+        await rm(workspaceRoot, { recursive: true, force: true });
+      }
     });
   });
 });

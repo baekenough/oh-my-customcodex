@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -193,6 +193,24 @@ describe('config', () => {
       expect(savedConfig.configVersion).toBe(1);
       expect(savedConfig.preferences).toBeDefined();
       expect(savedConfig.autoUpdate).toBeDefined();
+    });
+
+    it('should migrate in memory without persisting when persistence is disabled', async () => {
+      const original = JSON.stringify({
+        configVersion: 0,
+        version: '0.5.0',
+        language: 'en',
+        installedAt: '2025-01-01T00:00:00Z',
+        lastUpdated: '2025-01-01T00:00:00Z',
+        installedComponents: [],
+      });
+      const configPath = join(tempDir, '.omcodexrc.json');
+      await writeFile(configPath, original);
+
+      const config = await loadConfig(tempDir, { persistMigrations: false });
+
+      expect(config.configVersion).toBe(1);
+      expect(await readFile(configPath, 'utf-8')).toBe(original);
     });
 
     it('should handle migration when configVersion equals 0', async () => {
@@ -498,6 +516,76 @@ describe('config', () => {
 
       const exists = await configExists(tempDir);
       expect(exists).toBe(false);
+    });
+
+    it('rejects a symlink target root without deleting the outside config', async () => {
+      const outsideDir = join(tempDir, 'outside-project');
+      await mkdir(outsideDir);
+      const outsideConfig = join(outsideDir, '.omcodexrc.json');
+      const original = '{"outside":true}\n';
+      await writeFile(outsideConfig, original);
+      const projectLink = join(tempDir, 'project-link');
+      await symlink(outsideDir, projectLink);
+
+      await expect(deleteConfig(projectLink)).rejects.toThrow('target root is a symbolic link');
+
+      expect(await readFile(outsideConfig, 'utf-8')).toBe(original);
+      expect((await lstat(projectLink)).isSymbolicLink()).toBe(true);
+    });
+
+    it('unlinks a config leaf symlink without touching its outside target', async () => {
+      const outsideConfig = join(tempDir, 'outside-config.json');
+      const original = '{"outside":true}\n';
+      await writeFile(outsideConfig, original);
+      const configLink = join(tempDir, '.omcodexrc.json');
+      await symlink(outsideConfig, configLink);
+
+      await deleteConfig(tempDir);
+
+      expect(await readFile(outsideConfig, 'utf-8')).toBe(original);
+      await expect(lstat(configLink)).rejects.toThrow();
+    });
+
+    it('validates both config candidates before deleting the canonical file', async () => {
+      const canonical = join(tempDir, '.omcodexrc.json');
+      const original = '{"canonical":true}\n';
+      await writeFile(canonical, original);
+      await mkdir(join(tempDir, '.omcustomrc.json'));
+
+      await expect(deleteConfig(tempDir)).rejects.toThrow('not a regular file');
+
+      expect(await readFile(canonical, 'utf-8')).toBe(original);
+    });
+  });
+
+  describe('saveConfig path safety', () => {
+    it('preflights a symlinked parent before creating a missing target directory', async () => {
+      const outsideDir = join(tempDir, 'outside-save');
+      await mkdir(outsideDir);
+      const redirect = join(tempDir, 'redirect');
+      await symlink(outsideDir, redirect);
+      const targetDir = join(redirect, 'new-project');
+      const config = getDefaultConfig();
+
+      await expect(saveConfig(targetDir, config)).rejects.toThrow(
+        'symbolic link directory segment'
+      );
+
+      await expect(lstat(join(outsideDir, 'new-project'))).rejects.toThrow();
+      expect((await lstat(redirect)).isSymbolicLink()).toBe(true);
+    });
+
+    it('rejects a config leaf symlink before changing its outside target', async () => {
+      const outsideConfig = join(tempDir, 'outside-save-config.json');
+      const original = '{"outside":true}\n';
+      await writeFile(outsideConfig, original);
+      const configLink = join(tempDir, '.omcodexrc.json');
+      await symlink(outsideConfig, configLink);
+
+      await expect(saveConfig(tempDir, getDefaultConfig())).rejects.toThrow('symbolic link');
+
+      expect(await readFile(outsideConfig, 'utf-8')).toBe(original);
+      expect((await lstat(configLink)).isSymbolicLink()).toBe(true);
     });
   });
 

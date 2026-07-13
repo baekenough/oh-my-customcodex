@@ -118,7 +118,7 @@ async function extractSingleFile(
   const destPath = join(tempDir, fileName);
   try {
     if (await fileExists(srcPath)) {
-      await copyFile(srcPath, destPath);
+      await copyFile(srcPath, destPath, tempDir);
       result.extractedFiles.push(fileName);
       debug('preserve.extracted_file', { file: fileName });
     }
@@ -143,7 +143,11 @@ async function extractSingleDir(
   const destPath = join(tempDir, dirName);
   try {
     if (await fileExists(srcPath)) {
-      await copyDirectory(srcPath, destPath, { overwrite: true, preserveTimestamps: true });
+      await copyDirectory(srcPath, destPath, {
+        overwrite: true,
+        preserveTimestamps: true,
+        trustedWriteRoot: tempDir,
+      });
       result.extractedDirs.push(dirName);
       debug('preserve.extracted_dir', { dir: dirName });
     }
@@ -216,9 +220,9 @@ export async function restoreCriticalFiles(
 
     try {
       if (fileName.endsWith('.json')) {
-        await mergeJsonFile(preservedPath, targetPath);
+        await mergeJsonFile(preservedPath, targetPath, rootDir);
       } else {
-        await copyFile(preservedPath, targetPath);
+        await copyFile(preservedPath, targetPath, rootDir);
       }
       result.restoredFiles.push(fileName);
       debug('preserve.restored_file', { file: fileName });
@@ -238,6 +242,7 @@ export async function restoreCriticalFiles(
       await copyDirectory(preservedPath, targetPath, {
         overwrite: false,
         preserveTimestamps: true,
+        trustedWriteRoot: rootDir,
       });
       result.restoredDirs.push(dirName);
       debug('preserve.restored_dir', { dir: dirName });
@@ -257,17 +262,21 @@ export async function restoreCriticalFiles(
  * Strategy: preserved (user) values take precedence over new (template) values.
  * This ensures user customizations are never lost.
  */
-export async function mergeJsonFile(preservedPath: string, targetPath: string): Promise<void> {
+export async function mergeJsonFile(
+  preservedPath: string,
+  targetPath: string,
+  trustedWriteRoot: string
+): Promise<void> {
   const preservedData = await readJsonFile<Record<string, unknown>>(preservedPath);
 
   if (await fileExists(targetPath)) {
     const targetData = await readJsonFile<Record<string, unknown>>(targetPath);
     const merged = deepMerge(targetData, preservedData);
-    await writeJsonFile(targetPath, merged);
+    await writeJsonFile(targetPath, merged, { trustedWriteRoot });
     debug('preserve.merged_json', { file: basename(targetPath) });
   } else {
     // No new file installed, just copy preserved file back
-    await copyFile(preservedPath, targetPath);
+    await copyFile(preservedPath, targetPath, trustedWriteRoot);
     debug('preserve.copied_json', { file: basename(targetPath) });
   }
 }

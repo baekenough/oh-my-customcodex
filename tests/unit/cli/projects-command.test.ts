@@ -16,7 +16,17 @@
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import { realpathSync } from 'node:fs';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import {
+  link,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  stat,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { projectsCommand, writeLockFile } from '../../../src/cli/projects.js';
@@ -237,6 +247,51 @@ describe('writeLockFile()', () => {
     expect(second.version).toBe('0.46.0');
     expect(second.installedAt).toBe(first.installedAt); // preserved
     expect(second.updatedAt).not.toBe(first.updatedAt); // updated
+  });
+
+  it('rejects a lockfile leaf symlink without overwriting its outside target', async () => {
+    const projectDir = await mkDir(tempRoot, 'symlink-lock-project');
+    const outsideDir = await mkDir(tempRoot, 'outside-lock-target');
+    const sentinel = join(outsideDir, 'sentinel.json');
+    const sentinelContent = '{"outside":true}\n';
+    await writeFile(sentinel, sentinelContent);
+    const lockPath = join(projectDir, '.omcodex.lock.json');
+    await symlink(sentinel, lockPath);
+
+    await expect(writeLockFile(projectDir, '0.46.0')).rejects.toThrow('symbolic link');
+
+    expect(await readFile(sentinel, 'utf-8')).toBe(sentinelContent);
+    expect((await lstat(lockPath)).isSymbolicLink()).toBe(true);
+  });
+
+  it('rejects a hard-linked lockfile without overwriting its outside inode', async () => {
+    const projectDir = await mkDir(tempRoot, 'hardlink-lock-project');
+    const outsideDir = await mkDir(tempRoot, 'outside-hardlink-target');
+    const sentinel = join(outsideDir, 'sentinel.json');
+    const sentinelContent = '{"outside":true}\n';
+    await writeFile(sentinel, sentinelContent);
+    const lockPath = join(projectDir, '.omcodex.lock.json');
+    await link(sentinel, lockPath);
+    const outsideStatsBefore = await stat(sentinel);
+
+    await expect(writeLockFile(projectDir, '0.46.0')).rejects.toThrow(/hard link/i);
+
+    const outsideStatsAfter = await stat(sentinel);
+    expect(outsideStatsAfter.ino).toBe(outsideStatsBefore.ino);
+    expect(outsideStatsAfter.nlink).toBe(outsideStatsBefore.nlink);
+    expect(await readFile(sentinel, 'utf-8')).toBe(sentinelContent);
+    expect(await readFile(lockPath, 'utf-8')).toBe(sentinelContent);
+  });
+
+  it('rejects a symlink project root without creating an outside lockfile', async () => {
+    const outsideDir = await mkDir(tempRoot, 'outside-project-root');
+    const projectLink = join(tempRoot, 'project-root-link');
+    await symlink(outsideDir, projectLink);
+
+    await expect(writeLockFile(projectLink, '0.46.0')).rejects.toThrow('trusted root');
+
+    await expect(lstat(join(outsideDir, '.omcodex.lock.json'))).rejects.toThrow();
+    expect((await lstat(projectLink)).isSymbolicLink()).toBe(true);
   });
 });
 

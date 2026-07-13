@@ -12,6 +12,7 @@ export {
   turns,
 } from './db/schema.js';
 export { collect, type CollectOptions, type CollectResult } from './collect/index.js';
+export type { OutcomeParseDiagnostic } from './collect/outcome-parser.js';
 export { runMigrations } from './db/migrate.js';
 export * from './query/index.js';
 export * from './memory/index.js';

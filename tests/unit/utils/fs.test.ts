@@ -1,5 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import {
+  link,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  readlink,
+  rm,
+  stat,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -27,6 +40,23 @@ import {
   writeJsonFile,
   writeTextFile,
 } from '../../../src/utils/fs.js';
+
+async function hashFlatTree(root: string): Promise<string> {
+  const hash = createHash('sha256');
+  const entries = (await readdir(root, { withFileTypes: true })).sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+
+  for (const entry of entries) {
+    const entryPath = join(root, entry.name);
+    const stats = await lstat(entryPath);
+    hash.update(`${entry.name}:${stats.mode}:${stats.ino}:${stats.nlink}:`);
+    if (stats.isFile()) hash.update(await readFile(entryPath));
+    if (stats.isSymbolicLink()) hash.update(await readlink(entryPath));
+  }
+
+  return hash.digest('hex');
+}
 
 describe('fs utilities', () => {
   let tempDir: string;
@@ -118,6 +148,70 @@ describe('fs utilities', () => {
       const content2 = await readFile(join(destDir, 'subdir', 'file2.txt'), 'utf-8');
       expect(content1).toBe('content1');
       expect(content2).toBe('content2');
+    });
+
+    it('should keep skipPaths relative to the original destination root when recursing', async () => {
+      const srcDir = join(tempDir, 'src');
+      const destDir = join(tempDir, 'dest');
+      await mkdir(join(srcDir, 'nested'), { recursive: true });
+      await mkdir(join(destDir, 'nested'), { recursive: true });
+      await writeFile(join(srcDir, 'nested', 'preserved.txt'), 'template');
+      await writeFile(join(srcDir, 'nested', 'copied.txt'), 'template');
+      await writeFile(join(destDir, 'nested', 'preserved.txt'), 'user');
+
+      await copyDirectory(srcDir, destDir, {
+        overwrite: true,
+        skipPaths: ['nested/preserved.txt'],
+      });
+
+      expect(await readFile(join(destDir, 'nested', 'preserved.txt'), 'utf-8')).toBe('user');
+      expect(await readFile(join(destDir, 'nested', 'copied.txt'), 'utf-8')).toBe('template');
+    });
+
+    it('should normalize Windows-style separators in skipPaths', async () => {
+      const srcDir = join(tempDir, 'src');
+      const destDir = join(tempDir, 'dest');
+      await mkdir(join(srcDir, 'nested'), { recursive: true });
+      await writeFile(join(srcDir, 'nested', 'preserved.txt'), 'template');
+
+      await copyDirectory(srcDir, destDir, {
+        overwrite: true,
+        skipPaths: ['nested\\preserved.txt'],
+      });
+
+      expect(await fileExists(join(destDir, 'nested', 'preserved.txt'))).toBe(false);
+    });
+
+    it('should reject copying onto a destination symlink', async () => {
+      const srcDir = join(tempDir, 'src');
+      const destDir = join(tempDir, 'dest');
+      const outsideDir = join(tempDir, 'outside');
+      await mkdir(srcDir);
+      await mkdir(destDir);
+      await mkdir(outsideDir);
+      await writeFile(join(srcDir, 'sentinel.txt'), 'template');
+      await writeFile(join(outsideDir, 'sentinel.txt'), 'outside');
+      await symlink(join(outsideDir, 'sentinel.txt'), join(destDir, 'sentinel.txt'));
+
+      await expect(copyDirectory(srcDir, destDir, { overwrite: true })).rejects.toThrow(
+        /symbolic link/i
+      );
+      expect(await readFile(join(outsideDir, 'sentinel.txt'), 'utf-8')).toBe('outside');
+    });
+
+    it('should reject destination directory symlink segments', async () => {
+      const srcDir = join(tempDir, 'src');
+      const outsideDir = join(tempDir, 'outside');
+      const destLink = join(tempDir, 'dest-link');
+      await mkdir(srcDir);
+      await mkdir(outsideDir);
+      await writeFile(join(srcDir, 'sentinel.txt'), 'template');
+      await symlink(outsideDir, destLink);
+
+      await expect(
+        copyDirectory(srcDir, join(destLink, 'nested'), { overwrite: true })
+      ).rejects.toThrow(/symbolic link/i);
+      expect(await fileExists(join(outsideDir, 'nested', 'sentinel.txt'))).toBe(false);
     });
 
     it('should overwrite files when overwrite option is true', async () => {
@@ -506,6 +600,45 @@ describe('fs utilities', () => {
   });
 
   describe('copyFile', () => {
+    it('should reject copying a file onto a destination symlink', async () => {
+      const srcPath = join(tempDir, 'src.txt');
+      const outsidePath = join(tempDir, 'outside.txt');
+      const destPath = join(tempDir, 'dest.txt');
+      await writeFile(srcPath, 'template');
+      await writeFile(outsidePath, 'outside');
+      await symlink(outsidePath, destPath);
+
+      await expect(copyFile(srcPath, destPath)).rejects.toThrow(/symbolic link/i);
+      expect(await readFile(outsidePath, 'utf-8')).toBe('outside');
+    });
+
+    it('rejects an existing hard-linked destination without mutating either tree', async () => {
+      const trustedRoot = join(tempDir, 'trusted');
+      const outsideRoot = join(tempDir, 'outside');
+      await mkdir(trustedRoot);
+      await mkdir(outsideRoot);
+      const srcPath = join(trustedRoot, 'src.txt');
+      const destPath = join(trustedRoot, 'dest.txt');
+      const outsidePath = join(outsideRoot, 'sentinel.txt');
+      const outsideContent = 'outside sentinel';
+      await writeFile(srcPath, 'replacement');
+      await writeFile(outsidePath, outsideContent);
+      await link(outsidePath, destPath);
+
+      const targetHashBefore = await hashFlatTree(trustedRoot);
+      const outsideHashBefore = await hashFlatTree(outsideRoot);
+      const outsideStatsBefore = await stat(outsidePath);
+
+      await expect(copyFile(srcPath, destPath, trustedRoot)).rejects.toThrow(/hard link/i);
+
+      const outsideStatsAfter = await stat(outsidePath);
+      expect(outsideStatsAfter.ino).toBe(outsideStatsBefore.ino);
+      expect(outsideStatsAfter.nlink).toBe(outsideStatsBefore.nlink);
+      expect(await readFile(outsidePath, 'utf-8')).toBe(outsideContent);
+      expect(await hashFlatTree(trustedRoot)).toBe(targetHashBefore);
+      expect(await hashFlatTree(outsideRoot)).toBe(outsideHashBefore);
+    });
+
     it('should copy a single file', async () => {
       const srcPath = join(tempDir, 'src.txt');
       const destPath = join(tempDir, 'dest.txt');
