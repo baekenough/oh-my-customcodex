@@ -140,6 +140,8 @@ readline.createInterface({ input: process.stdin }).on('line', (line) => {
         PATH: `${fakeBin}${delimiter}${process.env.PATH ?? ''}`,
         CODEX_HOME: join(tempDir, '.codex-home'),
         OMCODEX_REGISTRY_DIR: join(tempDir, '.omcodex-registry'),
+        OMX_DEFAULT_FRONTIER_MODEL: 'test-frontier-model',
+        OMX_DEFAULT_SPARK_MODEL: 'test-spark-model',
         ...(args[0] === 'init' ? { NODE_ENV: 'production', BUN_ENV: 'production' } : {}),
       },
     });

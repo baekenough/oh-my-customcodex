@@ -11,6 +11,9 @@ export const CRITICAL_NATIVE_REGRESSION_FILES = [
   'tests/unit/core/codex-hooks.test.ts',
   'tests/unit/core/omx-readiness.test.ts',
   'tests/unit/serve/agent-files.test.ts',
+  'tests/unit/serve/agent-generator.test.ts',
+  'tests/unit/serve/create-routes.integration.test.ts',
+  'tests/unit/serve/generation-provider.test.ts',
 ] as const;
 
 export const WORKFLOW_INVENTORY_GUARDS = [

@@ -184,7 +184,11 @@ jobs:
             tests/unit/i18n/index.test.ts
 
           # Native Web agent and workflow inventory guards
-          run_bun_batch "serve-native-agent-files" tests/unit/serve/agent-files.test.ts
+          run_bun_batch "serve-native-generation" \
+            tests/unit/serve/agent-files.test.ts \
+            tests/unit/serve/agent-generator.test.ts \
+            tests/unit/serve/create-routes.integration.test.ts \
+            tests/unit/serve/generation-provider.test.ts
           run_bun_batch "workflow-test-inventory" \
             tests/unit/core/ci-workflow.test.ts \
             tests/unit/core/release-workflow.test.ts

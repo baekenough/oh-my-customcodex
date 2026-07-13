@@ -45,7 +45,12 @@ describe('E2E: omcodex list', () => {
       cwd: tempDir,
       stdout: 'pipe',
       stderr: 'pipe',
-      env: { ...process.env, OMCODEX_REGISTRY_DIR: join(tempDir, '.omcodex-registry') },
+      env: {
+        ...process.env,
+        OMCODEX_REGISTRY_DIR: join(tempDir, '.omcodex-registry'),
+        OMX_DEFAULT_FRONTIER_MODEL: 'test-frontier-model',
+        OMX_DEFAULT_SPARK_MODEL: 'test-spark-model',
+      },
     });
 
     // Add timeout to prevent hanging in CI

@@ -1,7 +1,7 @@
 ---
 title: Dynamic Agent Creation
 type: concept
-updated: 2026-04-12
+updated: 2026-07-13
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-orchestrator-coordination.md
@@ -42,7 +42,7 @@ Routing detects no match
   → Orchestrator uses new agent for original task
 ```
 
-The new agent is immediately available. No registry update, no restart — Claude Code discovers agents by scanning `.codex/agents/` at runtime.
+The new source is compiled into native `.codex/agents/*.toml` roles and becomes available through the Codex/OMX agent inventory without a static registry entry.
 
 ## R006 Frontmatter Validation
 
@@ -52,14 +52,15 @@ Every agent created by `mgr-creator` must include valid frontmatter per [[wiki/r
 ```yaml
 name: agent-name       # Unique kebab-case identifier
 description: ...       # One-line summary
-model: sonnet          # haiku | sonnet | opus | opusplan
+model_lane: frontier   # inherit | frontier | spark
+model_reasoning_effort: medium
 tools: [Read, Write, ...]
 ```
 
 **Commonly added optional fields**:
 ```yaml
 memory: project        # Enable persistent memory
-effort: high           # Task complexity allocation
+model_reasoning_effort: high  # Native reasoning allocation
 skills: [skill-1, skill-2]  # Auto-discovered skills
 domain: backend        # For routing classification
 ```
