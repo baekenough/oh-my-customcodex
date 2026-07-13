@@ -68,6 +68,18 @@ export interface DoctorResult {
   fixedCount: number;
 }
 
+export interface DoctorCommandDependencies {
+  /** Injectable complete check pass for deterministic post-fix orchestration tests. */
+  runAllChecks?: (
+    targetDir: string,
+    layout: { entryFile: string; rootDir: string },
+    packageVersion: string,
+    includeUpdates: boolean
+  ) => Promise<CheckResult[]>;
+  /** Injectable mutation boundary for deterministic post-fix orchestration tests. */
+  fixIssues?: typeof fixIssues;
+}
+
 // Mirrors the native events accepted by the Codex hook compiler. Doctor keeps
 // this local so validation does not widen the hook compiler's public surface.
 const DOCTOR_SUPPORTED_CODEX_HOOK_EVENTS = new Set([
@@ -693,6 +705,21 @@ export async function checkOmx(
     };
   }
 
+  if (readiness.project.status === 'needs-hook-approval') {
+    const hooks = readiness.project.hookReadiness;
+    return {
+      name: 'OMX',
+      status: 'warn',
+      message:
+        'OMX project hooks are installed but need approval — trust the project, then review /hooks',
+      fixable: false,
+      details: [
+        `Codex hooks/list: discovered=${hooks.discovered}, runnable=${hooks.runnable}, approval-needed=${hooks.approvalNeeded}`,
+        'Project-layer hook hashes are not auto-approved.',
+      ],
+    };
+  }
+
   if (!readiness.project.ready) {
     const details = readiness.project.missingSurfaces.map(
       (surface) => `missing: ${OMX_PROJECT_SURFACE_LABELS[surface]}`
@@ -1270,12 +1297,48 @@ async function runAllChecks(
     : checksWithLockfile;
 }
 
+async function applyFixesAndRecheck(
+  initialChecks: CheckResult[],
+  targetDir: string,
+  layout: { entryFile: string; rootDir: string },
+  packageVersion: string,
+  includeUpdates: boolean,
+  dependencies: DoctorCommandDependencies,
+  runChecks: NonNullable<DoctorCommandDependencies['runAllChecks']>
+): Promise<CheckResult[]> {
+  console.log(i18n.t('cli.doctor.applyingFixes'));
+  console.log('');
+
+  const applyFixes = dependencies.fixIssues ?? fixIssues;
+  const fixAttempts = await applyFixes(initialChecks, targetDir, layout.rootDir);
+  const attemptedFixNames = new Set(
+    fixAttempts.filter((check) => check.fixed).map((check) => check.name)
+  );
+  const freshChecks = await runChecks(targetDir, layout, packageVersion, includeUpdates);
+
+  console.log('');
+  return freshChecks.map((check) =>
+    attemptedFixNames.has(check.name) && check.status === 'pass' ? { ...check, fixed: true } : check
+  );
+}
+
+function printChecks(checks: CheckResult[], quiet: boolean): void {
+  for (const check of checks) {
+    if (!quiet || check.status !== 'pass') {
+      printCheck(check);
+    }
+  }
+}
+
 /**
  * Execute the doctor command
  * @param options - Doctor command options
  * @returns Result of the doctor operation
  */
-export async function doctorCommand(options: DoctorOptions = {}): Promise<DoctorResult> {
+export async function doctorCommand(
+  options: DoctorOptions = {},
+  dependencies: DoctorCommandDependencies = {}
+): Promise<DoctorResult> {
   const targetDir = process.cwd();
 
   console.log(i18n.t('cli.doctor.checking'));
@@ -1285,7 +1348,8 @@ export async function doctorCommand(options: DoctorOptions = {}): Promise<Doctor
   const packageVersion = readCurrentVersion();
 
   // Run all checks
-  const checksWithUpdate = await runAllChecks(
+  const runChecks = dependencies.runAllChecks ?? runAllChecks;
+  const checksWithUpdate = await runChecks(
     targetDir,
     layout,
     packageVersion,
@@ -1294,28 +1358,25 @@ export async function doctorCommand(options: DoctorOptions = {}): Promise<Doctor
 
   // Apply fixes if requested
   let checks: CheckResult[] = checksWithUpdate;
-  if (options.fix) {
-    const hasFixableIssues = checksWithUpdate.some((c) => c.status !== 'pass' && c.fixable);
-
-    if (hasFixableIssues) {
-      console.log(i18n.t('cli.doctor.applyingFixes'));
-      console.log('');
-      checks = await fixIssues(checksWithUpdate, targetDir, layout.rootDir);
-      console.log('');
-    }
+  if (options.fix && checksWithUpdate.some((check) => check.status !== 'pass' && check.fixable)) {
+    checks = await applyFixesAndRecheck(
+      checksWithUpdate,
+      targetDir,
+      layout,
+      packageVersion,
+      options.updates ?? false,
+      dependencies,
+      runChecks
+    );
   }
 
   // Print results
-  for (const check of checks) {
-    if (!options.quiet || check.status !== 'pass') {
-      printCheck(check);
-    }
-  }
+  printChecks(checks, options.quiet ?? false);
 
   // Calculate counts
-  const passCount = checks.filter((c) => c.status === 'pass' || c.fixed).length;
+  const passCount = checks.filter((c) => c.status === 'pass').length;
   const warnCount = checks.filter((c) => c.status === 'warn').length;
-  const failCount = checks.filter((c) => c.status === 'fail' && !c.fixed).length;
+  const failCount = checks.filter((c) => c.status === 'fail').length;
   const fixedCount = checks.filter((c) => c.fixed).length;
 
   // Print summary

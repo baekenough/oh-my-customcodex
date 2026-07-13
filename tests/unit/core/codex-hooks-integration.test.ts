@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { getHooks } from '../../../src/cli/list.js';
@@ -39,6 +39,15 @@ describe('Codex-native hook integration', () => {
     expect(
       await Bun.file(join(tempDir, '.codex', 'hooks', 'scripts', 'secret-filter.sh')).exists()
     ).toBe(true);
+    expect((await readdir(join(tempDir, '.codex', 'hooks', 'scripts'))).sort()).toEqual(
+      [
+        'codex-native-advisory.sh',
+        'destructive-git-guard.sh',
+        'file-change-validator.sh',
+        'schema-validator.sh',
+        'secret-filter.sh',
+      ].sort()
+    );
     const logged = consoleSpies
       .flatMap((spy) => spy.mock.calls.map((call) => String(call[0])))
       .join('\n');
@@ -79,14 +88,15 @@ describe('Codex-native hook integration', () => {
     });
 
     const hooks = await getHooks(tempDir);
-    expect(hooks).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ name: 'hooks.json', path: '.codex/hooks.json' }),
-        expect.objectContaining({
-          name: 'destructive-git-guard.sh',
-          path: '.codex/hooks/scripts/destructive-git-guard.sh',
-        }),
-      ])
+    expect(hooks.map(({ path }) => path).sort()).toEqual(
+      [
+        '.codex/hooks.json',
+        '.codex/hooks/scripts/codex-native-advisory.sh',
+        '.codex/hooks/scripts/destructive-git-guard.sh',
+        '.codex/hooks/scripts/file-change-validator.sh',
+        '.codex/hooks/scripts/schema-validator.sh',
+        '.codex/hooks/scripts/secret-filter.sh',
+      ].sort()
     );
   });
 

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, setSystemTime } from 'bun:test';
 import { createHash, randomUUID } from 'node:crypto';
+import { writeFileSync } from 'node:fs';
 import {
   link,
   lstat,
@@ -16,11 +17,32 @@ import {
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, relative } from 'node:path';
 import type { InitOptions } from '../../../src/cli/init.js';
-import { installFromSnapshot } from '../../../src/core/snapshot.js';
+import { computeFileHash, readLockfile } from '../../../src/core/lockfile.js';
+import {
+  installFromSnapshot as installFromSnapshotWithDependencies,
+  type SnapshotInstallDependencies,
+} from '../../../src/core/snapshot.js';
 
 describe('installFromSnapshot', () => {
   let targetDir: string;
   let snapshotDir: string;
+
+  const readyDependencies: SnapshotInstallDependencies = {
+    ensureOmxProjectReady: () => ({
+      success: true,
+      command: 'omx setup --scope project --merge-agents',
+    }),
+    registerProject: async () => {},
+  };
+
+  function installFromSnapshot(
+    target: string,
+    snapshot: string,
+    options: InitOptions,
+    dependencies: SnapshotInstallDependencies = readyDependencies
+  ) {
+    return installFromSnapshotWithDependencies(target, snapshot, options, dependencies);
+  }
 
   beforeEach(async () => {
     targetDir = await mkdtemp(join(tmpdir(), 'omcodex-snapshot-target-'));
@@ -74,6 +96,67 @@ describe('installFromSnapshot', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toContain(snapshotDir);
+    });
+
+    it('provisions after copy and generates the managed lock before registry metadata', async () => {
+      await createMinimalSnapshot(snapshotDir);
+      const calls: string[] = [];
+
+      const result = await installFromSnapshot(
+        targetDir,
+        snapshotDir,
+        {},
+        {
+          ensureOmxProjectReady: (projectRoot) => {
+            expect(projectRoot).toBe(targetDir);
+            calls.push('provision');
+            return {
+              success: true,
+              command: 'omx setup --scope project --merge-agents',
+            };
+          },
+          generateAndWriteLockfileForDir: async () => {
+            expect(
+              await readFile(join(targetDir, '.codex', 'rules', 'MUST-sample.md'), 'utf-8')
+            ).toBe('# Sample Rule\n');
+            calls.push('lockfile');
+            return { fileCount: 2 };
+          },
+          registerProject: async () => {
+            calls.push('registry');
+          },
+        }
+      );
+
+      expect(result.success).toBe(true);
+      expect(calls).toEqual(['provision', 'lockfile', 'registry']);
+    });
+
+    it('hashes the final state produced by snapshot OMX provisioning', async () => {
+      await createMinimalSnapshot(snapshotDir);
+      const hooksPath = join(targetDir, '.codex', 'hooks.json');
+
+      const result = await installFromSnapshot(
+        targetDir,
+        snapshotDir,
+        {},
+        {
+          ensureOmxProjectReady: () => {
+            writeFileSync(hooksPath, '{"hooks":{"SessionStart":[]}}\n');
+            return {
+              success: true,
+              command: 'omx setup --scope project --merge-agents',
+            };
+          },
+          registerProject: async () => {},
+        }
+      );
+
+      expect(result.success).toBe(true);
+      const lockfile = await readLockfile(targetDir);
+      expect(lockfile?.files['.codex/hooks.json']?.templateHash).toBe(
+        await computeFileHash(hooksPath)
+      );
     });
 
     it('copies .codex/ directory from snapshot', async () => {
@@ -168,6 +251,63 @@ describe('installFromSnapshot', () => {
       expect(result.errors).toBeDefined();
       expect(result.errors?.[0]).toContain('Invalid snapshot');
       expect(result.errors?.[0]).toContain('.codex');
+    });
+
+    it('does not finalize or report success when OMX readiness remains incomplete', async () => {
+      await createMinimalSnapshot(snapshotDir);
+      let lockfileCalled = false;
+      let registryCalled = false;
+
+      const result = await installFromSnapshot(
+        targetDir,
+        snapshotDir,
+        {},
+        {
+          ensureOmxProjectReady: () => ({
+            success: false,
+            command: 'omx setup --scope project --merge-agents',
+            error: 'OMX project setup remains partial',
+          }),
+          generateAndWriteLockfileForDir: async () => {
+            lockfileCalled = true;
+            return { fileCount: 0 };
+          },
+          registerProject: async () => {
+            registryCalled = true;
+          },
+        }
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toContain('OMX project setup remains partial');
+      expect(lockfileCalled).toBe(false);
+      expect(registryCalled).toBe(false);
+      await expect(lstat(join(targetDir, '.omcodex.lock.json'))).rejects.toThrow();
+    });
+
+    it('does not register or report success when final lockfile generation fails', async () => {
+      await createMinimalSnapshot(snapshotDir);
+      let registryCalled = false;
+
+      const result = await installFromSnapshot(
+        targetDir,
+        snapshotDir,
+        {},
+        {
+          ensureOmxProjectReady: readyDependencies.ensureOmxProjectReady,
+          generateAndWriteLockfileForDir: async () => ({
+            fileCount: 0,
+            warning: 'Lockfile generation failed: injected failure',
+          }),
+          registerProject: async () => {
+            registryCalled = true;
+          },
+        }
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errors?.[0]).toContain('injected failure');
+      expect(registryCalled).toBe(false);
     });
 
     it('rejects a snapshot root leaf symlink even when it points to a valid snapshot', async () => {

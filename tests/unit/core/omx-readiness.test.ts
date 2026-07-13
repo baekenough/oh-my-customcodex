@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import {
   assessOmxReadiness,
   buildOmxProjectSetupCommand,
+  type CodexHookTrustStatus,
   ensureOmxProjectReady,
   type InstallerDeps,
   OMX_PROJECT_SETUP_COMMAND,
@@ -21,7 +22,10 @@ const ALL_SURFACES = [
   'mcp',
 ];
 
-function readyDeps(onSetup?: (command: string, cwd: string) => void): InstallerDeps {
+function readyDeps(
+  onSetup?: (command: string, cwd: string) => void,
+  hookTrust: CodexHookTrustStatus = 'trusted'
+): InstallerDeps {
   return {
     exec: (command, options) => {
       if (command === 'which omx') return '/tmp/bin/omx';
@@ -34,6 +38,17 @@ function readyDeps(onSetup?: (command: string, cwd: string) => void): InstallerD
       throw new Error(`Unexpected command: ${command}`);
     },
     getPlatform: () => 'linux',
+    inspectHooks: (projectRoot) => [
+      {
+        key: `${projectRoot}:pre_tool_use:0:0`,
+        command: 'node hook.js',
+        currentHash: 'sha256:test',
+        enabled: true,
+        source: 'project',
+        sourcePath: join(projectRoot, '.codex', 'hooks.json'),
+        trustStatus: hookTrust,
+      },
+    ],
   };
 }
 
@@ -239,6 +254,47 @@ describe('OMX complete project readiness', () => {
     expect(result.project.status).toBe('ready');
     expect(result.project.mcpStatus).toBe('configured-valid');
     expect(result.project.missingSurfaces).toEqual([]);
+  });
+
+  it('distinguishes installed project hooks that still need approval from runnable hooks', () => {
+    writeCompleteProject(projectRoot);
+
+    const result = assessOmxReadiness(projectRoot, readyDeps(undefined, 'untrusted'));
+
+    expect(result.status).toBe('needs-hook-approval');
+    expect(result.ready).toBe(false);
+    expect(result.project.hookReadiness).toEqual({
+      status: 'approval-needed',
+      installed: true,
+      discovered: 1,
+      runnable: 0,
+      approvalNeeded: 1,
+    });
+    expect(result.project.missingSurfaces).toEqual(['nativeHooks']);
+  });
+
+  it('removes ineffective project-layer trust records and requires manual hook review', () => {
+    const deps = readyDeps((command, cwd) => {
+      expect(command).toBe(OMX_PROJECT_SETUP_COMMAND);
+      expect(cwd).toBe(projectRoot);
+      writeCompleteProject(projectRoot);
+      const configPath = join(projectRoot, '.codex', 'config.toml');
+      writeFileSync(
+        configPath,
+        `${readFileSync(configPath, 'utf8')}\n# OMX-owned Codex hook trust state\n[hooks.state."ignored"]\ntrusted_hash = "sha256:ignored"\n# End OMX-owned Codex hook trust state\n`
+      );
+    }, 'untrusted');
+
+    const result = ensureOmxProjectReady(projectRoot, deps);
+
+    expect(result.success).toBe(false);
+    expect(result.attempted).toBe(true);
+    expect(result.assessment.project.status).toBe('needs-hook-approval');
+    expect(result.error).toContain('Trust the project');
+    expect(result.error).toContain('review /hooks');
+    expect(readFileSync(join(projectRoot, '.codex', 'config.toml'), 'utf8')).not.toContain(
+      'OMX-owned Codex hook trust state'
+    );
   });
 
   it('rejects native agent TOML that fails the shared metadata parser', () => {

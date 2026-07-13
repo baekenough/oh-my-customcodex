@@ -4,8 +4,15 @@
 
 // execSync is used here with fully hardcoded command strings (no user input),
 // so there is no shell injection risk. Global npm install requires a shell.
-import { type ExecSyncOptions, execSync } from 'node:child_process';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { type ExecSyncOptions, execFileSync, execSync } from 'node:child_process';
+import {
+  lstatSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { platform } from 'node:os';
 import { join, resolve } from 'node:path';
 import { info, warn } from '../utils/logger.js';
@@ -18,6 +25,7 @@ export const OMX_PROJECT_SETUP_COMMAND = 'omx setup --scope project --merge-agen
 export interface InstallerDeps {
   exec: (cmd: string, opts?: ExecSyncOptions) => string | Buffer;
   getPlatform: () => NodeJS.Platform;
+  inspectHooks?: (projectRoot: string) => CodexHookRuntimeEntry[] | null;
 }
 
 export type OmxProjectInstallMode = 'legacy' | 'plugin';
@@ -57,7 +65,34 @@ export type OmxProjectSurface =
 
 export type OmxMcpReadinessStatus = 'none-valid' | 'configured-valid' | 'configured-broken';
 
-export type OmxProjectSetupStatus = 'partial' | 'ready';
+export type OmxProjectSetupStatus = 'partial' | 'needs-hook-approval' | 'ready';
+
+export type OmxHookReadinessStatus =
+  | 'missing'
+  | 'unverified'
+  | 'approval-needed'
+  | 'inactive'
+  | 'runnable';
+
+export type CodexHookTrustStatus = 'managed' | 'untrusted' | 'trusted' | 'modified';
+
+export interface CodexHookRuntimeEntry {
+  key: string;
+  command: string | null;
+  currentHash: string;
+  enabled: boolean;
+  source: string;
+  sourcePath: string;
+  trustStatus: CodexHookTrustStatus;
+}
+
+export interface OmxHookReadinessAssessment {
+  status: OmxHookReadinessStatus;
+  installed: boolean;
+  discovered: number;
+  runnable: number;
+  approvalNeeded: number;
+}
 
 export interface OmxProjectSetupAssessment {
   status: OmxProjectSetupStatus;
@@ -66,11 +101,12 @@ export interface OmxProjectSetupAssessment {
   setupCommand: string;
   installMode: OmxProjectInstallMode;
   mcpStatus: OmxMcpReadinessStatus;
+  hookReadiness: OmxHookReadinessAssessment;
   surfaces: Record<OmxProjectSurface, boolean>;
   missingSurfaces: OmxProjectSurface[];
 }
 
-export type OmxReadinessStatus = Exclude<OmxInstallStatus, 'ready'> | 'partial' | 'ready';
+export type OmxReadinessStatus = Exclude<OmxInstallStatus, 'ready'> | OmxProjectSetupStatus;
 
 export interface OmxReadinessAssessment {
   status: OmxReadinessStatus;
@@ -100,7 +136,128 @@ export const OMX_PROJECT_SURFACE_LABELS: Record<OmxProjectSurface, string> = {
 const defaultDeps: InstallerDeps = {
   exec: execSync as InstallerDeps['exec'],
   getPlatform: platform,
+  inspectHooks: inspectCodexHooks,
 };
+
+const OMX_PROJECT_HOOK_TRUST_START = '# OMX-owned Codex hook trust state';
+const OMX_PROJECT_HOOK_TRUST_END = '# End OMX-owned Codex hook trust state';
+const CODEX_HOOKS_LIST_CLIENT = String.raw`
+const { spawn } = require('node:child_process');
+const cwd = process.env.OMCUSTOMCODEX_HOOKS_CWD;
+const child = spawn('codex', ['app-server', '--stdio'], {
+  cwd,
+  env: process.env,
+  stdio: ['pipe', 'pipe', 'ignore'],
+});
+let buffer = '';
+let done = false;
+const finish = (code, result) => {
+  if (done) return;
+  done = true;
+  clearTimeout(timer);
+  child.kill();
+  if (result === undefined) process.exit(code);
+  process.stdout.write(JSON.stringify(result), () => process.exit(code));
+};
+const send = (value) => child.stdin.write(JSON.stringify(value) + '\n');
+const timer = setTimeout(() => finish(2), 4500);
+child.on('error', () => finish(2));
+child.on('exit', () => finish(2));
+child.stdout.on('data', (chunk) => {
+  buffer += chunk.toString();
+  const lines = buffer.split(/\r?\n/);
+  buffer = lines.pop() || '';
+  for (const line of lines) {
+    let message;
+    try { message = JSON.parse(line); } catch { continue; }
+    if (message.id === 1 && message.result) {
+      send({ jsonrpc: '2.0', method: 'initialized', params: {} });
+      send({ jsonrpc: '2.0', id: 2, method: 'hooks/list', params: { cwds: [cwd] } });
+    } else if (message.id === 2 && message.result) {
+      finish(0, message.result);
+    }
+  }
+});
+send({
+  jsonrpc: '2.0',
+  id: 1,
+  method: 'initialize',
+  params: {
+    clientInfo: { name: 'omcustomcodex-readiness', version: '1.0.11' },
+    capabilities: { experimentalApi: true },
+  },
+});
+`;
+
+interface CodexHooksListResponse {
+  data?: Array<{
+    cwd?: unknown;
+    hooks?: unknown;
+    errors?: unknown;
+  }>;
+}
+
+function isCodexHookTrustStatus(value: unknown): value is CodexHookTrustStatus {
+  return ['managed', 'untrusted', 'trusted', 'modified'].includes(String(value));
+}
+
+function parseRuntimeHook(value: unknown): CodexHookRuntimeEntry | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.key !== 'string' ||
+    (value.command !== null && typeof value.command !== 'string') ||
+    typeof value.currentHash !== 'string' ||
+    typeof value.enabled !== 'boolean' ||
+    typeof value.source !== 'string' ||
+    typeof value.sourcePath !== 'string' ||
+    !isCodexHookTrustStatus(value.trustStatus)
+  ) {
+    return null;
+  }
+  return {
+    key: value.key,
+    command: value.command,
+    currentHash: value.currentHash,
+    enabled: value.enabled,
+    source: value.source,
+    sourcePath: value.sourcePath,
+    trustStatus: value.trustStatus,
+  };
+}
+
+/** Query the official Codex app-server hook registry without changing trust state. */
+export function inspectCodexHooks(projectRoot: string): CodexHookRuntimeEntry[] | null {
+  let resolvedRoot: string;
+  try {
+    resolvedRoot = realpathSync(projectRoot);
+  } catch {
+    resolvedRoot = resolve(projectRoot);
+  }
+  try {
+    const output = execFileSync(process.execPath, ['-e', CODEX_HOOKS_LIST_CLIENT], {
+      cwd: resolvedRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 5000,
+      maxBuffer: 4 * 1024 * 1024,
+      env: {
+        ...process.env,
+        OMCUSTOMCODEX_HOOKS_CWD: resolvedRoot,
+      },
+    });
+    const result = JSON.parse(String(output)) as CodexHooksListResponse;
+    const cwdEntry = result.data?.find(
+      (entry) => isRecord(entry) && entry.cwd === resolvedRoot && Array.isArray(entry.hooks)
+    );
+    if (!cwdEntry || !Array.isArray(cwdEntry.hooks)) return null;
+    if (Array.isArray(cwdEntry.errors) && cwdEntry.errors.length > 0) return null;
+    return cwdEntry.hooks
+      .map(parseRuntimeHook)
+      .filter((hook): hook is CodexHookRuntimeEntry => hook !== null);
+  } catch {
+    return null;
+  }
+}
 
 function readProjectText(filePath: string): string | null {
   try {
@@ -177,6 +334,34 @@ function hasOmxAgentsInstructions(projectRoot: string): boolean {
 
 function readCodexConfig(projectRoot: string): string | null {
   return readProjectText(join(projectRoot, '.codex', 'config.toml'));
+}
+
+/** Remove OMX trust records that Codex intentionally ignores at project scope. */
+export function removeIneffectiveProjectHookTrustState(projectRoot: string): boolean {
+  const configPath = join(resolve(projectRoot), '.codex', 'config.toml');
+  let stats: ReturnType<typeof lstatSync>;
+  let config: string;
+  try {
+    stats = lstatSync(configPath);
+    if (!stats.isFile() || stats.isSymbolicLink()) return false;
+    config = readFileSync(configPath, 'utf8');
+  } catch {
+    return false;
+  }
+
+  const start = config.indexOf(OMX_PROJECT_HOOK_TRUST_START);
+  if (start < 0) return false;
+  const endMarker = config.indexOf(OMX_PROJECT_HOOK_TRUST_END, start);
+  if (endMarker < 0) return false;
+  let end = endMarker + OMX_PROJECT_HOOK_TRUST_END.length;
+  if (config.slice(end, end + 2) === '\r\n') end += 2;
+  else if (config[end] === '\n') end += 1;
+
+  const before = config.slice(0, start).replace(/[ \t]*$/, '');
+  const after = config.slice(end).replace(/^\r?\n/, '');
+  const next = `${before}${before.endsWith('\n') ? '' : '\n'}${after}`;
+  writeFileSync(configPath, next, 'utf8');
+  return true;
 }
 
 interface OmxSetupScopeState {
@@ -453,7 +638,64 @@ function hasValidNativeHooksRegistry(projectRoot: string): boolean {
   }
 }
 
-export function assessOmxProjectSetup(projectRoot: string): OmxProjectSetupAssessment {
+function assessHookReadiness(
+  projectRoot: string,
+  installed: boolean,
+  deps: InstallerDeps
+): OmxHookReadinessAssessment {
+  if (!installed) {
+    return {
+      status: 'missing',
+      installed: false,
+      discovered: 0,
+      runnable: 0,
+      approvalNeeded: 0,
+    };
+  }
+
+  const hooks = deps.inspectHooks?.(projectRoot);
+  if (!hooks) {
+    return {
+      status: 'unverified',
+      installed: true,
+      discovered: 0,
+      runnable: 0,
+      approvalNeeded: 0,
+    };
+  }
+
+  const projectHooks = hooks.filter(
+    (hook) => hook.source === 'project' || hook.source === 'plugin'
+  );
+  const approvalNeeded = projectHooks.filter(
+    (hook) => hook.trustStatus === 'untrusted' || hook.trustStatus === 'modified'
+  ).length;
+  const runnable = projectHooks.filter(
+    (hook) => hook.enabled && (hook.trustStatus === 'trusted' || hook.trustStatus === 'managed')
+  ).length;
+
+  let status: OmxHookReadinessStatus;
+  if (projectHooks.length === 0 || approvalNeeded > 0) {
+    status = 'approval-needed';
+  } else if (runnable !== projectHooks.length) {
+    status = 'inactive';
+  } else {
+    status = 'runnable';
+  }
+
+  return {
+    status,
+    installed: true,
+    discovered: projectHooks.length,
+    runnable,
+    approvalNeeded,
+  };
+}
+
+export function assessOmxProjectSetup(
+  projectRoot: string,
+  deps: InstallerDeps = defaultDeps
+): OmxProjectSetupAssessment {
   const resolvedRoot = resolve(projectRoot);
   const config = readCodexConfig(resolvedRoot);
   const setupState = readSetupScopeState(resolvedRoot);
@@ -461,27 +703,34 @@ export function assessOmxProjectSetup(projectRoot: string): OmxProjectSetupAsses
   const mcpStatus = assessMcpReadiness(setupState, config);
   const pluginDelivery =
     installMode === 'plugin' ? assessPluginDelivery(resolvedRoot, config) : NO_OMX_PLUGIN_DELIVERY;
+  const hooksInstalled = pluginDelivery.hooks || hasValidNativeHooksRegistry(resolvedRoot);
+  const hookReadiness = assessHookReadiness(resolvedRoot, hooksInstalled, deps);
   const surfaces: Record<OmxProjectSurface, boolean> = {
     prompts: pluginDelivery.prompts || hasProjectPrompts(resolvedRoot),
     skills: pluginDelivery.skills || hasProjectSkills(resolvedRoot),
     nativeAgents: hasNativeAgentToml(resolvedRoot),
     agentsInstructions: hasOmxAgentsInstructions(resolvedRoot),
     codexConfig: hasOmxCodexConfig(config),
-    nativeHooks: pluginDelivery.hooks || hasValidNativeHooksRegistry(resolvedRoot),
+    nativeHooks: hookReadiness.status === 'runnable',
     mcp: mcpStatus !== 'configured-broken',
   };
   const missingSurfaces = (Object.keys(surfaces) as OmxProjectSurface[]).filter(
     (surface) => !surfaces[surface]
   );
   const ready = missingSurfaces.length === 0;
+  const onlyHookApprovalMissing =
+    hookReadiness.status === 'approval-needed' &&
+    missingSurfaces.length === 1 &&
+    missingSurfaces[0] === 'nativeHooks';
 
   return {
-    status: ready ? 'ready' : 'partial',
+    status: ready ? 'ready' : onlyHookApprovalMissing ? 'needs-hook-approval' : 'partial',
     ready,
     projectRoot: resolvedRoot,
     setupCommand: OMX_PROJECT_SETUP_COMMAND,
     installMode,
     mcpStatus,
+    hookReadiness,
     surfaces,
     missingSurfaces,
   };
@@ -647,7 +896,7 @@ export function assessOmxReadiness(
   deps: InstallerDeps = defaultDeps
 ): OmxReadinessAssessment {
   const capability = assessOmxInstallation(deps);
-  const project = assessOmxProjectSetup(projectRoot);
+  const project = assessOmxProjectSetup(projectRoot, deps);
   const status: OmxReadinessStatus =
     capability.status === 'ready' ? project.status : capability.status;
 
@@ -724,6 +973,7 @@ export function ensureOmxProjectReady(
   options: OmxProjectSetupOptions = {}
 ): OmxProjectProvisionResult {
   const setupCommand = buildOmxProjectSetupCommand(options);
+  removeIneffectiveProjectHookTrustState(projectRoot);
   let assessment = assessOmxReadiness(projectRoot, deps);
   if (assessment.ready) {
     return {
@@ -769,7 +1019,9 @@ export function ensureOmxProjectReady(
       stdio: 'inherit',
       timeout: 120000,
     });
+    removeIneffectiveProjectHookTrustState(projectRoot);
   } catch (error) {
+    removeIneffectiveProjectHookTrustState(projectRoot);
     const message = error instanceof Error ? error.message : String(error);
     return provisionError(
       assessOmxReadiness(projectRoot, deps),
@@ -780,6 +1032,14 @@ export function ensureOmxProjectReady(
   }
 
   assessment = assessOmxReadiness(projectRoot, deps);
+  if (assessment.project.hookReadiness.status === 'approval-needed') {
+    return provisionError(
+      assessment,
+      true,
+      setupCommand,
+      'OMX project hooks are installed but need approval. Trust the project, then review /hooks; project-layer hook hashes are not auto-approved.'
+    );
+  }
   if (!assessment.ready) {
     const missing = assessment.project.missingSurfaces
       .map((surface) => OMX_PROJECT_SURFACE_LABELS[surface])

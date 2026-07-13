@@ -20,6 +20,17 @@ function isolatedDeps(home: string, binDir: string): InstallerDeps {
         },
       }),
     getPlatform: () => 'linux',
+    inspectHooks: (projectRoot) => [
+      {
+        key: `${projectRoot}:pre_tool_use:0:0`,
+        command: 'node hook.js',
+        currentHash: 'sha256:test',
+        enabled: true,
+        source: 'project',
+        sourcePath: join(projectRoot, '.codex', 'hooks.json'),
+        trustStatus: 'trusted',
+      },
+    ],
   };
 }
 

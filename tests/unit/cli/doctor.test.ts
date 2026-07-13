@@ -877,7 +877,7 @@ describe('doctor command', () => {
       expect(result.failCount).toBeGreaterThan(0);
     });
 
-    it('should apply fixes when fix option is true', async () => {
+    it('should recheck fixes and not mark empty repaired directories healthy', async () => {
       process.cwd = () => tempDir;
 
       // Create AGENTS.md but leave other dirs missing
@@ -885,8 +885,67 @@ describe('doctor command', () => {
 
       const result = await doctorCommand({ fix: true });
 
-      // Some issues should be fixed
-      expect(result.fixedCount).toBeGreaterThan(0);
+      expect(result.checks.find((check) => check.name === 'Rules')?.status).toBe('warn');
+      expect(result.checks.find((check) => check.name === 'Rules')?.fixed).toBeUndefined();
+      expect(result.fixedCount).toBe(0);
+      expect(result.passCount + result.warnCount + result.failCount).toBe(result.checks.length);
+    });
+
+    it('returns fresh post-fix hooks, agents, and lockfile state with exclusive counts', async () => {
+      process.cwd = () => tempDir;
+      let checkPass = 0;
+      const initialChecks: CheckResult[] = [
+        {
+          name: 'Hooks',
+          status: 'pass',
+          message: 'Hooks OK — 2 events, 4 handlers',
+          fixable: false,
+        },
+        { name: 'Agents', status: 'pass', message: '50 agents', fixable: false },
+        { name: 'OMX', status: 'warn', message: 'OMX setup partial', fixable: true },
+        { name: 'Lockfile', status: 'pass', message: 'no drift (387)', fixable: false },
+      ];
+      const postFixChecks: CheckResult[] = [
+        {
+          name: 'Hooks',
+          status: 'pass',
+          message: 'Hooks OK — 7 events, 11 handlers',
+          fixable: false,
+        },
+        { name: 'Agents', status: 'pass', message: '71 agents', fixable: false },
+        { name: 'OMX', status: 'pass', message: 'OMX ready', fixable: false },
+        {
+          name: 'Lockfile',
+          status: 'warn',
+          message: 'modified .codex/hooks.json',
+          fixable: false,
+        },
+      ];
+
+      const result = await doctorCommand(
+        { fix: true },
+        {
+          runAllChecks: async () => {
+            checkPass += 1;
+            return checkPass === 1 ? initialChecks : postFixChecks;
+          },
+          fixIssues: async (checks) =>
+            checks.map((check) => (check.name === 'OMX' ? { ...check, fixed: true } : check)),
+        }
+      );
+
+      expect(checkPass).toBe(2);
+      expect(result.checks.find((check) => check.name === 'Hooks')?.message).toContain('7 events');
+      expect(result.checks.find((check) => check.name === 'Agents')?.message).toContain(
+        '71 agents'
+      );
+      expect(result.checks.find((check) => check.name === 'Lockfile')?.status).toBe('warn');
+      expect(result.checks.find((check) => check.name === 'OMX')?.fixed).toBe(true);
+      expect(result.passCount).toBe(3);
+      expect(result.warnCount).toBe(1);
+      expect(result.failCount).toBe(0);
+      expect(result.fixedCount).toBe(1);
+      expect(result.passCount + result.warnCount + result.failCount).toBe(result.checks.length);
     });
 
     it('should respect quiet option', async () => {

@@ -400,14 +400,7 @@ invalid yaml content:
       // Verify rules directory doesn't exist
       expect(await pathExists(join(tempDir, '.codex', 'rules'))).toBe(false);
 
-      const result = await runCli('doctor', '--fix');
-
-      const output = result.stdout + result.stderr;
-
-      // Should indicate fixing
-      expect(output.toLowerCase().includes('fix') || output.toLowerCase().includes('creat')).toBe(
-        true
-      );
+      await runCli('doctor', '--fix');
 
       // Rules directory should now exist
       expect(await pathExists(join(tempDir, '.codex', 'rules'))).toBe(true);
@@ -475,7 +468,7 @@ invalid yaml content:
       expect(entriesAfter).not.toContain('broken-link');
     });
 
-    it('should report fixed issues in output', async () => {
+    it('should report fresh warnings instead of false fixed labels', async () => {
       // Create structure with missing directories
       await writeFile(join(tempDir, 'AGENTS.md'), '# Test');
       await mkdir(join(tempDir, '.codex'), { recursive: true });
@@ -484,13 +477,8 @@ invalid yaml content:
 
       const output = result.stdout;
 
-      // Should show fixed indicator
-      expect(
-        output.includes('fixed') ||
-          output.includes('Fixed') ||
-          output.includes('(fixed)') ||
-          output.includes('created')
-      ).toBe(true);
+      expect(output).toContain('[WARN]');
+      expect(output).not.toContain('(fixed)');
     });
 
     it('should pass subsequent doctor check after fix', async () => {
@@ -590,18 +578,22 @@ invalid: [[[
   });
 
   describe('integration with init', () => {
-    it('should pass all checks immediately after init', async () => {
-      // Run init
+    it('should require explicit hook approval after init without reporting a doctor failure', async () => {
       const initResult = await runCli('init');
-      expect(initResult.exitCode).toBe(0);
+      const initOutput = initResult.stdout + initResult.stderr;
 
-      // Run doctor
+      expect(initResult.exitCode).toBe(1);
+      expect(initOutput).toContain('Trust the project');
+      expect(initOutput).toContain('review /hooks');
+      expect(initOutput).toContain('not auto-approved');
+
       const doctorResult = await runCli('doctor');
 
       expect(doctorResult.exitCode).toBe(0);
 
       const output = doctorResult.stdout;
-      // Should not have any failures
+      expect(output).toContain('need approval');
+      expect(output).toContain('review /hooks');
       const failCount = (output.match(/\[FAIL\]/gi) || []).length;
       expect(failCount).toBe(0);
     });

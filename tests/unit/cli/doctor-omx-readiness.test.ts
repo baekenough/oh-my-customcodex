@@ -13,6 +13,17 @@ const deps: InstallerDeps = {
     throw new Error(`Unexpected command: ${command}`);
   },
   getPlatform: () => 'linux',
+  inspectHooks: (projectRoot) => [
+    {
+      key: `${projectRoot}:pre_tool_use:0:0`,
+      command: 'node hook.js',
+      currentHash: 'sha256:test',
+      enabled: true,
+      source: 'project',
+      sourcePath: join(projectRoot, '.codex', 'hooks.json'),
+      trustStatus: 'trusted',
+    },
+  ],
 };
 
 async function writeCompleteProject(projectRoot: string): Promise<void> {
@@ -69,5 +80,30 @@ describe('doctor complete OMX readiness', () => {
 
     expect(result.status).toBe('pass');
     expect(result.message).toContain('project setup ready');
+  });
+
+  it('reports manual hook approval without offering an automatic fix', async () => {
+    await writeCompleteProject(projectRoot);
+
+    const result = await checkOmx(projectRoot, {
+      ...deps,
+      inspectHooks: (root) => [
+        {
+          key: `${root}:pre_tool_use:0:0`,
+          command: 'node hook.js',
+          currentHash: 'sha256:test',
+          enabled: true,
+          source: 'project',
+          sourcePath: join(root, '.codex', 'hooks.json'),
+          trustStatus: 'untrusted',
+        },
+      ],
+    });
+
+    expect(result.status).toBe('warn');
+    expect(result.fixable).toBe(false);
+    expect(result.message).toContain('need approval');
+    expect(result.message).toContain('review /hooks');
+    expect(result.details).toContain('Project-layer hook hashes are not auto-approved.');
   });
 });

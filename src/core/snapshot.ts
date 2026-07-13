@@ -15,6 +15,8 @@ import {
   prevalidateSafeWritePath,
 } from '../utils/fs.js';
 import { getComponentPath, getProviderLayout } from './layout.js';
+import { generateAndWriteLockfileForDir } from './lockfile.js';
+import { ensureOmxProjectReady } from './omx-installer.js';
 import { registerProject } from './registry.js';
 
 /**
@@ -45,6 +47,19 @@ export interface InitResult {
   message: string;
   installedPaths?: string[];
   errors?: string[];
+}
+
+export interface SnapshotInstallDependencies {
+  /** Injectable project provisioning boundary for isolated snapshot tests. */
+  ensureOmxProjectReady?: (projectRoot: string) => {
+    success: boolean;
+    command: string;
+    error?: string;
+  };
+  /** Injectable final managed-lock boundary for ordering and failure tests. */
+  generateAndWriteLockfileForDir?: typeof generateAndWriteLockfileForDir;
+  /** Injectable registry boundary so success ordering can be verified without HOME writes. */
+  registerProject?: typeof registerProject;
 }
 
 interface SnapshotCopyOperation {
@@ -378,13 +393,36 @@ async function buildAndValidateInstallPlan(
   return { installOperations, backupOperations, backupDir };
 }
 
+async function ensureSnapshotRuntimeReady(
+  targetDir: string,
+  dependencies: SnapshotInstallDependencies
+): Promise<void> {
+  const provisionOmxProject = dependencies.ensureOmxProjectReady ?? ensureOmxProjectReady;
+  const provision = provisionOmxProject(targetDir);
+  if (!provision.success) {
+    throw new Error(
+      provision.error ?? `OMX project setup is incomplete. Run manually: ${provision.command}`
+    );
+  }
+
+  const writeManagedLockfile =
+    dependencies.generateAndWriteLockfileForDir ?? generateAndWriteLockfileForDir;
+  const managedLockfile = await writeManagedLockfile(targetDir, {
+    trustedWriteRoot: targetDir,
+  });
+  if (managedLockfile.warning) {
+    throw new Error(managedLockfile.warning);
+  }
+}
+
 /**
  * Install from a pre-configured team snapshot
  */
 export async function installFromSnapshot(
   targetDir: string,
   snapshotPath: string,
-  options: InitOptions
+  options: InitOptions,
+  dependencies: SnapshotInstallDependencies = {}
 ): Promise<InitResult> {
   const snapshotValidation = await validateSnapshot(snapshotPath);
   if (!snapshotValidation.valid) {
@@ -414,7 +452,10 @@ export async function installFromSnapshot(
       await executeCopyOperation(operation, targetDir);
     }
 
-    // Update lock file. The destination was included in the full preflight.
+    await ensureSnapshotRuntimeReady(targetDir, dependencies);
+
+    // Merge registry metadata only after the managed lock captures the final
+    // post-provisioning runtime state. The destination was included in preflight.
     try {
       const existing = await readLockFile(targetDir);
       await writeLockFile(targetDir, packageJson.version, existing);
@@ -424,7 +465,8 @@ export async function installFromSnapshot(
 
     // Register project in the local registry (non-blocking)
     try {
-      await registerProject(targetDir, packageJson.version);
+      const registerInstalledProject = dependencies.registerProject ?? registerProject;
+      await registerInstalledProject(targetDir, packageJson.version);
     } catch {
       // Registry write is informational only — never block snapshot install
     }

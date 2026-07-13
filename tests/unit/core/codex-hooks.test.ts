@@ -1,14 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   type CodexHookRegistry,
   compileCodexHooks,
+  getActiveManagedHookScriptNames,
   installNativeCodexHooks,
   mergeCodexHookRegistries,
   validateCodexHookRegistry,
 } from '../../../src/core/codex-hooks.js';
+import { generateLockfile } from '../../../src/core/lockfile.js';
 
 interface CommandHandler {
   type: 'command';
@@ -262,6 +264,106 @@ describe('Codex-native hooks', () => {
     expect(findHandler(registry, 'secret-filter.sh').timeout).toBeGreaterThan(0);
     expect(findHandler(registry, 'schema-validator.sh').timeout).toBeGreaterThan(0);
     expect(findHandler(registry, 'file-change-validator.sh').timeout).toBeGreaterThan(0);
+
+    const installedScripts = await readdir(join(tempDir, '.codex', 'hooks', 'scripts'));
+    expect(installedScripts.sort()).toEqual(
+      [
+        'codex-native-advisory.sh',
+        'destructive-git-guard.sh',
+        'file-change-validator.sh',
+        'schema-validator.sh',
+        'secret-filter.sh',
+      ].sort()
+    );
+    expect(
+      result.activeScriptPaths.map((scriptPath) => scriptPath.split('/').pop()).sort()
+    ).toEqual(installedScripts.sort());
+    expect(
+      await Bun.file(join(tempDir, '.codex', 'hooks', 'skill-count-reminder.sh')).exists()
+    ).toBe(false);
+
+    const lockfile = await generateLockfile(tempDir, 'test', 'test');
+    expect(
+      Object.keys(lockfile.files)
+        .filter((filePath) => filePath.startsWith('.codex/hooks/') && filePath.endsWith('.sh'))
+        .sort()
+    ).toEqual(installedScripts.map((name) => `.codex/hooks/scripts/${name}`).sort());
+  });
+
+  it('derives the managed install footprint from compiled registry reachability', async () => {
+    const { registry } = compileCodexHooks({
+      hooks: {
+        PreToolUse: [
+          {
+            matcher: 'tool == "Bash"',
+            hooks: [{ type: 'command', command: 'bash .codex/hooks/scripts/schema-validator.sh' }],
+          },
+        ],
+      },
+    });
+
+    expect(getActiveManagedHookScriptNames(registry)).toEqual([
+      'codex-native-advisory.sh',
+      'schema-validator.sh',
+    ]);
+  });
+
+  it('removes only byte-identical stale managed scripts and preserves custom hook files', async () => {
+    const scriptsDir = join(tempDir, '.codex', 'hooks', 'scripts');
+    const sourceScriptsDir = join(import.meta.dir, '../../../templates/.claude/hooks/scripts');
+    await mkdir(scriptsDir, { recursive: true });
+    await writeFile(
+      join(scriptsDir, 'stage-blocker.sh'),
+      await readFile(join(sourceScriptsDir, 'stage-blocker.sh'))
+    );
+    await writeFile(join(scriptsDir, 'session-env-check.sh'), '#!/bin/bash\nprintf customized\n');
+    await writeFile(join(scriptsDir, 'user-hook.sh'), '#!/bin/bash\nprintf user\n');
+    await writeFile(
+      join(scriptsDir, 'audit-log.sh'),
+      await readFile(join(sourceScriptsDir, 'audit-log.sh'))
+    );
+    await writeFile(
+      join(tempDir, '.codex', 'hooks.json'),
+      JSON.stringify({
+        hooks: {
+          SessionStart: [
+            {
+              hooks: [
+                {
+                  type: 'command',
+                  command: 'bash .codex/hooks/scripts/audit-log.sh',
+                  timeout: 5,
+                },
+              ],
+            },
+          ],
+        },
+      })
+    );
+    await writeFile(
+      join(tempDir, '.codex', 'hooks', 'skill-count-reminder.sh'),
+      await readFile(
+        join(import.meta.dir, '../../../templates/.claude/hooks/skill-count-reminder.sh')
+      )
+    );
+
+    const result = await installNativeCodexHooks(tempDir, { overwrite: true });
+
+    expect(await Bun.file(join(scriptsDir, 'stage-blocker.sh')).exists()).toBe(false);
+    expect(await Bun.file(join(scriptsDir, 'session-env-check.sh')).text()).toContain('customized');
+    expect(await Bun.file(join(scriptsDir, 'user-hook.sh')).text()).toContain('user');
+    expect(await Bun.file(join(scriptsDir, 'audit-log.sh')).exists()).toBe(true);
+    expect(
+      await Bun.file(join(tempDir, '.codex', 'hooks', 'skill-count-reminder.sh')).exists()
+    ).toBe(false);
+    expect(result.removedStaleManagedPaths).toEqual(
+      expect.arrayContaining([
+        join(scriptsDir, 'stage-blocker.sh'),
+        join(tempDir, '.codex', 'hooks', 'skill-count-reminder.sh'),
+      ])
+    );
+    expect(result.preservedCustomPaths).toContain(join(scriptsDir, 'session-env-check.sh'));
+    expect(result.preservedCustomPaths).toContain(join(scriptsDir, 'audit-log.sh'));
   });
 
   it('validates and stably merges managed handlers without reordering custom or OMX hooks', () => {
@@ -512,5 +614,53 @@ describe('Codex-native hooks', () => {
       tool_response: JSON.stringify({ output: 'safe output' }),
     });
     expect(safe).toEqual({ exitCode: 0, stdout: '', stderr: '' });
+  });
+
+  it('keeps managed commands on the authoritative checkout from a linked worktree', async () => {
+    const linkedWorktree = `${tempDir}-linked`;
+    try {
+      expect(Bun.spawnSync(['git', 'init', '-q'], { cwd: tempDir }).exitCode).toBe(0);
+      await writeFile(join(tempDir, 'README.md'), '# fixture\n');
+      expect(Bun.spawnSync(['git', 'add', 'README.md'], { cwd: tempDir }).exitCode).toBe(0);
+      expect(
+        Bun.spawnSync(
+          [
+            'git',
+            '-c',
+            'user.name=Fixture',
+            '-c',
+            'user.email=fixture@example.com',
+            'commit',
+            '-qm',
+            'fixture',
+          ],
+          { cwd: tempDir }
+        ).exitCode
+      ).toBe(0);
+      expect(
+        Bun.spawnSync(['git', 'worktree', 'add', '-qb', 'linked-fixture', linkedWorktree], {
+          cwd: tempDir,
+        }).exitCode
+      ).toBe(0);
+
+      await installNativeCodexHooks(tempDir, { overwrite: true });
+      await mkdir(join(linkedWorktree, '.codex'), { recursive: true });
+      const registry = JSON.parse(
+        await readFile(join(tempDir, '.codex', 'hooks.json'), 'utf8')
+      ) as CodexHookRegistry;
+      const handler = findHandler(registry, 'schema-validator.sh');
+      const canonicalRoot = await realpath(tempDir);
+
+      expect(handler.command).toContain(`repo_root="${canonicalRoot}"`);
+      expect(handler.command).not.toContain('git rev-parse --show-toplevel');
+      const result = await runHandler(handler.command, linkedWorktree, {
+        ...commonPayload(linkedWorktree, 'PreToolUse'),
+        tool_name: 'Bash',
+        tool_input: { command: 'printf safe' },
+      });
+      expect(result).toEqual({ exitCode: 0, stdout: '', stderr: '' });
+    } finally {
+      await rm(linkedWorktree, { recursive: true, force: true });
+    }
   });
 });

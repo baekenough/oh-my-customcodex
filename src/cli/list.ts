@@ -3,12 +3,13 @@
  * Lists installed agents, skills, guides, and rules
  */
 
-import { basename, dirname, extname, join, relative } from 'node:path';
+import { basename, dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
 import {
   NATIVE_AGENT_GENERATED_HEADER,
   parseNativeAgentListMetadata,
 } from '../core/agent-compiler.js';
 import { loadConfig, type OmccConfig } from '../core/config.js';
+import { extractHookCommands, extractHookExecutableReferences } from '../core/hook-references.js';
 import { getComponentPath, getProviderLayout } from '../core/layout.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists, listFiles, readTextFile } from '../utils/fs.js';
@@ -662,6 +663,58 @@ export function formatAsJson(components: ComponentInfo[]): void {
   console.log(JSON.stringify(components, null, 2));
 }
 
+function hookComponent(targetDir: string, hookPath: string, category?: string): ComponentInfo {
+  return {
+    name: basename(hookPath),
+    type: 'hook',
+    path: relative(targetDir, hookPath),
+    ...(category ? { category } : {}),
+  };
+}
+
+function isWithinHooksDirectory(hooksDir: string, candidate: string): boolean {
+  const relativeToHooks = relative(hooksDir, candidate);
+  return !relativeToHooks.startsWith('..') && !isAbsolute(relativeToHooks);
+}
+
+async function getActiveDeclaredHooks(
+  targetDir: string,
+  rootDir: string,
+  hooksDir: string,
+  registryPath: string
+): Promise<ComponentInfo[]> {
+  const registry = JSON.parse(await readTextFile(registryPath)) as unknown;
+  const activePaths = new Set<string>([registryPath]);
+
+  for (const command of extractHookCommands(registry)) {
+    for (const reference of extractHookExecutableReferences(command, rootDir)) {
+      if (!reference.path) continue;
+      const candidate = isAbsolute(reference.path)
+        ? resolve(reference.path)
+        : resolve(targetDir, reference.path);
+      if (!isWithinHooksDirectory(hooksDir, candidate)) continue;
+      if (await fileExists(candidate)) activePaths.add(candidate);
+    }
+  }
+
+  return [...activePaths]
+    .map((hookPath) => hookComponent(targetDir, hookPath, 'active'))
+    .sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path));
+}
+
+async function getRegistrylessHooks(targetDir: string, hooksDir: string): Promise<ComponentInfo[]> {
+  const [hookFiles, hookConfigs, hookYamls] = await Promise.all([
+    listFiles(hooksDir, { recursive: true, pattern: '*.sh' }),
+    listFiles(hooksDir, { recursive: true, pattern: '*.json' }),
+    listFiles(hooksDir, { recursive: true, pattern: '*.yaml' }),
+  ]);
+  const compatibilityPrefix = `compatibility${process.platform === 'win32' ? '\\' : '/'}`;
+  return [...hookFiles, ...hookConfigs, ...hookYamls]
+    .filter((hookPath) => !relative(hooksDir, hookPath).startsWith(compatibilityPrefix))
+    .map((hookPath) => hookComponent(targetDir, hookPath))
+    .sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path));
+}
+
 /**
  * Get list of installed hooks
  * @param targetDir - Target directory to scan
@@ -679,28 +732,20 @@ export async function getHooks(
   if (!rootRegistryExists && !hooksDirExists) return [];
 
   try {
-    const hookFiles = hooksDirExists
-      ? await listFiles(hooksDir, { recursive: true, pattern: '*.sh' })
-      : [];
-    const hookConfigs = hooksDirExists
-      ? await listFiles(hooksDir, { recursive: true, pattern: '*.json' })
-      : [];
-    const hookYamls = hooksDirExists
-      ? await listFiles(hooksDir, { recursive: true, pattern: '*.yaml' })
-      : [];
-    const compatibilityPrefix = `compatibility${process.platform === 'win32' ? '\\' : '/'}`;
-    const managedDirectoryFiles = [...hookFiles, ...hookConfigs, ...hookYamls].filter(
-      (hookPath) => !relative(hooksDir, hookPath).startsWith(compatibilityPrefix)
-    );
-    const allFiles = [...(rootRegistryExists ? [rootRegistry] : []), ...managedDirectoryFiles];
+    const legacyRegistry = join(hooksDir, 'hooks.json');
+    const registryPath = rootRegistryExists
+      ? rootRegistry
+      : (await fileExists(legacyRegistry))
+        ? legacyRegistry
+        : null;
+    if (registryPath) {
+      return getActiveDeclaredHooks(targetDir, rootDir, hooksDir, registryPath);
+    }
 
-    return allFiles
-      .map((hookPath) => ({
-        name: basename(hookPath),
-        type: 'hook',
-        path: relative(targetDir, hookPath),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path));
+    // Registry-less directories predate the native active-declaration model.
+    // Keep the compatibility fallback without presenting it when a registry
+    // gives us an authoritative reachable set.
+    return hooksDirExists ? await getRegistrylessHooks(targetDir, hooksDir) : [];
   } catch {
     return [];
   }
