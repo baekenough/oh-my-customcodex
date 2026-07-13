@@ -926,8 +926,56 @@ describe('update command', () => {
       expect(mockUpdate).toHaveBeenCalledTimes(1);
       // allDone message should still be printed
       expect(consoleLogSpy).toHaveBeenCalled();
-      // Should NOT exit with error (batch mode continues)
-      expect(exitCode).toBeUndefined();
+      // Batch completes its report but returns a failing process status.
+      expect(exitCode).toBe(1);
+    });
+
+    it('should continue after a batch failure and exit nonzero after later projects run', async () => {
+      let call = 0;
+      const mockUpdate = mock(async () => {
+        call++;
+        return call === 1
+          ? {
+              success: false,
+              updatedComponents: [],
+              skippedComponents: [],
+              preservedFiles: [],
+              backedUpPaths: [],
+              previousVersion: '0.1.0',
+              newVersion: '0.1.0',
+              warnings: [],
+              error: 'first failed',
+            }
+          : {
+              success: true,
+              updatedComponents: ['rules'],
+              skippedComponents: [],
+              preservedFiles: [],
+              backedUpPaths: [],
+              previousVersion: '0.1.0',
+              newVersion: '0.2.0',
+              warnings: [],
+            };
+      });
+      mock.module('../../../src/core/updater.js', () => ({ update: mockUpdate }));
+      mock.module('../../../src/cli/projects.js', () => ({
+        findProjects: async () =>
+          ['first', 'second'].map((name) => ({
+            name,
+            path: `/tmp/${name}`,
+            version: '0.1.0',
+            installedAt: null,
+            updatedAt: null,
+            status: 'outdated',
+            detectionMethod: 'lockfile',
+          })),
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+      await updateCommand({ all: true });
+
+      expect(mockUpdate).toHaveBeenCalledTimes(2);
+      expect(exitCode).toBe(1);
     });
 
     it('should handle thrown exception for individual project in --all mode', async () => {
@@ -965,7 +1013,7 @@ describe('update command', () => {
       await updateCommand({ all: true });
 
       expect(consoleLogSpy).toHaveBeenCalled();
-      expect(exitCode).toBeUndefined();
+      expect(exitCode).toBe(1);
     });
   });
 
@@ -1443,6 +1491,39 @@ describe('update command', () => {
   });
 
   describe('updateCommand self-update integration', () => {
+    it('should not query or install a CLI update during dry-run', async () => {
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['rules'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.1.0',
+        newVersion: '0.2.0',
+        warnings: [],
+      }));
+      let selfUpdateCalled = false;
+      mock.module('../../../src/core/updater.js', () => ({ update: mockUpdate }));
+      mock.module('../../../src/core/self-update.js', () => ({
+        executeSelfUpdate: () => {
+          selfUpdateCalled = true;
+          return { updated: false, fromVersion: '0.1.0', toVersion: '0.1.0' };
+        },
+        checkSelfUpdate: () => ({
+          checked: false,
+          updateAvailable: false,
+          latestVersion: null,
+          usedCache: false,
+        }),
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+      await updateCommand({ dryRun: true });
+
+      expect(selfUpdateCalled).toBe(false);
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+    });
+
     it('should run self-update step before external updates by default', async () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({

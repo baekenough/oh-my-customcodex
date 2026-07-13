@@ -1,5 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  readlink,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -13,6 +23,32 @@ import { getComponentPath } from '../../../src/core/layout.js';
 import * as fsUtils from '../../../src/utils/fs.js';
 
 const { fileExists } = fsUtils;
+
+async function hashTree(root: string): Promise<string> {
+  const entries: string[] = [];
+  async function walk(dir: string, prefix = ''): Promise<void> {
+    for (const entry of (await readdir(dir, { withFileTypes: true })).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    )) {
+      const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+      const fullPath = join(dir, entry.name);
+      if (entry.isSymbolicLink()) {
+        entries.push(`l:${relativePath}:${await readlink(fullPath)}`);
+      } else if (entry.isDirectory()) {
+        entries.push(`d:${relativePath}`);
+        await walk(fullPath, relativePath);
+      } else {
+        entries.push(`f:${relativePath}:${await readFile(fullPath, 'hex')}`);
+      }
+    }
+  }
+  await walk(root);
+  return createHash('sha256').update(entries.join('\n')).digest('hex');
+}
+
+async function listPreservationTempDirs(): Promise<string[]> {
+  return (await readdir(tmpdir())).filter((entry) => entry.startsWith('omcodex-preserve-')).sort();
+}
 
 describe('installer', () => {
   let tempDir: string;
@@ -68,6 +104,18 @@ describe('installer', () => {
       expect(await fileExists(join(tempDir, '.agents', 'skills'))).toBe(true);
       expect(await fileExists(join(tempDir, '.codex', 'hooks'))).toBe(true);
       expect(await fileExists(join(tempDir, '.codex', 'contexts'))).toBe(true);
+    });
+
+    it('should reject provider-root symlinks without mutating the outside target', async () => {
+      const outside = join(tempDir, 'outside-codex-root');
+      await mkdir(join(outside, 'rules'), { recursive: true });
+      await writeFile(join(outside, 'rules', 'MUST-safety.md'), 'outside sentinel');
+      await symlink(outside, join(tempDir, '.codex'));
+
+      await expect(createDirectoryStructure(tempDir)).rejects.toThrow('symbolic link');
+      expect(await readFile(join(outside, 'rules', 'MUST-safety.md'), 'utf-8')).toBe(
+        'outside sentinel'
+      );
     });
 
     it('should use flat .codex structure (no nested agent/skill directories)', async () => {
@@ -229,6 +277,146 @@ describe('installer', () => {
       });
 
       expect(result).toBeDefined();
+    });
+
+    it('should reject component writes when provider root is a symlink before mutation', async () => {
+      const outside = join(tempDir, 'outside-provider-root');
+      await mkdir(join(outside, 'rules'), { recursive: true });
+      await writeFile(join(outside, 'rules', 'MUST-safety.md'), 'outside sentinel');
+      await symlink(outside, join(tempDir, '.codex'));
+      const beforeHash = await hashTree(tempDir);
+
+      const result = await install({
+        targetDir: tempDir,
+        components: ['rules'],
+        force: true,
+        skipConfirm: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(result.installedComponents).toEqual([]);
+      expect(await hashTree(tempDir)).toBe(beforeHash);
+      expect(await readFile(join(outside, 'rules', 'MUST-safety.md'), 'utf-8')).toBe(
+        'outside sentinel'
+      );
+    });
+
+    it('should reject AGENTS.md symlink before installing components', async () => {
+      const outsideEntry = join(tempDir, 'outside-AGENTS.md');
+      await writeFile(outsideEntry, 'outside entry sentinel');
+      await symlink(outsideEntry, join(tempDir, 'AGENTS.md'));
+      const beforeHash = await hashTree(tempDir);
+
+      const result = await install({
+        targetDir: tempDir,
+        components: ['rules'],
+        force: true,
+        skipConfirm: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(result.installedComponents).toEqual([]);
+      expect(await hashTree(tempDir)).toBe(beforeHash);
+      expect(await readFile(outsideEntry, 'utf-8')).toBe('outside entry sentinel');
+      expect(
+        await readFile(join(tempDir, '.codex', 'rules', 'MUST-safety.md'), 'utf-8').catch(
+          () => null
+        )
+      ).toBeNull();
+    });
+
+    it('should prevalidate lockfile symlinks before backup renames existing files', async () => {
+      await mkdir(join(tempDir, '.codex', 'rules'), { recursive: true });
+      await writeFile(join(tempDir, '.codex', 'rules', 'existing.md'), 'existing rule');
+      await writeFile(join(tempDir, 'AGENTS.md'), 'existing entry');
+      const outsideLock = join(tempDir, 'outside-lock.json');
+      await writeFile(outsideLock, 'outside lock sentinel');
+      await symlink(outsideLock, join(tempDir, '.omcodex.lock.json'));
+      const beforeHash = await hashTree(tempDir);
+
+      const result = await install({
+        targetDir: tempDir,
+        backup: true,
+        skipConfirm: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(result.backedUpPaths).toEqual([]);
+      expect(await hashTree(tempDir)).toBe(beforeHash);
+      expect(
+        (await readdir(tempDir)).filter((entry) => entry.startsWith('.omcodex-backup-'))
+      ).toEqual([]);
+      expect(await readFile(outsideLock, 'utf-8')).toBe('outside lock sentinel');
+    });
+
+    it('should reject backup source symlinks before creating preservation temp dirs', async () => {
+      await mkdir(join(tempDir, '.codex'), { recursive: true });
+      await writeFile(join(tempDir, '.codex', 'settings.json'), '{"local":true}');
+      const outsideEntry = join(tempDir, 'outside-entry.md');
+      await writeFile(outsideEntry, 'outside entry sentinel');
+      await symlink(outsideEntry, join(tempDir, 'AGENTS.md'));
+      const beforeHash = await hashTree(tempDir);
+      const beforeTemps = await listPreservationTempDirs();
+
+      const result = await install({
+        targetDir: tempDir,
+        backup: true,
+        skipConfirm: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(result.backedUpPaths).toEqual([]);
+      expect(await hashTree(tempDir)).toBe(beforeHash);
+      expect(await listPreservationTempDirs()).toEqual(beforeTemps);
+      expect(
+        (await readdir(tempDir)).filter((entry) => entry.startsWith('.omcodex-backup-'))
+      ).toEqual([]);
+      expect(await readFile(outsideEntry, 'utf-8')).toBe('outside entry sentinel');
+    });
+
+    it('should reject critical settings.local.json symlinks before creating preservation temp dirs', async () => {
+      await mkdir(join(tempDir, '.codex'), { recursive: true });
+      const outsideSettings = join(tempDir, 'outside-settings.json');
+      await writeFile(outsideSettings, '{"secret":true}');
+      await symlink(outsideSettings, join(tempDir, '.codex', 'settings.local.json'));
+      await writeFile(join(tempDir, 'AGENTS.md'), 'existing entry');
+      const beforeHash = await hashTree(tempDir);
+      const beforeTemps = await listPreservationTempDirs();
+
+      const result = await install({
+        targetDir: tempDir,
+        backup: true,
+        skipConfirm: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(result.backedUpPaths).toEqual([]);
+      expect(await hashTree(tempDir)).toBe(beforeHash);
+      expect(await listPreservationTempDirs()).toEqual(beforeTemps);
+      expect(
+        (await readdir(tempDir)).filter((entry) => entry.startsWith('.omcodex-backup-'))
+      ).toEqual([]);
+      expect(await readFile(outsideSettings, 'utf-8')).toBe('{"secret":true}');
+    });
+
+    it('should not create a target below a symlink parent', async () => {
+      const outside = join(tempDir, 'outside-parent');
+      await mkdir(outside);
+      await symlink(outside, join(tempDir, 'link-parent'));
+
+      const result = await install({
+        targetDir: join(tempDir, 'link-parent', 'project'),
+        skipConfirm: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('symbolic link');
+      expect(await fileExists(join(outside, 'project'))).toBe(false);
     });
 
     it('should warn about existing files without force/backup', async () => {
@@ -818,6 +1006,40 @@ describe('installer', () => {
       expect(
         result.warnings.some((w) => w.includes('Failed to parse existing settings.local.json'))
       ).toBe(true);
+    });
+  });
+
+  describe('public path safety helpers', () => {
+    it('should reject copyTemplates traversal before writing outside target', async () => {
+      const beforeHash = await hashTree(tempDir);
+
+      await expect(copyTemplates(tempDir, '../package.json', { overwrite: true })).rejects.toThrow(
+        'traverse outside templates'
+      );
+
+      expect(await hashTree(tempDir)).toBe(beforeHash);
+    });
+
+    it('should create missing safe targets when copying templates', async () => {
+      const targetDir = join(tempDir, 'new-safe-target');
+
+      await copyTemplates(targetDir, 'guides', { overwrite: true });
+
+      expect(await fileExists(join(targetDir, 'guides'))).toBe(true);
+    });
+
+    it('should reject copyTemplates targets below symlink parents', async () => {
+      const outside = join(tempDir, 'outside-copy-parent');
+      await mkdir(outside);
+      await symlink(outside, join(tempDir, 'link-copy-parent'));
+
+      await expect(
+        copyTemplates(join(tempDir, 'link-copy-parent', 'project'), 'guides', {
+          overwrite: true,
+        })
+      ).rejects.toThrow('symbolic link');
+
+      expect(await fileExists(join(outside, 'project'))).toBe(false);
     });
   });
 

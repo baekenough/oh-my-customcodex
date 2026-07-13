@@ -16,6 +16,7 @@ import { assessOmxInstallation, installOmx, MINIMUM_OMX_VERSION } from '../core/
 import { getRtkVersion, installRtk, isRtkInstalled } from '../core/rtk-installer.js';
 import { checkSelfUpdate } from '../core/self-update.js';
 import { i18n } from '../i18n/index.js';
+import { prevalidateSafeWritePath, validateSafeWritePath } from '../utils/fs.js';
 
 /**
  * Options for the doctor command
@@ -760,10 +761,17 @@ export async function checkCustomComponents(
  * @param brokenSymlinks - List of broken symlink paths
  * @returns Number of fixed symlinks
  */
-async function fixBrokenSymlinks(_targetDir: string, brokenSymlinks: string[]): Promise<number> {
-  let fixed = 0;
+async function fixBrokenSymlinks(targetDir: string, brokenSymlinks: string[]): Promise<number> {
+  let plan: string[];
 
-  for (const symlink of brokenSymlinks) {
+  try {
+    plan = await prevalidateBrokenSymlinkRepairs(targetDir, brokenSymlinks);
+  } catch {
+    return 0;
+  }
+
+  let fixed = 0;
+  for (const symlink of plan) {
     try {
       await fs.unlink(symlink);
       fixed++;
@@ -775,14 +783,106 @@ async function fixBrokenSymlinks(_targetDir: string, brokenSymlinks: string[]): 
   return fixed;
 }
 
+async function prevalidateBrokenSymlinkRepairs(
+  targetDir: string,
+  brokenSymlinks: string[]
+): Promise<string[]> {
+  const trustedRoot = path.resolve(targetDir);
+  const plan: string[] = [];
+
+  for (const symlink of brokenSymlinks) {
+    const resolvedLink = path.resolve(symlink);
+    const relativeLink = path.relative(trustedRoot, resolvedLink);
+    if (relativeLink.startsWith('..') || path.isAbsolute(relativeLink)) {
+      throw new Error(`Unsafe doctor repair path: ${symlink}`);
+    }
+
+    // A probe in the same parent validates every ancestor without rejecting
+    // the leaf symlink that unlink() is intentionally meant to remove.
+    await prevalidateSafeWritePath(
+      path.join(path.dirname(resolvedLink), '.omcodex-doctor-delete-boundary'),
+      trustedRoot
+    );
+    const stats = await fs.lstat(resolvedLink);
+    if (!stats.isSymbolicLink()) {
+      throw new Error(`Unsafe doctor repair target is not a symbolic link: ${resolvedLink}`);
+    }
+    plan.push(resolvedLink);
+  }
+
+  // Recheck every leaf before returning a mutation-ready plan so a stale
+  // diagnostic cannot produce a partial unlink batch.
+  for (const symlink of plan) {
+    if (!(await fs.lstat(symlink)).isSymbolicLink()) {
+      throw new Error(`Unsafe doctor repair target is not a symbolic link: ${symlink}`);
+    }
+  }
+
+  return plan;
+}
+
 /**
  * Create missing directories
  * @param dirPath - Directory path to create
  * @returns true if created successfully
  */
-async function createMissingDirectory(dirPath: string): Promise<boolean> {
+async function createMissingDirectory(dirPath: string, trustedRoot: string): Promise<boolean> {
   try {
-    await fs.mkdir(dirPath, { recursive: true });
+    const boundaryProbe = path.join(dirPath, '.omcodex-doctor-write-boundary');
+    await prevalidateSafeWritePath(boundaryProbe, trustedRoot);
+    // validateSafeWritePath creates only the safe parent directory; the probe
+    // itself is never written.
+    await validateSafeWritePath(boundaryProbe, trustedRoot);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getMissingDirectoryRepairPath(
+  checkName: string,
+  targetDir: string,
+  rootDir: string
+): string | null {
+  const repairPaths: Record<string, string> = {
+    Rules: path.join(targetDir, rootDir, 'rules'),
+    Agents: path.join(targetDir, rootDir, 'agents'),
+    Skills: path.join(targetDir, getComponentPath('skills')),
+    Guides: path.join(targetDir, 'guides'),
+    Hooks: path.join(targetDir, rootDir, 'hooks'),
+    Contexts: path.join(targetDir, rootDir, 'contexts'),
+  };
+
+  return repairPaths[checkName] ?? null;
+}
+
+function getBrokenSymlinkRepairPaths(check: CheckResult, targetDir: string): string[] {
+  if (check.name !== 'Symlinks' || !check.details) return [];
+  return check.details.map((detail) => path.join(targetDir, detail));
+}
+
+async function prevalidateFilesystemRepairPlan(
+  checks: CheckResult[],
+  targetDir: string,
+  rootDir: string
+): Promise<boolean> {
+  try {
+    for (const check of checks) {
+      if (check.status === 'pass' || !check.fixable) continue;
+
+      const directoryPath = getMissingDirectoryRepairPath(check.name, targetDir, rootDir);
+      if (directoryPath) {
+        await prevalidateSafeWritePath(
+          path.join(directoryPath, '.omcodex-doctor-write-boundary'),
+          targetDir
+        );
+      }
+
+      const brokenSymlinks = getBrokenSymlinkRepairPaths(check, targetDir);
+      if (brokenSymlinks.length > 0) {
+        await prevalidateBrokenSymlinkRepairs(targetDir, brokenSymlinks);
+      }
+    }
     return true;
   } catch {
     return false;
@@ -800,16 +900,15 @@ async function fixSingleIssue(
   targetDir: string,
   rootDir: string = '.codex'
 ): Promise<boolean> {
+  const directoryPath = getMissingDirectoryRepairPath(check.name, targetDir, rootDir);
+  if (directoryPath) {
+    return createMissingDirectory(directoryPath, targetDir);
+  }
+
   const fixMap: Record<string, () => Promise<boolean>> = {
-    Rules: () => createMissingDirectory(path.join(targetDir, rootDir, 'rules')),
-    Agents: () => createMissingDirectory(path.join(targetDir, rootDir, 'agents')),
-    Skills: () => createMissingDirectory(path.join(targetDir, getComponentPath('skills'))),
-    Guides: () => createMissingDirectory(path.join(targetDir, 'guides')),
-    Hooks: () => createMissingDirectory(path.join(targetDir, rootDir, 'hooks')),
-    Contexts: () => createMissingDirectory(path.join(targetDir, rootDir, 'contexts')),
     Symlinks: async () => {
-      if (!check.details || check.details.length === 0) return false;
-      const fullPaths = check.details.map((d) => path.join(targetDir, d));
+      const fullPaths = getBrokenSymlinkRepairPaths(check, targetDir);
+      if (fullPaths.length === 0) return false;
       const fixedCount = await fixBrokenSymlinks(targetDir, fullPaths);
       return fixedCount > 0;
     },
@@ -833,6 +932,10 @@ export async function fixIssues(
   targetDir: string,
   rootDir: string = '.codex'
 ): Promise<CheckResult[]> {
+  if (!(await prevalidateFilesystemRepairPlan(checks, targetDir, rootDir))) {
+    return [...checks];
+  }
+
   const fixedChecks: CheckResult[] = [];
 
   for (const check of checks) {

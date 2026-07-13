@@ -515,29 +515,18 @@ describe('preserveFiles feature', () => {
       expect(await fileExists(join(destDir, 'file2.txt'))).toBe(true);
     });
 
-    it('should handle nested skipPaths - documents current limitation', async () => {
+    it('should preserve nested skipPaths relative to the destination root', async () => {
       // Create nested source structure
       await mkdir(join(srcDir, 'dir1'), { recursive: true });
       await writeFile(join(srcDir, 'dir1/keep.txt'), 'keep');
       await writeFile(join(srcDir, 'dir1/skip.txt'), 'skip this');
 
-      // LIMITATION: copyDirectory uses shouldSkipPath(destPath, dest, skipPaths)
-      // where 'dest' changes on each recursive call. This means nested paths
-      // like 'dir1/skip.txt' cannot be matched because:
-      // - At root: relative(destDir, destDir/dir1) = 'dir1' (doesn't match 'dir1/skip.txt')
-      // - Inside dir1: relative(destDir/dir1, destDir/dir1/skip.txt) = 'skip.txt' (doesn't match 'dir1/skip.txt')
-      //
-      // In practice, this works fine because updateComponent normalizes paths
-      // relative to the component directory root before calling copyDirectory.
-      //
-      // This test documents the limitation: only top-level skipPaths work.
       await copyDirectory(srcDir, destDir, {
-        skipPaths: ['dir1/skip.txt'], // This won't actually skip the file
+        skipPaths: ['dir1/skip.txt'],
       });
 
-      // Verify both files are copied (skipPath doesn't work for nested paths)
       expect(await fileExists(join(destDir, 'dir1/keep.txt'))).toBe(true);
-      expect(await fileExists(join(destDir, 'dir1/skip.txt'))).toBe(true); // NOT skipped
+      expect(await fileExists(join(destDir, 'dir1/skip.txt'))).toBe(false);
 
       // What DOES work: skip the entire directory
       await rm(destDir, { recursive: true });

@@ -160,11 +160,13 @@ export async function updateCommand(
   spawnFn?: SpawnSyncFn
 ): Promise<void> {
   // Step 0: Self-update oh-my-customcodex before external updates
-  if (!options.skipSelf) {
-    await handleSelfUpdate(spawnFn);
-  } else {
-    // Fallback: notification-only version check when self-update is skipped
-    await checkCliVersion(cliVersionCheck);
+  if (!options.dryRun) {
+    if (!options.skipSelf) {
+      await handleSelfUpdate(spawnFn);
+    } else {
+      // Fallback: notification-only version check when self-update is skipped
+      await checkCliVersion(cliVersionCheck);
+    }
   }
 
   try {
@@ -260,7 +262,9 @@ async function updateAllProjects(options: UpdateCommandOptions): Promise<void> {
   const currentVersion = packageJson.version as string;
 
   console.log(i18n.t('cli.update.allScanning'));
-  await cleanRegistry();
+  if (!options.dryRun) {
+    await cleanRegistry();
+  }
   const projects = await findProjects();
 
   if (projects.length === 0) {
@@ -320,6 +324,10 @@ async function updateAllProjects(options: UpdateCommandOptions): Promise<void> {
       failed: String(failedCount),
     })
   );
+
+  if (failedCount > 0) {
+    process.exit(1);
+  }
 }
 
 /**

@@ -3,13 +3,17 @@
  * Handles installing from a pre-configured team snapshot directory
  */
 
-import { existsSync } from 'node:fs';
-import { copyFile, cp } from 'node:fs/promises';
-import { join } from 'node:path';
+import { realpath } from 'node:fs/promises';
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import packageJson from '../../package.json';
 import { readLockFile, writeLockFile } from '../cli/projects.js';
 import { i18n } from '../i18n/index.js';
-import { fileExists } from '../utils/fs.js';
+import {
+  copyDirectory,
+  copyFile,
+  prevalidateCopyDirectory,
+  prevalidateSafeWritePath,
+} from '../utils/fs.js';
 import { getComponentPath, getProviderLayout } from './layout.js';
 import { registerProject } from './registry.js';
 
@@ -43,23 +47,155 @@ export interface InitResult {
   errors?: string[];
 }
 
+interface SnapshotCopyOperation {
+  kind: 'directory' | 'file';
+  source: string;
+  destination: string;
+}
+
+interface SnapshotInstallPlan {
+  installOperations: SnapshotCopyOperation[];
+  backupOperations: SnapshotCopyOperation[];
+  backupDir?: string;
+}
+
+async function lstatIfPresent(path: string): Promise<import('node:fs').Stats | null> {
+  const fs = await import('node:fs/promises');
+  try {
+    return await fs.lstat(path);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
+async function assertRegularSourceFile(path: string, description: string): Promise<void> {
+  const stats = await lstatIfPresent(path);
+  if (!stats) {
+    throw new Error(`Snapshot source disappeared during validation: ${path}`);
+  }
+  if (stats.isSymbolicLink()) {
+    throw new Error(`Unsafe ${description}: symbolic links are not allowed: ${path}`);
+  }
+  if (!stats.isFile()) {
+    throw new Error(`Unsafe ${description}: expected a regular file: ${path}`);
+  }
+}
+
 /**
- * Check if provider root directory already exists
+ * Snapshot content is data, not a filesystem capability. Reject links and
+ * special files rather than preserving or following them into a project or a
+ * backup. This also prevents a backup from reading a secret through a link.
  */
-async function checkExistingInstallation(targetDir: string): Promise<boolean> {
-  const layout = getProviderLayout();
-  const markers = [layout.entryFile, layout.rootDir];
-  if (layout.provider === 'codex') {
-    markers.push('.agents');
+async function assertRegularSourceTree(path: string, description: string): Promise<void> {
+  const fs = await import('node:fs/promises');
+  const stats = await lstatIfPresent(path);
+  if (!stats) {
+    throw new Error(`Snapshot source disappeared during validation: ${path}`);
+  }
+  if (stats.isSymbolicLink()) {
+    throw new Error(`Unsafe ${description}: symbolic links are not allowed: ${path}`);
+  }
+  if (!stats.isDirectory()) {
+    throw new Error(`Unsafe ${description}: expected a directory: ${path}`);
   }
 
-  for (const marker of markers) {
-    if (await fileExists(join(targetDir, marker))) {
-      return true;
+  for (const entry of await fs.readdir(path, { withFileTypes: true })) {
+    const entryPath = join(path, entry.name);
+    if (entry.isSymbolicLink()) {
+      throw new Error(`Unsafe ${description}: symbolic links are not allowed: ${entryPath}`);
+    }
+    if (entry.isDirectory()) {
+      await assertRegularSourceTree(entryPath, description);
+      continue;
+    }
+    if (entry.isFile()) continue;
+    throw new Error(`Unsafe ${description}: special files are not allowed: ${entryPath}`);
+  }
+}
+
+async function assertTrustedProjectRoot(targetDir: string): Promise<void> {
+  const stats = await lstatIfPresent(targetDir);
+  if (!stats) {
+    throw new Error(`Snapshot target directory not found: ${targetDir}`);
+  }
+  if (stats.isSymbolicLink()) {
+    throw new Error(`Unsafe snapshot target: project root is a symbolic link: ${targetDir}`);
+  }
+  if (!stats.isDirectory()) {
+    throw new Error(`Unsafe snapshot target: project root is not a directory: ${targetDir}`);
+  }
+}
+
+async function canonicalizePathForOverlap(path: string): Promise<string> {
+  let current = resolve(path);
+  const unresolvedSuffix: string[] = [];
+
+  while (true) {
+    try {
+      return resolve(await realpath(current), ...unresolvedSuffix);
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== 'ENOENT' && code !== 'ENOTDIR') throw error;
+    }
+
+    const parent = dirname(current);
+    if (parent === current) {
+      throw new Error(`Unable to canonicalize snapshot path: ${path}`);
+    }
+    unresolvedSuffix.unshift(basename(current));
+    current = parent;
+  }
+}
+
+function isSameOrDescendant(path: string, ancestor: string): boolean {
+  const pathFromAncestor = relative(resolve(ancestor), resolve(path));
+  return (
+    pathFromAncestor === '' ||
+    (pathFromAncestor !== '..' &&
+      !pathFromAncestor.startsWith(`..${sep}`) &&
+      !isAbsolute(pathFromAncestor))
+  );
+}
+
+async function assertNonOverlappingCopyOperations(
+  operations: SnapshotCopyOperation[]
+): Promise<void> {
+  const canonicalOperations = await Promise.all(
+    operations.map(async (operation) => ({
+      operation,
+      source: await canonicalizePathForOverlap(operation.source),
+      destination: await canonicalizePathForOverlap(operation.destination),
+    }))
+  );
+
+  // A backup destination can overlap a later install source, so pairwise
+  // self-checks are insufficient. Check every destination against every source
+  // that has not yet been fully consumed. A later install destination may
+  // intentionally replace an earlier backup source after that backup read has
+  // completed, which is the sole temporal exception to the cross-plan guard.
+  for (
+    let destinationIndex = 0;
+    destinationIndex < canonicalOperations.length;
+    destinationIndex++
+  ) {
+    const destinationOperation = canonicalOperations[destinationIndex];
+    for (
+      let sourceIndex = destinationIndex;
+      sourceIndex < canonicalOperations.length;
+      sourceIndex++
+    ) {
+      const sourceOperation = canonicalOperations[sourceIndex];
+      if (
+        isSameOrDescendant(destinationOperation.destination, sourceOperation.source) ||
+        isSameOrDescendant(sourceOperation.source, destinationOperation.destination)
+      ) {
+        throw new Error(
+          `Unsafe snapshot install: destination overlaps source tree: ${sourceOperation.operation.source}`
+        );
+      }
     }
   }
-
-  return false;
 }
 
 function getSnapshotPaths(snapshotPath: string) {
@@ -73,13 +209,28 @@ function getSnapshotPaths(snapshotPath: string) {
   };
 }
 
-function validateSnapshot(snapshotPath: string): { valid: true } | { valid: false; error: string } {
-  if (!existsSync(snapshotPath)) {
+async function validateSnapshot(
+  snapshotPath: string
+): Promise<{ valid: true } | { valid: false; error: string }> {
+  // The user-selected snapshot leaf must itself be a real directory. Symlinked
+  // ancestors (including macOS /var aliases) remain valid workspace paths.
+  const rootStats = await lstatIfPresent(snapshotPath);
+  if (!rootStats) {
     return { valid: false, error: `Snapshot path not found: ${snapshotPath}` };
+  }
+  if (rootStats.isSymbolicLink() || !rootStats.isDirectory()) {
+    return {
+      valid: false,
+      error: `Invalid snapshot: root must be a real directory: ${snapshotPath}`,
+    };
   }
 
   const { layout, snapshotRuntime, snapshotSkills } = getSnapshotPaths(snapshotPath);
-  if (!existsSync(snapshotRuntime) && !existsSync(snapshotSkills)) {
+  const [runtimeStats, skillsStats] = await Promise.all([
+    lstatIfPresent(snapshotRuntime),
+    lstatIfPresent(snapshotSkills),
+  ]);
+  if (!runtimeStats && !skillsStats) {
     return {
       valid: false,
       error: `Invalid snapshot: missing ${layout.rootDir}/ or ${getComponentPath('skills')} in ${snapshotPath}`,
@@ -89,67 +240,142 @@ function validateSnapshot(snapshotPath: string): { valid: true } | { valid: fals
   return { valid: true };
 }
 
-async function backupExistingInstallationForSnapshot(
-  targetDir: string,
-  snapshotPath: string
-): Promise<void> {
-  const { layout } = getSnapshotPaths(snapshotPath);
-
-  const exists = await checkExistingInstallation(targetDir);
-  if (!exists) return;
-
-  console.log(i18n.t('cli.init.exists', { rootDir: layout.rootDir }));
-  console.log(i18n.t('cli.init.backing_up'));
-
-  const backupDir = join(
-    targetDir,
-    `${layout.backupDirPrefix}${new Date().toISOString().replace(/[:.]/g, '-').slice(0, -1)}`
-  );
-
-  if (existsSync(join(targetDir, layout.rootDir))) {
-    await cp(join(targetDir, layout.rootDir), join(backupDir, layout.rootDir), { recursive: true });
-  }
-  if (existsSync(join(targetDir, '.agents'))) {
-    await cp(join(targetDir, '.agents'), join(backupDir, '.agents'), { recursive: true });
-  }
-  if (existsSync(join(targetDir, layout.entryFile))) {
-    await copyFile(join(targetDir, layout.entryFile), join(backupDir, layout.entryFile));
-  }
-  if (existsSync(join(targetDir, 'guides'))) {
-    await cp(join(targetDir, 'guides'), join(backupDir, 'guides'), { recursive: true });
-  }
-
-  console.log(`  Backed up to: ${backupDir}`);
+function makeCopyOperation(
+  kind: SnapshotCopyOperation['kind'],
+  source: string,
+  destination: string
+): SnapshotCopyOperation {
+  return { kind, source, destination };
 }
 
-async function copySnapshotIntoTarget(targetDir: string, snapshotPath: string): Promise<void> {
+async function buildInstallOperations(
+  targetDir: string,
+  snapshotPath: string
+): Promise<SnapshotCopyOperation[]> {
   const { layout, snapshotRuntime, snapshotSkills, snapshotGuides, snapshotEntry } =
     getSnapshotPaths(snapshotPath);
+  const operations: SnapshotCopyOperation[] = [];
 
-  if (existsSync(snapshotRuntime)) {
-    await cp(snapshotRuntime, join(targetDir, layout.rootDir), {
-      recursive: true,
-      force: true,
+  for (const [source, destination] of [
+    [snapshotRuntime, join(targetDir, layout.rootDir)],
+    [snapshotSkills, join(targetDir, getComponentPath('skills'))],
+    [snapshotGuides, join(targetDir, 'guides')],
+  ] as const) {
+    if (await lstatIfPresent(source)) {
+      operations.push(makeCopyOperation('directory', source, destination));
+    }
+  }
+
+  if (await lstatIfPresent(snapshotEntry)) {
+    operations.push(makeCopyOperation('file', snapshotEntry, join(targetDir, layout.entryFile)));
+  }
+
+  return operations;
+}
+
+async function checkExistingInstallation(targetDir: string): Promise<boolean> {
+  const layout = getProviderLayout();
+  const markers = [layout.entryFile, layout.rootDir];
+  if (layout.provider === 'codex') markers.push('.agents');
+  for (const marker of markers) {
+    if (await lstatIfPresent(join(targetDir, marker))) return true;
+  }
+  return false;
+}
+
+async function buildBackupOperations(
+  targetDir: string,
+  backupDir: string
+): Promise<SnapshotCopyOperation[]> {
+  const layout = getProviderLayout();
+  const operations: SnapshotCopyOperation[] = [];
+
+  for (const relativePath of [layout.rootDir, '.agents', 'guides']) {
+    const source = join(targetDir, relativePath);
+    if (await lstatIfPresent(source)) {
+      operations.push(makeCopyOperation('directory', source, join(backupDir, relativePath)));
+    }
+  }
+
+  const entrySource = join(targetDir, layout.entryFile);
+  if (await lstatIfPresent(entrySource)) {
+    operations.push(makeCopyOperation('file', entrySource, join(backupDir, layout.entryFile)));
+  }
+
+  return operations;
+}
+
+async function validateCopySource(operation: SnapshotCopyOperation, description: string) {
+  if (operation.kind === 'directory') {
+    await assertRegularSourceTree(operation.source, description);
+  } else {
+    await assertRegularSourceFile(operation.source, description);
+  }
+}
+
+async function prevalidateCopyOperation(
+  operation: SnapshotCopyOperation,
+  trustedWriteRoot: string
+): Promise<void> {
+  if (operation.kind === 'directory') {
+    await prevalidateCopyDirectory(operation.source, operation.destination, {
+      overwrite: true,
+      trustedWriteRoot,
     });
+  } else {
+    await prevalidateSafeWritePath(operation.destination, trustedWriteRoot);
   }
+}
 
-  if (existsSync(snapshotSkills)) {
-    await cp(snapshotSkills, join(targetDir, getComponentPath('skills')), {
-      recursive: true,
-      force: true,
+async function executeCopyOperation(
+  operation: SnapshotCopyOperation,
+  trustedWriteRoot: string
+): Promise<void> {
+  if (operation.kind === 'directory') {
+    await copyDirectory(operation.source, operation.destination, {
+      overwrite: true,
+      trustedWriteRoot,
     });
+  } else {
+    await copyFile(operation.source, operation.destination, trustedWriteRoot);
+  }
+}
+
+async function buildAndValidateInstallPlan(
+  targetDir: string,
+  snapshotPath: string,
+  force: boolean
+): Promise<SnapshotInstallPlan> {
+  await assertTrustedProjectRoot(targetDir);
+  const installOperations = await buildInstallOperations(targetDir, snapshotPath);
+  for (const operation of installOperations) {
+    await validateCopySource(operation, 'snapshot source');
   }
 
-  if (existsSync(snapshotGuides)) {
-    await cp(snapshotGuides, join(targetDir, 'guides'), {
-      recursive: true,
-      force: true,
-    });
+  let backupDir: string | undefined;
+  let backupOperations: SnapshotCopyOperation[] = [];
+  if (!force && (await checkExistingInstallation(targetDir))) {
+    const layout = getProviderLayout();
+    backupDir = join(
+      targetDir,
+      `${layout.backupDirPrefix}${new Date().toISOString().replace(/[:.]/g, '-').slice(0, -1)}`
+    );
+    backupOperations = await buildBackupOperations(targetDir, backupDir);
+    for (const operation of backupOperations) {
+      await validateCopySource(operation, 'snapshot backup source');
+    }
   }
 
-  if (existsSync(snapshotEntry)) {
-    await copyFile(snapshotEntry, join(targetDir, layout.entryFile));
+  // Validate the complete backup, install, and finalization destination plan
+  // before the first directory or file is created.
+  const copyOperations = [...backupOperations, ...installOperations];
+  await assertNonOverlappingCopyOperations(copyOperations);
+  for (const operation of copyOperations) {
+    await prevalidateCopyOperation(operation, targetDir);
   }
+  await prevalidateSafeWritePath(join(targetDir, '.omcodex.lock.json'), targetDir);
+
+  return { installOperations, backupOperations, backupDir };
 }
 
 /**
@@ -160,7 +386,7 @@ export async function installFromSnapshot(
   snapshotPath: string,
   options: InitOptions
 ): Promise<InitResult> {
-  const snapshotValidation = validateSnapshot(snapshotPath);
+  const snapshotValidation = await validateSnapshot(snapshotPath);
   if (!snapshotValidation.valid) {
     return {
       success: false,
@@ -172,18 +398,28 @@ export async function installFromSnapshot(
   console.log(`Installing from snapshot: ${snapshotPath}`);
 
   try {
-    if (!options.force) {
-      await backupExistingInstallationForSnapshot(targetDir, snapshotPath);
+    const plan = await buildAndValidateInstallPlan(targetDir, snapshotPath, options.force === true);
+
+    if (plan.backupDir) {
+      const { layout } = getSnapshotPaths(snapshotPath);
+      console.log(i18n.t('cli.init.exists', { rootDir: layout.rootDir }));
+      console.log(i18n.t('cli.init.backing_up'));
+      for (const operation of plan.backupOperations) {
+        await executeCopyOperation(operation, targetDir);
+      }
+      console.log(`  Backed up to: ${plan.backupDir}`);
     }
 
-    await copySnapshotIntoTarget(targetDir, snapshotPath);
+    for (const operation of plan.installOperations) {
+      await executeCopyOperation(operation, targetDir);
+    }
 
-    // Update lock file
+    // Update lock file. The destination was included in the full preflight.
     try {
       const existing = await readLockFile(targetDir);
       await writeLockFile(targetDir, packageJson.version, existing);
     } catch {
-      // Non-blocking
+      // Non-blocking after a successful, explicit preflight.
     }
 
     // Register project in the local registry (non-blocking)

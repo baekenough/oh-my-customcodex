@@ -61,7 +61,14 @@ export function createProgram(commandName = getActiveCliCommandName()): Command 
     .option('--yes', 'Skip interactive wizard, use defaults')
     .option('--from-snapshot <path>', 'Install from a pre-configured team snapshot directory')
     .action(async (options) => {
-      await initCommand(options);
+      const result = await initCommand(options);
+      if (!result.success) {
+        console.error(result.message);
+        for (const detail of result.errors ?? []) {
+          console.error(detail);
+        }
+        process.exitCode = 1;
+      }
     });
 
   // omcodex update
@@ -233,11 +240,12 @@ export function createProgram(commandName = getActiveCliCommandName()): Command 
 
     const cmdName = actionCommand.name();
     const parentName = (actionCommand.parent as Command | undefined)?.name();
+    const actionOptions = actionCommand.opts() as { dryRun?: boolean };
 
     // Skip pre-flight for serve/serve-stop/web subcommands (fast server ops)
     const isServeCmd = cmdName === 'serve' || cmdName === 'serve-stop';
     const isWebCmd = cmdName === 'web' || parentName === 'web';
-    if (isServeCmd || isWebCmd) {
+    if (isServeCmd || isWebCmd || (cmdName === 'update' && actionOptions.dryRun)) {
       return;
     }
 

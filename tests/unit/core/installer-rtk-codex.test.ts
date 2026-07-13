@@ -393,31 +393,18 @@ describe('installer RTK/Codex/OMX paths', () => {
       installOmx: () => true,
       getOmxVersion: () => 'oh-my-codex v0.19.0',
     }));
-    // Mock lockfile module to return a warning, simulating lockfile generation failure
-    mock.module('../../../src/core/lockfile.js', () => ({
-      generateAndWriteLockfileForDir: async () => ({
-        fileCount: 0,
-        warning: 'Lockfile generation failed: Manifest read failed',
-      }),
-      readLockfile: async () => ({
-        version: '1',
-        generatorVersion: '0.0.0',
-        templateVersion: '0.0.0',
-        files: {},
-      }),
-      writeLockfile: async () => {},
-      generateLockfile: async () => ({
-        version: '1',
-        generatorVersion: '0.0.0',
-        templateVersion: '0.0.0',
-        files: {},
-      }),
-      computeFileHash: async () => 'abc123',
-    }));
-
     const { install } = await import('../../../src/core/installer.js');
 
-    const result = await install({ targetDir: tempDir, skipConfirm: true });
+    const result = await install({
+      targetDir: tempDir,
+      skipConfirm: true,
+      dependencies: {
+        generateAndWriteLockfileForDir: async () => ({
+          fileCount: 0,
+          warning: 'Lockfile generation failed: Manifest read failed',
+        }),
+      },
+    });
 
     // The lockfile warning should be in result.warnings when generation fails
     expect(result.warnings.some((w) => w.includes('Lockfile generation failed'))).toBe(true);

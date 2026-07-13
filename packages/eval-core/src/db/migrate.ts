@@ -20,7 +20,7 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
   db.run('PRAGMA busy_timeout = 5000');
 
   // Create tables using bun:sqlite (SQL DDL, not shell)
-  const statements = [
+  runStatements(db, [
     `CREATE TABLE IF NOT EXISTS projects (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -81,12 +81,14 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
       observed_steps INTEGER,
       observed_tool_calls INTEGER,
       observed_latency_ms INTEGER,
+      duration_seconds INTEGER,
       correctness REAL,
       step_ratio REAL,
       tool_call_ratio REAL,
       latency_ratio REAL,
       started_at TEXT,
       completed_at TEXT,
+      invocation_fingerprint TEXT,
       pattern_used TEXT,
       skill_name TEXT,
       description TEXT,
@@ -150,7 +152,6 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
     'CREATE INDEX IF NOT EXISTS idx_turns_session_id ON turns(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_ppid ON agent_invocations(session_ppid)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_agent_type ON agent_invocations(agent_type)',
-    'CREATE INDEX IF NOT EXISTS idx_invocations_baseline_id ON agent_invocations(baseline_id)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_agent_model ON agent_invocations(agent_type, model)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_type_outcome_ts ON agent_invocations(agent_type, outcome, timestamp)',
     'CREATE INDEX IF NOT EXISTS idx_evaluations_session_id ON evaluations(session_id)',
@@ -162,85 +163,81 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
     'CREATE INDEX IF NOT EXISTS idx_memory_records_source ON memory_records(source, source_id)',
     'CREATE INDEX IF NOT EXISTS idx_memory_records_project ON memory_records(project)',
     'CREATE INDEX IF NOT EXISTS idx_memory_records_scope_kind ON memory_records(scope, kind)',
-  ];
-
-  db.transaction(() => {
-    for (const sql of statements) {
-      db.run(sql);
-    }
-  })();
+  ]);
 
   // Migrations: add project_id column to existing sessions table (idempotent)
-  try {
-    db.run('ALTER TABLE sessions ADD COLUMN project_id INTEGER REFERENCES projects(id)');
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : '';
-    if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
-      throw err; // Re-throw unexpected errors (e.g., disk I/O)
-    }
-  }
+  runOptionalStatement(
+    db,
+    'ALTER TABLE sessions ADD COLUMN project_id INTEGER REFERENCES projects(id)',
+    ['duplicate column', 'already exists']
+  );
 
   // Migration: add conflict resolution columns to improvement_actions (idempotent)
-  for (const col of [
+  addColumns(db, [
     'ALTER TABLE improvement_actions ADD COLUMN priority INTEGER DEFAULT 0',
     'ALTER TABLE improvement_actions ADD COLUMN cooldown_days INTEGER DEFAULT 7',
     'ALTER TABLE improvement_actions ADD COLUMN conflict_resolved_by TEXT',
-  ]) {
-    try {
-      db.run(col);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '';
-      if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
-        throw err;
-      }
-    }
-  }
+  ]);
 
   // Migration: expand agent_invocations for optional trajectory analysis fields (idempotent)
-  for (const col of [
+  addColumns(db, [
     'ALTER TABLE agent_invocations ADD COLUMN baseline_id INTEGER REFERENCES eval_baselines(id)',
     'ALTER TABLE agent_invocations ADD COLUMN agent_name TEXT',
     'ALTER TABLE agent_invocations ADD COLUMN observed_steps INTEGER',
     'ALTER TABLE agent_invocations ADD COLUMN observed_tool_calls INTEGER',
     'ALTER TABLE agent_invocations ADD COLUMN observed_latency_ms INTEGER',
+    'ALTER TABLE agent_invocations ADD COLUMN duration_seconds INTEGER',
     'ALTER TABLE agent_invocations ADD COLUMN correctness REAL',
     'ALTER TABLE agent_invocations ADD COLUMN step_ratio REAL',
     'ALTER TABLE agent_invocations ADD COLUMN tool_call_ratio REAL',
     'ALTER TABLE agent_invocations ADD COLUMN latency_ratio REAL',
     'ALTER TABLE agent_invocations ADD COLUMN started_at TEXT',
     'ALTER TABLE agent_invocations ADD COLUMN completed_at TEXT',
-  ]) {
-    try {
-      db.run(col);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '';
-      if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
-        throw err;
-      }
-    }
-  }
+    'ALTER TABLE agent_invocations ADD COLUMN invocation_fingerprint TEXT',
+  ]);
 
   // Add project_id index after the ALTER TABLE migration (column may not exist on legacy DBs)
-  try {
-    db.run('CREATE INDEX IF NOT EXISTS idx_sessions_project_id ON sessions(project_id)');
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : '';
-    if (!msg.includes('already exists') && !msg.includes('no such column')) {
-      throw err; // Re-throw unexpected errors
-    }
-  }
-
-  for (const indexSql of [
+  createOptionalIndexes(db, [
+    'CREATE INDEX IF NOT EXISTS idx_sessions_project_id ON sessions(project_id)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_baseline_id ON agent_invocations(baseline_id)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_agent_model ON agent_invocations(agent_type, model)',
-  ]) {
-    try {
-      db.run(indexSql);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '';
-      if (!msg.includes('already exists') && !msg.includes('no such column')) {
-        throw err;
-      }
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_invocations_fingerprint_unique ON agent_invocations(invocation_fingerprint)',
+  ]);
+}
+
+function runStatements(db: InstanceType<typeof Database>, statements: string[]): void {
+  db.transaction(() => {
+    for (const sql of statements) {
+      db.run(sql);
     }
+  })();
+}
+
+function addColumns(db: InstanceType<typeof Database>, statements: string[]): void {
+  for (const sql of statements) {
+    runOptionalStatement(db, sql, ['duplicate column', 'already exists']);
   }
+}
+
+function createOptionalIndexes(db: InstanceType<typeof Database>, statements: string[]): void {
+  for (const sql of statements) {
+    runOptionalStatement(db, sql, ['already exists', 'no such column']);
+  }
+}
+
+function runOptionalStatement(
+  db: InstanceType<typeof Database>,
+  sql: string,
+  ignoredMessages: string[]
+): void {
+  try {
+    db.run(sql);
+  } catch (err: unknown) {
+    if (!isIgnoredMigrationError(err, ignoredMessages)) throw err;
+  }
+}
+
+function isIgnoredMigrationError(err: unknown, ignoredMessages: string[]): boolean {
+  const msg = err instanceof Error ? err.message : '';
+  return ignoredMessages.some((ignored) => msg.includes(ignored));
 }

@@ -9,7 +9,13 @@ import { basename, join, sep } from 'node:path';
 import packageJson from '../../package.json';
 import { readRegistry } from '../core/registry.js';
 import { rewriteCliCommandReferences } from '../utils/cli-command-name.js';
-import { fileExists, readJsonFile, resolveTemplatePath } from '../utils/fs.js';
+import {
+  fileExists,
+  prevalidateSafeWritePath,
+  readJsonFile,
+  resolveTemplatePath,
+  writeJsonFile,
+} from '../utils/fs.js';
 
 /**
  * Lock file schema for .omcodex.lock.json
@@ -341,7 +347,6 @@ export async function writeLockFile(
   version: string,
   existing?: OmcustomLockFile | null
 ): Promise<void> {
-  const fs = await import('node:fs/promises');
   const lockFilePath = join(projectDir, '.omcodex.lock.json');
   const now = new Date().toISOString();
 
@@ -353,7 +358,8 @@ export async function writeLockFile(
     updatedAt: now,
   };
 
-  await fs.writeFile(lockFilePath, JSON.stringify(merged, null, 2), 'utf-8');
+  await prevalidateSafeWritePath(lockFilePath, projectDir);
+  await writeJsonFile(lockFilePath, merged, { trustedWriteRoot: projectDir });
 }
 
 /**

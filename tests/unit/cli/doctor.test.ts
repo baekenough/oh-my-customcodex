@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { promises as fs } from 'node:fs';
+import { lstat, mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import {
   type CheckResult,
   checkAgents,
@@ -16,6 +18,41 @@ import {
   printCheck,
 } from '../../../src/cli/doctor.js';
 import { initI18n } from '../../../src/i18n/index.js';
+
+async function hashTree(root: string): Promise<string> {
+  const entries: string[] = [];
+
+  async function visit(entryPath: string): Promise<void> {
+    const stats = await fs.lstat(entryPath);
+    const entryName = relative(root, entryPath) || '.';
+
+    if (stats.isSymbolicLink()) {
+      entries.push(`link:${entryName}:${await fs.readlink(entryPath)}`);
+      return;
+    }
+    if (stats.isDirectory()) {
+      entries.push(`dir:${entryName}`);
+      const children = (await fs.readdir(entryPath)).sort();
+      for (const child of children) {
+        await visit(join(entryPath, child));
+      }
+      return;
+    }
+    if (stats.isFile()) {
+      entries.push(
+        `file:${entryName}:${createHash('sha256')
+          .update(await fs.readFile(entryPath))
+          .digest('hex')}`
+      );
+      return;
+    }
+
+    entries.push(`other:${entryName}:${stats.mode}`);
+  }
+
+  await visit(root);
+  return createHash('sha256').update(entries.join('\n')).digest('hex');
+}
 
 describe('doctor command', () => {
   let tempDir: string;
@@ -321,6 +358,94 @@ describe('doctor command', () => {
       const rulesDir = join(tempDir, '.codex', 'rules');
       const dirStat = await stat(rulesDir);
       expect(dirStat.isDirectory()).toBe(true);
+    });
+
+    it('does not repair through a symlinked provider root outside the project', async () => {
+      const outsideDir = join(tempDir, 'outside-provider-root');
+      await mkdir(outsideDir);
+      const providerLink = join(tempDir, '.codex');
+      await symlink(outsideDir, providerLink);
+      const checks: CheckResult[] = [
+        {
+          name: 'Rules',
+          status: 'fail',
+          message: 'Rules directory is missing',
+          fixable: true,
+        },
+      ];
+      const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+
+      const fixedChecks = await fixIssues(checks, tempDir);
+      consoleSpy.mockRestore();
+
+      expect(fixedChecks[0].fixed).not.toBe(true);
+      await expect(lstat(join(outsideDir, 'rules'))).rejects.toThrow();
+      expect((await lstat(providerLink)).isSymbolicLink()).toBe(true);
+    });
+
+    it('does not unlink broken links through a symlinked skills ancestor', async () => {
+      const outsideDir = await mkdtemp(join(tmpdir(), 'omcodex-doctor-outside-skills-'));
+      try {
+        const refsDir = join(outsideDir, 'skills', 'development', 'unsafe-skill', 'refs');
+        await mkdir(refsDir, { recursive: true });
+        const outsideBrokenLink = join(refsDir, 'broken-link');
+        await symlink('/definitely/missing/doctor-target', outsideBrokenLink);
+        const skillsAncestorLink = join(tempDir, '.agents');
+        await symlink(outsideDir, skillsAncestorLink);
+        const check = await checkSymlinks(tempDir);
+        expect(check.status).toBe('fail');
+        const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+
+        const fixedChecks = await fixIssues([check], tempDir);
+        consoleSpy.mockRestore();
+
+        expect(fixedChecks[0].fixed).not.toBe(true);
+        expect((await lstat(outsideBrokenLink)).isSymbolicLink()).toBe(true);
+        expect((await lstat(skillsAncestorLink)).isSymbolicLink()).toBe(true);
+      } finally {
+        await rm(outsideDir, { recursive: true, force: true });
+      }
+    });
+
+    it('preflights the complete filesystem repair plan before the first mutation', async () => {
+      await mkdir(join(tempDir, '.codex'));
+      const outsideDir = await mkdtemp(join(tmpdir(), 'omcodex-doctor-atomicity-outside-'));
+      const refsDir = join(outsideDir, 'skills', 'development', 'unsafe-skill', 'refs');
+      await mkdir(refsDir, { recursive: true });
+      await symlink('/definitely/missing/doctor-target', join(refsDir, 'broken-link'));
+      await symlink(outsideDir, join(tempDir, '.agents'));
+
+      const symlinksCheck = await checkSymlinks(tempDir);
+      expect(symlinksCheck.status).toBe('fail');
+      const checks: CheckResult[] = [
+        {
+          name: 'Rules',
+          status: 'fail',
+          message: 'Rules directory is missing',
+          fixable: true,
+        },
+        symlinksCheck,
+      ];
+      const targetHashBefore = await hashTree(tempDir);
+      const outsideHashBefore = await hashTree(outsideDir);
+      const mkdirSpy = spyOn(fs, 'mkdir');
+      const unlinkSpy = spyOn(fs, 'unlink');
+      const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+
+      try {
+        const fixedChecks = await fixIssues(checks, tempDir);
+
+        expect(fixedChecks.every((check) => check.fixed !== true)).toBe(true);
+        expect(mkdirSpy).toHaveBeenCalledTimes(0);
+        expect(unlinkSpy).toHaveBeenCalledTimes(0);
+        expect(await hashTree(tempDir)).toBe(targetHashBefore);
+        expect(await hashTree(outsideDir)).toBe(outsideHashBefore);
+      } finally {
+        consoleSpy.mockRestore();
+        mkdirSpy.mockRestore();
+        unlinkSpy.mockRestore();
+        await rm(outsideDir, { recursive: true, force: true });
+      }
     });
 
     it('should create missing agents directory', async () => {

@@ -1,9 +1,7 @@
 /**
  * Isolated error-path tests for src/core/sync.ts.
  *
- * These tests use mock.module which modifies global module state.
- * They MUST live in a separate file to avoid contaminating other sync tests.
- * See: bun:test mock.module isolation notes in project MEMORY.
+ * These tests use dependency injection to avoid Bun mock.module global state.
  *
  * Covered lines:
  *   - generateCurrentLockfile catch (line 71): generateLockfile throws → returns null
@@ -16,12 +14,11 @@
  *   Lines 58-59 are intentionally excluded from this file. The remaining coverage
  *   (≥98%) satisfies the project threshold.
  *
- * Mock strategy:
- *   Mocks lockfile.js only (generateLockfile throws, readLockfile returns data).
- *   Does NOT touch utils/fs.js, avoiding cross-module contamination.
+ * Dependency strategy:
+ *   Injects lockfile functions only for the exercised call.
  */
 
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -36,7 +33,6 @@ describe('sync error paths (isolated mock.module tests)', () => {
 
   afterEach(async () => {
     await rm(tempDir, { recursive: true, force: true });
-    mock.restore();
   });
 
   it('syncCheck hits if (!current) branch when generateLockfile throws (lines 71, 108-111)', async () => {
@@ -50,26 +46,20 @@ describe('sync error paths (isolated mock.module tests)', () => {
     };
     await writeFile(join(tempDir, LOCKFILE_NAME), JSON.stringify(lockfileData, null, 2), 'utf-8');
 
-    // Mock only the lockfile module — this does NOT affect utils/fs.js, so snapshot.ts
-    // and other modules that import utils/fs.js are unaffected.
     // readLockfile succeeds (returns the lockfile above), but generateLockfile throws.
     // This forces generateCurrentLockfile to return null (line 71), causing syncCheck
     // to enter the if (!current) branch (lines 108-111).
-    mock.module('../../../src/core/lockfile.js', () => ({
-      LOCKFILE_NAME,
-      LOCKFILE_VERSION,
-      readLockfile: async () => lockfileData,
-      generateLockfile: async () => {
-        throw new Error('simulated generateLockfile failure');
-      },
-      writeLockfile: async () => {},
-      diffLockfiles: () => ({ added: [], removed: [], modified: [], unchanged: [] }),
-    }));
-
-    // Re-import sync.js after the mock is installed.
     const { syncCheck } = await import('../../../src/core/sync.js');
 
-    const result = await syncCheck(tempDir);
+    const result = await syncCheck(tempDir, {
+      dependencies: {
+        readLockfile: async () => lockfileData,
+        generateLockfile: async () => {
+          throw new Error('simulated generateLockfile failure');
+        },
+        diffLockfiles: () => ({ added: [], removed: [], modified: [], unchanged: [] }),
+      },
+    });
 
     // generateCurrentLockfile returned null → if (!current) branch returns early
     // with referenceVersion set but currentVersion null

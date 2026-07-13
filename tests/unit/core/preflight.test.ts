@@ -1,8 +1,12 @@
-import { beforeEach, describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   formatPreflightWarnings,
   isCI,
   type PreflightResult,
+  resolveCommandInvocation,
   runPreflightCheck,
 } from '../../../src/core/preflight.js';
 
@@ -46,6 +50,43 @@ describe('preflight', () => {
     });
   });
 
+  describe('resolveCommandInvocation', () => {
+    it('uses cmd.exe for Windows npm-style shims without enabling shell mode', () => {
+      const invocation = resolveCommandInvocation(
+        'npm',
+        ['view', '@openai/codex', 'version', '--json'],
+        'win32',
+        'C:\\Windows\\System32\\cmd.exe'
+      );
+
+      expect(invocation).toEqual({
+        executable: 'C:\\Windows\\System32\\cmd.exe',
+        args: ['/d', '/s', '/v:off', '/c', 'npm view @openai/codex version --json'],
+      });
+    });
+
+    it('rejects Windows command and argument tokens with shell metacharacters', () => {
+      expect(() =>
+        resolveCommandInvocation('npm & whoami', ['--version'], 'win32', 'cmd.exe')
+      ).toThrow('Unsafe Windows pre-flight command token');
+      expect(() =>
+        resolveCommandInvocation('npm', ['view', 'safe-package & whoami'], 'win32', 'cmd.exe')
+      ).toThrow('Unsafe Windows pre-flight command token');
+      expect(() =>
+        resolveCommandInvocation('npm', ['view', '%COMSPEC%'], 'win32', 'cmd.exe')
+      ).toThrow('Unsafe Windows pre-flight command token');
+    });
+
+    it('passes arguments directly to execFile on non-Windows platforms', () => {
+      const args = ['view', 'package name & still-an-argument'];
+
+      expect(resolveCommandInvocation('/custom/npm', args, 'linux')).toEqual({
+        executable: '/custom/npm',
+        args,
+      });
+    });
+  });
+
   describe('runPreflightCheck', () => {
     it('should return skipped result when skip option is true', async () => {
       const result = await runPreflightCheck({ skip: true });
@@ -71,6 +112,179 @@ describe('preflight', () => {
     // mockable in Bun's test environment. These paths are defensive error handling
     // and can be validated through integration tests or manual testing.
     // The core logic (CI detection, skip flags, formatting) is tested above.
+  });
+
+  describe('persistent result cache', () => {
+    let tempDir: string;
+    let cachePath: string;
+
+    const successfulResult = (toolNames: string[], version: string): PreflightResult => ({
+      tools: toolNames.map((name) => ({
+        name,
+        installed: true,
+        currentVersion: version,
+        latestVersion: version,
+        updateAvailable: false,
+        installMethod: 'path',
+      })),
+      hasUpdates: false,
+      warnings: [],
+      skipped: false,
+    });
+
+    beforeEach(() => {
+      tempDir = mkdtempSync(join(tmpdir(), 'omcodex-preflight-cache-'));
+      cachePath = join(tempDir, 'preflight-cache.json');
+    });
+
+    afterEach(() => {
+      rmSync(tempDir, { recursive: true, force: true });
+    });
+
+    it('reuses a fresh result without starting another probe', async () => {
+      let collectionCount = 0;
+      const collect = (toolNames: string[]): PreflightResult => {
+        collectionCount += 1;
+        return successfulResult(toolNames, '1.0.0');
+      };
+
+      const first = await runPreflightCheck({
+        tools: ['codex', 'omx'],
+        _cachePath: cachePath,
+        _cacheTtlMs: 1000,
+        _now: 10_000,
+        _collectFn: collect,
+      });
+      const second = await runPreflightCheck({
+        tools: ['codex', 'omx'],
+        _cachePath: cachePath,
+        _cacheTtlMs: 1000,
+        _now: 10_999,
+        _collectFn: () => {
+          throw new Error('fresh cache should bypass collection');
+        },
+      });
+
+      expect(collectionCount).toBe(1);
+      expect(second).toEqual(first);
+    });
+
+    it('refreshes an entry at the TTL boundary', async () => {
+      await runPreflightCheck({
+        tools: ['codex'],
+        _cachePath: cachePath,
+        _cacheTtlMs: 1000,
+        _now: 10_000,
+        _collectFn: (toolNames) => successfulResult(toolNames, '1.0.0'),
+      });
+
+      const refreshed = await runPreflightCheck({
+        tools: ['codex'],
+        _cachePath: cachePath,
+        _cacheTtlMs: 1000,
+        _now: 11_000,
+        _collectFn: (toolNames) => successfulResult(toolNames, '2.0.0'),
+      });
+
+      expect(refreshed.tools[0].currentVersion).toBe('2.0.0');
+    });
+
+    it('ignores broken JSON and replaces it with a valid cache document', async () => {
+      writeFileSync(cachePath, '{not-json');
+
+      const result = await runPreflightCheck({
+        tools: ['codex'],
+        _cachePath: cachePath,
+        _now: 10_000,
+        _collectFn: (toolNames) => successfulResult(toolNames, '1.0.0'),
+      });
+      const stored = JSON.parse(readFileSync(cachePath, 'utf8')) as {
+        version: number;
+        entries: unknown[];
+      };
+
+      expect(result.tools[0].name).toBe('codex');
+      expect(stored.version).toBe(1);
+      expect(stored.entries).toHaveLength(1);
+    });
+
+    it('rejects a cache entry whose result belongs to another tool list', async () => {
+      writeFileSync(
+        cachePath,
+        JSON.stringify({
+          version: 1,
+          entries: [
+            {
+              checkedAt: 10_000,
+              toolNames: ['codex'],
+              result: successfulResult(['omx'], '9.0.0'),
+            },
+          ],
+        })
+      );
+
+      const result = await runPreflightCheck({
+        tools: ['codex'],
+        _cachePath: cachePath,
+        _now: 10_001,
+        _collectFn: (toolNames) => successfulResult(toolNames, '1.0.0'),
+      });
+
+      expect(result.tools[0].name).toBe('codex');
+      expect(result.tools[0].currentVersion).toBe('1.0.0');
+    });
+
+    it('keeps results isolated by the exact requested tool list', async () => {
+      let collectionCount = 0;
+      const collect = (toolNames: string[]): PreflightResult => {
+        collectionCount += 1;
+        return successfulResult(toolNames, `${collectionCount}.0.0`);
+      };
+
+      await runPreflightCheck({
+        tools: ['codex'],
+        _cachePath: cachePath,
+        _now: 10_000,
+        _collectFn: collect,
+      });
+      const omx = await runPreflightCheck({
+        tools: ['omx'],
+        _cachePath: cachePath,
+        _now: 10_001,
+        _collectFn: collect,
+      });
+      const codex = await runPreflightCheck({
+        tools: ['codex'],
+        _cachePath: cachePath,
+        _now: 10_002,
+        _collectFn: () => {
+          throw new Error('the codex entry should remain cached');
+        },
+      });
+
+      expect(collectionCount).toBe(2);
+      expect(omx.tools.map((tool) => tool.name)).toEqual(['omx']);
+      expect(codex.tools.map((tool) => tool.name)).toEqual(['codex']);
+      expect(codex.tools[0].currentVersion).toBe('1.0.0');
+    });
+
+    it('treats a future-dated entry as stale after a clock rollback', async () => {
+      await runPreflightCheck({
+        tools: ['codex'],
+        _cachePath: cachePath,
+        _now: 20_000,
+        _collectFn: (toolNames) => successfulResult(toolNames, '1.0.0'),
+      });
+
+      const result = await runPreflightCheck({
+        tools: ['codex'],
+        _cachePath: cachePath,
+        _now: 10_000,
+        _collectFn: (toolNames) => successfulResult(toolNames, '2.0.0'),
+      });
+
+      expect(result.tools[0].currentVersion).toBe('2.0.0');
+    });
   });
 
   describe('formatPreflightWarnings', () => {

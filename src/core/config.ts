@@ -2,12 +2,16 @@
  * Configuration management module
  */
 
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import {
+  deleteFile,
   ensureDirectory,
   fileExists,
+  prevalidateSafeWritePath,
   readJsonFile,
+  type SafeWriteOptions,
   validatePreserveFilePath,
+  validateSafeDeleteFilePath,
   writeJsonFile,
 } from '../utils/fs.js';
 import { debug, warn } from '../utils/logger.js';
@@ -127,6 +131,29 @@ export const LEGACY_CONFIG_FILE = '.omcustomrc.json';
 /** Current config version */
 const CURRENT_CONFIG_VERSION = 1;
 
+async function lstatIfPresent(path: string): Promise<import('node:fs').Stats | null> {
+  const fs = await import('node:fs/promises');
+  try {
+    return await fs.lstat(path);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
+async function findExistingTrustedBoundary(path: string): Promise<string> {
+  let current = resolve(path);
+  while (true) {
+    const stats = await lstatIfPresent(current);
+    if (stats && !stats.isSymbolicLink() && stats.isDirectory()) return current;
+    const parent = dirname(current);
+    if (parent === current) {
+      throw new Error(`Unable to find a trusted directory boundary for: ${path}`);
+    }
+    current = parent;
+  }
+}
+
 /**
  * Get the default configuration
  */
@@ -201,7 +228,10 @@ async function resolveConfigPath(targetDir: string): Promise<string> {
 /**
  * Load configuration from target directory
  */
-export async function loadConfig(targetDir: string): Promise<OmccConfig> {
+export async function loadConfig(
+  targetDir: string,
+  options: { persistMigrations?: boolean } = {}
+): Promise<OmccConfig> {
   const configPath = await resolveConfigPath(targetDir);
 
   if (await fileExists(configPath)) {
@@ -212,7 +242,9 @@ export async function loadConfig(targetDir: string): Promise<OmccConfig> {
       // Migrate if needed
       if (merged.configVersion < CURRENT_CONFIG_VERSION) {
         const migrated = migrateConfig(merged);
-        await saveConfig(targetDir, migrated);
+        if (options.persistMigrations !== false) {
+          await saveConfig(targetDir, migrated);
+        }
         return migrated;
       }
 
@@ -230,8 +262,17 @@ export async function loadConfig(targetDir: string): Promise<OmccConfig> {
 /**
  * Save configuration to target directory
  */
-export async function saveConfig(targetDir: string, config: OmccConfig): Promise<void> {
+export async function saveConfig(
+  targetDir: string,
+  config: OmccConfig,
+  options: SafeWriteOptions = {}
+): Promise<void> {
   const configPath = getConfigPath(targetDir);
+
+  // targetDir may not exist yet. Preflight it from the nearest real ancestor
+  // before mkdir so a symlinked segment cannot redirect directory creation.
+  const planningRoot = options.trustedWriteRoot ?? (await findExistingTrustedBoundary(targetDir));
+  await prevalidateSafeWritePath(configPath, planningRoot);
 
   // Ensure directory exists
   await ensureDirectory(targetDir);
@@ -239,7 +280,10 @@ export async function saveConfig(targetDir: string, config: OmccConfig): Promise
   // Update last updated timestamp
   config.lastUpdated = new Date().toISOString();
 
-  await writeJsonFile(configPath, config);
+  await writeJsonFile(configPath, config, {
+    ...options,
+    trustedWriteRoot: options.trustedWriteRoot ?? targetDir,
+  });
   debug('config.saved', { path: configPath });
 }
 
@@ -394,11 +438,40 @@ export async function configExists(targetDir: string): Promise<boolean> {
  */
 export async function deleteConfig(targetDir: string): Promise<void> {
   const fs = await import('node:fs/promises');
-  for (const configPath of getConfigCandidatePaths(targetDir)) {
-    if (await fileExists(configPath)) {
-      await fs.unlink(configPath);
-      debug('config.deleted', { path: configPath });
+  const trustedTargetRoot = resolve(targetDir);
+  const rootStats = await lstatIfPresent(trustedTargetRoot);
+  if (!rootStats) return;
+  if (rootStats.isSymbolicLink()) {
+    throw new Error(`Unsafe config delete: target root is a symbolic link: ${trustedTargetRoot}`);
+  }
+  if (!rootStats.isDirectory()) {
+    throw new Error(`Unsafe config delete: target root is not a directory: ${trustedTargetRoot}`);
+  }
+
+  const plan: Array<{ path: string; kind: 'file' | 'symlink' }> = [];
+  for (const configPath of getConfigCandidatePaths(trustedTargetRoot)) {
+    const stats = await lstatIfPresent(configPath);
+    if (!stats) continue;
+    if (stats.isSymbolicLink()) {
+      // unlink() removes only the link itself; its target is never followed.
+      plan.push({ path: configPath, kind: 'symlink' });
+      continue;
     }
+    if (!stats.isFile()) {
+      throw new Error(`Unsafe config delete: destination is not a regular file: ${configPath}`);
+    }
+    await validateSafeDeleteFilePath(configPath, trustedTargetRoot);
+    plan.push({ path: configPath, kind: 'file' });
+  }
+
+  // Both canonical and legacy candidates are valid before the first unlink.
+  for (const entry of plan) {
+    if (entry.kind === 'file') {
+      await deleteFile(entry.path, trustedTargetRoot);
+    } else {
+      await fs.unlink(entry.path);
+    }
+    debug('config.deleted', { path: entry.path });
   }
 }
 

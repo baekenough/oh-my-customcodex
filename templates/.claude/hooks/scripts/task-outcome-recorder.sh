@@ -24,7 +24,7 @@ fi
 # Fallback: check prompt field for "Skill: {name}" pattern
 if [ -z "$skill_name" ]; then
   prompt=$(echo "$input" | jq -r '.tool_input.prompt // ""' | head -c 500)
-  skill_name=$(echo "$prompt" | grep -oiE 'Skill:\s*[a-z]+-[a-z]+(-[a-z]+)*' | sed 's/[Ss]kill:\s*//' | head -1)
+  skill_name=$(echo "$prompt" | grep -oiE 'Skill:\s*[a-z]+-[a-z]+(-[a-z]+)*' | sed 's/[Ss]kill:\s*//' | head -1 || true)
 fi
 
 # Determine outcome
@@ -82,7 +82,7 @@ fi
 
 # Append JSON line entry
 timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-entry=$(jq -n \
+entry=$(jq -c -n \
   --arg ts "$timestamp" \
   --arg agent "$agent_type" \
   --arg model "$model" \
@@ -94,7 +94,7 @@ entry=$(jq -n \
   --arg dur "$duration_seconds" \
   '{timestamp: $ts, agent_type: $agent, model: $model, outcome: $outcome, pattern_used: $pattern, skill: $skill, description: $desc, error_summary: $err, duration_seconds: ($dur | tonumber)}')
 
-echo "$entry" >> "$OUTCOME_FILE"
+printf '%s\n' "$entry" >> "$OUTCOME_FILE"
 
 # Ring buffer: keep last 50 entries
 if [ -f "$OUTCOME_FILE" ]; then

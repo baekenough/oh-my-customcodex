@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.7",
-  "generatedAt": "2026-07-06T06:18:47.469Z",
-  "templateVersion": "1.0.7",
+  "generatorVersion": "1.0.8",
+  "generatedAt": "2026-07-13T06:22:03.399Z",
+  "templateVersion": "1.0.8",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e2690ef49068c522f452b7bc26089687adf98b1039841704dfcac64a6fa8a65b",
@@ -550,8 +550,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/task-outcome-recorder.sh": {
-      "templateHash": "59df691e3d6554330a06db3fdd9c185e6ccc9ad4da94ac9549091d2ba2615760",
-      "size": 4677,
+      "templateHash": "9ce4c82fee0f5567c39ad814a9cac5ba35e9e89bcc35091be67ba49a79a18c8b",
+      "size": 4697,
       "component": "hooks"
     },
     ".codex/hooks/scripts/agent-capability-precheck.sh": {

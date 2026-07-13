@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -221,6 +221,24 @@ describe('lockfile', () => {
 
   // -------------------------------------------------------------------------
   describe('writeLockfile', () => {
+    it('rejects writing through a lockfile symlink when a trusted root is provided', async () => {
+      const outsideFile = join(tempDir, 'outside-lockfile.json');
+      await writeFile(outsideFile, 'outside sentinel');
+      await symlink(outsideFile, join(tempDir, LOCKFILE_NAME));
+      const lockfile: Lockfile = {
+        lockfileVersion: LOCKFILE_VERSION,
+        generatorVersion: '0.31.0',
+        generatedAt: '2025-01-01T00:00:00.000Z',
+        templateVersion: '0.31.0',
+        files: {},
+      };
+
+      await expect(writeLockfile(tempDir, lockfile, { trustedWriteRoot: tempDir })).rejects.toThrow(
+        'symbolic link'
+      );
+      expect(await readFile(outsideFile, 'utf-8')).toBe('outside sentinel');
+    });
+
     it('writes valid JSON to the target directory', async () => {
       const lockfile = makeLockfile({
         generatorVersion: '1.2.3',
