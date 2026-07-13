@@ -24,9 +24,14 @@ export const WORKFLOW_INVENTORY_GUARDS = [
 interface WorkflowDefinition {
   jobs?: {
     test?: {
+      env?: Record<string, string>;
       steps?: Array<{ name?: string; run?: string }>;
     };
   };
+}
+
+export function extractTestJobEnvironment(content: string): Record<string, string> {
+  return parse(content).jobs?.test?.env ?? {};
 }
 
 export function extractStableBatchScript(content: string): string {

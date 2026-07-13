@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import {
   CRITICAL_NATIVE_REGRESSION_FILES,
   extractStableBatchInventory,
+  extractTestJobEnvironment,
   WORKFLOW_INVENTORY_GUARDS,
 } from './workflow-test-inventory.js';
 
@@ -30,6 +31,13 @@ describe('release.yml — trigger conditions', () => {
 });
 
 describe('release.yml — stable Bun test inventory', () => {
+  it('provides deterministic OMX model lanes to the test job', async () => {
+    expect(extractTestJobEnvironment(await readWorkflow())).toMatchObject({
+      OMX_DEFAULT_FRONTIER_MODEL: 'test-frontier-model',
+      OMX_DEFAULT_SPARK_MODEL: 'test-spark-model',
+    });
+  });
+
   it('includes every v1.0.10 native regression and both inventory guards', async () => {
     const inventory = extractStableBatchInventory(await readWorkflow());
 
