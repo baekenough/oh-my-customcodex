@@ -29,6 +29,10 @@ const REQUIRED_NODE_PROBES = [
   '25.0.0',
 ];
 const WEB_ENTRYPOINT = 'packages/serve/build/index.js';
+const PLUGIN_MANIFEST = 'plugins/oh-my-customcodex/.codex-plugin/plugin.json';
+const PLUGIN_MARKETPLACE = '.agents/plugins/marketplace.json';
+const PLUGIN_HOOKS = 'plugins/oh-my-customcodex/hooks/hooks.json';
+const PLUGIN_MCP = 'plugins/oh-my-customcodex/.mcp.json';
 const WEB_FIXTURE_NAME = 'package-smoke';
 const EVAL_FIXTURE_SESSION = 'pc1599';
 const ACTIVE_NATIVE_HOOK_SCRIPTS = [
@@ -416,6 +420,10 @@ function assertPackedArtifactShape(artifact, expectedPackageName) {
   const declarationPaths = [...packedPaths].filter((path) => path.endsWith('.d.ts'));
   assert(declarationPaths.length > 0, 'tarball contains no TypeScript declarations');
   assertPackedFile(packageDir, packedPaths, WEB_ENTRYPOINT, 'Web runtime entrypoint');
+  assertPackedFile(packageDir, packedPaths, PLUGIN_MANIFEST, 'Codex plugin manifest');
+  assertPackedFile(packageDir, packedPaths, PLUGIN_MARKETPLACE, 'Codex plugin marketplace');
+  assertPackedFile(packageDir, packedPaths, PLUGIN_HOOKS, 'Codex plugin hooks registry');
+  assertPackedFile(packageDir, packedPaths, PLUGIN_MCP, 'Codex plugin MCP manifest');
   assert.equal(
     packageJson.engines?.node,
     REQUIRED_NODE_RANGE,

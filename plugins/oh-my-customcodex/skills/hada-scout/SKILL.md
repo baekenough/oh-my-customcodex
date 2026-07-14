@@ -1,0 +1,148 @@
+---
+name: hada-scout
+description: hada.io RSS feed monitoring with LLM pre-scout filtering for oh-my-customcodex relevance
+scope: core
+version: 2.0.0
+user-invocable: true
+argument-hint: "[--limit N] [--threshold N]"
+---
+
+# hada-scout
+
+3-phase in-session pipeline that monitors hada.io (via feedburner RSS) for relevant articles,
+uses a spark/low LLM batch to pre-score relevance, and dispatches full `/scout` analysis only on
+high-scoring candidates.
+
+## Sensitive-Path Delegation
+
+Sensitive-path compatibility note: if this skill delegates work that touches `.claude/**`, `.claude/outputs/**`, `templates/.claude/**`, or read-only measurements of those paths, keep `.codex/**` edits on the normal Codex path. On Claude Code v2.1.121+ with `bypassPermissions`, direct writes to `.claude/skills/`, `.claude/agents/`, and `.claude/commands/` are allowed; on v2.1.126+ that extends to broader protected paths. Only use `/tmp/{skill}-{timestamp}.md` as a legacy fallback when the target runtime is older or still prompts.
+
+## Purpose
+
+Replace the v1.0 keyword-regex approach with context-aware LLM pre-scoring. spark/low evaluates
+all feed titles in a single batch call, reducing false positives from ~30-40% to ~5-10% and
+eliminating the external CronJob dependency for user-invoked runs.
+
+## Architecture: 3-Phase In-Session Pipeline
+
+### Phase 1 — Fetch & Parse
+
+1. WebFetch the hada.io RSS feed (`https://feeds.feedburner.com/geeknews-feed`)
+2. Parse all items: title, URL, publication date
+3. Default: latest 50 items (configurable via `--limit` or `HADA_SCOUT_LIMIT`)
+
+### Phase 2 — Pre-Scout (spark/low batch)
+
+1. Spawn 1 spark/low agent with ALL item titles as a single batch input
+2. Agent evaluates each title against oh-my-customcodex's domain (see prompt template below)
+3. Returns relevance score (0–100) and a 1-line reason for each item
+4. Threshold: ≥ 60 passes to Phase 3 (configurable via `--threshold` or `HADA_SCOUT_THRESHOLD`)
+5. Cost is runtime-dependent; keep the batch and item cap fixed
+
+### Phase 3 — Scout Dispatch
+
+1. Dedup: check existing `hada-scout` labeled issues via `gh issue list --label hada-scout`
+2. For each passing item (max 5 per run, configurable via `MAX_SCOUT_PER_RUN`):
+   - Run full `/scout` analysis via Skill tool invocation
+   - Scout creates GitHub issue with verdict label on `baekenough/oh-my-customcodex`
+   - Add `hada-scout` label to the created issue
+3. Dispatch up to 4 scouts in parallel per R009
+
+## Pre-Scout Prompt Template
+
+The spark/low agent receives the following system prompt:
+
+```
+You are a relevance filter for the oh-my-customcodex project — an AI agent harness/orchestration
+system built on GPT Codex + OMX with 44 agents, 74 skills.
+
+Project domains (HIGH relevance):
+- AI agent orchestration, multi-agent systems, agent design patterns
+- Harness, benchmark, evaluation frameworks for AI agents
+- GPT Codex, OMX, MCP protocol
+- Code review automation, development workflow automation
+- Agent sandbox, isolation, security patterns
+- LLM-assisted development tools and methodologies
+
+Project domains (MEDIUM relevance):
+- General AI/ML tooling that could be adapted for agent workflows
+- DevOps automation patterns applicable to agent infrastructure
+- New programming paradigms for AI-assisted development
+
+NOT relevant:
+- Pure frontend/UI frameworks without agent connection
+- Business/management topics
+- Hardware, networking, non-AI infrastructure
+- Social media, marketing tools
+
+For each item below, return: score (0-100) | reason (1 line)
+
+Items:
+{numbered_item_list}
+```
+
+## Display Format
+
+```
+[hada-scout] Scanning hada.io feed...
+├── Phase 1: Fetched {n} items
+├── Phase 2: Pre-scout → {passed}/{total} items passed (threshold: {t}%)
+│   ├── ✓ {title1} (score: {s1}%)
+│   ├── ✓ {title2} (score: {s2}%)
+│   └── ✗ {title3} (score: {s3}%) — skipped
+├── Phase 3: Scout dispatch ({n} items, max 5)
+│   ├── [1] /scout {url1} → {verdict}
+│   └── [2] /scout {url2} → {verdict}
+└── [Done] {created}/{dispatched} issues created
+```
+
+## Label Scheme
+
+| Label | Purpose |
+|-------|---------|
+| `hada-scout` | Source identification — all hada-scout created issues |
+| `scout:internalize` | /scout verdict: adopt into project |
+| `scout:integrate` | /scout verdict: use as external dependency |
+| `scout:skip` | /scout verdict: not relevant |
+
+## Cost Controls
+
+| Stage | Lane / Effort | Cost Control |
+|-------|-------|----------------|
+| Pre-scout (Phase 2) | spark/low | Single batch, max 50 items |
+| Full scout (Phase 3) | frontier/medium | Max 5 items per run |
+| Total per invocation | — | Runtime-dependent; bounded by both caps |
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FEED_URL` | `https://feeds.feedburner.com/geeknews-feed` | RSS feed URL |
+| `HADA_SCOUT_THRESHOLD` | `60` | Pre-scout score threshold (0–100) |
+| `HADA_SCOUT_LIMIT` | `50` | Max feed items to fetch and score |
+| `MAX_SCOUT_PER_RUN` | `5` | Max /scout executions per invocation |
+| `GH_TOKEN` | (required) | GitHub PAT for issue creation and dedup |
+
+## Integration
+
+| Rule | How |
+|------|-----|
+| R009 | Phase 3 scout dispatches run in parallel (up to 4 concurrent) |
+| R010 | Orchestrator manages phases; analysis delegated to spark/low/frontier/medium agents |
+| R015 | Pre-scout scores and reasons displayed before dispatching full scouts |
+| scout skill | Phase 3 invokes `/scout` via Skill tool for each candidate URL |
+
+## Differences from v1.0
+
+| Aspect | v1.0 (keyword) | v2.0 (LLM pre-scout) |
+|--------|----------------|----------------------|
+| Filtering | Regex keyword match | LLM relevance scoring (spark/low) |
+| Invocation | External CronJob only | User-invocable `/hada-scout` + CronJob |
+| Precision | Low (keyword false positives) | High (context-aware scoring) |
+| Cost per scan | No LLM pre-filter; scout cost is runtime-dependent | Adds one bounded spark-lane pre-filter batch |
+| False positive rate | ~30–40% | ~5–10% |
+| Scope | `package` | `core` |
+
+## Tracking
+
+GitHub Issue #841

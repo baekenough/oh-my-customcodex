@@ -1,0 +1,39 @@
+{
+  "name": "oh-my-customcodex",
+  "version": "1.0.21",
+  "description": "Reusable Codex + OMX harness assets from oh-my-customcodex, packaged as a Codex plugin.",
+  "author": {
+    "name": "baekenough",
+    "url": "https://github.com/baekenough"
+  },
+  "homepage": "https://github.com/baekenough/oh-my-customcodex",
+  "repository": "https://github.com/baekenough/oh-my-customcodex",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "omx",
+    "agents",
+    "skills",
+    "hooks",
+    "harness"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "oh-my-customcodex",
+    "shortDescription": "Codex + OMX harness skills, hooks, and ontology routing assets.",
+    "longDescription": "Installs the reusable oh-my-customcodex harness bundle as a Codex plugin: workflow skills, safety hooks, ontology metadata, and the ontology-rag MCP declaration.",
+    "developerName": "baekenough",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/baekenough/oh-my-customcodex",
+    "defaultPrompt": [
+      "Load the oh-my-customcodex harness skills for this project.",
+      "Run an omcustomcodex release or issue workflow.",
+      "Review installed Codex hooks and routing assets."
+    ]
+  }
+}
