@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.18] - 2026-07-14
+
+### Fixed
+
+- Compare OMX prerelease identifiers with SemVer precedence, including dot-separated identifiers, numeric ordering, ASCII lexical ordering, hyphenated identifiers, and build metadata ignoring (#1634).
+
 ## [1.0.17] - 2026-07-14
 
 ### Fixed

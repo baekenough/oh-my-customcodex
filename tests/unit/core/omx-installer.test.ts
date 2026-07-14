@@ -77,6 +77,33 @@ describe('omx installer baseline checks', () => {
     expect(isOmxVersionAtLeast('oh-my-codex v0.19.0', '0.19.0')).toBe(true);
   });
 
+  it('orders prerelease identifiers by SemVer precedence', () => {
+    const canonicalOrder = [
+      '1.0.0-alpha',
+      '1.0.0-alpha.1',
+      '1.0.0-alpha.beta',
+      '1.0.0-beta',
+      '1.0.0-beta.2',
+      '1.0.0-beta.11',
+      '1.0.0-rc.1',
+      '1.0.0',
+    ];
+
+    for (let index = 0; index < canonicalOrder.length - 1; index += 1) {
+      expect(compareOmxVersions(canonicalOrder[index], canonicalOrder[index + 1])).toBe(-1);
+      expect(compareOmxVersions(canonicalOrder[index + 1], canonicalOrder[index])).toBe(1);
+    }
+
+    expect(compareOmxVersions('1.0.0-alpha.1', '1.0.0-alpha.beta')).toBe(-1);
+    expect(compareOmxVersions('1.0.0-alpha.1.1', '1.0.0-alpha.1')).toBe(1);
+    expect(compareOmxVersions('1.0.0-alpha.2', '1.0.0-alpha.10')).toBe(-1);
+    expect(compareOmxVersions('1.0.0-alpha2', '1.0.0-alpha10')).toBe(1);
+    expect(compareOmxVersions('1.0.0-A', '1.0.0-a')).toBe(-1);
+    expect(compareOmxVersions('1.0.0-alpha-1', '1.0.0-alpha.1')).toBe(1);
+    expect(compareOmxVersions('1.0.0+build.1', '1.0.0+build.2')).toBe(0);
+    expect(compareOmxVersions('1.0.0-alpha+build.1', '1.0.0-alpha+build.2')).toBe(0);
+  });
+
   it('requires the OMX v0.20.1 runtime boundary', () => {
     expect(MINIMUM_OMX_VERSION).toBe('0.20.1');
     expect(isOmxVersionAtLeast('oh-my-codex v0.20.0')).toBe(false);

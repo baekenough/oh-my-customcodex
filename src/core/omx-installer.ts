@@ -933,13 +933,73 @@ function parseVersionParts(version: string): {
   prerelease: string | null;
 } {
   const [withoutBuild] = version.split('+');
-  const [coreText, prerelease = null] = withoutBuild.split('-', 2);
+  const prereleaseSeparator = withoutBuild.indexOf('-');
+  const coreText =
+    prereleaseSeparator === -1 ? withoutBuild : withoutBuild.slice(0, prereleaseSeparator);
+  const prerelease =
+    prereleaseSeparator === -1 ? null : withoutBuild.slice(prereleaseSeparator + 1);
   const coreParts = coreText.split('.').map((part) => Number.parseInt(part, 10));
 
   return {
     core: [coreParts[0] ?? 0, coreParts[1] ?? 0, coreParts[2] ?? 0],
     prerelease,
   };
+}
+
+function compareAsciiLexical(left: string, right: string): number {
+  const sharedLength = Math.min(left.length, right.length);
+
+  for (let index = 0; index < sharedLength; index += 1) {
+    const diff = left.charCodeAt(index) - right.charCodeAt(index);
+    if (diff !== 0) {
+      return diff > 0 ? 1 : -1;
+    }
+  }
+
+  if (left.length === right.length) {
+    return 0;
+  }
+
+  return left.length > right.length ? 1 : -1;
+}
+
+function comparePrereleaseIdentifiers(left: string, right: string): number {
+  const leftNumeric = /^\d+$/.test(left);
+  const rightNumeric = /^\d+$/.test(right);
+
+  if (leftNumeric && rightNumeric) {
+    const leftValue = BigInt(left);
+    const rightValue = BigInt(right);
+    if (leftValue === rightValue) {
+      return 0;
+    }
+    return leftValue > rightValue ? 1 : -1;
+  }
+
+  if (leftNumeric !== rightNumeric) {
+    return leftNumeric ? -1 : 1;
+  }
+
+  return compareAsciiLexical(left, right);
+}
+
+function comparePrereleaseVersions(left: string, right: string): number {
+  const leftIdentifiers = left.split('.');
+  const rightIdentifiers = right.split('.');
+  const sharedLength = Math.min(leftIdentifiers.length, rightIdentifiers.length);
+
+  for (let index = 0; index < sharedLength; index += 1) {
+    const diff = comparePrereleaseIdentifiers(leftIdentifiers[index], rightIdentifiers[index]);
+    if (diff !== 0) {
+      return diff;
+    }
+  }
+
+  if (leftIdentifiers.length === rightIdentifiers.length) {
+    return 0;
+  }
+
+  return leftIdentifiers.length > rightIdentifiers.length ? 1 : -1;
 }
 
 export function compareOmxVersions(left: string, right: string): number {
@@ -963,7 +1023,7 @@ export function compareOmxVersions(left: string, right: string): number {
     return -1;
   }
 
-  return a.prerelease.localeCompare(b.prerelease, undefined, { numeric: true });
+  return comparePrereleaseVersions(a.prerelease, b.prerelease);
 }
 
 export function isOmxVersionAtLeast(
