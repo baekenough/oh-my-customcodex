@@ -135,7 +135,7 @@ describe('installFromSnapshot', () => {
     mkdirSync(join(targetDir, '.codex', 'prompts'), { recursive: true });
     writeFileSync(join(targetDir, '.codex', 'rules', 'MUST-sample.md'), 'PROVISIONED-RULE\n');
     writeFileSync(join(targetDir, '.codex', 'prompts', 'executor.md'), 'PROVISIONED-PROMPT\n');
-    writeFileSync(join(targetDir, '.omx', 'generated.json'), '{"generated":true}\n');
+    writeFileSync(join(targetDir, '.omx', 'setup-scope.json'), '{"scope":"provisioned"}\n');
     writeFileSync(join(targetDir, 'AGENTS.md'), 'PROVISIONED-AGENTS\n');
     writeFileSync(join(targetDir, '.gitignore'), '.omx/\n.codex/*\n', { flag: 'a' });
   }
@@ -505,6 +505,73 @@ describe('installFromSnapshot', () => {
       expect(result.errors?.[0]).toContain('readiness failed');
       expect(await treeDigest(targetDir)).toBe(before);
       await expect(lstat(join(targetDir, '.gitignore'))).rejects.toThrow();
+    });
+
+    it('rolls back setup-owned .omx files without scanning historical runtime logs', async () => {
+      await createMinimalSnapshot(snapshotDir);
+      await mkdir(join(targetDir, '.omx', 'logs'), { recursive: true });
+      const outsideDir = await mkdtemp(join(tmpdir(), 'omcodex-snapshot-omx-outside-'));
+      await writeFile(join(outsideDir, 'sentinel.txt'), 'OUTSIDE\n');
+      await writeFile(join(targetDir, '.omx', 'setup-scope.json'), '{"scope":"original"}\n');
+      await writeFile(join(targetDir, '.omx', 'logs', 'history.jsonl'), 'HISTORY\n');
+      await symlink(outsideDir, join(targetDir, '.omx', 'logs', 'ignored-symlink'), 'dir');
+      const before = await treeDigest(targetDir);
+
+      try {
+        const result = await installFromSnapshot(
+          targetDir,
+          snapshotDir,
+          { force: true },
+          {
+            ensureOmxProjectReady: () => {
+              writeFileSync(join(targetDir, '.omx', 'setup-scope.json'), '{"scope":"mutated"}\n');
+              return {
+                success: false,
+                command: 'omx setup --scope project --merge-agents',
+                error: 'readiness failed after mutating OMX setup scope',
+              };
+            },
+            registerProject: async () => {},
+          }
+        );
+
+        expect(result.success).toBe(false);
+        expect(result.errors?.[0]).toContain('readiness failed');
+        expect(await treeDigest(targetDir)).toBe(before);
+        expect(await readFile(join(targetDir, '.omx', 'logs', 'history.jsonl'), 'utf8')).toBe(
+          'HISTORY\n'
+        );
+      } finally {
+        await rm(outsideDir, { recursive: true, force: true });
+      }
+    });
+
+    it('removes a newly created .omx setup directory when readiness fails', async () => {
+      await createMinimalSnapshot(snapshotDir);
+      const before = await treeDigest(targetDir);
+
+      const result = await installFromSnapshot(
+        targetDir,
+        snapshotDir,
+        { force: true },
+        {
+          ensureOmxProjectReady: () => {
+            mkdirSync(join(targetDir, '.omx'), { recursive: true });
+            writeFileSync(join(targetDir, '.omx', 'setup-scope.json'), '{"scope":"project"}\n');
+            return {
+              success: false,
+              command: 'omx setup --scope project --merge-agents',
+              error: 'readiness failed after creating OMX setup scope',
+            };
+          },
+          registerProject: async () => {},
+        }
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errors?.[0]).toContain('readiness failed');
+      expect(await treeDigest(targetDir)).toBe(before);
+      await expect(lstat(join(targetDir, '.omx'))).rejects.toThrow();
     });
 
     it('returns actionable user-level hook approval recovery after an exact rollback', async () => {

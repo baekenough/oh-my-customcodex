@@ -3,7 +3,7 @@
  * Handles installing from a pre-configured team snapshot directory
  */
 
-import { mkdtemp, realpath } from 'node:fs/promises';
+import { mkdtemp, realpath, rmdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import packageJson from '../../package.json';
@@ -87,6 +87,7 @@ interface SnapshotInstallPlan {
 interface SnapshotRollbackTransaction {
   directory: string;
   managedPaths: string[];
+  absentParentDirectories: string[];
   restoreOperations: SnapshotCopyOperation[];
   pathMetadata: SnapshotRollbackPathMetadata[];
   backupDir?: string;
@@ -111,7 +112,6 @@ interface ValidatedRollbackSources {
 const SNAPSHOT_ROLLBACK_PREFIX = 'omcodex-snapshot-rollback-';
 const POSIX_PERMISSION_MASK = 0o7777;
 const SNAPSHOT_MANAGED_ROOT_PATHS = [
-  '.omx',
   '.gitignore',
   'guides',
   '.omcodex.lock.json',
@@ -119,6 +119,8 @@ const SNAPSHOT_MANAGED_ROOT_PATHS = [
   '.omcodexrc.json',
   '.omcustomrc.json',
 ] as const;
+
+const SNAPSHOT_OMX_SETUP_WRITE_SET = ['.omx/setup-scope.json'] as const;
 
 async function lstatIfPresent(path: string): Promise<import('node:fs').Stats | null> {
   const fs = await import('node:fs/promises');
@@ -446,8 +448,37 @@ function getSnapshotManagedPaths(targetDir: string): string[] {
   const layout = getProviderLayout();
   const skillsRoot = getComponentPath('skills').split('/')[0];
   return [
-    ...new Set([layout.rootDir, skillsRoot, layout.entryFile, ...SNAPSHOT_MANAGED_ROOT_PATHS]),
+    ...new Set([
+      layout.rootDir,
+      skillsRoot,
+      layout.entryFile,
+      ...SNAPSHOT_MANAGED_ROOT_PATHS,
+      ...SNAPSHOT_OMX_SETUP_WRITE_SET,
+    ]),
   ].map((relativePath) => join(targetDir, relativePath));
+}
+
+async function collectAbsentParentDirectories(
+  targetDir: string,
+  managedPaths: string[]
+): Promise<string[]> {
+  const missing = new Set<string>();
+  const targetRoot = resolve(targetDir);
+
+  for (const managedPath of managedPaths) {
+    let parent = dirname(managedPath);
+    while (parent !== targetRoot && parent.startsWith(`${targetRoot}${sep}`)) {
+      if (await lstatIfPresent(parent)) {
+        break;
+      }
+      missing.add(parent);
+      parent = dirname(parent);
+    }
+  }
+
+  return [...missing].sort(
+    (left, right) => targetPathDepth(targetDir, right) - targetPathDepth(targetDir, left)
+  );
 }
 
 async function collectRollbackPathMetadata(
@@ -503,6 +534,7 @@ async function createSnapshotRollbackTransaction(
   backupDir?: string
 ): Promise<SnapshotRollbackTransaction> {
   const managedPaths = getSnapshotManagedPaths(targetDir);
+  const absentParentDirectories = await collectAbsentParentDirectories(targetDir, managedPaths);
   const { sources: rollbackSources, pathMetadata } = await validateRollbackSources(managedPaths);
 
   const directory = await mkdtemp(join(tmpdir(), SNAPSHOT_ROLLBACK_PREFIX));
@@ -521,6 +553,7 @@ async function createSnapshotRollbackTransaction(
     return {
       directory,
       managedPaths,
+      absentParentDirectories,
       restoreOperations: captureOperations.map((operation) => ({
         ...operation,
         source: operation.destination,
@@ -542,21 +575,16 @@ async function createSnapshotRollbackTransaction(
   }
 }
 
-function assertDirectTargetChild(targetDir: string, path: string): void {
+function assertTargetDescendant(targetDir: string, path: string): void {
   const pathFromTarget = relative(resolve(targetDir), resolve(path));
-  if (
-    pathFromTarget === '' ||
-    pathFromTarget.startsWith('..') ||
-    isAbsolute(pathFromTarget) ||
-    pathFromTarget.includes(sep)
-  ) {
+  if (pathFromTarget === '' || pathFromTarget.startsWith('..') || isAbsolute(pathFromTarget)) {
     throw new Error(`Unsafe snapshot rollback path outside managed target boundary: ${path}`);
   }
 }
 
 async function removeManagedTargetPath(targetDir: string, path: string): Promise<void> {
   const fs = await import('node:fs/promises');
-  assertDirectTargetChild(targetDir, path);
+  assertTargetDescendant(targetDir, path);
   await assertTrustedProjectRoot(targetDir);
   const stats = await lstatIfPresent(path);
   if (!stats) return;
@@ -614,6 +642,28 @@ async function restoreRollbackPathMetadata(
   }
 }
 
+async function removeAbsentParentDirectories(
+  targetDir: string,
+  absentParentDirectories: string[]
+): Promise<void> {
+  for (const directory of absentParentDirectories) {
+    assertTargetDescendant(targetDir, directory);
+    const stats = await lstatIfPresent(directory);
+    if (!stats) continue;
+    if (stats.isSymbolicLink() || !stats.isDirectory()) {
+      throw new Error(`Unsafe snapshot rollback parent directory cleanup target: ${directory}`);
+    }
+
+    try {
+      await rmdir(directory);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOTEMPTY') {
+        throw error;
+      }
+    }
+  }
+}
+
 async function rollbackSnapshotTransaction(
   targetDir: string,
   transaction: SnapshotRollbackTransaction
@@ -636,6 +686,7 @@ async function rollbackSnapshotTransaction(
   for (const operation of transaction.restoreOperations) {
     await executeCopyOperation(operation, targetDir);
   }
+  await removeAbsentParentDirectories(targetDir, transaction.absentParentDirectories);
   await restoreRollbackPathMetadata(targetDir, transaction.pathMetadata);
   await removeRollbackDirectory(transaction.directory);
 }
