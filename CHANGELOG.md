@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.21] - 2026-07-14
+
+### Added
+
+- Package reusable oh-my-customcodex skills, hooks, ontology metadata, and ontology-rag MCP declaration as a repo-local Codex plugin artifact with marketplace metadata (#1595).
+
+## [1.0.20] - 2026-07-14
+
+### Fixed
+
+- Limit snapshot rollback journaling to setup-owned OMX paths so historical .omx logs/state are not scanned or copied while preserving exact rollback for setup scope changes (#1626).
+
+## [1.0.19] - 2026-07-14
+
+### Fixed
+
+- Verify GitHub Packages releases with the authenticated Packages API, fail on auth/config errors, and require exact scoped package version confirmation (#1633).
+
+## [1.0.18] - 2026-07-14
+
+### Fixed
+
+- Compare OMX prerelease identifiers with SemVer precedence, including dot-separated identifiers, numeric ordering, ASCII lexical ordering, hyphenated identifiers, and build metadata ignoring (#1634).
+
+## [1.0.17] - 2026-07-14
+
+### Fixed
+- Make `eval-core collect --dry-run` parse fresh log paths without creating SQLite files and preserve existing database sidecars while reporting truthful would-collect counts (#1605).
+- Avoid redundant `uv`/Python probes during `init` when ontology MCP configuration already exists, preserving second-run idempotency for configured projects (#1586).
+
+## [1.0.16] - 2026-07-14
+
+### Changed
+- Raise the required OMX runtime baseline to `v0.20.1` for the cumulative `v0.19.1`-`v0.20.1` workflow, model, plugin, planning, and delegation fixes; install and non-dry update enforce the floor, doctor diagnoses it, and unverifiable versions fail closed while residual hook-trust issue #1610 remains open (#1572, #1575, #1576).
+- Record OpenAI Codex `rust-v0.143.0`-`rust-v0.144.3` final-state compatibility, including the Guardian rollback and the `0.144.3` release-note/tag-ancestry discrepancy around direct commit `8a4d35a` (#1571, #1573, #1622, #1623).
+
 ## [1.0.15] - 2026-07-14
 
 ### Changed

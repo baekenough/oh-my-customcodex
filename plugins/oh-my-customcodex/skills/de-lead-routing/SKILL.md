@@ -1,0 +1,227 @@
+---
+name: de-lead-routing
+description: Routes data engineering tasks to the correct DE expert agent. Use when user requests data pipeline design, DAG authoring, SQL modeling, stream processing, or warehouse optimization.
+scope: core
+user-invocable: false
+context: fork
+---
+
+# DE Lead Routing Skill
+
+## Purpose
+
+Routes data engineering tasks to appropriate DE expert agents. This skill contains the coordination logic for orchestrating data engineering agents across orchestration, modeling, processing, streaming, and warehouse specializations.
+
+## Engineers Under Management
+
+| Type | Agents | Purpose |
+|------|--------|---------|
+| de/orchestration | de-airflow-expert | DAG authoring, scheduling, testing |
+| de/modeling | de-dbt-expert | SQL modeling, testing, documentation |
+| de/processing | de-spark-expert | Distributed data processing |
+| de/streaming | de-kafka-expert | Event streaming, topic design |
+| de/warehouse | de-snowflake-expert | Cloud DWH, query optimization |
+| de/architecture | de-pipeline-expert | Pipeline design, cross-tool patterns |
+
+## Tool/Framework Detection
+
+### Keyword Mapping
+
+| Keyword | Agent |
+|---------|-------|
+| "airflow", "dag", "scheduling", "orchestration" | de-airflow-expert |
+| "dbt", "modeling", "sql model", "analytics engineering" | de-dbt-expert |
+| "spark", "pyspark", "distributed processing", "distributed" | de-spark-expert |
+| "kafka", "streaming", "event", "consumer", "producer" | de-kafka-expert |
+| "snowflake", "warehouse", "clustering key" | de-snowflake-expert |
+| "pipeline", "ETL", "ELT", "data quality", "lineage" | de-pipeline-expert |
+| "iceberg", "table format" | de-snowflake-expert or de-pipeline-expert |
+
+### File Pattern Mapping
+
+| Pattern | Agent |
+|---------|-------|
+| `dags/*.py`, `airflow.cfg`, `airflow_settings.yaml` | de-airflow-expert |
+| `models/**/*.sql`, `dbt_project.yml`, `schema.yml` | de-dbt-expert |
+| Spark job files, `spark-submit` configs | de-spark-expert |
+| Kafka configs, `*.properties` (Kafka), `streams/*.java` | de-kafka-expert |
+| Snowflake SQL, warehouse DDL | de-snowflake-expert |
+
+## Routing Decision (Priority Order)
+
+Before routing via Agent tool, evaluate in this order:
+
+### Step 1: Agent Teams Eligibility (R018)
+Check if Agent Teams is available (`OMCODEX_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
+
+| Scenario | Preferred |
+|----------|-----------|
+| Single-tool DE task | Agent Tool |
+| Multi-tool pipeline design (3+ tools) | Agent Teams |
+| Cross-tool data quality analysis | Agent Teams |
+| Quick DAG/model validation | Agent Tool |
+
+### Step 2: External Interop Guidance (Code Generation)
+For **new pipeline code**, **DAG scaffolding**, or **SQL model generation**:
+
+1. Use the selected DE expert as the default implementation path.
+2. If the native Claude Code plugin `openai/codex-plugin-cc` is explicitly installed and requested, it may provide Codex interop for scaffolding before expert review.
+3. If RTK is available (`RTK=available` in env status), optionally wrap DE expert output through `rtk-exec` to reduce token consumption by 60-90%:
+   - Display: `[RTK Proxy] Token optimization active via rtk-exec`
+   - RTK acts as a transparent proxy — no change to expert selection
+4. Otherwise display `[External CLI] Not requested — proceeding with {expert} directly` and use the expert directly.
+
+**Suitable for optional plugin interop**: New DAG files, dbt model scaffolding, SQL template generation
+**Unsuitable**: Existing pipeline modification, architecture decisions, data quality analysis
+
+### Step 3: Expert Selection
+Route to appropriate DE expert based on tool/framework detection.
+
+> **Permission Mode**: When spawning agents, pass `mode: "bypassPermissions"` in the Agent tool call if the session uses bypassPermissions. Without explicit mode, CC defaults to `acceptEdits`.
+
+### Step 4: Ontology-RAG Enrichment (R019)
+
+If `get_agent_for_task` MCP tool is available, call it with the original query and inject `suggested_skills` into the agent prompt. Skip silently on failure.
+
+### Step 5: Soul Injection (R006)
+
+If the selected agent has `soul: true` in frontmatter, read and prepend `.codex/agents/souls/{agent-name}.soul.md` content to the prompt. Skip silently if file doesn't exist.
+
+## Command Routing
+
+```
+DE Request → Detection → Expert Agent
+
+Airflow DAG → de-airflow-expert
+dbt model   → de-dbt-expert
+Spark job   → de-spark-expert
+Kafka topic → de-kafka-expert
+Snowflake   → de-snowflake-expert
+Pipeline    → de-pipeline-expert
+Multi-tool  → Multiple experts (parallel)
+```
+
+## Routing Rules
+
+### 1. Pipeline Development Workflow
+
+```
+1. Receive pipeline task request
+2. Identify tools and components:
+   - DAG orchestration → de-airflow-expert
+   - SQL transformations → de-dbt-expert
+   - Distributed processing → de-spark-expert
+   - Event streaming → de-kafka-expert
+   - Warehouse operations → de-snowflake-expert
+   - Architecture decisions → de-pipeline-expert
+3. Select appropriate experts
+4. Distribute tasks (parallel if 2+ tools)
+5. Aggregate results
+6. Present unified report
+```
+
+Example:
+```
+User: "Design a pipeline that runs dbt models from Airflow and loads into Snowflake"
+
+Detection:
+  - Airflow DAG → de-airflow-expert
+  - dbt model → de-dbt-expert
+  - Snowflake loading → de-snowflake-expert
+  - Pipeline architecture → de-pipeline-expert
+
+Route (parallel where independent):
+  Agent(de-pipeline-expert → overall architecture design)
+  Agent(de-airflow-expert → DAG structure)
+  Agent(de-dbt-expert → model design)
+  Agent(de-snowflake-expert → warehouse setup)
+
+Aggregate:
+  Pipeline architecture defined
+  Airflow DAG: 5 tasks designed
+  dbt: 12 models structured
+  Snowflake: warehouse + schema configured
+```
+
+### 2. Data Quality Workflow
+
+```
+1. Analyze data quality requirements
+2. Route to appropriate experts:
+   - dbt tests → de-dbt-expert
+   - Pipeline validation → de-pipeline-expert
+   - Source freshness → de-airflow-expert
+3. Coordinate cross-tool quality strategy
+```
+
+### 3. Multi-Tool Projects
+
+For projects spanning multiple DE tools:
+
+```
+1. Detect all DE tools in project
+2. Identify primary tool (most files/configs)
+3. Route to appropriate experts:
+   - If task spans multiple tools → parallel experts
+   - If task is tool-specific → single expert
+4. Coordinate cross-tool consistency
+```
+
+## Sub-agent Model Selection
+
+### Model Mapping by Task Type
+
+| Task Type | Recommended Lane / Effort | Reason |
+|-----------|-------------------|--------|
+| Pipeline architecture | `frontier/high` | Deep reasoning required |
+| DAG/model review | `frontier/medium` | Balanced quality judgment |
+| Implementation | `frontier/medium` | Standard code generation |
+| Quick validation | `spark/low` | Fast response |
+
+### Model Mapping by Agent
+
+| Agent | Default Model | Alternative |
+|-------|---------------|-------------|
+| de-pipeline-expert | `frontier/medium` | `frontier/high` for architecture |
+| de-airflow-expert | `frontier/medium` | `spark/low` for DAG validation |
+| de-dbt-expert | `frontier/medium` | `spark/low` for test checks |
+| de-spark-expert | `frontier/medium` | `frontier/high` for optimization |
+| de-kafka-expert | `frontier/medium` | `frontier/high` for topology design |
+| de-snowflake-expert | `frontier/medium` | `frontier/high` for warehouse design |
+
+## No Match Fallback
+
+When a data engineering tool is detected but no matching agent exists:
+
+```
+User Input → No matching DE agent
+  ↓
+Detect: DE tool keyword or config file pattern
+  ↓
+Delegate to mgr-creator with context:
+  domain: detected DE tool
+  type: de-engineer
+  keywords: extracted tool names
+  file_patterns: detected config patterns
+  skills: auto-discover from .codex/skills/
+  guides: auto-discover from templates/guides/
+```
+
+**Examples of dynamic creation triggers:**
+- New data tools (e.g., "Dagster DAG 만들어줘", "Flink 스트리밍 설정해줘")
+- Unfamiliar data formats or connectors
+- Data tool detected in project but no specialist agent
+
+## Sensitive-Path Delegation
+
+Sensitive-path compatibility note: if this skill delegates work that touches `.claude/**`, `.claude/outputs/**`, `templates/.claude/**`, or read-only measurements of those paths, keep `.codex/**` edits on the normal Codex path. On Claude Code v2.1.121+ with `bypassPermissions`, direct writes to `.claude/skills/`, `.claude/agents/`, and `.claude/commands/` are allowed; on v2.1.126+ that extends to broader protected paths. Only use `/tmp/{skill}-{timestamp}.md` as a legacy fallback when the target runtime is older or still prompts.
+
+## Usage
+
+This skill is NOT user-invocable. It should be automatically triggered when the main conversation detects data engineering intent.
+
+Detection criteria:
+- User requests pipeline design or data engineering
+- User mentions DE tool names (Airflow, dbt, Spark, Kafka, Snowflake)
+- User provides DE-related file paths (dags/, models/, etc.)
+- User requests data quality or lineage work

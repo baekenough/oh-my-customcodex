@@ -1,0 +1,321 @@
+name: auto-dev
+description: "Automated development pipeline — from issue triage to release"
+version: "2.1.0"
+
+# Design rule: each pipeline run produces ONE bounded release unit (3-7 issues), not all open issues.
+# This pipeline is a project-agnostic template. Project-specific overrides belong in
+# the project's own workflows/auto-dev.yaml (e.g., AgentNav, second-brain).
+
+steps:
+  - name: pre-triage
+    prompt: |
+      Phase 0 — Sync local with remote.
+
+      1. Fetch all remote state:
+         git fetch --all --tags --prune
+
+      2. Detect behind count vs origin/current branch:
+         current_branch=$(git rev-parse --abbrev-ref HEAD)
+         behind=$(git rev-list --count HEAD..origin/$current_branch)
+
+      3. If behind > 0:
+         - Working tree clean (git status --short empty):
+           git pull --ff-only
+           report: "[pre-triage] synced $behind commits"
+         - Working tree dirty:
+           HALT with "[pre-triage] $behind commits behind, working tree dirty — manual reconcile required"
+           exit 1
+
+      4. Report current state:
+         - Latest tag: git tag --sort=-v:refname | head -1
+         - Local HEAD: git rev-parse --short HEAD
+         - Behind state: synced or 0
+
+      5. Cross-reference checks (advisory, do NOT halt):
+         a. Memory vs git consistency:
+            - latest_tag=$(git tag --sort=-v:refname | head -1)
+            - Compare with "Last release" or equivalent line in pipeline memory/context
+            - If mismatch: stderr warning "[pre-triage] WARNING: memory says vX.Y.Z but git latest tag is vA.B.C — update memory after pipeline completion"
+            - Do NOT halt
+
+         b. Issue body stale version references:
+            - Retrieve open issues: gh issue list --state open --limit 100 --json number,body
+            - Extract vX.Y.Z patterns from each issue body
+            - Retrieve git tag list: git tag --list
+            - Warn when an issue references a version not present in git tags:
+              "[pre-triage] WARNING: Issue #N references vX.Y.Z (not in git tags) — body may be stale"
+            - Output all warnings as advisory log; do NOT halt
+
+      Phase 1 — Ensure required labels exist, then scan issues.
+
+      1. Create labels if missing (idempotent):
+         gh label create in-progress --color "FBCA04" --description "Work in progress" --force 2>/dev/null
+         gh label create verify-ready --color "0E8A16" --description "Ready for verification" --force 2>/dev/null
+         gh label create needs-review --color "D93F0B" --description "Needs manual review" --force 2>/dev/null
+         gh label create decision-needed --color "B60205" --description "Decision required before automation" --force 2>/dev/null
+
+      2. Scan open GitHub issues:
+         gh issue list --state open --limit 100 --json number,title,labels,body,milestone
+
+         Also scan release-monitor queues even when `verify-done` is empty:
+         gh issue list --state open --label codex-release --limit 100 --json number,title,labels,body,milestone
+         gh issue list --state open --label oh-my-codex-release --limit 100 --json number,title,labels,body,milestone
+
+      3. Group by label and compute for each issue:
+         - dependencies: parse "see #N", "depends on #N", "#N 참조" from body
+         - release_monitor: true when labels include codex-release or oh-my-codex-release
+         - blocked_by_decision: true if body references any decision-needed issue
+         - effort: XS/S/M/L from scope
+         - order: topological sort over dependencies
+
+      4. Output: dependency-sorted issue table with blocked_by_decision and release_monitor flags.
+         Never terminate auto-dev from an empty `verify-done` query alone while open release-monitor issues remain.
+    description: "Sync remote, stale-version check, memory consistency check, scan issues"
+
+  - name: scope-selection
+    prompt: |
+      Select a single bounded release scope (3-7 issues) for THIS pipeline run.
+
+      ## Step 0 — Milestone state pre-check
+
+      Before creating a milestone for version vX.Y.Z:
+      1. Query all milestones (open and closed):
+         existing=$(gh api 'repos/{owner}/{repo}/milestones?state=all&per_page=100' --jq '.[] | select(.title == "vX.Y.Z") | "\(.number)|\(.state)"')
+      2. Evaluate:
+         - If existing && state=closed:
+           HALT with "[scope-selection] BLOCKED: milestone vX.Y.Z already exists and is closed. Bump version or reopen milestone manually."
+         - If existing && state=open:
+           Use existing milestone as-is (do not create new)
+         - If not existing:
+           Create new milestone: gh api repos/{owner}/{repo}/milestones --method POST --field title="vX.Y.Z"
+
+      ## Step 1 — Label-based filtering
+
+      Reference label semantics: .codex/skills/pipeline/labels.md
+
+      Apply filter rules:
+      - EXCLUDE: blocked_by_decision == true OR labels intersect {decision-needed, needs-review, verify-done, manual-action, in-progress}
+      - INCLUDE (preferred): labels intersect {verify-ready, codex-release, oh-my-codex-release, claude-code-release, documentation}
+      - INCLUDE (standard): P1/P2/P3 issues not in excluded set
+      - Tie-break: P1 > P2 > P3 > unclassified
+
+      ## Step 2 — Selection rules
+
+      1. Determine release tier:
+         - No tags yet → v0.1.0
+         - Otherwise: highest-priority open tier (bug → chore → feature)
+      2. Apply Step 1 filter (label-based exclusion and preference)
+      3. Include release-monitor issues after explicit impact triage:
+         - If code/docs changes are needed, include the issue in the release manifest.
+         - If no change is needed, comment with evidence and close or mark as triaged.
+      4. Sort by dependency: prerequisites before dependents
+      5. Cap at 7 issues; if priority issues < 7, stop at that priority (don't mix tiers)
+      6. Minimum 1 issue or 1 release-monitor triage action; if 0 eligible and 0 release-monitor actions, halt with "no eligible issues for auto-dev run"
+
+      Assign scoped issues to milestone.
+      Output markdown release manifest:
+        | order | # | title | prerequisite | effort | labels |
+
+      Persist manifest as pipeline state for subsequent steps.
+    description: "Milestone state pre-check, label filter, pick 3-7 issues as v{X.Y.Z} scope"
+    depends_on: pre-triage
+
+  - name: compression-mode-eval
+    prompt: |
+      Evaluate whether this pipeline run qualifies for compression mode.
+
+      Reference: .codex/skills/pipeline/labels.md — "Compression Eligibility" section.
+
+      Conditions for compression_mode=docs-only:
+      1. Scope size is 3 or fewer issues.
+      2. All scoped issues have labels intersecting {documentation, automated, codex-release, oh-my-codex-release, claude-code-release, enhancement-yaml-only}.
+
+      Conditions for compression_mode=lite:
+      1. Scope size is 5 or fewer issues.
+      2. All scoped issues are documentation, automated release-monitor, feedback, improvement, enhancement, YAML/config-only, or low-risk rule/skill text.
+      3. No scoped issue requires TypeScript runtime behavior, package dependency changes, migration, or security-sensitive logic.
+
+      Gate transparency:
+      - Do not add or change labels solely to qualify for docs-only or lite mode.
+      - If labels were changed during triage and affect compression eligibility, state that fact in the mode decision.
+
+      If both conditions match:
+      - Set compression_mode=docs-only.
+      - Triage step: skip professor-triage skill; perform direct manifest summary instead.
+      - Plan step: skip release-plan skill; single-response plan instead.
+      - Deep-plan step: skip deep-plan skill; single-response implementation notes instead.
+      - Deep-verify step: skip deep-verify skill; perform self-review checklist instead.
+      - Log: "[compression-mode] docs-only compression activated (scope={n}, all docs/yaml labels)".
+
+      If lite conditions match:
+      - Set compression_mode=lite.
+      - Keep a concise implementation plan and local self-review.
+      - Still run verify-build.
+      - MANDATORY justification log when replacing a skill stage with integrated analysis:
+        "[compression-mode] lite — skill stage replaced by integrated analysis; scope={n}; low-risk evidence={issue_refs}".
+      - If the justification cannot be stated concretely, do not compress that stage; run the full skill.
+      - For lite deep-verify, if the change set has no structural surface (for example workflow-YAML/docs-only with no agent/skill/guide/rule frontmatter changes), the R017/deep-verify spawn may be skipped and replaced by deterministic self-checks: template parity, multi-copy checksum, YAML parse, and the normal verify-build gate. Log:
+        "[compression-mode] lite deep-verify — R017 spawn skipped (no structural surface); deterministic self-check only".
+      - Log: "[compression-mode] lite compression activated (scope={n}, low-risk docs/rules/skills)".
+
+      Cross-tier pre-existing converged artifact substitution:
+      - A triage, plan, deep-plan, or deep-verify step may be satisfied by an existing converged research/plan/verification artifact instead of a fresh skill spawn, even in standard mode.
+      - The artifact must explicitly cover the scoped issue domain, be current for the release scope, and provide output equivalent to the skipped step.
+      - This substitution never applies to implement, verify-build, release, publish, or CI/publish verification.
+      - Log the artifact path or URL and why it is equivalent before substituting.
+
+      Otherwise:
+      - Set compression_mode=standard.
+      - Execute all pipeline steps normally with full skill spawns.
+      - Log: "[compression-mode] standard mode (scope={n}, mixed labels or large scope)".
+
+      Output compression_mode as pipeline state for downstream steps.
+    description: "Evaluate compression eligibility; set compression_mode state"
+    depends_on: scope-selection
+
+  - name: triage
+    skill: professor-triage
+    description: "Cross-analysis triage with priority assessment (scoped to release manifest) — skipped if compression_mode=docs-only"
+    depends_on: compression-mode-eval
+
+  - name: plan
+    skill: release-plan
+    description: "Release unit plan from triaged issues — skipped if compression_mode=docs-only"
+    depends_on: triage
+
+  - name: deep-plan
+    skill: deep-plan
+    description: "Research-validated implementation plan (research → plan → verify) — skipped if compression_mode=docs-only"
+    depends_on: plan
+
+  - name: implement
+    prompt: |
+      Execute the deep-plan output for the scoped release manifest.
+
+      Per-issue lifecycle:
+      1. Start: gh issue edit <N> --add-label in-progress --assignee @me
+      2. Comment: gh issue comment <N> --body "Implementation started via auto-dev pipeline"
+      3. Dispatch specialist agents per file domain:
+         - Detect file types in scope and route to matching agent
+         - Use specialized agents (lang-*, be-*, fe-*, infra-*) over general-purpose
+      4. TDD via superpowers:test-driven-development when tests apply
+      5. Commit via mgr-gitnerd with `Fixes #<N>` trailer in body
+      6. On success: remove in-progress, add verify-ready
+      7. On failure: remove in-progress, add needs-review, comment error summary
+
+      Rules:
+      - Parallel execution per R009 (max 4 concurrent, respect dependencies)
+      - Issues whose prerequisites failed in-run MUST be skipped (log reason)
+      - No direct orchestrator writes (R010)
+      - Codex-managed `.codex/` edits use the normal edit/patch flow
+      - Claude Code `bypassPermissions` can write `.claude/skills/`, `.claude/agents/`, and `.claude/commands/` directly on v2.1.121+, with broader protected-path writes available on v2.1.126+
+      - If `.claude` template parity changes are required, make them explicit and verify sensitive-path guard tests
+      - Use `/tmp/{skill}-{timestamp}.md` only as a historical fallback for older Claude Code versions, non-bypass sessions, or runs that still surface a protected-path prompt
+    description: "Per-issue implementation with lifecycle and specialist routing"
+    depends_on: deep-plan
+
+  - name: verify-build
+    prompt: |
+      Project-specific build + test verification.
+
+      Scope-change re-entry guard:
+      - If a scoped issue is added or materially changed after verify-build starts, reset this phase and re-run the full verify-build gate for the new aggregate scope.
+      - Do not proceed to release from a verify-build result collected before the latest scoped implementation change.
+
+      Shell execution discipline:
+      - Run compound verification commands under `set -euo pipefail` so lint, typecheck, tests, and build halt on the first failed gate.
+      - Do not rely on `set -o pipefail` alone for sequential verification chains.
+      - Avoid reserved shell variable names in polling or status snippets (`status`, `path`, `argv`); use `run_status`, `cmd_path`, or `args` instead.
+
+      For Node/Bun projects (this repo):
+      1. bun install — verify lockfile sync (halt on lockfile drift)
+      2. bun run lint (if package.json has lint script)
+      3. bun run typecheck (if available)
+      4. bun test — MANDATORY, no silent skip
+         - Baseline reference: port issue #1328 historically documented upstream test debt; current Codex baseline is 0 failures.
+         - Each release: adopt the prior version's test result as baseline (dynamic, not hardcoded).
+         - Compute current pass/fail counts.
+         - If current FAIL count > baseline: NEW regression detected, halt and report failure list.
+         - If current FAIL count <= baseline: continue with advisory log "X failures (baseline {n}, delta {d})".
+      5. Build verification (if package has build script)
+
+      Documentation/template validation:
+      - For local or CI docs validation, run `bun run .github/scripts/validate-docs.ts --programmatic-only` (or the repo's equivalent validate-docs command with `--programmatic-only`) before assuming a validation failure is an authentication failure.
+      - Treat interactive/auth-dependent validate-docs output as inconclusive until the programmatic-only path has been tried.
+
+      For Python/Go/Docker/static-site projects: auto-detect and run equivalent checks.
+
+      Halt conditions:
+      - Lint errors
+      - Typecheck errors
+      - New test failures relative to baseline
+      - Build failure
+      - Lockfile drift
+
+      Halt → report exact command + stderr + delta details. Do NOT proceed to release on any halt.
+    description: "Auto-detected build + test verification (bun test with baseline delta guard)"
+    depends_on: implement
+
+  - name: deep-verify
+    skill: deep-verify
+    description: "Multi-angle release quality verification — self-review checklist if compression_mode=docs-only, or deterministic self-check in lite mode when no structural surface changed"
+    depends_on: verify-build
+
+  - name: release
+    prompt: |
+      Create a GitHub Release.
+
+      1. Version:
+         - Version decision (semver) — PATCH-PREFERRED policy from v1.0.0 onward:
+           * No existing tags → v0.1.0.
+           * Previous tag exists → default to patch. When in doubt, patch; do not reflexively bump minor for rule/doc/skill/config/wiki/workflow edits.
+           * patch (DEFAULT): bugfixes, hardening, rule/doc/skill/config/wiki/workflow changes, compatibility notes, and release-process guardrails.
+           * minor: only a genuinely new user-facing capability, such as a new skill/agent/command adding visible surface, not a refinement of an existing one.
+           * major: breaking changes to user-facing contracts (CLI flags, public skill/command names, public API) or a deliberate milestone declaration such as v1.0.0.
+           * If a previous tag is ahead of the source version, use the next available skip-version.
+         - For npm projects: update `package.json` and `templates/manifest.json`
+           to the chosen version in the same commit before tag creation.
+         - Promote `CHANGELOG.md` before tag creation: move non-empty
+           `## [Unreleased]` entries into `## [VERSION] - YYYY-MM-DD`,
+           re-create an empty `## [Unreleased]`, and add a concise summary
+           instead of relying on GitHub auto-generated release notes.
+         - Run `bash .github/scripts/verify-version-sync.sh` after the bump and
+           before tag or PR creation.
+      2. Release notes via omcustomcodex-release-notes skill
+      3. Delegate to mgr-gitnerd:
+         - preflight: `git branch --list release --format='%(refname:short)'`
+           before creating `release/v*`; if a local `release` branch exists,
+           prove it is merged/backed up and prefer renaming it to
+           `releases-tracking` over deleting it
+         - git tag + push
+         - gh release create
+      4. Close milestone
+         - After closing a milestone, verify by milestone number (not title-only search) and retry once before reporting missing.
+      5. Close verify-ready issues with "Fixed in v{version}"
+         Label needs-review issues as "Deferred from v{version}"
+
+      Adapt release mechanism to project:
+      - npm project: PR + merge + npm publish verification
+      - Non-npm: direct tag on main (trunk-based)
+    description: "Git tag + GitHub Release + close milestone/issues"
+    depends_on: deep-verify
+
+  - name: ci-check
+    prompt: |
+      Post-release CI verification.
+
+      1. Check if .github/workflows/ has CI workflows
+         If NOT: skip with "No CI configured. Skipping." and continue.
+      2. If CI exists:
+         - gh run list --limit 5
+         - Wait for runs triggered by the new tag/push
+         - If failures: diagnose, fix, re-verify
+      3. For npm projects: verify npm publish succeeded (npm view <pkg> version)
+      4. Report final CI status.
+    description: "Post-release CI verification and fix loop"
+    depends_on: release
+
+  - name: post-release-followup
+    skill: post-release-followup
+    description: "Register follow-ups from this release as new issues"
+    depends_on: ci-check

@@ -3,7 +3,7 @@
   "workspaces": [
     "packages/*"
   ],
-  "version": "1.0.15",
+  "version": "1.0.21",
   "requiresCC": ">=2.1.121",
   "claudeCode": {
     "minimumVersion": "2.1.121",
@@ -23,7 +23,9 @@
     }
   },
   "files": [
+    ".agents",
     "dist",
+    "plugins",
     "templates",
     "packages/serve/build"
   ],
@@ -33,7 +35,7 @@
   },
   "scripts": {
     "dev": "bun run src/cli/index.ts",
-    "build": "bun build src/cli/index.ts --outdir dist/cli --target node && bun build src/index.ts --outdir dist --target node && tsc --project tsconfig.build.json && bun run --cwd packages/serve build && bun run scripts/sync-source-lockfile.ts",
+    "build": "bun run scripts/sync-plugin-assets.ts && bun build src/cli/index.ts --outdir dist/cli --target node && bun build src/index.ts --outdir dist --target node && tsc --project tsconfig.build.json && bun run --cwd packages/serve build && bun run scripts/sync-source-lockfile.ts",
     "test": "bun test tests/ packages/eval-core/",
     "test:unit": "bun test tests/unit",
     "test:integration": "bun test tests/integration",

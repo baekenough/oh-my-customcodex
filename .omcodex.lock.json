@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.15",
-  "generatedAt": "2026-07-13T22:52:32.081Z",
-  "templateVersion": "1.0.15",
+  "generatorVersion": "1.0.21",
+  "generatedAt": "2026-07-14T06:11:58.807Z",
+  "templateVersion": "1.0.21",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e2690ef49068c522f452b7bc26089687adf98b1039841704dfcac64a6fa8a65b",
@@ -760,8 +760,8 @@
       "component": "guides"
     },
     "guides/openai-codex/01-version-compatibility.md": {
-      "templateHash": "e5bd5557fac46f5b38b2988301dc0bb25c69a9bee86a51d343e14ec33ea796ea",
-      "size": 12864,
+      "templateHash": "19c99640de9e8905899bd6e35338033cffc867bf2504daccfad4aa2a70084c6d",
+      "size": 21728,
       "component": "guides"
     },
     "guides/openai-codex/index.yaml": {

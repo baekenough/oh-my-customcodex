@@ -898,7 +898,7 @@ function checkAndInstallCodexAfterUpdate(): void {
 /**
  * Check if OMX CLI is installed after an update and install it if missing
  */
-function checkAndInstallOmxAfterUpdate(): void {
+function checkAndInstallOmxAfterUpdate(result: UpdateResult): void {
   const omx = assessOmxInstallation();
 
   if (omx.status !== 'ready') {
@@ -914,6 +914,12 @@ function checkAndInstallOmxAfterUpdate(): void {
     const omxInstalled = installOmx();
     if (omxInstalled) {
       console.log(i18n.t('cli.update.omxInstalled'));
+    } else {
+      const action = omx.status === 'missing' ? 'installation' : 'upgrade';
+      const detectedVersion = omx.version ?? 'no OMX installation';
+      result.warnings.push(
+        `OMX ${action} failed: required v${MINIMUM_OMX_VERSION} or newer; detected ${detectedVersion}`
+      );
     }
   }
 }
@@ -988,6 +994,9 @@ async function handleNoUpdateAfterCheck(
   }
   await persistConfigMigrationIfNeeded(options.targetDir, config, !!options.dryRun);
   await handleNoUpdateResult(options, result);
+  if (!options.dryRun) {
+    checkAndInstallOmxAfterUpdate(result);
+  }
 }
 
 function getPlannedUpdateComponents(
@@ -1083,7 +1092,7 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       // Runtime installation checks may install or upgrade dependencies.
       checkAndInstallRtkAfterUpdate();
       checkAndInstallCodexAfterUpdate();
-      checkAndInstallOmxAfterUpdate();
+      checkAndInstallOmxAfterUpdate(result);
     }
 
     // Update project registry with new version (non-blocking)

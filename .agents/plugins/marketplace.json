@@ -1,0 +1,20 @@
+{
+  "name": "oh-my-customcodex-local",
+  "interface": {
+    "displayName": "oh-my-customcodex Local"
+  },
+  "plugins": [
+    {
+      "name": "oh-my-customcodex",
+      "source": {
+        "source": "local",
+        "path": "./plugins/oh-my-customcodex"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
