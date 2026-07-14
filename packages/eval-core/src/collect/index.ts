@@ -1,9 +1,12 @@
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename } from 'node:path';
+import { Database } from 'bun:sqlite';
 import { eq } from 'drizzle-orm';
 import { createDb, type EvalDb } from '../db/client.js';
 import { agentInvocations, projects, sessions, turns } from '../db/schema.js';
-import type { RawOutcomeRecord } from '../types/session.js';
+import type { RawOutcomeRecord, RawSessionRecord } from '../types/session.js';
 import { type OutcomeParseDiagnostic, parseOutcomeFileWithDiagnostics } from './outcome-parser.js';
 import { parseSessionHistory } from './session-parser.js';
 import { estimateTokens } from './token-estimator.js';
@@ -26,6 +29,10 @@ export interface CollectResult {
 }
 
 export async function collect(options: CollectOptions): Promise<CollectResult> {
+  if (options.dryRun) {
+    return collectDryRun(options);
+  }
+
   const db = createDb(options.dbPath);
   let sessionCount = 0;
   let turnCount = 0;
@@ -41,6 +48,135 @@ export async function collect(options: CollectOptions): Promise<CollectResult> {
   }
 
   return { sessions: sessionCount, turns: turnCount, invocations: invocationCount, diagnostics };
+}
+
+function collectDryRun(options: CollectOptions): CollectResult {
+  const existing = readExistingCollection(options.dbPath);
+  const rawSessions = parseSessionHistory(`${options.omxLogsDir}/session-history.jsonl`).filter(
+    (raw) => !options.since || raw.started_at >= options.since
+  );
+  const newSessions = rawSessions.filter((raw) => !existing.sessionIds.has(raw.session_id));
+  const sessionWindows = [...existing.sessions, ...rawSessions.map(rawSessionToWindow)];
+
+  const sinceDate = options.since?.split('T')[0];
+  const rawTurns = parseTurnFiles(options.omxLogsDir, sinceDate);
+  const turnCount = rawTurns.filter((raw) => {
+    if (existing.turnIds.has(raw.turn_id)) return false;
+    const turnTime = new Date(raw.timestamp).getTime();
+    return sessionWindows.some((session) => {
+      const sessionStart = new Date(session.startedAt).getTime();
+      const sessionEnd = session.endedAt ? new Date(session.endedAt).getTime() : Date.now();
+      return turnTime >= sessionStart && turnTime <= sessionEnd;
+    });
+  }).length;
+
+  let invocationCount = 0;
+  let diagnostics: OutcomeParseDiagnostic[] = [];
+  if (options.ppid) {
+    const parsed = parseOutcomeFileWithDiagnostics(options.ppid);
+    invocationCount = parsed.records.length;
+    diagnostics = parsed.diagnostics;
+  }
+
+  return { sessions: newSessions.length, turns: turnCount, invocations: invocationCount, diagnostics };
+}
+
+interface ExistingCollection {
+  sessionIds: Set<string>;
+  turnIds: Set<string>;
+  sessions: Array<{ sessionId: string; startedAt: string; endedAt: string | null }>;
+}
+
+function readExistingCollection(dbPath: string): ExistingCollection {
+  if (!existsSync(dbPath)) {
+    return { sessionIds: new Set(), turnIds: new Set(), sessions: [] };
+  }
+
+  const snapshot = snapshotSqliteFiles(dbPath);
+  try {
+    return readExistingCollectionWithSqliteCli(dbPath) ?? readExistingCollectionWithBun(dbPath);
+  } finally {
+    restoreSqliteFiles(snapshot);
+  }
+}
+
+function snapshotSqliteFiles(dbPath: string): Map<string, Buffer | null> {
+  return new Map(
+    [dbPath, `${dbPath}-wal`, `${dbPath}-shm`].map((path) => [
+      path,
+      existsSync(path) ? readFileSync(path) : null,
+    ])
+  );
+}
+
+function restoreSqliteFiles(snapshot: Map<string, Buffer | null>): void {
+  for (const [path, content] of snapshot) {
+    if (content) {
+      writeFileSync(path, content);
+    } else {
+      rmSync(path, { force: true });
+    }
+  }
+}
+
+function readExistingCollectionWithSqliteCli(dbPath: string): ExistingCollection | null {
+  try {
+    const sessionRows = readJsonRows<{
+      session_id: string;
+      started_at: string;
+      ended_at: string | null;
+    }>(dbPath, 'SELECT session_id, started_at, ended_at FROM sessions');
+    const turnRows = readJsonRows<{ turn_id: string }>(dbPath, 'SELECT turn_id FROM turns');
+    return existingCollectionFromRows(sessionRows, turnRows);
+  } catch {
+    return null;
+  }
+}
+
+function readJsonRows<T>(dbPath: string, sql: string): T[] {
+  const stdout = execFileSync('sqlite3', ['-readonly', '-json', dbPath, sql], {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+  return stdout ? (JSON.parse(stdout) as T[]) : [];
+}
+
+function readExistingCollectionWithBun(dbPath: string): ExistingCollection {
+  const sqlite = new Database(dbPath, { readonly: true });
+  try {
+    const sessionRows = sqlite
+      .query<{ session_id: string; started_at: string; ended_at: string | null }, []>(
+        'SELECT session_id, started_at, ended_at FROM sessions'
+      )
+      .all();
+    const turnRows = sqlite.query<{ turn_id: string }, []>('SELECT turn_id FROM turns').all();
+    return existingCollectionFromRows(sessionRows, turnRows);
+  } finally {
+    sqlite.close();
+  }
+}
+
+function existingCollectionFromRows(
+  sessionRows: Array<{ session_id: string; started_at: string; ended_at: string | null }>,
+  turnRows: Array<{ turn_id: string }>
+): ExistingCollection {
+  return {
+    sessionIds: new Set(sessionRows.map((row) => row.session_id)),
+    turnIds: new Set(turnRows.map((row) => row.turn_id)),
+    sessions: sessionRows.map((row) => ({
+      sessionId: row.session_id,
+      startedAt: row.started_at,
+      endedAt: row.ended_at,
+    })),
+  };
+}
+
+function rawSessionToWindow(raw: RawSessionRecord): {
+  sessionId: string;
+  startedAt: string;
+  endedAt: string | null;
+} {
+  return { sessionId: raw.session_id, startedAt: raw.started_at, endedAt: raw.ended_at ?? null };
 }
 
 function upsertProject(db: EvalDb, cwd: string, now: string): number {

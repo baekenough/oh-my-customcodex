@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.17] - 2026-07-14
+
+### Fixed
+- Make `eval-core collect --dry-run` parse fresh log paths without creating SQLite files and preserve existing database sidecars while reporting truthful would-collect counts (#1605).
+- Avoid redundant `uv`/Python probes during `init` when ontology MCP configuration already exists, preserving second-run idempotency for configured projects (#1586).
+
 ## [1.0.16] - 2026-07-14
 
 ### Changed
