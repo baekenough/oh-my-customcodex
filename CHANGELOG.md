@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.16] - 2026-07-14
+
+### Changed
+- Raise the required OMX runtime baseline to `v0.20.1` for the cumulative `v0.19.1`-`v0.20.1` workflow, model, plugin, planning, and delegation fixes; install and non-dry update enforce the floor, doctor diagnoses it, and unverifiable versions fail closed while residual hook-trust issue #1610 remains open (#1572, #1575, #1576).
+- Record OpenAI Codex `rust-v0.143.0`-`rust-v0.144.3` final-state compatibility, including the Guardian rollback and the `0.144.3` release-note/tag-ancestry discrepancy around direct commit `8a4d35a` (#1571, #1573, #1622, #1623).
+
 ## [1.0.15] - 2026-07-14
 
 ### Changed

@@ -64,19 +64,19 @@ async function writeCompleteProject(projectRoot: string): Promise<void> {
 }
 
 describe('doctor OMX baseline checks', () => {
-  it('warns when OMX is below the required v0.19.0 baseline', async () => {
+  it('warns when OMX is below the required v0.20.1 baseline', async () => {
     await withProject(async (projectRoot) => {
       const result = await checkOmx(
         projectRoot,
         depsFor({
           'which omx': '/usr/local/bin/omx',
-          'omx --version': 'oh-my-codex v0.17.3',
+          'omx --version': 'oh-my-codex v0.20.0',
         })
       );
 
       expect(result.status).toBe('warn');
       expect(result.fixable).toBe(true);
-      expect(result.message).toContain('v0.19.0');
+      expect(result.message).toContain('v0.20.1');
     });
   });
 
@@ -86,7 +86,7 @@ describe('doctor OMX baseline checks', () => {
         projectRoot,
         depsFor({
           'which omx': '/usr/local/bin/omx',
-          'omx --version': 'oh-my-codex v0.19.0',
+          'omx --version': 'oh-my-codex v0.20.1',
           'omx api --help': new Error('unknown command'),
         })
       );
@@ -104,7 +104,7 @@ describe('doctor OMX baseline checks', () => {
         projectRoot,
         depsFor({
           'which omx': '/usr/local/bin/omx',
-          'omx --version': 'oh-my-codex v0.19.0',
+          'omx --version': 'oh-my-codex v0.20.1',
           'omx api --help': 'Usage: omx api',
         })
       );

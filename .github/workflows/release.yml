@@ -176,6 +176,7 @@ jobs:
             tests/e2e/list.test.ts \
             tests/e2e/doctor.test.ts \
             tests/e2e/native-agent-omx.test.ts
+          run_bun_batch "snapshot-readiness" tests/integration/snapshot-readiness.test.ts
 
           run_bun_batch "cli-update" tests/unit/cli/update.test.ts
           run_bun_batch "cli-projects" tests/unit/cli/projects.test.ts tests/unit/cli/projects-command.test.ts
@@ -220,6 +221,7 @@ jobs:
           # Keep the Git-backed project-root probe isolated from preflight-brew's
           # process-wide child_process mock in Bun's shared test runtime.
           run_bun_batch "codex-project-root" tests/unit/core/codex-project-root.test.ts
+          run_bun_batch "omx-installer-boundary" tests/unit/core/omx-installer.test.ts
           run_bun_batch "core-config-installer-utils" \
             tests/unit/core/agent-compiler.test.ts \
             tests/unit/core/config.test.ts \

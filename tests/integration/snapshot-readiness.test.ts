@@ -168,14 +168,16 @@ async function runSnapshotInstall(
   targetDir: string,
   snapshotDir: string,
   home: string,
-  binDir: string
+  binDir: string,
+  baseEnv: NodeJS.ProcessEnv = process.env
 ): Promise<SnapshotResult> {
   const output = execFileSync(process.execPath, [runner, targetDir, snapshotDir], {
     encoding: 'utf8',
     timeout: 30_000,
     env: {
-      ...process.env,
+      ...baseEnv,
       HOME: home,
+      CODEX_HOME: join(home, '.codex'),
       PATH: `${binDir}:${dirname(process.execPath)}:/usr/bin:/bin`,
       OMCODEX_REGISTRY_DIR: join(home, '.oh-my-customcodex'),
       NODE_ENV: '',
@@ -276,7 +278,10 @@ describe('snapshot post-copy readiness with isolated HOME/PATH', () => {
     await writeFile(join(targetDir, '.gitignore'), 'ORIGINAL-IGNORE\n');
     await writeFile(join(targetDir, 'keep.txt'), 'KEEP\n');
 
-    const result = await runSnapshotInstall(runner, targetDir, snapshotDir, home, binDir);
+    const result = await runSnapshotInstall(runner, targetDir, snapshotDir, home, binDir, {
+      ...process.env,
+      CODEX_HOME: join(sandbox, 'decoy-codex-home'),
+    });
 
     expect(result.success).toBe(true);
     const hooksPath = join(targetDir, '.codex', 'hooks.json');
