@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.20] - 2026-07-14
+
+### Fixed
+
+- Limit snapshot rollback journaling to setup-owned OMX paths so historical .omx logs/state are not scanned or copied while preserving exact rollback for setup scope changes (#1626).
+
 ## [1.0.19] - 2026-07-14
 
 ### Fixed
