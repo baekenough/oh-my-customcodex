@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.21] - 2026-07-14
+
+### Added
+
+- Package reusable oh-my-customcodex skills, hooks, ontology metadata, and ontology-rag MCP declaration as a repo-local Codex plugin artifact with marketplace metadata (#1595).
+
 ## [1.0.20] - 2026-07-14
 
 ### Fixed

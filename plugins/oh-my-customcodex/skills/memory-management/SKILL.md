@@ -1,0 +1,250 @@
+---
+name: memory-management
+description: Memory persistence operations using native memory plus omx-memory or AgentMemory-compatible MCP backends
+scope: core
+user-invocable: false
+---
+
+## Purpose
+
+Provide memory persistence operations using native `MEMORY.md` first, then a searchable MCP backend for cross-session retrieval. Prefer `omx-memory` or another AgentMemory-compatible backend exposing `memory_search`, `memory_add`, and `observation_add`. Deprecated Chroma memory backends are not used in this project.
+
+## Backend Order
+
+1. Native auto-memory: compact durable facts in `MEMORY.md`.
+2. `omx-memory` or AgentMemory-compatible MCP: cross-session search, shared observations, and temporal recall.
+
+If multiple searchable backends are active, choose the configured canonical backend and record it in the session summary. Do not dual-write unless a migration window is explicitly documented.
+
+## Operations
+
+### 1. Save Context
+
+```yaml
+operation: save
+description: Store session context in the configured searchable memory backend
+steps:
+  1. Collect session data:
+     - Tasks completed
+     - Decisions made
+     - Open items
+     - Key code changes
+  2. Format document:
+     - Add project tag: "my-project"
+     - Add session ID: {date}-{uuid}
+     - Add relevant tags
+  3. Store in configured backend:
+     - Prefer memory_add for session summaries
+     - Use observation_add for atomic behavioral or project observations
+     - Include metadata
+```
+
+### 2. Recall Context
+
+```yaml
+operation: recall
+description: Search and retrieve relevant memories
+steps:
+  1. Build query:
+     - Always prefix with "my-project"
+     - Add user-provided search terms
+     - Include date for temporal searches
+  2. Search configured backend:
+     - Prefer memory_search
+     - Request top N results
+  3. Format results:
+     - Sort by relevance
+     - Present summary
+     - Provide access to full content
+```
+
+### 3. Get Specific Memory
+
+```yaml
+operation: get
+description: Retrieve specific memory by ID
+steps:
+  1. Prefer memory_read or memory_search by ID
+  2. Fall back to `memory_search` with the ID when direct read is unavailable
+  3. Return full document content
+```
+
+## Query Patterns
+
+### Semantic Search (Primary)
+
+```python
+# Always include project name
+memory_search({ query: "my-project {search_terms}", limit: 8 })
+
+
+# Examples:
+memory_search({ query: "my-project authentication flow", limit: 5 })
+memory_search({ query: "my-project 2025-01-24 memory system", limit: 5 })
+```
+
+### Get by ID
+
+```python
+# When you have a specific document ID
+memory_read({ id: "document_id" })
+```
+
+## Document Format
+
+### Save Format
+
+```yaml
+content: |
+  ## Session Summary
+  Date: {date}
+  Session: {session_id}
+
+  ### Tasks Completed
+  - Task 1: Description
+  - Task 2: Description
+
+  ### Decisions Made
+  - Decision 1: Rationale
+  - Decision 2: Rationale
+
+  ### Open Items
+  - Item 1: Status
+  - Item 2: Status
+
+  ### Notes
+  Additional context...
+
+metadata:
+  project: my-project
+  session: {date}-{uuid}
+  tags: [session, task, decision, ...]
+  created_at: {timestamp}
+```
+
+### Recall Response Format
+
+```yaml
+results:
+  - id: doc_1
+    score: 0.95
+    summary: "Authentication flow implementation"
+    date: 2025-01-20
+    tags: [authentication, oauth]
+  - id: doc_2
+    score: 0.87
+    summary: "JWT token decision"
+    date: 2025-01-18
+    tags: [authentication, decision]
+```
+
+## Best Practices
+
+### Query Tips
+
+```yaml
+do:
+  - Always include "my-project" prefix
+  - Use semantic, intent-based queries
+  - Include dates for temporal searches
+  - Use multiple queries for better coverage
+
+dont:
+  - Use complex where filters ($and, $or)
+  - Omit project name
+  - Use overly generic terms
+  - Expect exact string matching
+```
+
+### Save Tips
+
+```yaml
+do:
+  - Include meaningful tags
+  - Write clear summaries
+  - Capture decisions with rationale
+  - Note open items for future reference
+
+dont:
+  - Save trivial conversations
+  - Include sensitive data (API keys, etc.)
+  - Create duplicate entries
+```
+
+## Integration
+
+### With sys-memory-keeper Agent
+
+```
+sys-memory-keeper agent uses this skill for:
+- sys-memory-keeper:save command
+- sys-memory-keeper:recall command
+- PreCompact hook
+- SessionStart hook
+```
+
+### With Other Agents
+
+```
+Other agents can trigger memory operations via:
+- Direct sys-memory-keeper:save/recall commands
+- Delegating to sys-memory-keeper
+```
+
+## Error Handling
+
+```yaml
+save_errors:
+  - Connection failure: Retry 3 times, then log and continue
+  - Invalid format: Validate before save, report issues
+  - Storage full: Archive old memories, then retry
+
+recall_errors:
+  - No results: Suggest alternative queries
+  - Connection failure: Return empty with warning
+  - Invalid query: Help user reformulate
+```
+
+## MemKraft Bridge (Optional)
+
+> External integration: [MemKraft](https://github.com/seojoonkim/memkraft) — zero-dependency compound memory for AI agents.
+> Install: `pipx install memkraft`
+
+### When to Use
+
+| Capability | Searchable MCP | MemKraft |
+|-----------|-----------|----------|
+| Session persistence | ✅ (approved searchable backend) | ✅ (Markdown) |
+| Entity tracking | ❌ | ✅ (person/org/concept) |
+| Source attribution | ❌ | ✅ (`[Source: who, when, how]`) |
+| Auto-maintenance | ❌ | ✅ (Dream Cycle) |
+| CJK entity extraction | ❌ | ✅ (Korean/Chinese/Japanese) |
+| Offline search | ❌ | ✅ (stdlib difflib) |
+
+Use MemKraft when entity tracking or source attribution is needed. Use the configured AgentMemory-compatible or `omx-memory` backend for searchable session persistence.
+
+### Commands
+
+```bash
+# Extract entities from a document
+memkraft extract <file>
+
+# Get a brief on a topic
+memkraft brief <topic>
+
+# Run maintenance cycle (dedup, prune orphans)
+memkraft dream
+```
+
+### Integration with sys-memory-keeper
+
+At session end, sys-memory-keeper can optionally run MemKraft operations:
+
+1. `memkraft extract` on session summary → builds entity graph
+2. `memkraft dream` → prunes stale entries (run weekly, not every session)
+
+### Prerequisites
+
+- Python 3.9+
+- `pipx install memkraft`
+- No API keys required (offline-only)

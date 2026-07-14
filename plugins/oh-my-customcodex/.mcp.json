@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "ontology-rag": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--no-project",
+        "--python",
+        ".venv",
+        "python",
+        "-m",
+        "ontology_rag.mcp_server"
+      ],
+      "env": {
+        "ONTOLOGY_DIR": ".codex/ontology"
+      }
+    }
+  }
+}
