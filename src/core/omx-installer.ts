@@ -31,7 +31,7 @@ import { parseNativeAgentListMetadata } from './agent-compiler.js';
 import type { CodexHookCommandHandler } from './codex-hooks.js';
 import { resolveCodexProjectRoot } from './codex-project-root.js';
 
-export const MINIMUM_OMX_VERSION = '0.19.0';
+export const MINIMUM_OMX_VERSION = '0.20.1';
 export const OMX_PROJECT_SETUP_COMMAND = 'omx setup --scope project --merge-agents';
 
 export interface InstallerDeps {
@@ -908,10 +908,24 @@ export function parseOmxVersion(versionOutput: string | null): string | null {
     return null;
   }
 
-  const match = versionOutput.match(
-    /\bv?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)\b/
-  );
-  return match ? match[1] : null;
+  const numericIdentifier = String.raw`(?:0|[1-9]\d*)`;
+  const nonNumericIdentifier = '[0-9]*[A-Za-z-][0-9A-Za-z-]*';
+  const prereleaseIdentifier = `(?:${numericIdentifier}|${nonNumericIdentifier})`;
+  const prereleaseIdentifiers = String.raw`${prereleaseIdentifier}(?:\.${prereleaseIdentifier})*`;
+  const buildIdentifier = '[0-9A-Za-z-]+';
+  const buildIdentifiers = String.raw`${buildIdentifier}(?:\.${buildIdentifier})*`;
+  const semverPattern = String.raw`${numericIdentifier}\.${numericIdentifier}\.${numericIdentifier}(?:-${prereleaseIdentifiers})?(?:\+${buildIdentifiers})?`;
+  const productLinePattern = new RegExp(String.raw`^[\t ]*oh-my-codex v(${semverPattern})[\t ]*$`);
+
+  for (const line of versionOutput.split(/\r\n|[\r\n]/)) {
+    const productMatch = line.match(productLinePattern);
+    if (productMatch) {
+      return productMatch[1];
+    }
+  }
+
+  const bareMatch = versionOutput.trim().match(new RegExp(`^v?(${semverPattern})$`));
+  return bareMatch ? bareMatch[1] : null;
 }
 
 function parseVersionParts(version: string): {
@@ -1003,23 +1017,23 @@ export function assessOmxInstallation(
 
   const hasApi = hasOmxApiCommand(deps);
 
-  if (parsedVersion && !hasApi) {
-    return {
-      status: 'api-missing',
-      installed: true,
-      version,
-      parsedVersion,
-      minimumVersion: MINIMUM_OMX_VERSION,
-      hasApiCommand: false,
-    };
-  }
-
-  if (!parsedVersion && !hasApi) {
+  if (!parsedVersion) {
     return {
       status: 'unknown-version',
       installed: true,
       version,
       parsedVersion: null,
+      minimumVersion: MINIMUM_OMX_VERSION,
+      hasApiCommand: hasApi,
+    };
+  }
+
+  if (!hasApi) {
+    return {
+      status: 'api-missing',
+      installed: true,
+      version,
+      parsedVersion,
       minimumVersion: MINIMUM_OMX_VERSION,
       hasApiCommand: false,
     };

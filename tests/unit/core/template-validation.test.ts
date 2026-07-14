@@ -1412,10 +1412,24 @@ describe('Template Validation', () => {
 
     expect(template).toBe(source);
     expect(source).toContain('rust-v0.138.0');
+    expect(source).toContain('rust-v0.143.0');
+    expect(source).toContain('rust-v0.144.3');
+    expect(source).toContain('v0.20.1');
     expect(source).toContain('/app');
     expect(source).toContain('model-advertised effort ordering');
     expect(source).toContain('AGENTS.md');
     expect(source).toContain('#1481');
+    expect(source).toContain('Guardian final state:');
+    expect(source).toContain(
+      'restored the previous Guardian auto-review policy, request format, prompting, and tool behavior.'
+    );
+    expect(source).toContain(
+      'tag comparison shows divergent ancestry with direct commit `8a4d35a`'
+    );
+    expect(source).toContain('`feat(tui): add an advanced reasoning picker`');
+    for (const issue of ['#1571', '#1572', '#1573', '#1575', '#1576', '#1622', '#1623']) {
+      expect(source).toContain(issue);
+    }
   });
 
   it('documents Markdown agent sources separately from the native TOML runtime', async () => {

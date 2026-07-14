@@ -105,6 +105,52 @@ describe('updater', () => {
     return createHash('sha256').update(entries.join('\n')).digest('hex');
   }
 
+  async function runCurrentUpdateWithFakeOmx(version: string) {
+    const fakeBin = join(tempDir, 'fake-bin');
+    const invocationLog = join(tempDir, 'omx-invocations.log');
+    const resultPath = join(tempDir, 'update-result.json');
+    const runnerPath = join(tempDir, 'run-update.ts');
+    await mkdir(fakeBin);
+    await writeFile(
+      join(fakeBin, 'omx'),
+      `#!/bin/sh\nprintf '%s\\n' "$*" >> "${invocationLog}"\nif [ "$1" = "--version" ]; then\n  printf '%s\\n' 'oh-my-codex v${version}'\n  exit 0\nfi\nif [ "$1" = "api" ] && [ "$2" = "--help" ]; then\n  printf '%s\\n' 'Usage: omx api'\n  exit 0\nfi\nexit 1\n`,
+      { mode: 0o755 }
+    );
+    await writeFile(
+      runnerPath,
+      `import { writeFile } from 'node:fs/promises';\nimport { update } from ${JSON.stringify(new URL('../../../src/core/updater.ts', import.meta.url).href)};\nconst result = await update({ targetDir: ${JSON.stringify(tempDir)} });\nawait writeFile(${JSON.stringify(resultPath)}, JSON.stringify(result));\n`
+    );
+    const originalPath = process.env.PATH;
+    process.env.PATH = `${fakeBin}:${originalPath ?? ''}`;
+
+    try {
+      const subprocess = Bun.spawnSync({
+        cmd: [process.execPath, runnerPath],
+        cwd: tempDir,
+        env: {
+          ...process.env,
+          BUN_ENV: 'test',
+          NODE_ENV: 'test',
+        },
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+      if (subprocess.exitCode !== 0) {
+        throw new Error(new TextDecoder().decode(subprocess.stderr));
+      }
+
+      return {
+        result: JSON.parse(await readFile(resultPath, 'utf-8')) as Awaited<
+          ReturnType<typeof update>
+        >,
+        invocations: await readFile(invocationLog, 'utf-8').catch(() => ''),
+      };
+    } finally {
+      if (originalPath === undefined) delete process.env.PATH;
+      else process.env.PATH = originalPath;
+    }
+  }
+
   describe('checkForUpdates', () => {
     it('should detect updates when component versions differ', async () => {
       await createConfig('0.1.0', {
@@ -220,6 +266,24 @@ describe('updater', () => {
       expect(result.success).toBe(true);
       expect(result.updatedComponents.length).toBe(0);
       expect(result.skippedComponents.length).toBe(7); // All components skipped
+    });
+
+    it('should enforce the OMX baseline even when project files are already current', async () => {
+      await createConfig(MANIFEST_VERSION, {
+        rules: MANIFEST_VERSION,
+        agents: MANIFEST_VERSION,
+        skills: MANIFEST_VERSION,
+        guides: MANIFEST_VERSION,
+        hooks: MANIFEST_VERSION,
+        contexts: MANIFEST_VERSION,
+        ontology: MANIFEST_VERSION,
+      });
+      const { result, invocations } = await runCurrentUpdateWithFakeOmx('0.20.0');
+
+      expect(result.success).toBe(true);
+      expect(invocations).toContain('--version');
+      expect(result.warnings.some((warning) => /upgrade failed/i.test(warning))).toBe(true);
+      expect(result.warnings.some((warning) => warning.includes('0.20.1'))).toBe(true);
     });
 
     it('should reject no-update statusLine migration when provider root is a symlink outside the project', async () => {

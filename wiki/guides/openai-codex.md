@@ -1,7 +1,7 @@
 ---
 title: "OpenAI Codex Compatibility Guide"
 type: guide
-updated: 2026-07-05
+updated: 2026-07-14
 sources:
   - guides/openai-codex/01-version-compatibility.md
 related:
@@ -22,20 +22,20 @@ This guide tracks Codex/OMX runtime compatibility notes separately from Claude C
 ## Key Topics
 
 - OpenAI Codex release-monitor triage decisions
-- Desktop handoff and visual-file evidence boundaries
-- Reasoning effort and model-routing compatibility notes
-- Plugin JSON automation opportunities
+- Cumulative OMX runtime floors and provider-boundary decisions
+- Guardian rollback and tagged-release ancestry evidence
+- Reasoning effort, model-routing, plugin, MCP, and app-server compatibility notes
 - AGENTS.md loading behavior and nested instruction expectations
 
 ## Current Release Note
 
-`oh-my-codex v0.19.0` is tracked for #1565 and raises the packaged `MINIMUM_OMX_VERSION` baseline to `0.19.0`, covering upstream planning-gate/handoff transport hardening, conductor contract, typed subagent provenance/lane fences, Ralplan consensus and terminal-state handling, Madmax fixes, Ultragoal HUD, and Rust flake fixes through the runtime dependency instead of copying upstream runtime internals into this child package. The release note indicates no intended breaking CLI/package/plugin-layout/config changes, so no package source migration is required beyond the baseline bump.
+`oh-my-codex v0.19.1` through `v0.20.1` is tracked for #1572, #1575, and #1576. The packaged `MINIMUM_OMX_VERSION` baseline is `0.20.1`, covering the cumulative terminal-state, Team state-root, mission queue, GPT-5.6 model contract, plugin-mode setup, persisted-subagent/worktree context, Ralplan draft, Stop-hook, delegation-provenance, parsing, and setup-default fixes through the runtime dependency instead of copying OMX internals into this child package.
 
-`oh-my-codex v0.18.17` was tracked for #1556 and raised the prior packaged `MINIMUM_OMX_VERSION` baseline to `0.18.17`, covering upstream workflow-safety, Team/Windows, and auth reliability fixes.
+Residual #1610 is not resolved by that floor: direct repeated `omx setup` can still reorder coexisting Codex hook groups in `v0.20.1`, and upstream `Yeachan-Heo/oh-my-codex#3147` remains open. The v1.0.10 `omcustomcodex` normalization is a bounded local mitigation, not proof of direct-OMX trust preservation.
 
-`rust-v0.141.0` is tracked for #1526. The package records impact for encrypted remote-executor relay channels, cross-platform cwd/shell/path preservation, selected-plugin stdio MCP activation, app-server child-thread/import/rate-limit observability, realtime and TUI prompt improvements, hook trust and blocking `PostToolUse` fixes, plugin auth/dedup/order fixes, Windows sandbox reliability, exec relay/`wait_agent` interruption, SQLite WAL-reset protection, TLS P-521 support, and runtime performance cleanup.
+OpenAI Codex `rust-v0.143.0` through `rust-v0.144.3` is tracked for #1571, #1573, #1622, and #1623. The guide records remote-plugin, proxy, MCP tool-search/authentication, app-server, approval, sandbox, connector, model/reasoning, and reliability changes as external Codex capabilities. The final Guardian state is the prior auto-review policy, request format, prompting, and tools restored by `0.144.2`, not the superseded `0.144.0` prompt update.
 
-No package dependency, source, or runtime migration is required. Treat these as Codex runtime capabilities and reliability fixes while keeping `omcustomcodex` workflows evidence-driven and metadata-only for credential/proxy diagnostics.
+The official `0.144.3` note describes a version-only release with no merged pull-request changes, while tag ancestry includes direct commit `8a4d35a` for the advanced reasoning picker before the release-note/version commit. Both evidence sources are preserved; neither the picker nor Guardian is claimed as package-owned runtime behavior.
 
 ## Relationships
 
