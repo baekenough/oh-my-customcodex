@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.19] - 2026-07-14
+
+### Fixed
+
+- Verify GitHub Packages releases with the authenticated Packages API, fail on auth/config errors, and require exact scoped package version confirmation (#1633).
+
 ## [1.0.18] - 2026-07-14
 
 ### Fixed

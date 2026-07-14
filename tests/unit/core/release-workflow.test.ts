@@ -123,4 +123,30 @@ describe('release.yml — publish safeguards', () => {
     expect(content).toContain('generate_release_notes: false');
     expect(content).not.toContain('Will use auto-generated release notes');
   });
+
+  it('should verify GitHub Packages through authenticated Packages API with exact version matching', async () => {
+    const content = await readWorkflow();
+
+    expect(content).not.toContain('continue-on-error: true');
+    expect(content).toContain(
+      'PACKAGE_API="/users/baekenough/packages/npm/oh-my-customcodex/versions?per_page=100"'
+    );
+    expect(content).toContain('GH_TOKEN: $' + '{{ secrets.GITHUB_TOKEN }}');
+    expect(content).toContain('jq -r --arg version "$' + '{VERSION}"');
+    expect(content).toContain('map(select(.name == $version)) | first | .name // ""');
+    expect(content).toContain(
+      '@baekenough/oh-my-customcodex@$' + '{VERSION} confirmed by Packages API'
+    );
+  });
+
+  it('should fail GitHub Packages verification on auth/config errors and retry only eventual consistency', async () => {
+    const content = await readWorkflow();
+
+    expect(content).toContain("grep -qE 'HTTP 404|Not Found'");
+    expect(content).toContain('treating as eventual consistency');
+    expect(content).toContain('GitHub Packages API verification failed before exact version check');
+    expect(content).toContain('was not confirmed after $' + '{MAX_ATTEMPTS} attempts');
+    expect(content).toContain('exit 1');
+    expect(content).toContain('API ERROR');
+  });
 });
