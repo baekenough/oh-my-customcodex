@@ -22,9 +22,16 @@ count_files() {
 
 skill_name_list() {
   local root="$1"
-  find "$root" -name "SKILL.md" -type f 2>/dev/null | while IFS= read -r f; do
+  # Codex may materialize runtime/system skills under .system; those are not packaged templates.
+  find "$root" -path "$root/.system" -prune -o -name "SKILL.md" -type f -print 2>/dev/null | while IFS= read -r f; do
     basename "$(dirname "$f")"
   done | sort
+}
+
+skill_files() {
+  local root="$1"
+  # Keep template parity scoped to repository-owned skills, not local Codex runtime skills.
+  find "$root" -path "$root/.system" -prune -o -name "SKILL.md" -type f -print 2>/dev/null
 }
 
 report_count_mismatch() {
@@ -35,7 +42,7 @@ report_count_mismatch() {
 
 echo "=== Template Sync: Counts ==="
 
-src_skills=$(find "$SRC_SKILLS_DIR" -name "SKILL.md" -type f 2>/dev/null | wc -l | tr -d ' ')
+src_skills=$(skill_files "$SRC_SKILLS_DIR" | wc -l | tr -d ' ')
 tpl_skills=$(find templates/.claude/skills -name "SKILL.md" -type f 2>/dev/null | wc -l | tr -d ' ')
 if [ "$src_skills" != "$tpl_skills" ]; then
   echo "::error::Skill count mismatch: $SRC_SKILLS_DIR=$src_skills templates/.claude/skills=$tpl_skills"
@@ -237,7 +244,7 @@ while IFS= read -r src_skill; do
     echo "::error::Content drift in skill: $skill_name/SKILL.md (source != template)"
     content_drift=$((content_drift + 1))
   fi
-done < <(find "$SRC_SKILLS_DIR" -name "SKILL.md" -type f)
+done < <(skill_files "$SRC_SKILLS_DIR")
 
 if [ "$content_drift" -gt 0 ]; then
   echo "::error::$content_drift content drift(s) detected between .codex/ and templates/.claude/"
