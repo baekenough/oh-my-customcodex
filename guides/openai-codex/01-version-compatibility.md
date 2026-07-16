@@ -2,6 +2,26 @@
 
 This guide records OpenAI Codex release-note impact decisions for oh-my-customcodex. Use it for Codex/OMX runtime compatibility notes; keep Claude-only release notes in `guides/claude-code/15-version-compatibility.md`.
 
+## oh-my-codex v0.20.2 / OMX compatibility baseline
+
+Source: upstream oh-my-codex release `v0.20.2`, Codex-port issue #1664.
+
+| Change | Impact on oh-my-customcodex | Action |
+| --- | --- | --- |
+| `v0.20.2` preserves foreign Codex hook coordinates across repeated project setup through #3151, closing the upstream defect tracked as `Yeachan-Heo/oh-my-codex#3147`. | The child package already retains a bounded normalization mitigation for setup flows invoked through `omcustomcodex`, but OMX `v0.20.1` cannot guarantee the fixed direct-setup behavior. | Raise `MINIMUM_OMX_VERSION` to `0.20.2`; treat `0.20.1` as stale for install, non-dry update, and doctor readiness while retaining the local mitigation as defense in depth. |
+| Native `spawn_agent` role routing becomes surface-aware, and adapted-role tracker/marker binding is transactional and recoverable (#3152, #3166). Native child completion no longer injects a generic auto-nudge (#3180). | Role identity, state binding, and child-stop behavior are runtime contracts used by this harness but owned by OMX. | Consume the fixes through the runtime floor; do not add a second role router, tracker, or SubagentStop implementation to this package. |
+| Fresh authenticated App leaders can bootstrap Ralplan role intent through fail-closed leader attestation and atomic recovery (#3184); prompt/session provenance and canonical Ralplan state are isolated across concurrent chats (#3158, #3168). | These changes harden planning and session boundaries that the harness delegates to OMX. | Record them as external capabilities and keep package completion claims grounded in repository and runtime evidence. |
+| Setup preserves an explicit `AGENTS.md` merge policy, foreign Codex hook coordinates, and other operator-owned configuration (#3151, #3164). | This aligns with the child package's preservation contract without transferring setup-engine ownership into `oh-my-customcodex`. | Keep the current package-owned readiness and preservation checks; do not copy upstream setup internals or relax the existing tests. |
+
+## rust-v0.144.4-rust-v0.144.5 / CLI final state
+
+Sources: upstream OpenAI Codex releases `rust-v0.144.4` and `rust-v0.144.5`; Codex-port issues #1641 and #1663.
+
+| Change | Impact on oh-my-customcodex | Action |
+| --- | --- | --- |
+| The official `rust-v0.144.4` release note reports no user-facing change, while the tag comparison is divergent and includes release-branch projection `d82b7e5d4c` of PR #32875: Guardian uses the selected Guardian model's `ModelMessages.auto_review.policy`, with precedence `guardian_policy_config` -> catalog policy -> built-in fallback. | The tagged final state supersedes the `0.144.3` compatibility snapshot, but Guardian and model-catalog policy remain Codex-owned behavior. | Preserve the release-note-versus-tag evidence distinction, record the new final state, and do not implement Guardian or introduce a package-owned minimum Codex version. |
+| `rust-v0.144.5` expands dangerous-command detection for forced `rm` forms, including literal and subshell-shaped commands, and returns clearer rejection reasons when a command is denied (#33455). | This strengthens the Codex execution safety boundary used by FSD and other harness workflows, including danger-full-access sessions, without changing package-owned classifiers. | Treat dangerous-command enforcement as external Codex runtime safety. Keep repository safety rules and evidence checks, but do not duplicate the detector or its rejection policy locally. |
+
 ## oh-my-codex v0.19.1-v0.20.1 / cumulative OMX baseline
 
 Sources: upstream oh-my-codex releases `v0.19.1`, `v0.20.0`, and `v0.20.1`; Codex-port issues #1572, #1575, and #1576.
@@ -13,7 +33,7 @@ Sources: upstream oh-my-codex releases `v0.19.1`, `v0.20.0`, and `v0.20.1`; Code
 | `v0.20.0` also makes project setup plugin-first, gates plugin hooks to OMX-launched sessions, keeps resume preflight opt-in, reopens persisted subagents on session start, uses canonical worktree tool context, and adds manual `omx capabilities lock`/`check` preflight commands. | These change upstream runtime/setup semantics but do not add a package-owned plugin manager, session restorer, worktree engine, or automatic capability-lock gate. | Record them as external capabilities. Keep `omcustomcodex init`, `update`, and `doctor` responsible only for their existing package-owned readiness boundary. |
 | `v0.20.1` makes generated `AGENTS.md` marker insertion CRLF-safe, permits normalized direct-child Ralplan Markdown drafts, stops seeding legacy multi-agent/context defaults, returns schema-safe Stop responses, recognizes trusted delegated collaboration-child provenance, and hardens incomplete capability inventories plus quoted Bash target parsing. | These fixes directly affect planning, delegation, setup, and hook flows used by this harness, but the behavior remains owned by OMX. | Raise the packaged `MINIMUM_OMX_VERSION` to `0.20.1`; versions through `0.20.0` are stale for `init`, `update`, and `doctor`. |
 | The three releases state no intentional breaking CLI/package-layout change; `v0.20.0` changes project setup defaults but retains opaque explicit model overrides. | No package dependency, config-schema, or template-layout migration is required beyond selecting the safe runtime floor. | Keep the provider boundary intact and verify the minimum-version test in both stable CI and release gates. |
-| Residual #1610: direct repeated `omx setup --scope project --merge-agents` can still reorder coexisting Codex hook groups in OMX `v0.20.1`, invalidating positional trust; the upstream defect remains open as `Yeachan-Heo/oh-my-codex#3147`. | The v1.0.10 child-harness normalization only mitigates setup flows invoked through `omcustomcodex`; it does not fix direct OMX setup or satisfy #1610's live `hooks/list` acceptance criteria. | Keep #1610 open and retain the bounded local mitigation. Do not describe the `v0.20.1` baseline as resolving upstream hook trust preservation. |
+| At the historical `v0.20.1` floor, residual #1610 showed that direct repeated `omx setup --scope project --merge-agents` could reorder coexisting Codex hook groups and invalidate positional trust; the defect was tracked as `Yeachan-Heo/oh-my-codex#3147`. | The v1.0.10 child-harness normalization mitigated only setup flows invoked through `omcustomcodex`; it did not fix direct OMX setup. Upstream #3151 resolves the foreign-coordinate defect in `v0.20.2`. | Consume the upstream fix through the new floor and retain the bounded local mitigation as defense in depth rather than removing it without regression evidence. |
 
 ## rust-v0.144.0-rust-v0.144.3 / CLI 0.144.3 final state
 

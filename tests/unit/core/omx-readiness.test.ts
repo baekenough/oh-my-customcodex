@@ -40,7 +40,7 @@ function readyDeps(
   return {
     exec: (command, options) => {
       if (command === 'which omx') return '/tmp/bin/omx';
-      if (command === 'omx --version') return 'oh-my-codex v0.20.1';
+      if (command === 'omx --version') return 'oh-my-codex v0.20.2';
       if (command === 'omx api --help') return 'Usage: omx api';
       if (command.startsWith('omx setup ')) {
         onSetup?.(command, String(options?.cwd));
@@ -115,7 +115,7 @@ function writeCompleteProject(projectRoot: string): void {
   );
 }
 
-function writeOmx0201NativeHooks(projectRoot: string): void {
+function writeOmx0202NativeHooks(projectRoot: string): void {
   const command = 'node codex-native-hook.js';
   writeFileSync(
     join(projectRoot, '.codex', 'hooks.json'),
@@ -133,7 +133,7 @@ function writeOmx0201NativeHooks(projectRoot: string): void {
   );
 }
 
-function writeOmx0201PluginSource(projectRoot: string): string {
+function writeOmx0202PluginSource(projectRoot: string): string {
   const packageRoot = join(projectRoot, 'omx-package');
   const pluginRoot = join(packageRoot, 'plugins', 'oh-my-codex');
 
@@ -156,7 +156,7 @@ function writeOmx0201PluginSource(projectRoot: string): string {
     join(pluginRoot, '.codex-plugin', 'plugin.json'),
     JSON.stringify({
       name: 'oh-my-codex',
-      version: '0.20.1',
+      version: '0.20.2',
       skills: './skills/',
       hooks: './hooks/hooks.json',
     })
@@ -516,9 +516,9 @@ process.exit(2);
     expect(result.status).toBe('partial');
   });
 
-  it('accepts the OMX 0.20.1 native runtime default when timeout is omitted', () => {
+  it('accepts the OMX 0.20.2 native runtime default when timeout is omitted', () => {
     writeCompleteProject(projectRoot);
-    writeOmx0201NativeHooks(projectRoot);
+    writeOmx0202NativeHooks(projectRoot);
 
     const result = assessOmxReadiness(projectRoot, readyDeps());
 
@@ -586,8 +586,8 @@ process.exit(2);
     expect(result.status).toBe('ready');
   });
 
-  it('accepts the exact OMX 0.20.1 plugin launcher contract without local surfaces', () => {
-    const packageRoot = writeOmx0201PluginSource(projectRoot);
+  it('accepts the exact OMX 0.20.2 plugin launcher contract without local surfaces', () => {
+    const packageRoot = writeOmx0202PluginSource(projectRoot);
     writePluginOnlyProject(projectRoot, packageRoot);
 
     const result = assessOmxReadiness(projectRoot, readyDeps());
@@ -600,7 +600,7 @@ process.exit(2);
   });
 
   it('rejects plugin launcher commands that do not prove the packaged OMX entrypoint', () => {
-    const packageRoot = writeOmx0201PluginSource(projectRoot);
+    const packageRoot = writeOmx0202PluginSource(projectRoot);
     const pluginRoot = join(packageRoot, 'plugins', 'oh-my-codex');
     const hooksPath = join(pluginRoot, 'hooks', 'hooks.json');
     writePluginOnlyProject(projectRoot, packageRoot);
@@ -660,14 +660,14 @@ process.exit(2);
   });
 
   it('rejects broken plugin delivery pointers and assets', () => {
-    const packageRoot = writeOmx0201PluginSource(projectRoot);
+    const packageRoot = writeOmx0202PluginSource(projectRoot);
     const pluginRoot = join(packageRoot, 'plugins', 'oh-my-codex');
     writePluginOnlyProject(projectRoot, packageRoot);
     writeFileSync(
       join(pluginRoot, '.codex-plugin', 'plugin.json'),
       JSON.stringify({
         name: 'oh-my-codex',
-        version: '0.20.1',
+        version: '0.20.2',
         skills: './skills/',
         hooks: './hooks/missing.json',
       })
@@ -683,7 +683,7 @@ process.exit(2);
   });
 
   it('does not accept a lookalike plugin section as the OMX plugin contract', () => {
-    const packageRoot = writeOmx0201PluginSource(projectRoot);
+    const packageRoot = writeOmx0202PluginSource(projectRoot);
     writePluginOnlyProject(projectRoot, packageRoot);
     const configPath = join(projectRoot, '.codex', 'config.toml');
     writeFileSync(

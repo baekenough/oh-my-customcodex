@@ -31,7 +31,7 @@ set -eu
 
 case "\${1:-}" in
   --version)
-    printf '%s\n' 'oh-my-codex v0.20.1'
+    printf '%s\n' 'oh-my-codex v0.20.2'
     ;;
   api)
     [ "\${2:-}" = '--help' ]

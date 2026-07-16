@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.22] - 2026-07-16
+
+### Changed
+
+- Raise the required OMX runtime baseline to `v0.20.2`, consuming upstream foreign-hook-coordinate preservation and role, lifecycle, Ralplan, provenance, and setup-policy fixes while retaining the bounded local normalization as defense in depth (#1664).
+- Record OpenAI Codex `rust-v0.144.4`-`rust-v0.144.5` final-state compatibility, including the release-note/tag-ancestry Guardian policy evidence and expanded dangerous-command handling as external Codex behavior (#1641, #1663).
+- Update `@inquirer/prompts` from `8.3.2` to `8.5.2` while preserving the frozen-install lockfile contract.
+
 ## [1.0.21] - 2026-07-14
 
 ### Added
