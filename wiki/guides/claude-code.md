@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-07-14
+updated: 2026-07-16
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/15-version-compatibility.md
@@ -31,6 +31,10 @@ The Claude compatibility guide now records v2.1.178 impacts from upstream oh-my-
 Reviewed for #1561, #1562, #1564, and the v1.0.15 native-status boundary. The Claude compatibility guide records Explore model/extended-thinking inheritance, hook stderr visibility, stacked slash-skill loading depth, subagent partial-work/error reporting, Agent Teams retry/reporting fixes, background-agent auto-commit/PR lifecycle reliability, and `Notification` events for `agent_needs_input` / `agent_completed`. These are Claude-template compatibility notes; Codex uses OMX HUD and the native TUI footer for active status.
 
 The new `guides/claude-code/16-fable5-prompting.md` page records Fable 5 prompting guidance: high effort by default, `xhigh` only for capability-sensitive work, concise prompts to avoid over-prescription, long-lived bounded lanes as an option, R020 ground-truth completion, R010 boundary clarity, and Mythos 5 as limited availability / not GA.
+
+## v2.1.202-v2.1.209 compatibility updates
+
+The compatibility guide now records Claude Code v2.1.202-v2.1.209 as provider-owned behavior. The mapped changes cover advisory Dynamic workflow sizing and workflow telemetry, the Manual-mode footer badge, headless SessionStart streaming, transcript/worktree safety, `CLAUDE.md` diagnostics and git remote selection, managed Auto mode controls, plus v2.1.208-v2.1.209 agent-tool, permission, context, status, destructive-command, and background-session fixes. These notes keep packaged Claude templates accurate; they do not add local runtime behavior or change Codex/OMX ownership.
 
 ## Key Topics
 

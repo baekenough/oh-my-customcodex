@@ -81,6 +81,10 @@ The giant-prompt heuristic governs input tokens. The symmetric output-side rule:
 Claude Code parallel tool calls in a single batch are independent — one failed Bash command no longer cancels sibling calls. This lowers the safety cost of R009 announce-execution consistency for independent work.
 -->
 
+<!-- DETAIL: Claude Code v2.1.202 Dynamic Workflow Size Compatibility
+Claude Code v2.1.202 exposes Dynamic workflow size choices of small, medium, and large. The choice is advisory rather than an enforced concurrency cap; compatibility flows must still inspect actual capacity, while Codex/OMX parallelism follows the active slot limit and R009.
+-->
+
 ## Execution Rules
 
 | Rule | Detail |

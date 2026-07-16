@@ -4,7 +4,21 @@ import { join } from 'node:path';
 
 const ROOT = join(import.meta.dir, '../../..');
 
-const RULES = [
+interface CompatibilityDetail {
+  marker: string;
+  phrases: string[];
+  hiddenPhrases: string[];
+}
+
+interface RuleContract {
+  source: string;
+  template: string;
+  visibleLimit: number;
+  detailMarkers: string[];
+  compatibilityDetails?: CompatibilityDetail[];
+}
+
+const RULES: RuleContract[] = [
   {
     source: '.codex/rules/MUST-agent-design.md',
     template: 'templates/.claude/rules/MUST-agent-design.md',
@@ -14,6 +28,36 @@ const RULES = [
       'DETAIL: Sensitive Path Behavior',
       'DETAIL: Fast Mode Activation',
       'DETAIL: Skill Optional Fields',
+      'DETAIL: Claude Code v2.1.204 Headless SessionStart Compatibility',
+      'DETAIL: Claude Code v2.1.208 Agent Tool Validation Compatibility',
+    ],
+    compatibilityDetails: [
+      {
+        marker: 'DETAIL: Claude Code v2.1.204 Headless SessionStart Compatibility',
+        phrases: [
+          'Claude Code v2.1.204',
+          'SessionStart',
+          'headless',
+          'Claude Code v2.1.204 fixes SessionStart hook output streaming in headless sessions',
+        ],
+        hiddenPhrases: [
+          'Claude Code v2.1.204',
+          'Claude Code v2.1.204 fixes SessionStart hook output streaming in headless sessions',
+        ],
+      },
+      {
+        marker: 'DETAIL: Claude Code v2.1.208 Agent Tool Validation Compatibility',
+        phrases: [
+          'Claude Code v2.1.208',
+          'tools:',
+          'unrecognized',
+          'Claude Code v2.1.208 reports an Agent tool configuration error when `tools:` resolves to an empty set',
+        ],
+        hiddenPhrases: [
+          'Claude Code v2.1.208',
+          'Claude Code v2.1.208 reports an Agent tool configuration error when `tools:` resolves to an empty set',
+        ],
+      },
     ],
   },
   {
@@ -24,6 +68,14 @@ const RULES = [
       'DETAIL: Adaptive Parallel Splitting',
       'DETAIL: Stability Testing Protocol',
       'DETAIL: Narrative Announcement Format',
+      'DETAIL: Claude Code v2.1.202 Dynamic Workflow Size Compatibility',
+    ],
+    compatibilityDetails: [
+      {
+        marker: 'DETAIL: Claude Code v2.1.202 Dynamic Workflow Size Compatibility',
+        phrases: ['Claude Code v2.1.202', 'Dynamic workflow size', 'advisory'],
+        hiddenPhrases: ['Claude Code v2.1.202', 'Dynamic workflow size'],
+      },
     ],
   },
   {
@@ -40,7 +92,17 @@ const RULES = [
     source: '.codex/rules/MUST-agent-teams.md',
     template: 'templates/.claude/rules/MUST-agent-teams.md',
     visibleLimit: 4_500,
-    detailMarkers: ['DETAIL: Lifecycle diagram'],
+    detailMarkers: [
+      'DETAIL: Lifecycle diagram',
+      'DETAIL: Claude Code v2.1.202 Agent Teams Sizing Compatibility',
+    ],
+    compatibilityDetails: [
+      {
+        marker: 'DETAIL: Claude Code v2.1.202 Agent Teams Sizing Compatibility',
+        phrases: ['Claude Code v2.1.202', 'Dynamic workflow size', 'advisory'],
+        hiddenPhrases: ['Claude Code v2.1.202', 'Dynamic workflow size'],
+      },
+    ],
   },
 ];
 
@@ -48,7 +110,39 @@ function stripHtmlComments(content: string): string {
   return content.replace(/<!--[\s\S]*?-->/g, '');
 }
 
+function extractHtmlComment(content: string, marker: string): string {
+  const matchingComments = [...content.matchAll(/<!--[\s\S]*?-->/g)]
+    .map((match) => match[0])
+    .filter((comment) => comment.includes(marker));
+
+  expect(matchingComments).toHaveLength(1);
+  return matchingComments[0];
+}
+
+function expectCompatibilityDetailsToBeHidden(
+  source: string,
+  details: CompatibilityDetail[]
+): void {
+  const visibleText = stripHtmlComments(source);
+  for (const detail of details) {
+    const detailBlock = extractHtmlComment(source, detail.marker);
+    for (const phrase of detail.phrases) {
+      expect(detailBlock).toContain(phrase);
+    }
+    for (const phrase of detail.hiddenPhrases) {
+      expect(visibleText).not.toContain(phrase);
+    }
+  }
+}
+
 describe('context optimization guidance', () => {
+  it('does not join adjacent HTML comments around a visible marker', () => {
+    const marker = 'DETAIL: visible marker';
+    const content = `<!-- first comment -->\n${marker}\n<!-- second comment -->`;
+
+    expect(() => extractHtmlComment(content, marker)).toThrow();
+  });
+
   it('keeps high-volume rule detail hidden behind HTML comments in source and template mirrors', async () => {
     for (const rule of RULES) {
       const source = await readFile(join(ROOT, rule.source), 'utf-8');
@@ -61,6 +155,8 @@ describe('context optimization guidance', () => {
       for (const marker of rule.detailMarkers) {
         expect(source).toContain(marker);
       }
+
+      expectCompatibilityDetailsToBeHidden(source, rule.compatibilityDetails ?? []);
     }
   });
 

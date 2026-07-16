@@ -27,6 +27,10 @@ This aligns with R009 (parallel execution) detection criteria and extends it wit
 
 Inspired by [ouroboros PR #353](https://github.com/Q00/ouroboros/pull/353) capability graph pattern.
 
+<!-- DETAIL: Claude Code v2.1.208 Tool Reliability Compatibility
+Claude Code v2.1.208 fixes settings and environment parsing for numbers written in scientific notation, along with Edit, Read, Grep, and Glob reliability defects. These are provider-owned fixes; retain capability-aware scheduling and validate the active Codex/OMX tool result rather than assuming cross-provider parity.
+-->
+
 ## Token Optimization
 
 - Include only necessary info, remove duplicates, use summaries
@@ -62,3 +66,7 @@ HTML comments in all auto-injected .md files (AGENTS.md and rules/*.md) are hidd
 | Rule detail hiding | `<!-- DETAIL: Self-Check ... -->` in rules/*.md |
 
 **Rule**: Move model-unnecessary metadata into HTML comments to reduce context token usage. Keep actionable instructions as visible text.
+
+<!-- DETAIL: Claude Code v2.1.206 Context Optimization Compatibility
+Claude Code v2.1.206 makes `/doctor` flag checked-in `CLAUDE.md` content that can be derived or trimmed. This is a provider-owned diagnostic: use the finding as measurement input, but do not auto-rewrite project guidance or change Codex/OMX configuration without repository evidence.
+-->

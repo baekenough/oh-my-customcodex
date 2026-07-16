@@ -62,6 +62,14 @@ Claude Code v2.1.201+ changes Claude Sonnet 5 harness-reminder delivery so rule 
 Claude compatibility settings can declare up to three `fallbackModel` entries tried in order when the primary Claude model is overloaded or unavailable. `--fallback-model` also applies to interactive Claude sessions. Treat this as platform availability failover, not Codex-native model routing or outcome-based escalation. Claude Code v2.1.166+ also supports disabling default thinking with `MAX_THINKING_TOKENS=0`, `--thinking disabled`, or the per-model thinking toggle. Claude Code v2.1.169+ adds `--safe-mode` / `CLAUDE_CODE_SAFE_MODE` to disable customizations for regression isolation, plus `disableBundledSkills` / `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` to hide bundled skills/workflows/slash commands when they conflict with project skills. Codex-native agents continue to use the OMX model contract and `reasoning_effort` routing. Claude Code v2.1.172+ applies `availableModels` restrictions to subagent `model:` overrides, the agent dispatch model picker, and the advisor model; compatibility allowlists should account for version-specific IDs and 1M suffix handling. Claude Code v2.1.173+ auto-normalizes Fable 5 IDs with redundant `[1m]` suffixes. Claude Code v2.1.175+ adds `enforceAvailableModels`, which constrains the resolved Default model as well as subagent overrides and prevents user/project settings from widening a managed allowlist.
 -->
 
+<!-- DETAIL: Claude Code v2.1.204 Headless SessionStart Compatibility
+Claude Code v2.1.204 fixes SessionStart hook output streaming in headless sessions so remote workers are not incorrectly reaped as idle while the hook is still producing output. This is provider runtime behavior; Codex/OMX hooks keep their native lifecycle and verification contract.
+-->
+
+<!-- DETAIL: Claude Code v2.1.208 Agent Tool Validation Compatibility
+Claude Code v2.1.208 reports an Agent tool configuration error when `tools:` resolves to an empty set because every named tool is unrecognized. Keep compatibility agent tool names valid, while Codex-native dispatch continues to use installed OMX roles and `agent_type`.
+-->
+
 ### Optional Frontmatter
 
 Key native optional fields: `memory`, `model_reasoning_effort`, `skills`, `soul`,

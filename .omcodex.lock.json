@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.22",
-  "generatedAt": "2026-07-16T05:57:33.787Z",
-  "templateVersion": "1.0.22",
+  "generatorVersion": "1.0.23",
+  "generatedAt": "2026-07-16T07:40:11.966Z",
+  "templateVersion": "1.0.23",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e2690ef49068c522f452b7bc26089687adf98b1039841704dfcac64a6fa8a65b",
@@ -10,13 +10,13 @@
       "component": "rules"
     },
     ".codex/rules/SHOULD-hud-statusline.md": {
-      "templateHash": "ffc857c89ef35e5d9615b1c061049a1ee0041c7b5c5f1984f044603963269bab",
-      "size": 2484,
+      "templateHash": "0d9d8fd06140c7ff68bf895cf94e8bf62baa84d09d1e1d53ee919976296c5227",
+      "size": 2895,
       "component": "rules"
     },
     ".codex/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "c004f5fac9e33fac9e17ac859829f892c597975f9e7b79afe1f0f2d49d2814ee",
-      "size": 31453,
+      "templateHash": "4c4a0a16fe4d30a6e509f8e099be6a17956b5dea6cd754d1729e3cbbf1c61b4a",
+      "size": 32300,
       "component": "rules"
     },
     ".codex/rules/MUST-intent-transparency.md": {
@@ -35,8 +35,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-parallel-execution.md": {
-      "templateHash": "920b2403c7c68973fae52c4414c9eb37237dac09c864562f37e91da6513be1d5",
-      "size": 10675,
+      "templateHash": "6866c3a04edd1c55df7b4e33ce6e39d270781173cb97f14cf1e2f7ce71832959",
+      "size": 11026,
       "component": "rules"
     },
     ".codex/rules/SHOULD-ecomode.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-design.md": {
-      "templateHash": "fe24a1b2059444970617014925271ec4f759ee0f794a3663f45af101c2cd298a",
-      "size": 32264,
+      "templateHash": "90055e24da381ebb79f9223448868e865cbacb2376073b6fa0dda894ea714524",
+      "size": 32968,
       "component": "rules"
     },
     ".codex/rules/MUST-agent-identification.md": {
@@ -65,13 +65,13 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-teams.md": {
-      "templateHash": "5a082d588df49e3b4fa5355b415412120bccf5a3d2a2d47be2fdabb3ae603682",
-      "size": 11151,
+      "templateHash": "31a2e812565b223c0c5830701073f180edb41e43c0a017c2e75ce09fce6e573d",
+      "size": 11527,
       "component": "rules"
     },
     ".codex/rules/MAY-optimization.md": {
-      "templateHash": "8cb51c43439dcc15276a6408adb2e746617f870051b3dd3285e6a453e3b42ed8",
-      "size": 3011,
+      "templateHash": "c78dbf9c56d1e89435af85c3cb3ad0094e50a334e1f3c17380586a5a08689f1c",
+      "size": 3759,
       "component": "rules"
     },
     ".codex/rules/MUST-continuous-improvement.md": {
@@ -80,8 +80,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-permissions.md": {
-      "templateHash": "9412bbaf7a7bb97ec37f05f993487cc6bae0b5bc7db0010256d762d07a76c4e9",
-      "size": 4723,
+      "templateHash": "e242ebe57c03c99dc17d0647da2158418fe817e2c86103b2b1237538aca27996",
+      "size": 5263,
       "component": "rules"
     },
     ".codex/rules/SHOULD-ontology-rag-routing.md": {
@@ -90,8 +90,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-safety.md": {
-      "templateHash": "d1fe7a5f989d3ddadabb7872fb65e816a793ca3cfacc7c57cbe8bb386d4eb902",
-      "size": 5203,
+      "templateHash": "814557135dd4bfeccdb4ac87e37766c50473eebae1804878dd8678505c7e05ea",
+      "size": 5717,
       "component": "rules"
     },
     ".codex/rules/MUST-tool-identification.md": {
@@ -700,8 +700,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "bba4a537aceefd0d5158aa83d132ce0b298f3c643336b0bf10aaaab0da251528",
-      "size": 41363,
+      "templateHash": "e31b35838bb3c41f7c75fd32f2befd83dbf23ed7e81fb2c40c9fda1bf33f3de7",
+      "size": 49129,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {
