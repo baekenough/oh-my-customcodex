@@ -8,7 +8,7 @@ import { type InstallerDeps, OMX_PROJECT_SETUP_COMMAND } from '../../../src/core
 const deps: InstallerDeps = {
   exec: (command) => {
     if (command === 'which omx') return '/tmp/bin/omx';
-    if (command === 'omx --version') return 'oh-my-codex v0.20.1';
+    if (command === 'omx --version') return 'oh-my-codex v0.20.2';
     if (command === 'omx api --help') return 'Usage: omx api';
     throw new Error(`Unexpected command: ${command}`);
   },

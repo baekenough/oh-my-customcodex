@@ -31,7 +31,7 @@ import { parseNativeAgentListMetadata } from './agent-compiler.js';
 import type { CodexHookCommandHandler } from './codex-hooks.js';
 import { resolveCodexProjectRoot } from './codex-project-root.js';
 
-export const MINIMUM_OMX_VERSION = '0.20.1';
+export const MINIMUM_OMX_VERSION = '0.20.2';
 export const OMX_PROJECT_SETUP_COMMAND = 'omx setup --scope project --merge-agents';
 
 export interface InstallerDeps {

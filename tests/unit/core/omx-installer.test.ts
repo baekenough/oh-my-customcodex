@@ -104,12 +104,12 @@ describe('omx installer baseline checks', () => {
     expect(compareOmxVersions('1.0.0-alpha+build.1', '1.0.0-alpha+build.2')).toBe(0);
   });
 
-  it('requires the OMX v0.20.1 runtime boundary', () => {
-    expect(MINIMUM_OMX_VERSION).toBe('0.20.1');
-    expect(isOmxVersionAtLeast('oh-my-codex v0.20.0')).toBe(false);
-    expect(isOmxVersionAtLeast('oh-my-codex v0.20.1-beta.1')).toBe(false);
-    expect(isOmxVersionAtLeast('oh-my-codex v0.20.1')).toBe(true);
+  it('requires the OMX v0.20.2 runtime boundary', () => {
+    expect(MINIMUM_OMX_VERSION).toBe('0.20.2');
+    expect(isOmxVersionAtLeast('oh-my-codex v0.20.1')).toBe(false);
+    expect(isOmxVersionAtLeast('oh-my-codex v0.20.2-beta.1')).toBe(false);
     expect(isOmxVersionAtLeast('oh-my-codex v0.20.2')).toBe(true);
+    expect(isOmxVersionAtLeast('oh-my-codex v0.20.3')).toBe(true);
   });
 
   it('marks missing omx as missing', () => {
@@ -119,17 +119,17 @@ describe('omx installer baseline checks', () => {
     expect(result.installed).toBe(false);
   });
 
-  it('marks v0.20.0 omx as stale without probing api', () => {
+  it('marks v0.20.1 omx as stale without probing api', () => {
     const result = assessOmxInstallation(
       depsFor({
         'which omx': '/usr/local/bin/omx',
-        'omx --version': 'oh-my-codex v0.20.0',
+        'omx --version': 'oh-my-codex v0.20.1',
       })
     );
 
     expect(result.status).toBe('stale');
-    expect(result.parsedVersion).toBe('0.20.0');
-    expect(result.minimumVersion).toBe('0.20.1');
+    expect(result.parsedVersion).toBe('0.20.1');
+    expect(result.minimumVersion).toBe('0.20.2');
     expect(result.hasApiCommand).toBe(false);
   });
 
@@ -137,7 +137,7 @@ describe('omx installer baseline checks', () => {
     const result = assessOmxInstallation(
       depsFor({
         'which omx': '/usr/local/bin/omx',
-        'omx --version': 'oh-my-codex v0.20.1',
+        'omx --version': 'oh-my-codex v0.20.2',
         'omx api --help': new Error('unknown command'),
       })
     );
@@ -191,11 +191,11 @@ describe('omx installer baseline checks', () => {
     expect(result.hasApiCommand).toBe(true);
   });
 
-  it('marks v0.20.1 with omx api as ready', () => {
+  it('marks v0.20.2 with omx api as ready', () => {
     const result = assessOmxInstallation(
       depsFor({
         'which omx': '/usr/local/bin/omx',
-        'omx --version': 'oh-my-codex v0.20.1',
+        'omx --version': 'oh-my-codex v0.20.2',
         'omx api --help': 'Usage: omx api',
       })
     );

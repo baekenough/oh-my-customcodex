@@ -1409,12 +1409,16 @@ describe('Template Validation', () => {
       join(TEMPLATES_DIR, 'guides/openai-codex/01-version-compatibility.md'),
       'utf-8'
     );
+    const wiki = await readFile(join(PROJECT_ROOT, 'wiki/guides/openai-codex.md'), 'utf-8');
 
     expect(template).toBe(source);
     expect(source).toContain('rust-v0.138.0');
     expect(source).toContain('rust-v0.143.0');
     expect(source).toContain('rust-v0.144.3');
+    expect(source).toContain('oh-my-codex v0.20.2 / OMX compatibility baseline');
+    expect(source).toContain('rust-v0.144.4-rust-v0.144.5 / CLI final state');
     expect(source).toContain('v0.20.1');
+    expect(source).toMatch(/rust-v0\.144\.4[\s\S]{0,1500}no user-facing changes?/i);
     expect(source).toContain('/app');
     expect(source).toContain('model-advertised effort ordering');
     expect(source).toContain('AGENTS.md');
@@ -1427,9 +1431,42 @@ describe('Template Validation', () => {
       'tag comparison shows divergent ancestry with direct commit `8a4d35a`'
     );
     expect(source).toContain('`feat(tui): add an advanced reasoning picker`');
-    for (const issue of ['#1571', '#1572', '#1573', '#1575', '#1576', '#1622', '#1623']) {
+    for (const issue of [
+      '#1571',
+      '#1572',
+      '#1573',
+      '#1575',
+      '#1576',
+      '#1622',
+      '#1623',
+      '#1641',
+      '#1663',
+      '#1664',
+    ]) {
       expect(source).toContain(issue);
     }
+    for (const document of [source, wiki]) {
+      expect(document).toContain('0.20.2');
+      expect(document).toContain('rust-v0.144.4');
+      expect(document).toContain('rust-v0.144.5');
+      expect(document).toContain('MINIMUM_OMX_VERSION');
+      expect(document).toContain('Yeachan-Heo/oh-my-codex#3147');
+      expect(document).toContain('#3151');
+      expect(document).toContain('d82b7e5d4c');
+      expect(document).toContain('ModelMessages.auto_review.policy');
+      expect(document).toMatch(/guardian_policy_config`? -> catalog policy -> built-in fallback/);
+      expect(document).toContain('dangerous-command');
+      expect(document).toContain('foreign Codex hook coordinates');
+      expect(document).not.toMatch(
+        /(?:Yeachan-Heo\/oh-my-codex#3147[^\n]*(?:remain|remains) open|(?:remain|remains) open[^\n]*Yeachan-Heo\/oh-my-codex#3147)/i
+      );
+      for (const issue of ['#1641', '#1663', '#1664']) {
+        expect(document).toContain(issue);
+      }
+    }
+    expect(source).toMatch(/MINIMUM_OMX_VERSION[^\n]*0\.20\.2/);
+    expect(wiki).toMatch(/(?:MINIMUM_OMX_VERSION[^\n]*0\.20\.2|0\.20\.2[^\n]*MINIMUM_OMX_VERSION)/);
+    expect(wiki).not.toContain('upstream `Yeachan-Heo/oh-my-codex#3147` remains open');
   });
 
   it('documents Markdown agent sources separately from the native TOML runtime', async () => {

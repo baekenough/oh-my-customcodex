@@ -278,12 +278,12 @@ describe('updater', () => {
         contexts: MANIFEST_VERSION,
         ontology: MANIFEST_VERSION,
       });
-      const { result, invocations } = await runCurrentUpdateWithFakeOmx('0.20.0');
+      const { result, invocations } = await runCurrentUpdateWithFakeOmx('0.20.1');
 
       expect(result.success).toBe(true);
       expect(invocations).toContain('--version');
       expect(result.warnings.some((warning) => /upgrade failed/i.test(warning))).toBe(true);
-      expect(result.warnings.some((warning) => warning.includes('0.20.1'))).toBe(true);
+      expect(result.warnings.some((warning) => warning.includes('0.20.2'))).toBe(true);
     });
 
     it('should reject no-update statusLine migration when provider root is a symlink outside the project', async () => {

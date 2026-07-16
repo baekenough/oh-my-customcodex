@@ -67,7 +67,7 @@ async function writeFakeOmx(
     [
       '#!/bin/sh',
       'case "$*" in',
-      '  "--version") echo "oh-my-codex v0.20.1" ;;',
+      '  "--version") echo "oh-my-codex v0.20.2" ;;',
       '  "api --help") echo "Usage: omx api" ;;',
       '  "setup --scope project --merge-agents")',
       ...setupLines,
