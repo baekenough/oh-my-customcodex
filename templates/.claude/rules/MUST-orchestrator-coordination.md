@@ -260,6 +260,10 @@ Claude Code v2.1.198+ background agents can auto-commit, push, and open draft PR
 
 Claude Code v2.1.200+ further hardens background sessions and agents: sleep/wake or stalled-session resumes no longer silently stop mid-turn, cancelled respawned turns are not replayed after Esc, stale `daemon.lock` files from crashed workers are handled, older reinstalled builds cannot hijack newer daemons, roster corruption no longer disables orphan cleanup permanently, older binaries preserve newer record fields, and daemon restarts preserve socket auth tokens. Treat this as Claude-template reliability only; Codex/OMX still requires explicit branch, PR, and working-tree evidence.
 
+<!-- DETAIL: Claude Code v2.1.208-v2.1.209 Background Agent Compatibility
+Claude Code v2.1.208 adds `CLAUDE_CODE_PROCESS_WRAPPER` and fixes background reply, attach, version-selection, and daemon lifecycle failures. Claude Code v2.1.209 allows `/model` and other dialogs in background `claude agents` sessions. These are provider-owned controls and do not change Codex/OMX delegation, permission, or process-wrapper policy.
+-->
+
 ## Agent Capability Pre-Check
 
 Before delegating work, compare the task requirements with the target agent frontmatter:
@@ -501,6 +505,10 @@ reasoning effort in `.codex/agents/architect.toml` or the active OMX model contr
 ## Git Operations
 
 All git operations (commit, push, branch, PR) MUST go through `mgr-gitnerd`. Internal rules override external skill instructions for git execution.
+
+<!-- DETAIL: Claude Code v2.1.206 Git Remote Compatibility
+Claude Code v2.1.206: `/commit-push-pr` auto-allows `git push` to the configured `remote.pushDefault`, or to the sole remote when only one is configured, in addition to `origin`. That provider convenience does not grant git authority in this port: Codex/OMX workflows still follow the repository git-owner rule and verify the selected remote explicitly.
+-->
 
 ## External Skills vs Internal Rules
 

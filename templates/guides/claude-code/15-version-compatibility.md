@@ -2,6 +2,96 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
+The v2.1.202-v2.1.209 entries below are **provider-owned** external behavior and require **no local runtime implementation**. Codex/OMX remains the active runtime; the compatibility notes only keep packaged Claude templates and operator expectations accurate. The parent-package meanings were reviewed from oh-my-customcode commits [`a406854e`](https://github.com/baekenough/oh-my-customcode/commit/a406854e052e) and [`2329bced`](https://github.com/baekenough/oh-my-customcode/commit/2329bcede).
+
+## v2.1.209
+
+Reviewed: 2026-07-16.
+
+Source: [official release](https://github.com/anthropics/claude-code/releases/tag/v2.1.209), tag commit [`988b3e56432775c09bba903ba22522b97cd0f2fb`](https://github.com/anthropics/claude-code/commit/988b3e56432775c09bba903ba22522b97cd0f2fb); parent oh-my-customcode v1.1.18; Codex port issue #1660.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| `/model` and other dialogs work in background `claude agents` sessions | Removes a Claude background-session interaction blocker. | Record in R010 as provider-owned compatibility; no Codex/OMX dialog, routing, or daemon change. |
+
+## v2.1.208
+
+Reviewed: 2026-07-16.
+
+Source: [official release](https://github.com/anthropics/claude-code/releases/tag/v2.1.208), tag commit [`1fb278b85d4546c7c04db3b3590e031b5a8a7571`](https://github.com/anthropics/claude-code/commit/1fb278b85d4546c7c04db3b3590e031b5a8a7571); parent oh-my-customcode v1.1.18; Codex port issue #1660.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Agent `tools:` lists that resolve empty now name unrecognized entries | Claude compatibility agents fail clearly instead of receiving an accidental empty tool set. | Record in R006; keep Codex native dispatch on installed OMX roles and `agent_type`. |
+| Permission matcher compilation is cached | Improves Claude permission-check performance without changing policy meaning. | Record in R002; no Codex sandbox or approval-policy change. |
+| `/release-notes` no longer pollutes context, temporary 200k context display resets correctly, and completed background agents remain in `/tasks` | Improves Claude context/status accuracy. | Record in R012; OMX HUD and Codex statusline remain authoritative for this runtime. |
+| Catastrophic removal inside shell substitution or a subshell receives the same prompt as a plain command | Adds provider defense in depth for destructive shell forms. | Record in R001; retain repository target, recovery, and approval checks. |
+| Settings and environment numbers in scientific notation parse correctly; Edit, Read, Grep, and Glob reliability improves | Removes Claude parser/tool false failures. | Record in R005 and continue evidence-based tool verification. |
+| `CLAUDE_CODE_PROCESS_WRAPPER` and background reply, attach, version-selection, and daemon fixes | Improves Claude process integration and background reliability. | Record in R010; no local process wrapper or daemon implementation. |
+
+## v2.1.207
+
+Reviewed: 2026-07-16.
+
+Source: [official release](https://github.com/anthropics/claude-code/releases/tag/v2.1.207), tag commit [`d4d8fbbb333c627d8fe2c1c583a5ccc26fdb1aed`](https://github.com/anthropics/claude-code/commit/d4d8fbbb333c627d8fe2c1c583a5ccc26fdb1aed); parent oh-my-customcode v1.1.13; Codex port issue #1650.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Auto mode on Bedrock, Vertex, and Foundry no longer requires opt-in; managed settings add `disableAutoMode`; noninteractive remote managed-settings consent is fixed | Changes Claude provider enablement and enterprise control only. | Record in R002; do not map Claude Auto mode onto Codex approval policy. |
+
+## v2.1.206
+
+Reviewed: 2026-07-16.
+
+Source: [official release](https://github.com/anthropics/claude-code/releases/tag/v2.1.206), tag commit [`15a21e1b4e240e2da6a4953d5f148a806c9c9bb2`](https://github.com/anthropics/claude-code/commit/15a21e1b4e240e2da6a4953d5f148a806c9c9bb2); parent oh-my-customcode v1.1.13; Codex port issue #1651.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| `/doctor` detects checked-in `CLAUDE.md` content that can be derived or trimmed | Provides a Claude context-optimization diagnostic. | Record in R005; measure before editing and do not auto-trim Codex guidance. |
+| `/commit-push-pr` auto-allows `git push` to configured `remote.pushDefault` or the sole remote, in addition to `origin` | Reduces Claude permission friction for the configured push target. | Record in R010; retain repository git authority and explicit remote verification. |
+
+## v2.1.205
+
+Reviewed: 2026-07-16.
+
+Source: [official release](https://github.com/anthropics/claude-code/releases/tag/v2.1.205), tag commit [`be02c39841a59e2ac1f35ac12285def02acdbb5a`](https://github.com/anthropics/claude-code/commit/be02c39841a59e2ac1f35ac12285def02acdbb5a); parent oh-my-customcode v1.1.13; Codex port issue #1652.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Auto mode blocks transcript tampering | Hardens Claude session integrity. | Record in R001; keep Codex transcript and state protections unchanged. |
+| Windows worktree removal avoids deleting targets outside the worktree through junctions or symlinks | Reduces provider cleanup blast radius. | Record in R001; still inspect targets and recovery before destructive cleanup. |
+
+## v2.1.204
+
+Reviewed: 2026-07-16.
+
+Source: [official release](https://github.com/anthropics/claude-code/releases/tag/v2.1.204), tag commit [`d0f5bebd40c098c5913b6419a2ecfc7104f0cd41`](https://github.com/anthropics/claude-code/commit/d0f5bebd40c098c5913b6419a2ecfc7104f0cd41); parent oh-my-customcode v1.1.13; Codex port issue #1653.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Headless `SessionStart` hook output streams correctly so active remote workers are not reaped as idle | Removes a Claude hook/worker lifecycle false failure. | Record in R006; no Codex hook-streaming or worker lifecycle implementation. |
+
+## v2.1.203
+
+Reviewed: 2026-07-16.
+
+Source: [official release](https://github.com/anthropics/claude-code/releases/tag/v2.1.203), tag commit [`00ea2924471e5c226e872d42229fbb1dae41f442`](https://github.com/anthropics/claude-code/commit/00ea2924471e5c226e872d42229fbb1dae41f442); parent oh-my-customcode v1.1.13; Codex port issue #1654.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| A grey pause badge appears in the footer while Manual permission mode is active | Clarifies Claude permission state in its native footer. | Record in R002; do not treat the badge as OMX HUD or Codex sandbox state. |
+
+## v2.1.202
+
+Reviewed: 2026-07-16.
+
+Source: [official release](https://github.com/anthropics/claude-code/releases/tag/v2.1.202), tag commit [`7930e1c82d997b013af28673501f3b95569a71cb`](https://github.com/anthropics/claude-code/commit/7930e1c82d997b013af28673501f3b95569a71cb); parent oh-my-customcode v1.1.13; Codex port issue #1655.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| `/config` offers small, medium, and large Dynamic workflow size choices, but the choice is advisory rather than an enforced cap | Claude teams still require actual-capacity and roster checks. | Record in R009/R018; preserve active Codex/OMX concurrency limits. |
+| Workflow-spawned agent telemetry includes `workflow.run_id` and `workflow.name` | Improves Claude workflow attribution. | Record in R012; do not add local telemetry fields or alter OMX trace ownership. |
+
 ## v2.1.201
 
 Reviewed: 2026-07-06.

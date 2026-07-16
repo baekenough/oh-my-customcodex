@@ -61,6 +61,10 @@ Claude Code v2.1.200+ displays the existing `default` permission mode as `Manual
 
 The same Claude release changed `AskUserQuestion` so dialogs no longer auto-continue by default; idle-timeout continuation is now explicit `/config` opt-in. Autonomous flows such as `omcustomcodex:fsd` should avoid question tools unless truly blocked and should proceed on best judgment for low-risk reversible work. Non-array `disabledMcpServers` / `enabledMcpServers` values in `.claude.json` no longer crash Claude startup.
 
+<!-- DETAIL: Claude Code v2.1.203-v2.1.208 Permission Compatibility
+Claude Code v2.1.203 adds a grey pause badge in the footer when Manual permission mode is active. Claude Code v2.1.207 removes the Auto mode opt-in requirement for Bedrock, Vertex, and Foundry, adds the managed `disableAutoMode` setting, and fixes consent handling for noninteractive remote managed settings. Claude Code v2.1.208 improves permission matcher compilation and caching. These provider-owned changes do not alter the Codex/OMX sandbox or approval policy.
+-->
+
 ## Permission Request Format
 
 ```

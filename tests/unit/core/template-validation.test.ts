@@ -30,6 +30,46 @@ interface FrontmatterResult {
   hasClosingMarker: boolean;
 }
 
+function expectContentToContainAll(content: string, phrases: Iterable<string>): void {
+  for (const phrase of phrases) {
+    expect(content).toContain(phrase);
+  }
+}
+
+function findExactMarkdownH2Index(content: string, heading: string): number {
+  const escapedHeading = heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const matches = [...content.matchAll(new RegExp(`^## ${escapedHeading}\\r?$`, 'gm'))];
+  expect(matches).toHaveLength(1);
+  return matches[0]?.index ?? -1;
+}
+
+function extractMarkdownH2Section(content: string, heading: string): string {
+  const sectionStart = findExactMarkdownH2Index(content, heading);
+  const nextHeading = /^## .+$/gm;
+  nextHeading.lastIndex = sectionStart + 1;
+  const nextSection = nextHeading.exec(content)?.index ?? -1;
+  return content.slice(sectionStart, nextSection === -1 ? content.length : nextSection);
+}
+
+function extractSingleHtmlCommentContaining(content: string, marker: string): string {
+  const matchingComments = [...content.matchAll(/<!--[\s\S]*?-->/g)]
+    .map((match) => match[0])
+    .filter((comment) => comment.includes(marker));
+
+  expect(matchingComments).toHaveLength(1);
+  return matchingComments[0];
+}
+
+function expectProviderContrast(content: string): void {
+  expect(content).toMatch(/\b(?:Claude|provider(?:-owned)?)\b/i);
+  expect(content).toMatch(/\b(?:Codex|OMX)\b/);
+}
+
+function expectProviderDisposition(content: string): void {
+  expectProviderContrast(content);
+  expect(content).toMatch(/\b(?:no|do not|does not|keep|preserve|retain|remain|unchanged)\b/i);
+}
+
 function parseFrontmatter(content: string): FrontmatterResult {
   const openingMarker = content.startsWith('---\n') || content.startsWith('---\r\n');
 
@@ -749,6 +789,249 @@ describe('Template Validation', () => {
       expect(templateGuide).toContain('Cross-session relayed `SendMessage`');
       expect(templateGuide).toContain('deny all tools');
       expect(templateGuide).toContain('Agent tool malformed parsing');
+    });
+
+    it('locks the v2.1.202 through v2.1.209 provider-owned compatibility record', async () => {
+      const guidePath = 'guides/claude-code/15-version-compatibility.md';
+      const sourceGuide = await readFile(join(PROJECT_ROOT, guidePath), 'utf-8');
+      const templateGuide = await readFile(join(TEMPLATES_DIR, guidePath), 'utf-8');
+      const releaseContracts = [
+        {
+          version: 'v2.1.202',
+          issue: '#1655',
+          sha: '7930e1c82d997b013af28673501f3b95569a71cb',
+        },
+        {
+          version: 'v2.1.203',
+          issue: '#1654',
+          sha: '00ea2924471e5c226e872d42229fbb1dae41f442',
+        },
+        {
+          version: 'v2.1.204',
+          issue: '#1653',
+          sha: 'd0f5bebd40c098c5913b6419a2ecfc7104f0cd41',
+        },
+        {
+          version: 'v2.1.205',
+          issue: '#1652',
+          sha: 'be02c39841a59e2ac1f35ac12285def02acdbb5a',
+        },
+        {
+          version: 'v2.1.206',
+          issue: '#1651',
+          sha: '15a21e1b4e240e2da6a4953d5f148a806c9c9bb2',
+        },
+        {
+          version: 'v2.1.207',
+          issue: '#1650',
+          sha: 'd4d8fbbb333c627d8fe2c1c583a5ccc26fdb1aed',
+        },
+        {
+          version: 'v2.1.208',
+          issue: '#1660',
+          sha: '1fb278b85d4546c7c04db3b3590e031b5a8a7571',
+        },
+        {
+          version: 'v2.1.209',
+          issue: '#1660',
+          sha: '988b3e56432775c09bba903ba22522b97cd0f2fb',
+        },
+      ];
+
+      expect(templateGuide).toBe(sourceGuide);
+      const headingOrder = [
+        'v2.1.209',
+        'v2.1.208',
+        'v2.1.207',
+        'v2.1.206',
+        'v2.1.205',
+        'v2.1.204',
+        'v2.1.203',
+        'v2.1.202',
+        'v2.1.201',
+      ].map((heading) => findExactMarkdownH2Index(sourceGuide, heading));
+      expect(headingOrder).toEqual([...headingOrder].sort((left, right) => left - right));
+
+      for (const contract of releaseContracts) {
+        const section = extractMarkdownH2Section(sourceGuide, contract.version);
+        expectContentToContainAll(section, [
+          contract.issue,
+          `https://github.com/anthropics/claude-code/releases/tag/${contract.version}`,
+          contract.sha,
+        ]);
+        expectProviderDisposition(section);
+      }
+
+      expectContentToContainAll(extractMarkdownH2Section(sourceGuide, 'v2.1.206'), [
+        '`/commit-push-pr` auto-allows `git push`',
+        '`remote.pushDefault`',
+        'sole remote',
+      ]);
+
+      const ruleContracts = [
+        {
+          name: 'MAY-optimization.md',
+          blocks: [
+            {
+              marker: 'DETAIL: Claude Code v2.1.206 Context Optimization Compatibility',
+              phrases: ['v2.1.206', '/doctor', 'CLAUDE.md'],
+            },
+            {
+              marker: 'DETAIL: Claude Code v2.1.208 Tool Reliability Compatibility',
+              phrases: ['v2.1.208', 'scientific notation', 'Edit', 'Read', 'Grep', 'Glob'],
+            },
+          ],
+        },
+        {
+          name: 'MUST-agent-design.md',
+          blocks: [
+            {
+              marker: 'DETAIL: Claude Code v2.1.204 Headless SessionStart Compatibility',
+              phrases: ['v2.1.204', 'SessionStart', 'headless'],
+            },
+            {
+              marker: 'DETAIL: Claude Code v2.1.208 Agent Tool Validation Compatibility',
+              phrases: ['v2.1.208', 'tools:', 'unrecognized'],
+            },
+          ],
+        },
+        {
+          name: 'MUST-agent-teams.md',
+          blocks: [
+            {
+              marker: 'DETAIL: Claude Code v2.1.202 Agent Teams Sizing Compatibility',
+              phrases: ['v2.1.202', 'Dynamic workflow size', 'advisory'],
+            },
+          ],
+        },
+        {
+          name: 'MUST-orchestrator-coordination.md',
+          blocks: [
+            {
+              marker: 'DETAIL: Claude Code v2.1.206 Git Remote Compatibility',
+              phrases: [
+                'v2.1.206',
+                '`/commit-push-pr` auto-allows `git push`',
+                'remote.pushDefault',
+                'sole remote',
+              ],
+            },
+            {
+              marker: 'DETAIL: Claude Code v2.1.208-v2.1.209 Background Agent Compatibility',
+              phrases: ['v2.1.208', 'CLAUDE_CODE_PROCESS_WRAPPER', 'v2.1.209', '/model'],
+            },
+          ],
+        },
+        {
+          name: 'MUST-parallel-execution.md',
+          blocks: [
+            {
+              marker: 'DETAIL: Claude Code v2.1.202 Dynamic Workflow Size Compatibility',
+              phrases: ['v2.1.202', 'Dynamic workflow size', 'advisory'],
+            },
+          ],
+        },
+        {
+          name: 'MUST-permissions.md',
+          blocks: [
+            {
+              marker: 'DETAIL: Claude Code v2.1.203-v2.1.208 Permission Compatibility',
+              phrases: ['v2.1.203', 'footer', 'v2.1.207', 'disableAutoMode', 'v2.1.208', 'matcher'],
+            },
+          ],
+        },
+        {
+          name: 'MUST-safety.md',
+          blocks: [
+            {
+              marker: 'DETAIL: Claude Code v2.1.205-v2.1.208 Destructive-Command Compatibility',
+              phrases: ['v2.1.205', 'transcript', 'v2.1.208', 'subshell'],
+            },
+          ],
+        },
+        {
+          name: 'SHOULD-hud-statusline.md',
+          blocks: [
+            {
+              marker: 'DETAIL: Claude Code v2.1.202-v2.1.208 Status Compatibility',
+              phrases: ['v2.1.202', 'workflow.run_id', 'v2.1.208', '/tasks'],
+            },
+          ],
+        },
+      ];
+
+      for (const contract of ruleContracts) {
+        const sourceRule = await readFile(
+          join(PROJECT_ROOT, '.codex/rules', contract.name),
+          'utf-8'
+        );
+        const templateRule = await readFile(
+          join(TEMPLATES_DIR, '.claude/rules', contract.name),
+          'utf-8'
+        );
+
+        expect(templateRule).toBe(sourceRule);
+        for (const blockContract of contract.blocks) {
+          const detailBlock = extractSingleHtmlCommentContaining(sourceRule, blockContract.marker);
+          expectContentToContainAll(detailBlock, blockContract.phrases);
+          expectProviderContrast(detailBlock);
+        }
+      }
+
+      const wikiContracts = [
+        {
+          path: 'wiki/guides/claude-code.md',
+          markers: ['v2.1.202', 'v2.1.209', 'Codex/OMX'],
+        },
+        {
+          path: 'wiki/rules/r001.md',
+          markers: ['v2.1.205', 'transcript', 'v2.1.208', 'subshell'],
+        },
+        {
+          path: 'wiki/rules/r002.md',
+          markers: ['v2.1.203', 'Manual', 'v2.1.207', 'disableAutoMode', 'v2.1.208'],
+        },
+        {
+          path: 'wiki/rules/r005.md',
+          markers: ['v2.1.206', 'CLAUDE.md', 'v2.1.208', 'scientific notation'],
+        },
+        {
+          path: 'wiki/rules/r006.md',
+          markers: ['v2.1.204', 'SessionStart', 'v2.1.208', 'unrecognized'],
+        },
+        {
+          path: 'wiki/rules/r009.md',
+          markers: ['v2.1.202', 'Dynamic workflow size', 'advisory'],
+        },
+        {
+          path: 'wiki/rules/r010.md',
+          markers: [
+            'v2.1.206',
+            '`/commit-push-pr` auto-allows `git push`',
+            'remote.pushDefault',
+            'v2.1.208',
+            'CLAUDE_CODE_PROCESS_WRAPPER',
+            'v2.1.209',
+          ],
+        },
+        {
+          path: 'wiki/rules/r012.md',
+          markers: ['v2.1.202', 'workflow.run_id', 'v2.1.208', '/tasks'],
+        },
+        {
+          path: 'wiki/rules/r018.md',
+          markers: ['v2.1.202', 'Dynamic workflow size', 'advisory'],
+        },
+      ];
+
+      for (const contract of wikiContracts) {
+        const wiki = await readFile(join(PROJECT_ROOT, contract.path), 'utf-8');
+        expectContentToContainAll(wiki, contract.markers);
+      }
+
+      const optimizationWiki = await readFile(join(PROJECT_ROOT, 'wiki/rules/r005.md'), 'utf-8');
+      expect(optimizationWiki).toContain('.codex/rules/MAY-optimization.md');
+      expect(optimizationWiki).not.toContain('.claude/rules/MAY-optimization.md');
     });
 
     it('mirrors statusline support for native GitHub and agent-count JSON', async () => {

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.23] - 2026-07-16
+
+### Changed
+
+- Keep packaged Claude compatibility guidance current through Claude Code v2.1.202-v2.1.209 with eight synchronized rule/template mappings, semantic Wiki summaries, and regression freshness checks, while treating these releases as provider-owned behavior with no Codex/OMX runtime change (#1650-#1655, #1660).
+
 ## [1.0.22] - 2026-07-16
 
 ### Changed

@@ -47,6 +47,10 @@ Claude-only footer links, usage views, notification events, and
 `refreshInterval` behavior remain compatibility concerns. Do not describe them
 as Codex/OMX runtime state.
 
+<!-- DETAIL: Claude Code v2.1.202-v2.1.208 Status Compatibility
+Claude Code v2.1.202 attaches `workflow.run_id` and `workflow.name` to telemetry for workflow-spawned agents. Claude Code v2.1.208 keeps completed background agents visible in `/tasks` and fixes temporary 200k context display plus `/release-notes` context pollution. These are Claude provider surfaces, not OMX HUD or Codex statusline state.
+-->
+
 ## Integration
 
 Integrates with R007 (Agent ID), R008 (Tool ID), and R009 (Parallel).

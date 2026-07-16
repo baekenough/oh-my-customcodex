@@ -36,6 +36,10 @@ DETAIL: Gate Transparency Scope
 
 When enabled and criteria match, Agent Teams is required.
 
+<!-- DETAIL: Claude Code v2.1.202 Agent Teams Sizing Compatibility
+Claude Code v2.1.202 exposes Dynamic workflow size choices of small, medium, and large for Agent Teams. The selection is advisory rather than an enforced concurrency cap, so compatibility prompts must still verify the actual roster; Codex/OMX team sizing remains governed by the active runtime and R018.
+-->
+
 ## Scope: Intra-Session vs Cross-Session
 
 | Scope | Tool | Use Case |

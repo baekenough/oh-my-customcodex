@@ -54,6 +54,10 @@ Treat these commands as destructive even when they look like routine cleanup:
 
 Advisory hooks may warn on these patterns, but warnings do not replace the approval and preservation requirements.
 
+<!-- DETAIL: Claude Code v2.1.205-v2.1.208 Destructive-Command Compatibility
+Claude Code v2.1.205 blocks Auto mode transcript tampering and fixes Windows worktree removal so junction or symlink targets outside the worktree are not deleted. Claude Code v2.1.208 applies catastrophic-command confirmation inside shell substitution and subshell execution as it does for a plain command. These provider protections are defense in depth; they never replace R001 target, recovery, and approval checks in Codex/OMX.
+-->
+
 
 ### Pre-Delegation Blast-Radius Enumeration
 
