@@ -2,7 +2,7 @@
 title: FSD (Full Self Driving)
 type: skill
 scope: harness
-updated: 2026-06-11
+updated: 2026-07-19
 sources:
   - .codex/skills/fsd/SKILL.md
 related:
@@ -35,7 +35,7 @@ It does not implement loop logic, issue-polling, release steps, or verification 
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcustomcodex:fsd`
+- **Command**: `$omcustomcodex:fsd` (Codex/OMX); `/omcustomcodex:fsd` (Claude compatibility)
 - **Argument hint**: `[<max-releases>]`
 - **Version**: 0.1.0
 - **Effort**: high
@@ -62,6 +62,14 @@ Each FSD iteration:
 
 Issue eligibility follows `/pipeline auto-dev` label selection exactly — included: `verify-ready`, unlabeled candidates; excluded: `verify-done`, `needs-review`, `decision-needed`.
 
+## Managed Shell Advisor Preflight
+
+Before implementation or release commands, every iteration runs `omcustomcodex doctor --require-shell-advisor`. The gate passes only when the exact project-managed Bash advisor matches packaged registry/script bytes and Codex app-server reports that exact entry enabled and trusted or runtime-managed. Generic OMX/plugin hook readiness is not a substitute.
+
+A missing managed install is repaired with `omcustomcodex update --hooks`. Modified registry or advisor assets require review and backup before `omcustomcodex update --hooks --force-overwrite-all`. For an inactive result, verify both the user-level `[features] hooks = true` setting and project trust through `/hooks`, because an untrusted linked worktree can also appear inactive. Approval remains manual; FSD never writes trust state automatically.
+
+Official Code Mode already sends nested `tools.exec_command` through Bash `PreToolUse`. JavaScript gates inspect the completed result's numeric `exit_code`, polling an active session until terminal. They do not add an outer parser/matcher, infer success from stdout, or append shell special-variable probes such as `status=$?`.
+
 ## Safety and Discipline
 
 FSD operates under full project rules without relaxation:
@@ -72,7 +80,7 @@ FSD operates under full project rules without relaxation:
 | [R009](../rules/r009.md) | Independent subtasks within each iteration run in parallel |
 | [R010](../rules/r010.md) | File ownership and delegation discipline still applies |
 | [R017](../rules/r017.md) | Structural verification passes before commit/push |
-| [R020](../rules/r020.md) | Each release verified via `npm view` + `gh release view` + closed issues before `[Done]` |
+| [R020](../rules/r020.md) | Exact advisor preflight plus registry/release/issue evidence is required before `[Done]` |
 
 `/homework` is a retrospective gate between iterations. If homework requires user confirmation, the loop pauses and waits.
 

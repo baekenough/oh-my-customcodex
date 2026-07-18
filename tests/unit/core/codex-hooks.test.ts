@@ -619,6 +619,22 @@ describe('Codex-native hooks', () => {
     expect(shellOutput.systemMessage).toContain('reserved shell variable');
     expect(shellOutput.systemMessage).toContain('quote gh api URLs');
 
+    // Official Codex normalizes a Code Mode nested tools.exec_command call to
+    // this same Bash PreToolUse payload before executing the shell command.
+    const codeModeSafeName = await runHandler(
+      findHandler(registry, 'shell-reserved-var-advisor.sh').command,
+      cwd,
+      {
+        ...commonPayload(cwd, 'PreToolUse'),
+        session_id: 'code-mode-nested-exec-command',
+        tool_name: 'Bash',
+        tool_input: { command: 'run_status=0; printf safe' },
+      }
+    );
+    expect(codeModeSafeName.exitCode).toBe(0);
+    expect(codeModeSafeName.stderr).toBe('');
+    expect(codeModeSafeName.stdout).toBe('');
+
     const schema = await runHandler(findHandler(registry, 'schema-validator.sh').command, cwd, {
       ...commonPayload(cwd, 'PreToolUse'),
       tool_name: 'Bash',

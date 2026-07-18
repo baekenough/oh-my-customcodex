@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.28] - 2026-07-19
+
+### Changed
+
+- Persist deep-verify runs as collision-safe, schema-versioned artifacts selected fail-closed by exact repository, release version, and verified SHA; post-release follow-up now consumes only correlated unresolved findings (#1679).
+- Require the exact package-managed shell advisor to be installed, byte-matching, enabled, and trusted before autonomous release gates, while preserving official Code Mode Bash `PreToolUse` routing and numeric terminal exit evidence (#1680).
+
+### Fixed
+
+- Replace unsupported triage label inspection with paginated exact REST lookup and race-safe readback while retaining same-issue concurrency, durable acknowledgment markers, and fail-closed mutations (#1681).
+
 ## [1.0.27] - 2026-07-19
 
 ### Changed

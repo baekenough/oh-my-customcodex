@@ -4,6 +4,7 @@ import {
   mkdtemp,
   readdir,
   readFile,
+  realpath,
   rm,
   stat,
   symlink,
@@ -15,7 +16,11 @@ import { join } from 'node:path';
 import { checkHooks, checkLockfileDrift } from '../../../src/cli/doctor.js';
 import { getHooks } from '../../../src/cli/list.js';
 import { checkHookScripts } from '../../../src/cli/security.js';
-import { installNativeCodexHooks } from '../../../src/core/codex-hooks.js';
+import {
+  type CodexHookRegistry,
+  compileCodexHooks,
+  installNativeCodexHooks,
+} from '../../../src/core/codex-hooks.js';
 import { createIsolatedGitEnvironment } from '../../../src/core/codex-project-root.js';
 import { getDefaultConfig, saveConfig } from '../../../src/core/config.js';
 import { install } from '../../../src/core/installer.js';
@@ -36,6 +41,44 @@ function git(args: string[], cwd: string): void {
     stderr: 'pipe',
   });
   if (result.exitCode !== 0) throw new Error(new TextDecoder().decode(result.stderr));
+}
+
+async function expectExactShellAdvisorInstall(projectRoot: string): Promise<void> {
+  const canonicalRoot = await realpath(projectRoot);
+  const templateRoot = join(import.meta.dir, '../../../templates/.claude/hooks');
+  const source = JSON.parse(await readFile(join(templateRoot, 'hooks.json'), 'utf8')) as unknown;
+  const expected = compileCodexHooks(source, { authoritativeRoot: canonicalRoot });
+  const registry = JSON.parse(
+    await readFile(join(canonicalRoot, '.codex', 'hooks.json'), 'utf8')
+  ) as CodexHookRegistry;
+  const expectedGroup = expected.registry.hooks.PreToolUse?.find(
+    ({ matcher }) => matcher === '^Bash$'
+  );
+  const expectedHandler = expectedGroup?.hooks.find(({ command }) =>
+    command.endsWith('# omcustomcodex-hook:shell-reserved-var-advisor.sh')
+  );
+  const actualHandler = registry.hooks.PreToolUse?.find(
+    ({ matcher }) => matcher === '^Bash$'
+  )?.hooks.find(({ command }) =>
+    command.endsWith('# omcustomcodex-hook:shell-reserved-var-advisor.sh')
+  );
+
+  expect(actualHandler?.command).toBe(expectedHandler?.command);
+  for (const scriptName of ['codex-native-advisory.sh', 'shell-reserved-var-advisor.sh']) {
+    expect(
+      await readFile(join(canonicalRoot, '.codex', 'hooks', 'scripts', scriptName), 'utf8')
+    ).toBe(await readFile(join(templateRoot, 'scripts', scriptName), 'utf8'));
+  }
+
+  const compatibilityRoot = join(canonicalRoot, '.codex', 'hooks', 'compatibility');
+  const installedSource = JSON.parse(
+    await readFile(join(compatibilityRoot, 'claude-hooks.json'), 'utf8')
+  ) as unknown;
+  const conversion = JSON.parse(
+    await readFile(join(compatibilityRoot, 'conversion.json'), 'utf8')
+  ) as { registrySha256?: string };
+  expect(installedSource).toEqual(source);
+  expect(conversion.registrySha256).toBe(expected.compatibility.registrySha256);
 }
 
 describe('Codex-native hook integration', () => {
@@ -85,6 +128,7 @@ describe('Codex-native hook integration', () => {
       .join('\n');
     expect(logged).toContain('/hooks');
     expect(logged).toContain('not auto-approved');
+    await expectExactShellAdvisorInstall(tempDir);
   });
 
   it('prevalidates a root registry symlink before installing hook scripts', async () => {
@@ -430,6 +474,7 @@ describe('Codex-native hook integration', () => {
     expect(first.hooks.PreToolUse?.[0]?.hooks[0]).toEqual(customHandler);
     expect(first.hooks.SessionStart?.[0]?.hooks[0]).toEqual(omxHandler);
     expect(first.hooks.PostToolUse?.[0]?.hooks[0]).toEqual(omxPostHandler);
+    await expectExactShellAdvisorInstall(tempDir);
 
     const preserved = await update({ targetDir: tempDir, components: ['hooks'], force: true });
     expect(preserved.success).toBe(true);
@@ -450,6 +495,7 @@ describe('Codex-native hook integration', () => {
     expect(final.hooks.PreToolUse?.[0]?.hooks[0]).toEqual(customHandler);
     expect(final.hooks.SessionStart?.[0]?.hooks[0]).toEqual(omxHandler);
     expect(final.hooks.PostToolUse?.[0]?.hooks[0]).toEqual(omxPostHandler);
+    await expectExactShellAdvisorInstall(tempDir);
 
     const commands = Object.values(final.hooks).flatMap((groups) =>
       groups.flatMap((group) => group.hooks.map(({ command }) => command))

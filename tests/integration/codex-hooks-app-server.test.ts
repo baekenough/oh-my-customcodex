@@ -6,6 +6,7 @@ import { installNativeCodexHooks } from '../../src/core/codex-hooks.ts';
 import { createIsolatedGitEnvironment } from '../../src/core/codex-project-root.js';
 import { computeFileHash, generateLockfile } from '../../src/core/lockfile.ts';
 import {
+  assessManagedShellAdvisorReadiness,
   assessOmxProjectSetup,
   type CodexHookRuntimeEntry,
   inspectCodexHooks,
@@ -169,6 +170,7 @@ describe('Codex app-server hook interop', () => {
         expect(lockfile.files[key]).toEqual(expect.objectContaining({ root: 'codex-project' }));
       }
       expect(discovered?.every((hook) => hook.trustStatus === 'untrusted')).toBe(true);
+      expect(assessManagedShellAdvisorReadiness(linked).status).toBe('approval-needed');
 
       await writeFile(
         join(root, '.codex', 'config.toml'),
@@ -184,6 +186,29 @@ describe('Codex app-server hook interop', () => {
       await writeFile(userConfigPath, userConfig(root, linked, discovered));
       const trusted = inspectCodexHooks(linked)?.filter((hook) => hook.source === 'project');
       expect(trusted?.every((hook) => hook.trustStatus === 'trusted')).toBe(true);
+      const advisorReadiness = assessManagedShellAdvisorReadiness(linked);
+      expect(advisorReadiness.status).toBe('runnable');
+      expect(advisorReadiness.projectRoot).toBe(linked);
+      expect(advisorReadiness.codexProjectRoot).toBe(root);
+      const focusedDoctor = Bun.spawnSync(
+        [
+          process.execPath,
+          join(import.meta.dir, '../../src/cli/index.ts'),
+          '--skip-version-check',
+          'doctor',
+          '--require-shell-advisor',
+        ],
+        {
+          cwd: linked,
+          env: process.env,
+          stdout: 'pipe',
+          stderr: 'pipe',
+        }
+      );
+      expect(focusedDoctor.exitCode).toBe(0);
+      expect(new TextDecoder().decode(focusedDoctor.stdout)).toContain(
+        'Managed shell advisor is runnable'
+      );
       const command = trusted?.find((hook) =>
         hook.command?.includes('# omcustomcodex-hook:')
       )?.command;
@@ -212,6 +237,29 @@ describe('Codex app-server hook interop', () => {
         approvalNeeded: 0,
       });
       expect(linkedReadiness.surfaces.nativeHooks).toBe(false);
+      expect(assessManagedShellAdvisorReadiness(linked).status).toBe('inactive');
+
+      const linkedFocusedDoctor = Bun.spawnSync(
+        [
+          process.execPath,
+          join(import.meta.dir, '../../src/cli/index.ts'),
+          '--skip-version-check',
+          'doctor',
+          '--require-shell-advisor',
+        ],
+        {
+          cwd: linked,
+          env: process.env,
+          stdout: 'pipe',
+          stderr: 'pipe',
+        }
+      );
+      const linkedDoctorOutput = new TextDecoder().decode(linkedFocusedDoctor.stdout);
+      expect(linkedFocusedDoctor.exitCode).toBe(1);
+      expect(linkedDoctorOutput).toContain('[features] hooks = true');
+      expect(linkedDoctorOutput).toContain('trust the project');
+      expect(linkedDoctorOutput).toContain('/hooks');
+      expect(linkedDoctorOutput).toContain('never written automatically');
     }
   );
 });

@@ -115,8 +115,12 @@ export function createProgram(commandName = getActiveCliCommandName()): Command 
     .description(i18n.t('cli.doctor.description'))
     .option('--fix', i18n.t('cli.doctor.fixOption'))
     .option('--updates', i18n.t('cli.doctor.updatesOption'))
+    .option('--require-shell-advisor', i18n.t('cli.doctor.requireShellAdvisorOption'))
     .action(async (options) => {
-      await doctorCommand(options);
+      const result = await doctorCommand(options);
+      if (options.requireShellAdvisor) {
+        process.exitCode = result.success ? 0 : 1;
+      }
     });
 
   // omcodex security

@@ -29,13 +29,48 @@ Gather unfinished work from multiple sources:
 - Keep these items in a distinct **human decision queue**. Do not count them as auto-dev work, auto-register duplicates, or implement them without the required decision.
 
 **Source B — Deep-verify findings**:
-- Read the latest deep-verify output from `.codex/outputs/sessions/{today}/`
+- Resolve the current release repository, semantic version, and exact verified
+  40-character lowercase merge SHA from direct release evidence. Do not infer
+  identity from today's directory, file mtime, or a previous pipeline run.
+- Resolve `artifact_helper` from the actual path of the currently loaded `SKILL.md`,
+  never from `$PWD` or a hardcoded source/install/plugin root: take
+  `skills_root = dirname(dirname(loaded_skill_file))`, then normalize
+  `join(skills_root, "deep-verify/scripts/artifact-contract.mjs")`. Require that
+  exact peer-skill helper to be a regular, non-symlink file. Missing or unsafe
+  discovery blocks Source B; do not search another skills root.
+- Invoke the deterministic selector with all three exact keys and redirect its
+  JSON projection to a regular temporary data file; never interpolate finding
+  text into a shell command:
+
+  ```bash
+  node "$artifact_helper" select \
+    --project-root "$PWD" \
+    --repository "$repository" \
+    --release-version "$release_version" \
+    --verified-sha "$verified_sha" >"$selection_file"
+  ```
+- Treat a nonzero selector result, a missing artifact, malformed frontmatter,
+  a stale release, or a wrong SHA as a blocked Source B. Report the constant
+  selector diagnostic and stop follow-up aggregation; never convert this state
+  into zero findings and never fall back to an older artifact.
+- If any canonical candidate's frontmatter JSON cannot be decoded, block the
+  whole selector. Its metadata date and release correlation are unknowable, so
+  mtime, filename time, regex recovery, and older-artifact fallback are all
+  forbidden.
+- Parse the validated JSON projection as data. Index the full
+  `findings.initial` objects by stable `id`, then join
+  `findings.unresolved[].findingId` to that index. Extract only unresolved
+  findings whose original severity is `MEDIUM` or `LOW`. Do not treat
+  `initial`, `falsePositives`, or `fixed` history as unfinished work.
+- A successful exact selection with an empty filtered set is the only Source B
+  state that means zero unresolved MEDIUM/LOW findings.
 
 ### Compatibility artifact protocol
 
 Sensitive-path compatibility note: when delegated work touches `.claude/outputs/`, `.claude/**`, or `templates/.claude/**`, keep `.codex/**` artifacts on the normal file-write path. On Claude Code v2.1.121+ with `bypassPermissions`, direct compatibility writes are allowed for `.claude/skills/`, `.claude/agents/`, and `.claude/commands/`; on v2.1.126+ broader protected paths are covered. Use `/tmp/<skill>-<timestamp>.md` only as a legacy fallback when the runtime is older or still prompts.
 
-- Extract any MEDIUM or LOW severity findings that were flagged but not fixed
+- Preserve each unresolved outcome's `reason` and safe `evidence` reference in
+  deduplication; never copy raw artifact body text into issue-creation commands.
 
 **Source D — TODO markers in changed files**:
 - Run: `git diff develop...HEAD --name-only` to get changed files

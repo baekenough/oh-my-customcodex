@@ -136,8 +136,49 @@ steps:
       The script must reject stale preconditions, unknown fields, missing rationale/evidence, and malformed comment markers; skip already-satisfied actions; allow only declared action kinds; and perform direct readback after every write. Halt on any mismatch; do not improvise a replacement mutation command.
     description: Apply only the reviewed mutation draft with idempotency and direct readback
 
-  - name: implement
+  - name: managed-shell-advisor-preflight
     depends_on: mutation-commit
+    prompt: |
+      Fail closed on the exact project-managed shell advisor before any
+      implementation or release command is executed.
+
+      1. Run exactly `omcustomcodex doctor --require-shell-advisor` and retain
+         the command result. A generic OMX/plugin hook readiness result is not
+         evidence for this gate.
+      2. In Code Mode, call `tools.exec_command` and inspect the returned object.
+         A completed gate succeeds only when
+         `typeof gateResult.exit_code === "number"` and
+         `gateResult.exit_code === 0`. If `exit_code` is absent and
+         `session_id` is present, poll the same session with
+         `tools.write_stdin` until a terminal result contains a numeric
+         `exit_code`; an absent terminal code is failure. Do not infer success
+         from stdout, even when it contains pass-looking text. Do not append
+         `status=$?`, `path=...`, or `argv=...` to the nested shell command.
+         Apply this same numeric-result and terminal-polling contract to every
+         downstream implementation, verification, release, and R020 command
+         launched through Code Mode.
+      3. On a reported `missing` state only, run
+         `omcustomcodex update --hooks`, then rerun the exact doctor gate.
+      4. On `integrity-failed` or `assets-modified`, halt for review and back up
+         the existing registry/assets. Only after that reviewed preservation may
+         `omcustomcodex update --hooks --force-overwrite-all` restore packaged
+         bytes; rerun the exact doctor gate afterward.
+      5. On `inactive`, halt: verify user-level `[features] hooks = true`, then
+         verify project trust and review `/hooks` because an untrusted linked
+         worktree can also surface as inactive. On `approval-needed`, halt for
+         project trust and `/hooks` review. On `unverified`, halt until Codex
+         app-server discovery can verify the exact managed chain.
+      6. Never write trust state automatically, auto-approve `/hooks`, accept
+         generic OMX/plugin hook readiness, add an outer Code Mode source parser,
+         add a new exec-command matcher, or widen native tool names.
+
+      Continue only after a fresh exact doctor result has numeric exit code 0.
+      The advisor itself remains advisory; this readiness preflight is the
+      fail-closed release boundary.
+    description: Require the exact runnable managed shell advisor without changing trust
+
+  - name: implement
+    depends_on: managed-shell-advisor-preflight
     prompt: |
       Execute implementation plan with appropriate agents.
 
@@ -146,17 +187,58 @@ steps:
       - Claude Code `bypassPermissions` can write `.claude/skills/`, `.claude/agents/`, and `.claude/commands/` directly on v2.1.121+, with broader protected-path writes available on v2.1.126+.
       - If a port requires `.claude` template parity changes, make the change explicit and verify sensitive-path guard tests.
       - Use `/tmp/{skill}-{timestamp}.md` only as a historical fallback for older Claude Code versions, non-bypass sessions, or runs that still surface a protected-path prompt.
+      - Do not create a source commit. Leave the complete intended implementation
+        tree for release-prepare and the post-verification commit gate.
     description: Execute implementation plan with appropriate agents
     foreach: planned-issue
 
-  - name: verify-build
+  - name: release-prepare
     depends_on: implement
+    prompt: |
+      Finalize every intended local release source change before verification.
+      This phase is local-only and creates no commit or external mutation.
+
+      1. Immediately before the first version mutation, rerun
+         `node scripts/resolve-release-target.mjs --expected-target <reviewed-target> --json`.
+         Require every registry probe to pass, targetVersion to equal the
+         reviewed target, sourceSha to equal the current pre-prepare HEAD, and
+         targetVersion to remain absent from Git, public npm, and authenticated
+         GitHub Packages. Halt on mismatch.
+      2. Set the root `package.json` and `templates/manifest.json` versions to
+         targetVersion as one local source preparation. Use same-directory
+         exclusive temporary files for generated JSON writes; never route them
+         through a shared temporary path.
+      3. Promote `CHANGELOG.md` before the release PR/tag: move non-empty
+         `## [Unreleased]` entries into `## [targetVersion] - YYYY-MM-DD`,
+         recreate an empty Unreleased section, and add a concise user-visible
+         summary instead of relying on GitHub auto-generated release notes.
+         Finalize release-note source now rather than during release.
+      4. Run the repository's canonical local generation/synchronization needed
+         for package, template, plugin, manifest, lock, and documentation source.
+         Review every generated change and leave it in the intended tree.
+      5. Run `bash .github/scripts/verify-version-sync.sh` as an immediate
+         preparation readback before tag or PR operations. Record the reviewed
+         target and complete prepared file inventory as verify-build's input.
+      6. Do not commit. Do not push, create a branch or tag, open a PR, publish,
+         or mutate GitHub lifecycle state in this phase. Verification may change
+         only repository-reviewed, explicitly allowlisted generated outputs.
+         verify-build must read back every such output and freeze the final
+         post-build inventory; any other source drift is failure.
+    description: Finalize version, changelog, and generated release source without committing
+
+  - name: verify-build
+    depends_on: release-prepare
     prompt: |
       Project-specific build + test verification.
 
       Scope-change re-entry guard:
-      - If a scoped issue is added or materially changed after verify-build starts, reset this phase and re-run the full verify-build gate for the new aggregate scope.
-      - Do not proceed to release from a verify-build result collected before the latest scoped implementation change.
+      - If a scoped issue or non-allowlisted tracked source is added or
+        materially changed after release-prepare, halt this run and start a new
+        acyclic preparation and verification run. Do not add a backward
+        dependency from release or verification-artifact.
+      - A canonical build may update only an explicitly allowlisted generated
+        output under the readback contract below. Do not proceed from evidence
+        collected before the complete prepared release source inventory.
 
       Shell execution discipline:
       - Run compound verification commands under `set -euo pipefail` so lint, typecheck, tests, and build halt on the first failed gate.
@@ -171,6 +253,34 @@ steps:
       5. Adopt the prior version's test result as the dynamic baseline. Current Codex baseline is 0 failures after #1328 verification.
       6. Halt if current failures exceed baseline; otherwise report pass/fail counts and delta.
       7. Run `bun run build` when available.
+      8. Immediately diff the post-build tree against the release-prepare
+         inventory. Accept a tracked change only when its path is an explicitly
+         allowlisted generated output of the canonical build. For example,
+         `.omcodex.lock.json` is allowed only when the repository's reviewed
+         build contract identifies it as expected output. Reject unrelated
+         source changes, lockfile drift, or unexpected index mutation.
+      9. Read back and review the exact bytes and meaning of every accepted
+         generated output, and prove it was derived from the current prepared
+         source rather than treating build drift as an implicit fix.
+      10. After that readback, freeze the exact final post-build inventory. Then
+          materialize its tracked and intended untracked content as a Git tree
+          without touching the real index:
+          - First require the complete NUL-safe status inventory to equal the
+            reviewed final inventory; reject every unrelated path.
+          - Create a private mode-0700 runtime directory and an absent
+            `reviewIndex` path. Run `GIT_INDEX_FILE="$reviewIndex" git read-tree HEAD`,
+            then `GIT_INDEX_FILE="$reviewIndex" git add -A -- .` only after the
+            inventory equality check.
+          - Set `reviewedTree=$(GIT_INDEX_FILE="$reviewIndex" git write-tree)`.
+            Require a 40-character lowercase hexadecimal id, run
+            `git cat-file -e "$reviewedTree^{tree}"`, require
+            `git cat-file -t "$reviewedTree"` to equal `tree`, remove the
+            temporary index, and prove the real index was unchanged.
+      11. Pin the final post-build inventory to reviewedTree and pass both to
+          verify/deep-verify. Pipeline-deferred review must use
+          `git diff --no-ext-diff --binary develop "$reviewedTree"` as the actual
+          six-reviewer input; falling back to HEAD or a live dirty diff is
+          forbidden. Permit no later tracked source or index mutation.
 
       Documentation/template validation:
       - For local or CI docs validation, run `bun run .github/scripts/validate-docs.ts --programmatic-only` (or the repo's equivalent validate-docs command with `--programmatic-only`) before assuming a validation failure is an authentication failure.
@@ -182,43 +292,173 @@ steps:
   - name: verify
     depends_on: verify-build
     skill: deep-verify
-    description: Multi-angle release quality verification; self-review checklist if compression_mode=docs-only, or deterministic self-check in lite mode when no structural surface changed
+    description: Multi-angle Rounds 1–7 review of required reviewedTree input; Pipeline-deferred finalization remains pending for verification-artifact
 
-  - name: release
+  - name: verification-artifact
     depends_on: verify
     prompt: |
-      Create release branch and pull request.
+      Finalize the reviewed tree as one local Lore commit, then persist exact
+      deep-verify evidence. This is the only source-commit boundary in the
+      release DAG; nothing may mutate tracked source afterward.
 
-      Required version preflight for npm package releases:
-      - Re-run `node scripts/resolve-release-target.mjs --expected-target <reviewed-target> --json` immediately before the first version mutation.
-      - Determine NEW_VERSION from its targetVersion; do not recompute from memory or a single registry.
-      - The resolver always computes stable max + one patch; expected-target is assertion-only. If it mismatches, halt and re-enter evidence review.
-      - Require the refreshed source SHA to equal current HEAD.
-      - Require targetVersion to remain absent from Git, public npm, and GitHub Packages.
-      - Update `package.json` and `templates/manifest.json` to NEW_VERSION in the same commit.
-      - Promote `CHANGELOG.md` before the release PR/tag: move non-empty `## [Unreleased]` entries into `## [NEW_VERSION] - YYYY-MM-DD`, then re-create an empty `## [Unreleased]` section above it.
-      - If `CHANGELOG.md` has no user/package-visible entry for NEW_VERSION, add a concise release summary before continuing instead of relying on GitHub auto-generated release notes.
-      - Use same-directory temporary files for generated JSON writes; do not write through `/tmp`.
-      - Run `bash .github/scripts/verify-version-sync.sh` after the bump and before tag or PR creation.
-      - Commit the bump and changelog promotion with `chore(release): bump to v{NEW_VERSION}` before any release tag is created.
+      Helper and variable initialization:
+      - From the active loaded `deep-verify` skill catalog entry, resolve its
+        exact `SKILL.md`, then resolve `artifactHelper` only as its sibling
+        `scripts/artifact-contract.mjs`. Require regular non-symlink runtime
+        assets; never guess or search a source, installed, template, or plugin
+        root.
+      - Before use, define `repository`, `releaseVersion`, `executionMode`,
+        `reviewedTree`, `artifactHelper`, `artifactInputFile`, `writerProjectionFile`,
+        `candidateSelectionFile`, `validationProjectionFile`, and
+        `selectionFile`. Resolve repository and releaseVersion from direct
+        reviewed evidence. Set executionMode to exactly one of `standard`,
+        `docs-only-self-review`, `lite-deterministic`, or
+        `converged-substitution`.
 
-      Before creating `release/v*`, check whether a local branch named exactly
-      `release` exists. Git stores refs as files/directories, so
-      `refs/heads/release` blocks `refs/heads/release/vX.Y.Z`.
+      Reviewed tree and commit identity:
+      1. Require the Pipeline-deferred finalization handoff from the same
+         deep-verify execution and verify-build's frozen final post-build
+         inventory plus reviewedTree. Require reviewedTree to be a 40-character
+         lowercase hexadecimal id, run
+         `git cat-file -e "$reviewedTree^{tree}"`, require
+         `git cat-file -t "$reviewedTree"` to equal `tree`, and prove the
+         Rounds 1–7 evidence used
+         `git diff --no-ext-diff --binary develop "$reviewedTree"`. Reject HEAD
+         fallback or any change after the freeze. The deep-verify execution
+         remains pending, not completed or READY, until this gate succeeds.
 
-      Required preflight:
-      - `git branch --list release --format='%(refname:short)'`
-      - If present, prove it is merged or backed up before renaming/removing it.
-      - Prefer `git branch -m release releases-tracking` when preservation is
-        needed; do not run `git branch -D release` without explicit approval.
-      - Re-run the branch-list check before `git switch -c release/vX.Y.Z`.
+      2. Branch placement before commit:
+         - Set `exactBranch="release/v${releaseVersion}"` and capture the current
+           pre-commit HEAD. Before staging or committing, run
+           `git branch --list release --format='%(refname:short)'`. A local
+           `release` ref blocks the required nested ref.
+         - If local `release` exists, prove it is merged or backed up and prefer
+           `git branch -m release releases-tracking` when preservation is
+           required. Never delete it without explicit approval, and halt if the
+           preservation target already exists or cannot be proven safe.
+         - Require the local branch named exactly `release/v${releaseVersion}`.
+           If absent, create and switch to it from the captured pre-commit HEAD.
+           If present, require it to point to that same HEAD before switching.
+           If already current, require its tip to equal that HEAD. This is a
+           local-only operation; do not push or perform any external mutation.
+         - After branch placement, prove the final post-build inventory still
+           materializes exactly as reviewedTree. Any checkout-induced or
+           unrelated drift fails closed.
+
+      3. Reject unrelated staged or unstaged source, then stage exactly the
+         already-reviewed tree with `git read-tree "$reviewedTree"`. Record
+         `stagedTree=$(git write-tree)` and require stagedTree to equal the
+         pinned reviewedTree byte-for-byte before committing.
+      4. Create the local Lore commit now, after R017/deep-verify and never
+         before it. Set `verifiedSha` from the new 40-character lowercase HEAD,
+         set `committedTree` from `verifiedSha^{tree}`, and require the committed
+         tree to equal both stagedTree and reviewedTree byte-for-byte. Any
+         mismatch fails closed.
+      5. Permit no tracked source or index mutation after this equality proof.
+
+      Mode payload:
+      - `standard`: build the schemaVersion 1 artifact from the same pending
+        deep-verify execution's findings, terminal outcomes, verdict, and gate
+        evidence.
+      - `docs-only-self-review` and `lite-deterministic`: build the same schema
+        from the substituted review and record every reduced or not-run gate.
+      - `converged-substitution`: first allow only an exact current-commit
+        repository/release/verifiedSha selection. If no such artifact exists,
+        build a new explicit `converged-substitution` artifact from the current
+        equivalent evidence and not-run gates. Reusing old-SHA evidence or
+        changing another artifact's mode is forbidden; never relabel it.
+
+        For the exact-selection branch, create candidateSelectionFile with the
+        exclusive regular mode-0600 contract, run:
+
+          node "$artifactHelper" select \
+            --project-root "$PWD" \
+            --repository "$repository" \
+            --release-version "$releaseVersion" \
+            --verified-sha "$verifiedSha" >"$candidateSelectionFile"
+
+        Parse it strictly as JSON data and require exact identity before defining
+        artifactFile from `.path`. Only a verified no-matching-artifact result may
+        choose the explicit write branch; malformed, ambiguous, or undecodable
+        candidates fail closed instead of falling back.
+
+      Safe input and writer projection:
+      1. Create `artifactInputFile` and `writerProjectionFile` as exclusive
+         regular, non-symlink, single-link files with mode 0600 in a private
+         runtime directory. For a write branch, serialize JSON with top-level
+         keys exactly `{artifact, body}`; reparse it and reject any other key.
+      2. The artifact object must use repository, releaseVersion, verifiedSha,
+         and executionMode already defined above. The safe body may summarize
+         reviewed evidence but must exclude credentials, complete environment
+         dumps, unredacted sensitive logs, and shell-interpolated finding text.
+      3. Run the `artifact-contract.mjs write` command with the input file and
+         direct stdout to the already-verified regular projection file:
+
+          node "$artifactHelper" write \
+            --project-root "$PWD" \
+            --input "$artifactInputFile" >"$writerProjectionFile"
+
+      4. Parse writerProjectionFile strictly as JSON data, require its artifact
+         identity to match, extract its `.path` field without evaluation or
+         interpolation, and only then define `artifactFile`. Require artifactFile
+         to name a regular non-symlink file under the canonical session tree.
+         In the exact-selection converged branch, parse the selector's `.path`
+         the same way to define artifactFile; do not run the writer.
+
+      Validation and selection:
+      - Create validationProjectionFile and selectionFile with the same
+        exclusive regular mode-0600 contract before redirecting output.
+      - Run readback validation and exact selection only after artifactFile and
+        verifiedSha are defined:
+
+          node "$artifactHelper" validate \
+            --file "$artifactFile" >"$validationProjectionFile"
+          node "$artifactHelper" select \
+            --project-root "$PWD" \
+            --repository "$repository" \
+            --release-version "$releaseVersion" \
+            --verified-sha "$verifiedSha" >"$selectionFile"
+
+      Parse both projections as JSON data. Require exact repository, version,
+      SHA, executionMode, and selected path correlation with the local Lore
+      commit. Missing, malformed, stale, wrong-mode, non-regular, ambiguous, or
+      collision evidence must fail closed. Persist the validated selected path
+      plus identity for release and post-release; conversation-only evidence is
+      not completion.
+    description: Commit the reviewed tree, then safely write, validate, and select exact evidence
+
+  - name: release
+    depends_on: verification-artifact
+    prompt: |
+      Push and merge the already-prepared, already-verified local release commit.
+      This phase performs readback plus push/PR/merge operations only.
+
+      Prepared metadata readback:
+      - Parse the verification-artifact handoff as data and require current HEAD,
+        its tree, repository, releaseVersion, and selected artifact to equal the
+        recorded verifiedSha and reviewed tree.
+      - Derive `exactBranch="release/v${releaseVersion}"`, require the current
+        branch to be that already-existing exact release branch, and require its
+        local ref to point to verifiedSha. Do not create, rename, or switch
+        branches in this phase.
+      - Read `package.json`, `templates/manifest.json`, and `CHANGELOG.md`; require
+        both manifests and the promoted changelog to match releaseVersion. Run
+        `bash .github/scripts/verify-version-sync.sh` without changing files.
+      - Require a clean worktree/index and prove verifiedSha will be the final PR
+        head. Any mismatch halts this pipeline run. No version, changelog,
+        generated source, or release-note source is changed here, and no new
+        source commit is created after verification-artifact.
 
       External-write ownership gate:
       - Detect repository-owned tag and release automation before any external write.
       - When automation owns the transition, merge the reviewed release PR and observe the workflow instead of duplicating its writes.
       - Do not create or push tags manually while repository automation owns them.
       - Any manual issue or milestone recovery must use a fresh reviewed local mutation draft, evidence review, `scripts/apply-triage-draft.mjs`, and direct readback.
-    description: Create release branch and pull request
+      - Stage the reviewed PR body through `scripts/safe-command-payload.mjs`,
+        push only the already-existing exact release branch at verifiedSha, open
+        the PR to `develop`, require all checks at that exact head, and merge
+        only after direct readback proves them green.
+    description: Read back and publish the immutable verified release commit
 
   - name: publish
     prompt: |
@@ -231,7 +471,8 @@ steps:
       - npm package:
         1. Confirm package name and current version from package.json
         2. Check public npm and authenticated GitHub Packages registry state
-        3. If version is unchanged but release-worthy, bump semver intentionally
+        3. Require that version to equal the immutable verified release commit;
+           halt instead of changing source or version after the artifact gate
         4. Prefer the repository's release workflow trigger; publish directly only when the documented contract has no automation owner
         5. Verify publication in both registries, including the expected GitHub Packages version
       - GitHub-release artifact project:
@@ -246,7 +487,34 @@ steps:
     description: Publish the release artifact and verify external availability
     depends_on: release
 
+  - name: post-release-verification-artifact
+    depends_on: publish
+    prompt: |
+      Re-verify the released merge and write new durable evidence before
+      post-release Source B runs.
+
+      - Resolve the exact released merge SHA from direct develop-merge, annotated
+        tag-peel, Release, and automation evidence. Fast-forward a clean release
+        worktree to that immutable commit and rerun the required post-merge
+        verification on that exact tree.
+      - Resolve `artifactHelper` from the active loaded `deep-verify` skill catalog entry's
+        exact `SKILL.md`, using only its sibling
+        `scripts/artifact-contract.mjs`. Require regular non-symlink assets; do
+        not hardcode or search a source, installed, template, or plugin root.
+      - Create a new schemaVersion 1 `standard` input with `verifiedSha` equal to
+        the exact released merge SHA and evidence from the post-merge gates. Do
+        not copy, relabel, or reuse the pre-merge artifact.
+      - Run the `artifact-contract.mjs write` command, capture its JSON projection
+        as data, then run `artifact-contract.mjs validate` on the returned file
+        and `artifact-contract.mjs select` with the exact repository, released
+        version, and merge SHA.
+      - Require the selected projection and selected path to equal the new
+        artifact and persist them for post-release Source B. Missing, malformed,
+        stale, wrong-SHA, or collision evidence fails closed; do not convert it
+        to zero unresolved findings or fall back to the pre-merge artifact.
+    description: Re-verify the immutable merge and select its new exact artifact
+
   - name: followup
     skill: post-release-followup
     description: Recommend follow-up actions — user chooses to execute now or register as issues
-    depends_on: publish
+    depends_on: post-release-verification-artifact

@@ -518,7 +518,10 @@ function normalizeSkillName(name: string): string {
   if (!SKILL_NAME_PATTERN.test(name)) {
     throw new Error(`Invalid skill name: ${name}`);
   }
-  return name.startsWith('omcodex:') ? name.slice('omcodex:'.length) : name;
+  for (const prefix of ['omcustomcodex:', 'omcodex:']) {
+    if (name.startsWith(prefix)) return name.slice(prefix.length);
+  }
+  return name;
 }
 
 function validateSkillPath(path: string): string {

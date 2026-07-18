@@ -194,7 +194,9 @@ jobs:
             tests/unit/cli/doctor-checks.test.ts \
             tests/unit/cli/doctor-omx-readiness.test.ts \
             tests/unit/cli/doctor-omx.test.ts \
+            tests/unit/cli/doctor-shell-advisor.test.ts \
             tests/unit/cli/doctor-updates.test.ts \
+            tests/unit/cli/index.test.ts \
             tests/unit/cli/init.test.ts \
             tests/unit/cli/init-orchestration.test.ts \
             tests/unit/cli/list.test.ts \
@@ -224,6 +226,10 @@ jobs:
           # process-wide child_process mock in Bun's shared test runtime.
           run_bun_batch "codex-project-root" tests/unit/core/codex-project-root.test.ts
           run_bun_batch "omx-installer-boundary" tests/unit/core/omx-installer.test.ts
+          run_bun_batch "managed-shell-artifact-contracts" \
+            tests/unit/core/managed-shell-advisor-readiness.test.ts \
+            tests/unit/core/shell-advisor-guidance.test.ts \
+            tests/unit/core/deep-verify-artifact-contract.test.ts
           run_bun_batch "core-config-installer-utils" \
             tests/unit/core/agent-compiler.test.ts \
             tests/unit/core/config.test.ts \

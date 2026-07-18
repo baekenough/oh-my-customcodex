@@ -1,5 +1,5 @@
 # Auto-generated from templates/.claude/skills/
-# Do not edit manually — regenerate with: omcustom ontology build
+# Do not edit manually — regenerate through the project ontology workflow
 version: "1.0.0"
 generated_at: "2026-02-12T00:00:00Z"
 

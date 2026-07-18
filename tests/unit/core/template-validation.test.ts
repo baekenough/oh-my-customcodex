@@ -273,6 +273,28 @@ async function validateAgentFrontmatter(
 
 describe('Template Validation', () => {
   describe('Codex-native guidance', () => {
+    it('keeps live operator surfaces off the parent omcustom command', async () => {
+      const paths = [
+        'workflows/templates/custom-docs.yaml',
+        'templates/deprecated-files.json',
+        '.codex/ontology/skills.yaml',
+        'templates/.claude/ontology/skills.yaml',
+        'templates/.claude/ontology/rules.yaml',
+        'plugins/oh-my-customcodex/ontology/skills.yaml',
+      ];
+
+      for (const relativePath of paths) {
+        const content = await readFile(join(PROJECT_ROOT, relativePath), 'utf8');
+        expect(content).not.toMatch(/(^|[^A-Za-z0-9_.-])omcustom(?=$|[^A-Za-z0-9_.-])/m);
+      }
+      expect(await readFile(join(PROJECT_ROOT, paths[0]), 'utf8')).toContain(
+        'skill: omcustomcodex:update-docs'
+      );
+      expect(await readFile(join(PROJECT_ROOT, paths[1]), 'utf8')).toContain(
+        'during omcustomcodex update'
+      );
+    });
+
     it('uses explicit skill invocation and distinguishes both policy file formats', async () => {
       const guidanceFiles = [
         'README.md',
@@ -569,6 +591,22 @@ describe('Template Validation', () => {
   });
 
   describe('Agent frontmatter', () => {
+    it('keeps the npm expert on canonical omcustomcodex skill names', async () => {
+      const sourcePath = join(PROJECT_ROOT, '.codex/agents/tool-npm-expert.md');
+      const templatePath = join(TEMPLATES_DIR, '.claude/agents/tool-npm-expert.md');
+      const [source, template] = await Promise.all([
+        readFile(sourcePath, 'utf8'),
+        readFile(templatePath, 'utf8'),
+      ]);
+
+      for (const content of [source, template]) {
+        expect(content).toContain('omcustomcodex:npm-audit');
+        expect(content).toContain('omcustomcodex:npm-publish');
+        expect(content).toContain('omcustomcodex:npm-version');
+        expect(content).not.toMatch(/^\s*-\s+omcodex:npm-/m);
+      }
+    });
+
     it('packages Scholastic as a mirrored ontology reviewer agent', async () => {
       const projectRoot = resolve(import.meta.dir, '../../..');
       const agentPath = '.codex/agents/scholastic.md';

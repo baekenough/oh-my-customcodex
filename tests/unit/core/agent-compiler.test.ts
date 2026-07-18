@@ -346,6 +346,7 @@ describe('compileMarkdownAgent', () => {
       'skills:',
       '  - openai-docs',
       '  - omcodex:npm-audit',
+      '  - omcustomcodex:npm-publish',
       'mcp_servers:',
       '  docs:',
       '    url: https://developers.openai.com/mcp',
@@ -365,6 +366,7 @@ describe('compileMarkdownAgent', () => {
     expect(parsed.skills.config).toEqual([
       { path: '../../.agents/skills/openai-docs/SKILL.md', enabled: true },
       { path: '../../.agents/skills/npm-audit/SKILL.md', enabled: true },
+      { path: '../../.agents/skills/npm-publish/SKILL.md', enabled: true },
     ]);
     expect(parsed.mcp_servers.docs.url).toBe('https://developers.openai.com/mcp');
     expect(parsed.mcp_servers.docs.enabled_tools).toEqual(['search', 'open']);

@@ -27,13 +27,52 @@ jobs:
       - name: Ensure triaged label exists
         run: |
           set -euo pipefail
-          if ! gh label create triaged \
-                 --color "C5DEF5" \
-                 --description "Issue acknowledged by triage dispatch" \
-                 --repo "$GH_REPO" \
-                 2>/dev/null; then
-            gh label view triaged --repo "$GH_REPO" >/dev/null
+
+          read_repository_labels() {
+            gh api --paginate \
+              "repos/${GH_REPO}/labels?per_page=100" \
+              --jq '.[].name'
+          }
+
+          if ! labels=$(read_repository_labels); then
+            echo "::error::Could not read repository labels." >&2
+            exit 1
           fi
+
+          if grep -Fqx 'triaged' <<< "$labels"; then
+            echo "Repository label 'triaged' already exists."
+            exit 0
+          fi
+
+          if gh label create triaged \
+               --color "C5DEF5" \
+               --description "Issue acknowledged by triage dispatch" \
+               --repo "$GH_REPO"; then
+            create_status=0
+          else
+            create_status=$?
+          fi
+
+          if ! labels=$(read_repository_labels); then
+            echo "::error::Could not confirm repository labels after create." >&2
+            exit 1
+          fi
+
+          if grep -Fqx 'triaged' <<< "$labels"; then
+            if (( create_status == 0 )); then
+              echo "Created repository label 'triaged'."
+            else
+              echo "Repository label 'triaged' was created concurrently."
+            fi
+            exit 0
+          fi
+
+          if (( create_status == 0 )); then
+            echo "::error::Label creation returned success, but 'triaged' was absent on readback." >&2
+          else
+            echo "::error::Could not create repository label 'triaged' (exit ${create_status})." >&2
+          fi
+          exit 1
 
       - name: Record issue type
         run: |
