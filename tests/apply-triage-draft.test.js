@@ -8,6 +8,7 @@ import test from 'node:test';
 import {
   applyTriageDraft,
   hasExactMarkerLine,
+  milestoneRequestPayload,
   triageCommentMarker,
   validateTriageDraft,
 } from '../scripts/apply-triage-draft.mjs';
@@ -82,6 +83,26 @@ function draft(actionOverrides = {}) {
       },
     ],
   };
+}
+
+function milestoneAction({
+  title = 'v1.0.26',
+  precondition = null,
+  desired = { state: 'open', description: `Release ${title}`, dueOn: null },
+} = {}) {
+  return {
+    id: `milestone-${title}`,
+    kind: 'milestone.ensure',
+    rationale: 'Keep the release milestone aligned with reviewed evidence.',
+    evidenceRefs: ['issue-1643-live'],
+    title,
+    precondition,
+    desired,
+  };
+}
+
+function milestoneMetadata(dueOn, description = 'Release v1.0.26') {
+  return { state: 'open', description, dueOn };
 }
 
 function createClient(initial = snapshot(), resources = {}) {
@@ -246,23 +267,98 @@ test('ensures a label once and verifies its direct readback', async () => {
 
 test('ensures a milestone once and verifies its direct readback', async () => {
   const input = draft();
-  input.actions = [
-    {
-      id: 'milestone-v1.0.24',
-      kind: 'milestone.ensure',
-      rationale: 'The measured release target has no existing milestone.',
-      evidenceRefs: ['issue-1643-live'],
-      title: 'v1.0.24',
-      precondition: null,
-      desired: { state: 'open', description: 'Release v1.0.24', dueOn: null },
-    },
-  ];
+  input.actions = [milestoneAction({ title: 'v1.0.24' })];
   const client = createClient();
 
   const result = await applyTriageDraft(input, { client });
 
   assert.equal(result.applied, 1);
   assert.equal(client.writes, 1);
+});
+
+test('rejects unsupported milestone due-date clearing before any earlier write', async () => {
+  const currentMilestone = milestoneMetadata('2026-07-31T00:00:00Z');
+  const input = draft();
+  input.actions.push(
+    milestoneAction({
+      precondition: currentMilestone,
+      desired: { ...currentMilestone, dueOn: null },
+    })
+  );
+  const client = createClient(snapshot(), { milestone: currentMilestone });
+
+  await assert.rejects(
+    applyTriageDraft(input, { client }),
+    /milestone v1\.0\.26 cannot clear.*due date.*unsupported/i
+  );
+  assert.equal(client.writes, 0);
+});
+
+test('preserves supported milestone due-date transitions', async () => {
+  const cases = [
+    {
+      name: 'null to null update',
+      current: milestoneMetadata(null, 'Old description'),
+      desired: milestoneMetadata(null),
+      expectedStatus: 'applied',
+      expectedWrites: 1,
+    },
+    {
+      name: 'non-null unchanged',
+      current: milestoneMetadata('2026-07-31T00:00:00Z'),
+      desired: milestoneMetadata('2026-07-31T00:00:00Z'),
+      expectedStatus: 'skipped',
+      expectedWrites: 0,
+    },
+    {
+      name: 'non-null to non-null update',
+      current: milestoneMetadata('2026-07-31T00:00:00Z'),
+      desired: milestoneMetadata('2026-08-01T00:00:00Z'),
+      expectedStatus: 'applied',
+      expectedWrites: 1,
+    },
+  ];
+
+  for (const testCase of cases) {
+    const input = draft();
+    input.actions = [
+      milestoneAction({
+        precondition: testCase.current,
+        desired: testCase.desired,
+      }),
+    ];
+    const client = createClient(snapshot(), { milestone: testCase.current });
+
+    const result = await applyTriageDraft(input, { client });
+
+    assert.equal(result[testCase.expectedStatus], 1, testCase.name);
+    assert.equal(client.writes, testCase.expectedWrites, testCase.name);
+  }
+});
+
+test('omits a null milestone due date from GitHub API payloads', () => {
+  const payload = milestoneRequestPayload('v1.0.26', {
+    state: 'open',
+    description: 'Release v1.0.26',
+    dueOn: null,
+  });
+
+  assert.deepEqual(payload, {
+    title: 'v1.0.26',
+    state: 'open',
+    description: 'Release v1.0.26',
+  });
+  assert.equal(Object.hasOwn(payload, 'due_on'), false);
+});
+
+test('preserves a non-null milestone due date in GitHub API payloads', () => {
+  const payload = milestoneRequestPayload('v1.0.26', {
+    state: 'open',
+    description: 'Release v1.0.26',
+    dueOn: '2026-07-31T00:00:00Z',
+  });
+
+  assert.equal(payload.due_on, '2026-07-31T00:00:00Z');
 });
 
 test('treats an existing idempotency comment marker as a skipped action', async () => {

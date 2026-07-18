@@ -72,7 +72,7 @@ Execute these steps to display available pipelines:
    - **Prompt steps** (`prompt: text`): Execute the described action using appropriate agents/tools
    - **Foreach steps** (`foreach: collection`): Iterate over collection from previous step output
    - **Parallel steps** (`parallel: [step1, step2]`): Execute contained steps concurrently using Agent tool. Each parallel step runs as an independent Agent. Max 4 concurrent per R009. Steps within a parallel block MUST be independent (no shared state, no sequential dependencies). Dependencies between parallel and non-parallel steps use `depends_on:` field.
-   - **Permission mode**: When spawning agents, pass `mode: "bypassPermissions"` in the Agent tool call if the session uses bypassPermissions. Without explicit mode, CC defaults to `acceptEdits`.
+   - **Claude compatibility `Agent` calls only (R010 “Delegated Permission Ownership”)**: Pass `mode: "bypassPermissions"` when the active Claude session uses bypass permissions. Native Codex `spawn_agent` has no `mode` parameter; use the installed `agent_type` and active Codex runtime permissions instead.
 5. Report completion or failure
 
 ### Resume Mode (/pipeline resume)
@@ -140,7 +140,7 @@ steps:
 - Steps within a parallel block MUST be independent
 - `depends_on` enforces ordering between blocks
 - Each parallel step is spawned as a separate Agent tool call in the SAME message
-- Preserve the session permission posture by forwarding `mode: "bypassPermissions"` when applicable
+- Preserve the session permission posture only for Claude compatibility `Agent` calls; native Codex `spawn_agent` follows the active runtime permissions and never accepts `mode`
 - If any parallel step fails with `error: halt-and-report`, all remaining steps in the block are cancelled
 - State tracking records each parallel step individually
 

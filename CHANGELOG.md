@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.26] - 2026-07-18
+
+### Changed
+
+- Align R017 Sauron escalation, R010 delegated-permission ownership, provider-specific `bypassPermissions`, and context-optimization guidance with Codex-native delegation while retaining explicit Claude compatibility boundaries (#1657).
+- Migrate managed agent memory from shared `project` to worktree-local `local` scope, document that memory frontmatter is harness metadata rather than native Codex TOML, and keep ontology and template guidance synchronized (#1656).
+- Keep the plain canonical `harness-eval` and `claude-native` skill IDs while documenting `$...` Codex and `/...` Claude invocation syntax; repair dead references and monitoring commands across canonical and template guidance (#1648, #1645).
+
+### Fixed
+
+- Fix forward from immutable `v1.0.25` by making live release credential discovery POSIX ERE-compatible and fail closed on signaled or malformed Git checks, including scoped and unscoped HTTP extraheaders.
+- Make triage milestone mutation omit nullable `due_on` payloads and reject unsupported due-date clearing before any write, preventing late non-convergent mutations.
+
 ## [1.0.25] - 2026-07-18
 
 ### Changed

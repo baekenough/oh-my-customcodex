@@ -1,7 +1,7 @@
 ---
 title: Dev Lead Routing
 type: skill
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/skills/dev-lead-routing/SKILL.md
 related:
@@ -20,13 +20,14 @@ Routes development tasks to the correct language/framework expert agent.
 
 ## Overview
 
-Routing skill for software development tasks. Detects the appropriate language or framework expert based on file extensions, keywords, and project context, then delegates via the Agent tool. Targets all language experts (Go, Python, TypeScript, Rust, Kotlin, Java21) and backend/frontend specialists. Supports R019 ontology-RAG enrichment for skill suggestions. Falls back to dynamic agent creation via `mgr-creator` when no specialist matches.
+Routing skill for software development tasks. Detects the appropriate language or framework expert based on file extensions, keywords, and project context, then delegates to that role. Codex uses installed `agent_type` routing and active runtime permissions without a `mode` parameter; Claude compatibility `Agent` calls use `mode: "bypassPermissions"` only when the Claude session is already in bypass mode. Unmatched tasks fall back to dynamic creation through [[mgr-creator]].
 
 ## Key Details
 
 - **Scope**: core
 - **User-invocable**: no
 - **Context**: fork
+- **Permission boundary**: native Codex and Claude compatibility calls follow distinct R010 contracts
 
 ## Relationships
 

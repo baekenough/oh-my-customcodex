@@ -4,23 +4,19 @@
 
 ## Architecture
 
-**Primary**: Native auto memory (`memory` field in agent frontmatter). No external dependencies.
-**Supplementary**: `omx-memory` or another AgentMemory-compatible MCP for cross-session searchable recall. Deprecated Chroma-based memory backends are not used in this project.
+Use Codex memory first. Add an AgentMemory-compatible MCP only for cross-session search; Chroma is unsupported.
 
-Rule: If native auto memory can handle it, do NOT use a searchable MCP backend.
+## Frontmatter Memory Metadata and Provider Boundary
 
-## Native Auto Memory
-
-Agent frontmatter `memory: project|user|local` enables persistent memory:
-- System creates memory directory, loads first 200 lines of MEMORY.md into prompt
-- Read/Write/Edit tools auto-enabled for memory directory
-- Custom directory: set `autoMemoryDirectory` in settings to override default paths (v2.1.74+)
+`memory: project|user|local` is compatibility metadata. The compiler does not emit `memory` into native Codex TOML or compiled config, so it cannot enable native persistence. Compatible consumers create the directory, load the first 200 MEMORY.md lines, and grant memory-path tools; Claude may override the path with `autoMemoryDirectory`.
 
 | Scope | Location | Git Tracked |
 |-------|----------|-------------|
 | `user` | `~/.codex/agent-memory/<name>/` | No |
 | `project` | `.codex/agent-memory/<name>/` | Yes |
 | `local` | `.codex/agent-memory-local/<name>/` | No |
+
+Managed packaged agents default to `local`; custom agents may opt into `project`. Native Codex uses runtime memory surfaces.
 
 <!--
 DETAIL: Project memory root guard
@@ -349,10 +345,7 @@ Session-end saves lose context: by the time the session ends, multiple discoveri
 
 ### Cross-reference
 
-Related records from session v0.87.2~v0.88.0 (issue #869):
-- `feedback_subagent_pre_existing_claims.md`
-- `feedback_github_workflows_inventory.md`
-- `feedback_bun_mock_module.md`
+Related records from session v0.87.2~v0.88.0 (issue #869). The originating memory files were later consolidated/removed; no live equivalents remain as of this writing.
 -->
 
 ## Session-End Auto-Save

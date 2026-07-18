@@ -1,7 +1,7 @@
 ---
 title: tool-optimizer
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/tool-optimizer.md
 related:
@@ -27,7 +27,7 @@ Uses three skills: `optimize-analyze`, `optimize-bundle`, and `optimize-report`.
 - **Domain**: universal
 - **Tools**: Read, Grep, Glob, Bash (read-only operations only)
 - **Skills**: `optimize-analyze`, `optimize-bundle`, `optimize-report`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: medium
 - **Max Turns**: 20
 - **Limitations**: cannot modify source code

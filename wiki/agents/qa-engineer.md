@@ -1,7 +1,7 @@
 ---
 title: qa-engineer
 type: agent
-updated: 2026-05-20
+updated: 2026-07-18
 sources:
   - .codex/agents/qa-engineer.md
 related:
@@ -23,7 +23,7 @@ QA execution specialist that runs tests, identifies defects, classifies severity
 - **Model**: sonnet
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
-- **Memory**: project
+- **Memory**: local
 - **Effort**: medium
 - **Max Turns**: 20
 - **Limitations**: cannot modify source code in production branches

@@ -118,7 +118,12 @@ function defaultRunCommand({ command, args = [], cwd, env }) {
     maxBuffer: 64 * 1024 * 1024,
   });
   if (result.error) throw result.error;
-  return { status: result.status ?? 1, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
+  return {
+    status: result.status ?? 128,
+    stdout: result.stdout ?? '',
+    stderr: result.stderr ?? '',
+    signal: result.signal ?? null,
+  };
 }
 
 function strictVersion(value, label) {
@@ -410,11 +415,12 @@ async function credentialAbsenceGate({ repoRoot, baseEnv, runCommand, stagingDir
         'config',
         '--local',
         '--get-regexp',
-        '^(http\\..*\\.extraheader|credential(?:\\..*)?\\.(?:helper|username|password|token))$',
+        '^(http(\\..*)?\\.extraheader|credential(\\..*)?\\.(helper|username|password|token))$',
       ],
       cwd: repoRoot,
       env: lifecycleSafeEnvironment(baseEnv),
     });
+    commandError = result.signal !== undefined && result.signal !== null;
   } catch {
     commandError = true;
     result = { status: 128, stdout: '', stderr: '' };

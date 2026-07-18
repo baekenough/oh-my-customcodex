@@ -1,7 +1,7 @@
 ---
 title: QA Lead Routing
 type: skill
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/skills/qa-lead-routing/SKILL.md
 related:
@@ -16,13 +16,14 @@ Coordinates QA workflow across planner, writer, and engineer agents.
 
 ## Overview
 
-Routes QA-related tasks to the appropriate QA agent: `qa-planner` for test strategy and planning, `qa-writer` for test case authoring, and `qa-engineer` for test execution and CI integration. Determines the right specialist based on task type (planning vs. writing vs. executing). Supports R019 ontology-RAG enrichment and falls back to dynamic agent creation for novel QA scenarios.
+Routes QA-related tasks to `qa-planner`, `qa-writer`, or `qa-engineer` according to planning, writing, and execution needs. Native Codex uses the installed role's `agent_type` and runtime permissions, while Claude compatibility `Agent` calls conditionally pass `mode: "bypassPermissions"` only from an active bypass session. Novel QA scenarios may fall back to dynamic agent creation.
 
 ## Key Details
 
 - **Scope**: core
 - **User-invocable**: no
 - **Context**: fork
+- **Permission boundary**: native `spawn_agent` never accepts Claude's `mode` field
 
 ## Relationships
 

@@ -1,7 +1,7 @@
 ---
 title: be-fastapi-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/be-fastapi-expert.md
 related:
@@ -27,7 +27,7 @@ Commonly paired with [[db-alembic-expert]] for async SQLAlchemy migrations and [
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `fastapi-best-practices`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 
 ## Relationships

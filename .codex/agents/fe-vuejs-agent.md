@@ -3,7 +3,7 @@ name: fe-vuejs-agent
 description: Use for Vue 3 Composition API development, single-file components, Pinia state management, and Vue Router navigation
 model_lane: frontier
 domain: frontend
-memory: project
+memory: local
 model_reasoning_effort: medium
 skills:
   - impeccable-design

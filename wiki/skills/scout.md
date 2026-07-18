@@ -1,7 +1,7 @@
 ---
 title: Scout
 type: skill
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/skills/scout/SKILL.md
 related:
@@ -16,14 +16,15 @@ Analyze external URL to evaluate project fit and integration potential.
 
 ## Overview
 
-Fetches and analyzes an external URL (GitHub repo, npm package, article) to evaluate its fit for the current project. Assesses: technology alignment, maturity indicators (stars, activity, license), API surface compatibility, integration complexity, and potential conflicts with existing agents/skills. Produces a structured evaluation report with a recommended action (adopt, evaluate, skip).
+Fetches and analyzes an external URL to evaluate project fit, then returns a structured recommendation. Native Codex analysis or issue-creation delegation uses an installed `agent_type` and active runtime permissions with no `mode` parameter. A Claude compatibility `Agent` call passes `mode: "bypassPermissions"` only when that Claude session already uses bypass permissions.
 
 ## Key Details
 
 - **Scope**: core
 - **User-invocable**: yes
-- **Command**: `/scout`
+- **Command**: `$scout` (Codex/OMX); `/scout` (Claude Code compatibility)
 - **Effort**: not specified
+- **Permission boundary**: applies separately to analysis and any delegated issue-creation path
 
 ## Relationships
 

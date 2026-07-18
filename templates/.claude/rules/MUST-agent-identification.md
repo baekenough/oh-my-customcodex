@@ -75,6 +75,7 @@ When the orchestrator invokes a skill via the Skill tool, the skill name MUST be
 └─ Status: {current-action-or-verdict}
 ```
 
+<!-- DETAIL: Skill Invocation Violation Examples
 ### Common Violations
 
 ```
@@ -93,6 +94,7 @@ Correct: With sub-skill
    ├─ Skill: result-aggregation
    └─ Status: aggregate team findings
 ```
+-->
 
 ## When to Display
 

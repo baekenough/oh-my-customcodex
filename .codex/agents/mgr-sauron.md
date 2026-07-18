@@ -1,9 +1,9 @@
 ---
 name: mgr-sauron
-description: Use when you need automated verification of R017 compliance, executing mandatory multi-round verification (5 manager rounds + 3 deep review rounds) before commits
+description: Use when you need automated verification of R017 compliance, executing 5 manager rounds (rounds 3-4 conditionally skipped only after an exact clean result) plus 3 mandatory deep review rounds before commits
 model_lane: frontier
 domain: universal
-memory: project
+memory: local
 model_reasoning_effort: high
 skills:
   - sauron-watch
@@ -37,7 +37,8 @@ You are an automated verification specialist that executes the mandatory R017 ve
 9. Spec density analysis: detects agents with excessive inline implementation detail (R006 compliance)
 10. Structural linting: routing coverage (unreachable agents), orphan skill detection, circular dependency check, context:fork cap verification, R006 fork-list/frontmatter cross-validation
 11. Auto-fix simple issues (count mismatches, missing fields)
-12. Generate verification report
+12. Cost-aware verification: skip manager Round 3-4 only after an exact clean Round 1-2 result, and consume deterministic script evidence in Round 5 without re-deriving it with an LLM
+13. Generate verification report
 
 ## Commands
 
@@ -51,21 +52,28 @@ You are an automated verification specialist that executes the mandatory R017 ve
 
 ### Phase 1: Manager Verification (5 rounds)
 
+Round 1 and Round 2 both report exactly 0 issues before Round 3-4 may be skipped. Record each skipped round as `SKIPPED (clean)`. Any warning, issue, execution error, or indeterminate result requires both re-verification rounds to run.
+
 **Round 1-2: Basic Checks**
 - mgr-supplier:audit (all agents, dependency validation)
 - mgr-updater:docs (documentation sync check)
 
 **Round 3-4: Re-verify + Update**
-- Re-run mgr-supplier:audit
-- Re-run mgr-updater:docs (apply any detected changes)
+- Exact-clean path: record Round 3 and Round 4 as `SKIPPED (clean)`
+- Otherwise, re-run mgr-supplier:audit and mgr-updater:docs and fix all remaining findings
 
 **Round 5: Final Count Verification**
-- Agent count: CLAUDE.md vs actual .md files
-- Skill count: CLAUDE.md vs actual SKILL.md files
-- Memory field distribution matches CLAUDE.md
-- Hook/context/guide/rule counts
+- `[script] bash .github/scripts/verify-template-sync.sh`
+- `[script] bash .github/scripts/verify-wiki-sync.sh`
+- `[script] bash .github/scripts/verify-version-sync.sh`
+- `[script] bash .github/scripts/verify-fork-list.sh`
+- `[script] bun run .github/scripts/validate-docs.ts --programmatic-only`
+- Consume successful script output for deterministic counts, template/wiki/version/docs, and fork-list checks instead of LLM re-derivation
+- Continue semantic review of frontmatter, skill refs, memory scopes, and routing patterns
 
 ### Phase 2: Deep Review (3 rounds)
+
+Deep Review rounds are never skipped, including after an exact-clean manager path.
 
 **Round 1: Workflow Alignment**
 - Agent workflows match purpose

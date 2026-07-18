@@ -1,7 +1,7 @@
 ---
 title: tracker-checkpoint
 type: agent
-updated: 2026-04-24
+updated: 2026-07-18
 sources:
   - .codex/agents/tracker-checkpoint.md
 related:
@@ -30,9 +30,9 @@ When work targets `.claude/**`, `templates/.claude/**`, or Claude-compatibility 
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Bash, Glob, Grep
 - **Skills**: `dag-orchestration`, `pipeline-guards`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: medium
-- **Permission mode**: bypassPermissions
+- **Agent frontmatter permission mode**: `bypassPermissions` (not a native `spawn_agent` call parameter)
 
 ## Responsibilities
 

@@ -1,7 +1,7 @@
 ---
 title: de-pipeline-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/de-pipeline-expert.md
 related:
@@ -28,7 +28,7 @@ Draws on cross-tool expertise across `guides/airflow/`, `guides/dbt/`, `guides/s
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `pipeline-architecture-patterns`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 
 ## Relationships

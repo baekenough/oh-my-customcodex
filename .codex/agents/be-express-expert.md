@@ -3,7 +3,7 @@ name: be-express-expert
 description: Expert Express.js developer for production-ready Node.js APIs following security best practices and 12-factor app principles. Use for Express.js APIs, REST API architectures, middleware chains, authentication/authorization, security hardening, and Node.js performance optimization.
 model_lane: frontier
 domain: backend
-memory: project
+memory: local
 model_reasoning_effort: high
 tools:
   - Read

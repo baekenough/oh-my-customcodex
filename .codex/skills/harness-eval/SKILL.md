@@ -20,10 +20,20 @@ Sensitive-path compatibility note: if this skill delegates work that touches `.c
 
 ## Usage
 
+Codex / OMX:
+
 ```
-/omcustomcodex:harness-eval                    # Run all 15 benchmarks
-/omcustomcodex:harness-eval --preset quick     # Run top 5 high-impact benchmarks
-/omcustomcodex:harness-eval --task api-design  # Run specific task benchmark
+$harness-eval                    # Run all 15 benchmarks
+$harness-eval --preset quick     # Run top 5 high-impact benchmarks
+$harness-eval --task api-design  # Run specific task benchmark
+```
+
+Claude Code compatibility:
+
+```
+/harness-eval                    # Run all 15 benchmarks
+/harness-eval --preset quick     # Run top 5 high-impact benchmarks
+/harness-eval --task api-design  # Run specific task benchmark
 ```
 
 ## Quality Dimensions
@@ -85,7 +95,7 @@ Run top 5 high-impact tasks (1, 3, 4, 5, 12). Quick evaluation ~15 minutes.
 This skill provides preset rubrics for the evaluator-optimizer pipeline:
 
 ```
-/omcustomcodex:harness-eval → loads rubric → evaluator-optimizer executes → scoring → report
+$harness-eval → loads rubric → evaluator-optimizer executes → scoring → report
 ```
 
 The evaluator-optimizer skill's `pre_negotiation` phase accepts harness-eval rubric dimensions as sprint contract criteria.

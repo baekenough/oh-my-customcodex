@@ -3,7 +3,7 @@ name: qa-writer
 description: Use when you need to create comprehensive QA documentation from detailed plans, including test cases, test reports, and quality documentation
 model_lane: frontier
 domain: universal
-memory: project
+memory: local
 model_reasoning_effort: medium
 maxTurns: 20
 limitations:

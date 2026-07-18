@@ -1,7 +1,7 @@
 ---
 title: tool-bun-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/tool-bun-expert.md
 related:
@@ -23,7 +23,7 @@ Expert Bun runtime developer for high-performance JavaScript/TypeScript applicat
 - **Model**: sonnet
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Bash
-- **Memory**: project
+- **Memory**: local
 - **Effort**: medium
 
 ## Relationships

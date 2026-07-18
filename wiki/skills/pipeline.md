@@ -1,7 +1,7 @@
 ---
 title: Pipeline
 type: skill
-updated: 2026-05-15
+updated: 2026-07-18
 sources:
   - .codex/skills/pipeline/SKILL.md
   - .codex/skills/pipeline/workflows/auto-dev.yaml
@@ -15,20 +15,21 @@ related:
 
 # Pipeline
 
-Invoke and resume YAML-defined pipelines — `/pipeline auto-dev` runs the full release pipeline.
+Invoke and resume YAML-defined pipelines — `$pipeline auto-dev` runs the full release pipeline in Codex/OMX (`/pipeline auto-dev` in Claude Code).
 
 ## Overview
 
-YAML-based pipeline executor. In list mode, scans `workflows/*.yaml` and displays available pipelines. In run mode, loads and validates a pipeline YAML, then executes steps sequentially (skill steps via Skill tool, prompt steps via agent delegation, parallel steps via Agent tool). Tracks state per step in `/tmp/.codex-pipeline-{name}-{PPID}.json`. Resume mode re-executes from the failed step. Max 4 concurrent parallel steps (pipeline-guards).
+YAML-based pipeline executor. In list mode, scans `workflows/*.yaml`; in run mode, validates a pipeline and executes skill, prompt, foreach, and independent parallel steps. Native Codex parallel dispatch uses installed `agent_type` roles and active runtime permissions with no `mode` field. Claude compatibility `Agent` calls preserve `mode: "bypassPermissions"` only when that session already uses bypass permissions. State is tracked per step and resume restarts from the failed step.
 
 ## Key Details
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/pipeline`
+- **Command**: `$pipeline` (Codex/OMX); `/pipeline` (Claude Code compatibility)
 - **Effort**: high
 - **Argument hint**: `<pipeline-name> | resume | (no args to list available)`
 - **Source**: external (github: baekenough/baekenough-skills v1.0.0)
+- **Permission boundary**: provider-specific per R010; parallel steps remain independent and capped by R009/pipeline guards
 
 ## auto-dev Pipeline Steps
 

@@ -1,7 +1,7 @@
 ---
 title: Claude Native
 type: skill
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/skills/claude-native/SKILL.md
 related:
@@ -15,13 +15,13 @@ Monitor Claude Code releases and automatically create issues for relevant change
 
 ## Overview
 
-Monitors Claude Code GitHub releases, compares against current installed version, and automatically creates GitHub issues for breaking changes, new features, and deprecated APIs that affect oh-my-customcodex agents or rules. Integrates with `mgr-claude-code-bible` to keep the spec reference current. Run periodically or triggered by release events.
+Monitors Claude Code GitHub releases, compares against current installed version, and automatically creates GitHub issues for breaking changes, new features, and deprecated APIs that affect oh-my-customcodex agents or rules. Codex/OMX invokes the plain skill with `$claude-native`; Claude Code uses `/claude-native`. Scheduled `/schedule` and CronCreate examples belong only to the Claude Code compatibility surface.
 
 ## Key Details
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcustomcodex:claude-native`
+- **Command**: `$claude-native` (Codex/OMX); `/claude-native` (Claude Code compatibility)
 - **Effort**: not specified
 
 ## Relationships

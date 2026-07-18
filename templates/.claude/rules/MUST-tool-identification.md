@@ -141,6 +141,7 @@ Reference issue: #1486 / upstream #1321 (AskUserQuestion prefix omission); compl
 
 체크 실패 시 즉시 prefix/필수 파라미터를 보완한 후 호출.
 
+<!-- DETAIL: Consolidated Tool Identification Examples
 ## Example
 
 ```
@@ -155,3 +156,4 @@ Parallel spawn description parameter:
 Agent(description: "[1] Go code review", subagent_type: "lang-golang-expert", ...)
 Agent(description: "[2] Python code review", subagent_type: "lang-python-expert", ...)
 ```
+-->

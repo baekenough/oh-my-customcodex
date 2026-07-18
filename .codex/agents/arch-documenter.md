@@ -3,7 +3,7 @@ name: arch-documenter
 description: Use for generating architecture documentation, API specifications (OpenAPI), Architecture Decision Records (ADRs), technical diagrams (Mermaid/PlantUML), and README maintenance
 model_lane: frontier
 domain: universal
-memory: project
+memory: local
 model_reasoning_effort: high
 limitations:
   - "cannot execute commands"

@@ -3,7 +3,7 @@ name: mgr-updater
 description: Use when you need to update external agents, skills, and guides from their upstream sources, checking versions and applying updates
 model_lane: frontier
 domain: universal
-memory: project
+memory: local
 model_reasoning_effort: medium
 maxTurns: 20
 limitations:

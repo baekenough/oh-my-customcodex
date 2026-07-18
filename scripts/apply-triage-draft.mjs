@@ -148,6 +148,26 @@ function normalizeMilestoneMetadata(metadata) {
   };
 }
 
+export function milestoneRequestPayload(title, desired) {
+  const payload = {
+    title,
+    state: desired.state,
+    description: desired.description,
+  };
+  if (desired.dueOn !== null) {
+    payload.due_on = desired.dueOn;
+  }
+  return payload;
+}
+
+function assertMilestoneDueDateTransitionSupported(title, current, desired) {
+  if (current !== null && current.dueOn !== null && desired.dueOn === null) {
+    throw new Error(
+      `Milestone ${title} cannot clear its existing due date: null dueOn values are omitted from GitHub API updates, so this transition is unsupported.`
+    );
+  }
+}
+
 function sameValue(left, right) {
   return isDeepStrictEqual(left, right);
 }
@@ -510,6 +530,7 @@ async function preflightMilestoneEnsure(action, state, client) {
   if (!sameValue(current, precondition)) {
     throw new Error(`Precondition failed for milestone ${action.title}.`);
   }
+  assertMilestoneDueDateTransitionSupported(action.title, current, desired);
   state.milestones.set(action.title, desired);
   return { action };
 }
@@ -688,12 +709,7 @@ function createGitHubClient(repo) {
         : null;
     },
     async ensureMilestone(title, desired, current) {
-      const payload = JSON.stringify({
-        title,
-        state: desired.state,
-        description: desired.description,
-        due_on: desired.dueOn,
-      });
+      const payload = JSON.stringify(milestoneRequestPayload(title, desired));
       if (current) {
         const milestones = parseJson(
           gh(repo, [

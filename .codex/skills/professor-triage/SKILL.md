@@ -39,15 +39,15 @@ Analyze GitHub issues against the current codebase. For each issue, search relev
 
 ## Delegation Contract
 
-| Phase | Agent | Mode |
-|-------|-------|------|
-| Phase 2 codebase search | Explore | bypassPermissions |
-| Phase 4A Senior Architect | general-purpose | bypassPermissions |
-| Phase 4B Project Colleague | general-purpose | bypassPermissions |
-| Phase 4C Professor Synthesis | general-purpose | bypassPermissions |
-| Phase 4D triage comment | mgr-gitnerd | bypassPermissions |
-| Phase 4E artifact report | general-purpose | bypassPermissions |
-| Phase 5 GitHub actions | mgr-gitnerd | bypassPermissions |
+| Phase | Agent | Claude compatibility `Agent` mode |
+|-------|-------|-----------------------------------|
+| Phase 2 codebase search | Explore | `bypassPermissions` when active |
+| Phase 4A Senior Architect | general-purpose | `bypassPermissions` when active |
+| Phase 4B Project Colleague | general-purpose | `bypassPermissions` when active |
+| Phase 4C Professor Synthesis | general-purpose | `bypassPermissions` when active |
+| Phase 4D triage comment | mgr-gitnerd | `bypassPermissions` when active |
+| Phase 4E artifact report | general-purpose | `bypassPermissions` when active |
+| Phase 5 GitHub actions | mgr-gitnerd | `bypassPermissions` when active |
 
 Agent selection constraint: artifact-writing delegated agents need Bash access for compatibility-path bypasses. Do not use an agent whose tool policy prevents the required artifact protocol.
 
@@ -87,4 +87,4 @@ Confirmation required: issue reopen, new issue creation, epic rewrites, or issue
 
 ## Permission Mode
 
-When spawning agents, explicitly pass `mode: "bypassPermissions"` if the runtime supports it. Defaults may override agent frontmatter and reintroduce permission prompts during unattended execution.
+**Claude compatibility `Agent` calls only (R010 “Delegated Permission Ownership”)**: Pass `mode: "bypassPermissions"` when the active Claude session uses bypass permissions. Native Codex `spawn_agent` has no `mode` parameter; use the installed `agent_type` and active Codex runtime permissions instead.

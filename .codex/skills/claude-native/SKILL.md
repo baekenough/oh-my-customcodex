@@ -105,7 +105,7 @@ Issue body format (matching the pattern established by issue #683):
 
 ---
 
-_This issue was created by the `/omcustomcodex:claude-native` skill._
+_This issue was created by the plain `claude-native` skill (`$claude-native` in Codex / OMX; `/claude-native` in Claude Code)._
 ```
 
 **Notes:**
@@ -170,10 +170,20 @@ Semver comparison: major → minor → patch (all numeric). Pre-release suffixes
 
 ### Manual
 
+Codex / OMX:
+
 ```
-/omcustomcodex:claude-native
-/omcustomcodex:claude-native --backfill
-/omcustomcodex:claude-native --dry-run
+$claude-native
+$claude-native --backfill
+$claude-native --dry-run
+```
+
+Claude Code compatibility:
+
+```
+/claude-native
+/claude-native --backfill
+/claude-native --dry-run
 ```
 
 ### Automatic (SessionStart Hook)
@@ -192,12 +202,14 @@ Can be integrated into the SessionStart hook to check for new releases at sessio
 
 A lightweight wrapper script can run a `--dry-run` check and notify if new releases exist.
 
-### Scheduled (CronCreate)
+### Scheduled (Claude Code)
 
-Can be set up as a scheduled remote agent using `/schedule`:
+The `/schedule` command and CronCreate MCP tool below are a Claude Code-compatible scheduling surface. They do not change the Codex / OMX invocation, which remains `$claude-native`.
+
+Set up a scheduled remote agent in Claude Code using `/schedule`:
 
 ```
-/schedule "daily at 9am: /omcustomcodex:claude-native"
+/schedule "daily at 9am: /claude-native"
 ```
 
 Or via CronCreate MCP tool for programmatic scheduling.

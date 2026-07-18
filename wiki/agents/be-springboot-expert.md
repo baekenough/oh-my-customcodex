@@ -1,7 +1,7 @@
 ---
 title: be-springboot-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/be-springboot-expert.md
 related:
@@ -26,7 +26,7 @@ Uses the `springboot-best-practices` skill and consults `guides/springboot/` for
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `springboot-best-practices`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 
 ## Relationships

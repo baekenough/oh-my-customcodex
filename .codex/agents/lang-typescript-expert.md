@@ -3,7 +3,7 @@ name: lang-typescript-expert
 description: Expert TypeScript developer for writing type-safe, maintainable, scalable TypeScript code. Use for TypeScript files (*.ts, *.tsx, tsconfig.json), TypeScript-related keywords, designing APIs with type contracts, migrating JavaScript to TypeScript, and Node.js backend services.
 model_lane: frontier
 domain: backend
-memory: project
+memory: local
 model_reasoning_effort: high
 skills:
   - typescript-best-practices

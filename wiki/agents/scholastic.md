@@ -1,7 +1,7 @@
 ---
 title: scholastic
 type: agent
-updated: 2026-05-29
+updated: 2026-07-18
 sources:
   - .codex/agents/scholastic.md
 related:
@@ -23,7 +23,7 @@ Ontology-first reasoning reviewer for category mistakes, hidden assumptions, mod
 - **Model**: sonnet
 - **Domain**: universal
 - **Tools**: Read, Grep, Glob
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 - **Limitations**: read-only reviewer; must distinguish ontology failures from empirical failures
 

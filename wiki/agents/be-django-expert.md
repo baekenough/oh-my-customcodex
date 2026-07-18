@@ -1,7 +1,7 @@
 ---
 title: be-django-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/be-django-expert.md
 related:
@@ -27,7 +27,7 @@ The agent uses the `django-best-practices` skill and consults `guides/django-bes
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `django-best-practices`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 
 ## Relationships

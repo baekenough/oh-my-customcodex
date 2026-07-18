@@ -3,7 +3,7 @@ name: fe-design-expert
 description: Use for design system review, typography audit, color palette evaluation, motion design, and AI-generated design quality assessment
 model_lane: frontier
 domain: frontend
-memory: project
+memory: local
 model_reasoning_effort: medium
 skills:
   - impeccable-design

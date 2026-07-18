@@ -111,7 +111,7 @@ Before execution, show the plan:
 
 Spawn 1 frontier/medium agent with the following analysis prompt.
 
-> **MUST**: When spawning the analysis agent, pass `mode: "bypassPermissions"` in the Agent tool call if the session uses bypassPermissions. Without explicit mode, CC defaults to `acceptEdits` and may interrupt unattended execution.
+> **Claude compatibility `Agent` calls only (R010 “Delegated Permission Ownership”)**: Pass `mode: "bypassPermissions"` when the active Claude session uses bypass permissions. Native Codex `spawn_agent` has no `mode` parameter; use the installed `agent_type` and active Codex runtime permissions instead.
 
 **Inputs**:
 - Fetched content summary (Phase 1)
@@ -162,7 +162,7 @@ Return a structured verdict:
 
 ### Phase 4: Issue Creation
 
-> **NOTE**: Phase 4 is normally handled by the orchestrator with `gh issue create`. If issue creation is delegated to an agent, that Agent tool call also MUST include `mode: "bypassPermissions"` when the session uses bypass permissions.
+> **NOTE**: Phase 4 is normally handled by the orchestrator with `gh issue create`. If issue creation is delegated through a Claude compatibility `Agent` call, pass `mode: "bypassPermissions"` only when that Claude session uses bypass permissions. Native Codex `spawn_agent` never accepts `mode`.
 
 1. Ensure scout labels exist (defensive, idempotent):
 ```bash

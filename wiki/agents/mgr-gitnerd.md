@@ -1,7 +1,7 @@
 ---
 title: mgr-gitnerd
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/mgr-gitnerd.md
 related:
@@ -25,7 +25,7 @@ Capabilities include conventional commit messages, branch naming enforcement, PR
 - **Model**: sonnet
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
-- **Memory**: project
+- **Memory**: local
 - **Effort**: medium
 - **Max Turns**: 20
 - **Limitations**: cannot modify source code, cannot create agents

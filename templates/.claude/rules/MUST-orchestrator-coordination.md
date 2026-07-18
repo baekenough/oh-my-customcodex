@@ -233,6 +233,28 @@ Key violations to avoid (file writes, git commands, bundled operations — all m
 ✓ CORRECT: Main conversation → Agent(arch-documenter) → revise the rule text, then verify the mirrored template file
 ```
 
+## Delegated Permission Ownership
+
+This section is the canonical owner for delegated permission guidance. Keep the provider boundary explicit rather than copying Claude-only call parameters into Codex-native dispatch.
+
+### Codex/OMX native
+
+`spawn_agent` does not accept a `mode` parameter. Do not pass `mode`, `bypassPermissions`, or another Claude Agent-tool field to native Codex delegation.
+
+| Native concern | Owner |
+|----------------|-------|
+| Role selection | Required installed OMX `agent_type` |
+| Filesystem capability | The compiled role's `sandbox_mode` |
+| Escalation and approval | The active approval policy and current runtime permissions |
+
+Native prompts still state task scope, allowed writes, and forbidden actions, but they must not invent unsupported call parameters.
+
+### Claude compatibility
+
+For a Claude compatibility `Agent` call, explicitly pass `mode: "bypassPermissions"` when the active Claude session uses bypass permissions. Claude's Agent tool otherwise defaults to `acceptEdits`, which can override frontmatter and interrupt unattended compatibility workflows.
+
+This conditional requirement applies only to the Claude compatibility surface. Defensive inline reminders remain in agent-spawning compatibility skills because prior measured failures showed that a distant rule reference can be lost during delegation.
+
 ## Historical Sensitive-Path Bypass
 
 **Status**: deprecated as of Claude Code v2.1.121 for `.claude/skills/`, `.claude/agents/`, and `.claude/commands/`; fully deprecated in `bypassPermissions` as of v2.1.126 for broader protected paths.

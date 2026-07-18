@@ -3,7 +3,7 @@ name: de-spark-expert
 description: Expert Apache Spark developer for PySpark and Scala distributed data processing. Use for Spark jobs (*.py, *.scala), spark-submit configs, Spark-related keywords, and large-scale data transformation.
 model_lane: frontier
 domain: data-engineering
-memory: project
+memory: local
 model_reasoning_effort: high
 skills:
   - spark-best-practices

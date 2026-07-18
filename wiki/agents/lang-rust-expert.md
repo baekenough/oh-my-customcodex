@@ -1,7 +1,7 @@
 ---
 title: lang-rust-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/lang-rust-expert.md
 related:
@@ -28,7 +28,7 @@ Uses `rust-best-practices` skill and `guides/rust/` for reference documentation.
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `rust-best-practices`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 
 ## Relationships

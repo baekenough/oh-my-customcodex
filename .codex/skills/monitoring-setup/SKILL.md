@@ -10,6 +10,8 @@ user-invocable: true
 
 Enable or disable OpenTelemetry console monitoring. When enabled, the harness outputs usage metrics (cost, tokens, sessions, LOC, commits, PRs, active time) and events (tool results, API requests) to the terminal.
 
+Invoke with `$omcustomcodex:monitoring-setup [enable|disable|status]` in Codex / OMX, or `/omcustomcodex:monitoring-setup [enable|disable|status]` on Claude Code.
+
 ## Natural Language Triggers
 
 This skill activates when the user mentions any of:
@@ -42,7 +44,8 @@ This skill activates when the user mentions any of:
    Events: tool results, API requests, tool decisions
 
    Note: Takes effect on next session restart.
-   To disable: /monitoring-setup disable
+   To disable in Codex / OMX: $omcustomcodex:monitoring-setup disable
+   Claude Code compatibility: /omcustomcodex:monitoring-setup disable
    ```
 
 ### disable

@@ -1,7 +1,7 @@
 ---
 title: fe-design-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/fe-design-expert.md
 related:
@@ -27,7 +27,7 @@ A critical feature is the **AI Slop Test** — a checklist of common AI-generate
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob (no Bash)
 - **Skills**: `impeccable-design`, `web-design-guidelines`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: medium
 - **Source**: external from https://github.com/pbakaus/impeccable (v1.0.0)
 

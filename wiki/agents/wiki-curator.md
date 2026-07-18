@@ -1,7 +1,7 @@
 ---
 title: Wiki Curator
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/wiki-curator.md
 related:
@@ -22,7 +22,7 @@ All wiki/ directory writes go through this agent per R010 delegation rules. The 
 
 - **Model**: sonnet
 - **Domain**: universal
-- **Memory**: project
+- **Memory**: local
 - **Tools**: Read, Write, Edit, Glob, Grep, Bash
 
 ## Relationships

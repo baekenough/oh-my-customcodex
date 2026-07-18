@@ -1,7 +1,7 @@
 ---
 title: be-express-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/be-express-expert.md
 related:
@@ -25,7 +25,7 @@ The agent references the official Express.js documentation and security guide di
 - **Model**: sonnet
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 
 ## Relationships

@@ -1,7 +1,7 @@
 ---
 title: be-go-backend-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/be-go-backend-expert.md
 related:
@@ -25,7 +25,7 @@ The agent uses the `go-backend-best-practices` skill and consults `guides/go-bac
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `go-backend-best-practices`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 
 ## Relationships

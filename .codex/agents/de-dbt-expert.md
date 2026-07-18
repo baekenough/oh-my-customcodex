@@ -3,7 +3,7 @@ name: de-dbt-expert
 description: Expert dbt developer for SQL modeling, testing, and documentation. Use for dbt model files (*.sql in models/), schema.yml, dbt_project.yml, dbt-related keywords, and analytics engineering workflows.
 model_lane: frontier
 domain: data-engineering
-memory: project
+memory: local
 model_reasoning_effort: high
 skills:
   - dbt-best-practices
