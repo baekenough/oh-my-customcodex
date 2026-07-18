@@ -31,7 +31,10 @@ const PLUGIN_CACHE_CHECK_SCRIPT = join(SCRIPTS_DIR, 'plugin-cache-check.sh');
 const SHELL_RESERVED_VAR_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'shell-reserved-var-advisor.sh');
 const MODEL_ESCALATION_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'model-escalation-advisor.sh');
 
-const STAGE_FILE = '/tmp/.codex-dev-stage';
+// stage-blocker.sh is spawned directly by this Bun process, so the hook's
+// $PPID resolves to process.pid. The marker must remain isolated per session.
+const STAGE_FILE = `/tmp/.codex-dev-stage-${process.pid}`;
+const LEGACY_STAGE_FILE = '/tmp/.codex-dev-stage';
 
 // -------------------------------------------------------------------
 // Helpers
@@ -447,7 +450,9 @@ describe('session-reflection.sh', () => {
 
 describe('stage-blocker.sh', () => {
   afterEach(async () => {
-    await unlink(STAGE_FILE).catch(() => undefined);
+    await Promise.all(
+      [STAGE_FILE, LEGACY_STAGE_FILE].map((path) => unlink(path).catch(() => undefined))
+    );
   });
 
   // --- Allowed stages ---
@@ -459,6 +464,12 @@ describe('stage-blocker.sh', () => {
   });
 
   it('should exit 0 when no stage file exists', async () => {
+    const result = await runHookScript(STAGE_BLOCKER_SCRIPT, '{}');
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('should ignore the legacy global marker from another session', async () => {
+    await writeFile(LEGACY_STAGE_FILE, 'plan');
     const result = await runHookScript(STAGE_BLOCKER_SCRIPT, '{}');
     expect(result.exitCode).toBe(0);
   });

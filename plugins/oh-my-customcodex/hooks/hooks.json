@@ -250,7 +250,7 @@
         "matcher": "*",
         "hooks": [
           {
-            "type": "prompt",
+            "type": "command",
             "command": "bash ${PLUGIN_ROOT}/hooks/scripts/session-autofix-prompt.sh"
           }
         ],
