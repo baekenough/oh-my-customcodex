@@ -7,11 +7,14 @@ import {
   buildTargetIssuePayload,
   buildUpstreamIssueMarker,
   buildUpstreamReleaseMarker,
+  countUnicodeCharacters,
   extractChangelogSection,
   extractExplicitIssueNumbers,
   extractReferencedIssueNumbers,
   extractUpstreamIssueMarker,
   extractUpstreamReleaseMarker,
+  fitGitHubIssueBody,
+  GITHUB_ISSUE_BODY_CHARACTER_LIMIT,
   getRunConfig,
   run,
 } from '../scripts/sync-upstream-release-issues.js';
@@ -403,3 +406,110 @@ function sendJson(response, statusCode, payload) {
   response.writeHead(statusCode, { 'Content-Type': 'application/json' });
   response.end(JSON.stringify(payload));
 }
+
+test('GitHub issue body helper accepts the exact 65,536 ASCII-character boundary', () => {
+  const body = 'a'.repeat(GITHUB_ISSUE_BODY_CHARACTER_LIMIT);
+  const fitted = fitGitHubIssueBody(body, {
+    sourceUrl: 'https://example.test/issues/1',
+    sectionName: 'Original Description',
+  });
+
+  assert.equal(fitted, body);
+  assert.equal(countUnicodeCharacters(fitted), 65_536);
+});
+
+test('GitHub issue body helper reduces the 65,537-character boundary explicitly', () => {
+  const fitted = fitGitHubIssueBody('a'.repeat(GITHUB_ISSUE_BODY_CHARACTER_LIMIT + 1), {
+    sourceUrl: 'https://example.test/issues/1',
+    sectionName: 'Original Description',
+  });
+
+  assert.ok(countUnicodeCharacters(fitted) <= GITHUB_ISSUE_BODY_CHARACTER_LIMIT);
+  assert.match(fitted, /content overflow/i);
+  assert.match(fitted, /Original characters: 65537/);
+  assert.match(fitted, /SHA-256:/);
+  assert.doesNotMatch(fitted, /\.\.\.\[truncated\]/);
+});
+
+test('Unicode fitting counts code points separately from encoded JSON bytes', () => {
+  const original = '🙂'.repeat(GITHUB_ISSUE_BODY_CHARACTER_LIMIT + 1);
+  const fitted = fitGitHubIssueBody(original, {
+    sourceUrl: 'https://example.test/issues/emoji',
+    sectionName: 'Original Description',
+  });
+
+  assert.ok(countUnicodeCharacters(fitted) <= GITHUB_ISSUE_BODY_CHARACTER_LIMIT);
+  assert.equal(fitted.includes('\uFFFD'), false);
+  assert.ok(Buffer.byteLength(JSON.stringify({ body: fitted }), 'utf8') > fitted.length);
+});
+
+test('target payload preserves an original body above the former 12,000-character cap', () => {
+  const originalBody = 'original-context-'.repeat(1_000);
+  const payload = buildTargetIssuePayload({
+    upstreamRepo: 'upstream/project',
+    release: {
+      tag_name: 'v1.2.3',
+      html_url: 'https://github.com/upstream/project/releases/tag/v1.2.3',
+      body: 'release notes',
+    },
+    issue: {
+      number: 42,
+      title: 'Preserve context',
+      html_url: 'https://github.com/upstream/project/issues/42',
+      state: 'closed',
+      body: originalBody,
+      labels: [],
+    },
+  });
+
+  assert.match(payload.body, new RegExp(originalBody.slice(-200)));
+  assert.doesNotMatch(payload.body, /\.\.\.\[truncated\]/);
+});
+
+test('target payload prioritizes original issue context and keeps markers/headings unindented', () => {
+  const payload = buildTargetIssuePayload({
+    upstreamRepo: 'upstream/project',
+    release: {
+      tag_name: 'v9.9.9',
+      html_url: 'https://github.com/upstream/project/releases/tag/v9.9.9',
+      body: 'secondary-release-notes-'.repeat(5_000),
+    },
+    issue: {
+      number: 77,
+      title: 'Large context',
+      html_url: 'https://github.com/upstream/project/issues/77',
+      state: 'closed',
+      body: 'primary-issue-context-'.repeat(5_000),
+      labels: [{ name: 'enhancement' }],
+    },
+  });
+
+  assert.ok(countUnicodeCharacters(payload.body) <= GITHUB_ISSUE_BODY_CHARACTER_LIMIT);
+  assert.match(payload.body, /Original issue: \[#77]/);
+  assert.match(payload.body, /content overflow/i);
+  const structuralLines = payload.body
+    .split('\n')
+    .filter(
+      (line) => line.includes('upstream-release-issue:') || line.trimStart().startsWith('## ')
+    );
+  assert.ok(structuralLines.length > 0);
+  assert.ok(structuralLines.every((line) => line === line.trimStart()));
+});
+
+test('release update payload fits large notes with explicit source evidence', () => {
+  const payload = buildReleaseUpdatePayload({
+    upstreamRepo: 'openai/codex',
+    release: {
+      tag_name: 'v9.9.9',
+      name: 'Large release',
+      html_url: 'https://github.com/openai/codex/releases/tag/v9.9.9',
+      published_at: '2026-07-16T00:00:00Z',
+      body: 'large-release-note-'.repeat(5_000),
+    },
+  });
+
+  assert.ok(countUnicodeCharacters(payload.body) <= GITHUB_ISSUE_BODY_CHARACTER_LIMIT);
+  assert.match(payload.body, /content overflow/i);
+  assert.match(payload.body, /openai\/codex\/releases\/tag\/v9\.9\.9/);
+  assert.match(payload.body, /SHA-256:/);
+});

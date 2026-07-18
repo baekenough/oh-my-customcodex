@@ -18,9 +18,15 @@ After PR creation in the auto-dev release workflow, collect unaddressed findings
 
 Gather unfinished work from multiple sources:
 
-**Source A — Remaining open issues**:
-- Run: `gh issue list --label verify-done --state open --json number,title,labels`
-- These are triaged issues NOT included in the current release
+**Source A — Remaining verify-ready work**:
+- Run: `gh issue list --label verify-ready --state open --json number,title,labels,milestone`
+- Treat this as the remaining automation queue, not `verify-done`.
+- Exclude issues already assigned to the current release milestone/version; those belong to current-release verification, not follow-up.
+- Deduplicate by issue number before joining this source with deep-verify, triage, TODO, and PR-review findings.
+
+**Source A2 — Human decision queue**:
+- Run separately: `gh issue list --label decision-needed --state open --json number,title,labels,milestone`
+- Keep these items in a distinct **human decision queue**. Do not count them as auto-dev work, auto-register duplicates, or implement them without the required decision.
 
 **Source B — Deep-verify findings**:
 - Read the latest deep-verify output from `.codex/outputs/sessions/{today}/`
@@ -30,10 +36,6 @@ Gather unfinished work from multiple sources:
 Sensitive-path compatibility note: when delegated work touches `.claude/outputs/`, `.claude/**`, or `templates/.claude/**`, keep `.codex/**` artifacts on the normal file-write path. On Claude Code v2.1.121+ with `bypassPermissions`, direct compatibility writes are allowed for `.claude/skills/`, `.claude/agents/`, and `.claude/commands/`; on v2.1.126+ broader protected paths are covered. Use `/tmp/<skill>-<timestamp>.md` only as a legacy fallback when the runtime is older or still prompts.
 
 - Extract any MEDIUM or LOW severity findings that were flagged but not fixed
-
-**Source C — Triage deferred items**:
-- Read the latest professor-triage output from `.codex/outputs/sessions/{today}/`
-- Extract items explicitly marked as deferred or P3
 
 **Source D — TODO markers in changed files**:
 - Run: `git diff develop...HEAD --name-only` to get changed files
@@ -47,7 +49,7 @@ Sensitive-path compatibility note: when delegated work touches `.claude/outputs/
 
 ### 2. Deduplicate and Categorize
 
-Remove duplicates (same issue referenced from multiple sources). Categorize:
+Remove duplicates (same issue referenced from multiple sources or already present in the current milestone). Categorize:
 
 | Category | Criteria | Default Action |
 |----------|----------|----------------|
@@ -66,7 +68,7 @@ Auto-register if any condition applies:
 
 Do not auto-register pure cosmetic/style preferences or subjective notes. When ambiguous, lean toward registering; missing a genuine defect costs a future session.
 
-Use `gh issue create --repo baekenough/oh-my-customcodex` with `professor` plus a priority label. Default auto-registered items to `P3`; escalate to `P2` for MEDIUM+ severity.
+Use `gh issue create --repo baekenough/oh-my-customcodex --body-file <path>` with `professor` plus a priority label. Default auto-registered items to `P3`; escalate to `P2` for MEDIUM+ severity. Write the complete body to a local file first so shell quoting cannot corrupt evidence.
 
 ### 3. Present to User
 
@@ -123,11 +125,41 @@ Use AskUserQuestion (or equivalent user prompt) only if there are "즉시 실행
 For auto-registered genuine defects / process gaps:
 
 ```bash
-gh issue create \
+body_file=$(mktemp)
+title_file=$(mktemp)
+cleanup_issue_files() { rm -f "$body_file" "$title_file"; }
+trap cleanup_issue_files EXIT
+cat >"$body_file" <<'EOF'
+## 출처
+
+v{version} 릴리즈 워크플로우에서 자동 등록.
+
+## 컨텍스트
+
+{triage/verify에서의 상세 컨텍스트}
+
+## 권장 조치
+
+{권장 사항}
+EOF
+
+cat >"$title_file" <<'EOF'
+{간결한 설명}
+EOF
+title=$(cat "$title_file")
+
+issue_url=$(gh issue create \
   --repo baekenough/oh-my-customcodex \
-  --title "{간결한 설명}" \
-  --body "## 출처\n\nv{version} 릴리즈 워크플로우에서 자동 등록.\n\n## 컨텍스트\n\n{triage/verify에서의 상세 컨텍스트}\n\n## 권장 조치\n\n{권장 사항}" \
-  --label "professor"
+  --title "$title" \
+  --body-file "$body_file" \
+  --label "professor" \
+  --label "{P2|P3}")
+issue_number=${issue_url##*/}
+gh issue view "$issue_number" \
+  --repo baekenough/oh-my-customcodex \
+  --json number,title,body,labels
+cleanup_issue_files
+trap - EXIT
 ```
 
 Add priority label (`P1`, `P2`, `P3`) based on categorization. Default for auto-registered items: `P3`; escalate to `P2` for MEDIUM+ severity.
@@ -138,6 +170,6 @@ Add priority label (`P1`, `P2`, `P3`) based on categorization. Default for auto-
 - Genuine defect/process gap items are auto-registered as issues without user confirmation
 - Only "즉시 실행" code-changing items require user confirmation
 - All file modifications delegated to specialist subagents per R010
-- Issue creation uses `gh` CLI directly (read-only operation pattern)
+- Issue creation is an explicit mutation and must use the reviewed body file plus direct issue readback
 - If no follow-up candidates found, report "No follow-up actions needed" and complete
 - PR review feedback is available shortly after PR creation — the omc_pr_analyzer bot comments automatically

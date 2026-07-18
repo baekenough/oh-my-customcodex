@@ -227,14 +227,24 @@ describe('serve.ts', () => {
       const buildDir = join(tempDir, 'packages', 'serve', 'build');
       await mkdir(buildDir, { recursive: true });
       await writeFile(join(buildDir, 'index.js'), 'setInterval(() => {}, 1000);');
+      let childEnvironment: NodeJS.ProcessEnv | undefined;
 
       const result = await startServeBackground(
         tempDir,
         7333,
         { skipNpmFallback: true },
-        { stateDir: tempDir, now: () => new Date('2026-07-13T00:00:00.000Z') }
+        {
+          stateDir: tempDir,
+          now: () => new Date('2026-07-13T00:00:00.000Z'),
+          spawnProcess: (command, args, options) => {
+            childEnvironment = options.env;
+            return spawn(command, args, options);
+          },
+        }
       );
       expect(result.kind).toBe('started');
+      expect(childEnvironment?.OMCODEX_HOST).toBe('127.0.0.1');
+      expect(childEnvironment?.OMCUSTOM_HOST).toBe('127.0.0.1');
       expect(JSON.parse(await readFile(stateFile, 'utf8'))).toMatchObject({
         version: 1,
         port: 7333,

@@ -737,6 +737,74 @@ describe('shell-reserved-var-advisor.sh', () => {
     expect(result.stderr).not.toContain('reserved shell variable assignment');
   });
 
+  it.each([
+    'status=1',
+    'path=/tmp/output',
+    'argv="--json"',
+  ])('warns for reserved assignment %s while remaining advisory', async (command) => {
+    const result = await runHookScript(SHELL_RESERVED_VAR_ADVISOR_SCRIPT, makeBashInput(command));
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('reserved shell variable assignment');
+  });
+
+  it('warns for an unquoted gh api query URL but not a quoted URL', async () => {
+    const unsafe = await runHookScript(
+      SHELL_RESERVED_VAR_ADVISOR_SCRIPT,
+      makeBashInput('gh api /repos/o/r/actions/runs?status=completed&per_page=100')
+    );
+    const safe = await runHookScript(
+      SHELL_RESERVED_VAR_ADVISOR_SCRIPT,
+      makeBashInput('gh api "/repos/o/r/actions/runs?status=completed&per_page=100"')
+    );
+    expect(unsafe.exitCode).toBe(0);
+    expect(unsafe.stderr).toContain('quote gh api URLs');
+    expect(safe.stderr).not.toContain('quote gh api URLs');
+  });
+
+  it('finds an unquoted gh api URL after read-only flags', async () => {
+    const result = await runHookScript(
+      SHELL_RESERVED_VAR_ADVISOR_SCRIPT,
+      makeBashInput('gh api --method GET /repos/o/r/actions/runs?per_page=100')
+    );
+    expect(result.stderr).toContain('quote gh api URLs');
+  });
+
+  it('warns for inline gh api mutation bodies and accepts staged --input JSON', async () => {
+    for (const flag of ['-f', '-F']) {
+      const unsafe = await runHookScript(
+        SHELL_RESERVED_VAR_ADVISOR_SCRIPT,
+        makeBashInput(`gh api repos/o/r/issues/1 ${flag} body='long markdown'`)
+      );
+      expect(unsafe.stderr).toContain('stage mutation bodies');
+    }
+    const safe = await runHookScript(
+      SHELL_RESERVED_VAR_ADVISOR_SCRIPT,
+      makeBashInput('gh api repos/o/r/issues/1 --method PATCH --input "$payload_json"')
+    );
+    expect(safe.stderr).not.toContain('stage mutation bodies');
+  });
+
+  it('warns when a double-quoted EXIT trap expands a temp path at registration', async () => {
+    const unsafe = await runHookScript(
+      SHELL_RESERVED_VAR_ADVISOR_SCRIPT,
+      makeBashInput('body_file=$(mktemp); trap "rm -f $body_file" EXIT')
+    );
+    const safe = await runHookScript(
+      SHELL_RESERVED_VAR_ADVISOR_SCRIPT,
+      makeBashInput('cleanup() { rm -f "$body_file"; }; trap cleanup EXIT')
+    );
+    expect(unsafe.stderr).toContain('EXIT trap');
+    expect(safe.stderr).not.toContain('EXIT trap');
+  });
+
+  it('does not warn for harmless read-only gh commands', async () => {
+    const result = await runHookScript(
+      SHELL_RESERVED_VAR_ADVISOR_SCRIPT,
+      makeBashInput('gh issue view 1669 --json number,title,state')
+    );
+    expect(result.stderr).toBe('');
+  });
+
   it('has valid bash syntax', async () => {
     const result = await bashSyntaxCheck(SHELL_RESERVED_VAR_ADVISOR_SCRIPT);
     expect(result.exitCode).toBe(0);

@@ -108,7 +108,9 @@ while keeping mechanical implementation at the lowest sufficient effort.
 
 ### Parallel Execution
 
-Independent tasks run in parallel (R009). Up to 4 concurrent agents per message:
+Independent tasks run in parallel (R009). The repository harness soft/default
+dispatch size is 4 with a hard cap of 5; Codex/OMX native capacity is
+runtime-defined and may provide fewer available slots:
 
 ```
 Agent(lang-golang-expert):frontier/high  ┐
@@ -235,7 +237,7 @@ they are not Codex-native Starlark command rules.
 | Priority | Count | Purpose |
 |----------|-------|---------|
 | **MUST** | 14 | Safety, permissions, agent design, identification, orchestration, verification, completion, enforcement |
-| **SHOULD** | 7 | Interaction, error handling, memory, HUD, ecomode, ontology routing, verification ladder |
+| **SHOULD** | 8 | Interaction, error handling, memory, HUD, ecomode, ontology routing, verification ladder, wiki sync |
 | **MAY** | 1 | Optimization |
 
 Key rules: R010 (orchestrator never writes files), R009 (parallel execution mandatory), R017 (sauron verification before push), R020 (completion verification before declaring done), R021 (advisory-first enforcement model), R023 (verification ladder).

@@ -103,14 +103,14 @@
         "description": "Block Bash/Write/Edit writes into .claude/ sensitive paths before Claude Code permission prompts fire"
       },
       {
-        "matcher": "tool == \"Bash\" && tool_input.command matches \"(^|[[:space:];&|])(status|path|argv)[[:space:]]*=\"",
+        "matcher": "tool == \"Bash\" && tool_input.command matches \"(status|path|argv)[[:space:]]*=|gh[[:space:]]+api|trap[[:space:]]+\"",
         "hooks": [
           {
             "type": "command",
             "command": "bash ${PLUGIN_ROOT}/hooks/scripts/shell-reserved-var-advisor.sh"
           }
         ],
-        "description": "Warn on zsh/bash reserved variable assignments such as status=, path=, or argv= before shell execution (R020/#1491)"
+        "description": "Advisory checks for reserved variable assignments, unquoted gh api URLs, inline gh api bodies, and eager double-quoted EXIT trap expansion"
       },
       {
         "matcher": "tool == \"Bash\"",

@@ -23,6 +23,14 @@ export const WORKFLOW_INVENTORY_GUARDS = [
   'tests/unit/core/release-workflow.test.ts',
 ] as const;
 
+export const RELEASE_LIFECYCLE_REGRESSION_FILES = [
+  'tests/apply-triage-draft.test.js',
+  'tests/resolve-release-target.test.js',
+  'tests/safe-command-payload.test.js',
+  'tests/verify-release-contract.test.js',
+  'tests/unit/core/release-lifecycle-guidance.test.ts',
+] as const;
+
 interface WorkflowDefinition {
   jobs?: {
     test?: {

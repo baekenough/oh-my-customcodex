@@ -300,6 +300,40 @@ describe('Template Validation', () => {
       }
     });
 
+    it('documents the R009 harness soft and hard limits separately from native capacity', async () => {
+      for (const relativePath of [
+        'README.md',
+        'templates/AGENTS.md.en',
+        'templates/CLAUDE.md.en',
+      ]) {
+        const content = await readFile(join(PROJECT_ROOT, relativePath), 'utf-8');
+        expect(content).toMatch(/harness soft\/default[\s\S]{0,80}4/i);
+        expect(content).toMatch(/hard cap[\s\S]{0,40}5/i);
+        expect(content).toMatch(/Codex\/OMX native capacity[\s\S]{0,80}runtime-defined/i);
+      }
+
+      for (const relativePath of [
+        'README_ko.md',
+        'templates/AGENTS.md.ko',
+        'templates/CLAUDE.md',
+        'templates/CLAUDE.md.ko',
+      ]) {
+        const content = await readFile(join(PROJECT_ROOT, relativePath), 'utf-8');
+        expect(content).toMatch(/하네스 soft\/default[\s\S]{0,80}4/i);
+        expect(content).toMatch(/hard cap[\s\S]{0,40}5/i);
+        expect(content).toMatch(/Codex\/OMX native capacity[\s\S]{0,80}런타임/i);
+      }
+    });
+
+    it('keeps the public rule priority split aligned with the 23-rule inventory', async () => {
+      for (const relativePath of ['README.md', 'README_ko.md']) {
+        const content = await readFile(join(PROJECT_ROOT, relativePath), 'utf-8');
+        expect(content).toMatch(/\|\s*\*\*MUST\*\*\s*\|\s*14\s*\|/);
+        expect(content).toMatch(/\|\s*\*\*SHOULD\*\*\s*\|\s*8\s*\|/);
+        expect(content).toMatch(/\|\s*\*\*MAY\*\*\s*\|\s*1\s*\|/);
+      }
+    });
+
     it('keeps the tracked ontology launcher on the Codex-native directory', async () => {
       const mcpConfig = JSON.parse(await readFile(join(PROJECT_ROOT, '.mcp.json'), 'utf-8')) as {
         mcpServers: { 'ontology-rag': { env: { ONTOLOGY_DIR: string } } };

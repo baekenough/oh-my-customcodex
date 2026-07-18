@@ -3,7 +3,7 @@
   "workspaces": [
     "packages/*"
   ],
-  "version": "1.0.23",
+  "version": "1.0.24",
   "requiresCC": ">=2.1.121",
   "claudeCode": {
     "minimumVersion": "2.1.121",
@@ -46,6 +46,7 @@
     "format": "biome format --write src/ tests/ scripts/",
     "typecheck": "tsc --noEmit",
     "verify:package": "node scripts/verify-package-contract.mjs",
+    "verify:release:offline": "bun run build && node scripts/verify-release-offline.mjs",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "prepare": "sh scripts/setup-hooks.sh",

@@ -68,16 +68,69 @@ describe('public package contract', () => {
   it('makes both registry artifact contracts mandatory before publishing', () => {
     expect(packageJson.scripts['verify:package']).toBe('node scripts/verify-package-contract.mjs');
     expect(packageJson.scripts.prepublishOnly).toContain('bun run verify:package');
-    expect(ciWorkflow).toContain('bun run verify:package');
+    expect(ciWorkflow).toContain('node scripts/verify-release-contract.mjs');
     expect(packageVerifier).toContain("SCOPED_PACKAGE_NAME = '@baekenough/oh-my-customcodex'");
     expect(packageVerifier).toContain('assertArtifactParity(unscopedArtifact, scopedArtifact)');
     expect(packageVerifier).toContain('packageName: SCOPED_PACKAGE_NAME');
     expect(packageVerifier).toContain('npm 10 still prints `prepare` lifecycle output');
     expect(packageVerifier).toContain("join(setupHooksDirectory, 'setup-hooks.sh')");
-    expect(releaseWorkflow).toContain('Verify npm and GitHub Packages artifact parity');
-    expect(releaseWorkflow).toContain('node scripts/verify-package-contract.mjs --skip-build');
+    expect(releaseWorkflow).toContain('Verify offline release contract');
+    expect(releaseWorkflow).toContain('Run canonical live verifier');
+    expect(releaseWorkflow).not.toContain('node scripts/verify-package-contract.mjs --skip-build');
     expect(releaseWorkflow).toContain('.name = "@baekenough/oh-my-customcodex"');
     expect(releaseWorkflow).toContain('"registry": "https://npm.pkg.github.com"');
     expect(releaseWorkflow).toContain('needs: [test, docs-validate]');
+  });
+
+  it('keeps the source-checkout offline release command build-first, version-dynamic, and rerunnable', async () => {
+    const offlineRelease = packageJson.scripts['verify:release:offline'];
+    const offlineWrapperFile = Bun.file(
+      new URL('../../../scripts/verify-release-offline.mjs', import.meta.url)
+    );
+
+    expect(offlineRelease).toBe('bun run build && node scripts/verify-release-offline.mjs');
+    expect(await offlineWrapperFile.exists()).toBe(true);
+    const offlineWrapper = await offlineWrapperFile.text();
+    expect(offlineWrapper).toContain("'--mode', 'offline'");
+    expect(offlineWrapper).toContain("'--evidence-dir'");
+    expect(offlineWrapper).toContain('randomUUID()');
+    expect(offlineWrapper).toContain('tmpdir()');
+    expect(offlineWrapper).not.toContain('tmp/release-evidence/offline');
+    expect(offlineWrapper).not.toContain('mkdir');
+    expect(offlineRelease).not.toMatch(/\b\d+\.\d+\.\d+\b/);
+    expect(offlineRelease).not.toContain('env -u');
+    expect(offlineRelease).not.toContain('--canonical-lock-output');
+  });
+
+  it('enables lifecycle scripts only inside fully isolated clean consumers', () => {
+    const consumerFunction = packageVerifier.slice(
+      packageVerifier.indexOf('async function verifyCleanConsumer'),
+      packageVerifier.indexOf('async function main')
+    );
+    expect(consumerFunction).not.toContain("'--ignore-scripts'");
+    expect(consumerFunction).toContain("npm_config_ignore_scripts: 'false'");
+    expect(consumerFunction).toContain('npm_config_userconfig');
+    expect(consumerFunction).toContain('npm_config_cache');
+    expect(consumerFunction).toContain('npm_config_prefix');
+    expect(consumerFunction).toContain('CODEX_HOME');
+    expect(consumerFunction).toContain('delete consumerEnv.NODE_PATH');
+  });
+
+  it('verifies the fifth validated handler and foreign PreToolUse preservation', () => {
+    expect(packageVerifier).toContain("'shell-reserved-var-advisor.sh'");
+    expect(packageVerifier).toContain('foreign PreToolUse group order or content changed');
+    expect(packageVerifier).toContain("hook.command.includes('# omcustomcodex-hook:')");
+    expect(packageVerifier).toContain('assertManagedHookMarkersExactlyOnce');
+    expect(packageVerifier).toContain('managed hook marker must appear exactly once');
+    expect(
+      packageVerifier.match(/assertManagedHookMarkersExactlyOnce\(/g)?.length
+    ).toBeGreaterThanOrEqual(3);
+    expect(packageVerifier).toContain('foreign hook command executed during install');
+    expect(packageVerifier).toContain('foreign hook command executed during update');
+    expect(packageVerifier).toContain(
+      'native hook update overwrote a user-modified managed script'
+    );
+    expect(packageVerifier).toContain('second native hook update changed the registry bytes');
+    expect(packageVerifier).toContain('second native hook update changed the user-modified script');
   });
 });

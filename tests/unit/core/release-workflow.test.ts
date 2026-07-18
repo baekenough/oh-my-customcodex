@@ -5,6 +5,7 @@ import {
   CRITICAL_NATIVE_REGRESSION_FILES,
   extractStableBatchInventory,
   extractTestJobEnvironment,
+  RELEASE_LIFECYCLE_REGRESSION_FILES,
   WORKFLOW_INVENTORY_GUARDS,
 } from './workflow-test-inventory.js';
 
@@ -13,6 +14,14 @@ const RELEASE_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/re
 
 async function readWorkflow(): Promise<string> {
   return readFile(RELEASE_WORKFLOW, 'utf-8');
+}
+
+function extractJob(content: string, jobName: string): string {
+  const start = content.search(new RegExp(`^  ${jobName}:`, 'm'));
+  expect(start).toBeGreaterThan(-1);
+  const rest = content.slice(start);
+  const nextJob = rest.slice(1).search(/^ {2}[a-zA-Z0-9_-]+:/m);
+  return nextJob === -1 ? rest : rest.slice(0, nextJob + 1);
 }
 
 describe('release.yml — file existence', () => {
@@ -38,10 +47,14 @@ describe('release.yml — stable Bun test inventory', () => {
     });
   });
 
-  it('includes every v1.0.10 native regression and both inventory guards', async () => {
+  it('includes every critical native and release-lifecycle regression plus both inventory guards', async () => {
     const inventory = extractStableBatchInventory(await readWorkflow());
 
-    for (const testPath of [...CRITICAL_NATIVE_REGRESSION_FILES, ...WORKFLOW_INVENTORY_GUARDS]) {
+    for (const testPath of [
+      ...CRITICAL_NATIVE_REGRESSION_FILES,
+      ...RELEASE_LIFECYCLE_REGRESSION_FILES,
+      ...WORKFLOW_INVENTORY_GUARDS,
+    ]) {
       expect(inventory).toContain(testPath);
     }
   });
@@ -124,29 +137,98 @@ describe('release.yml — publish safeguards', () => {
     expect(content).not.toContain('Will use auto-generated release notes');
   });
 
-  it('should verify GitHub Packages through authenticated Packages API with exact version matching', async () => {
-    const content = await readWorkflow();
-
-    expect(content).not.toContain('continue-on-error: true');
-    expect(content).toContain(
-      'PACKAGE_API="/users/baekenough/packages/npm/oh-my-customcodex/versions?per_page=100"'
-    );
-    expect(content).toContain('GH_TOKEN: $' + '{{ secrets.GITHUB_TOKEN }}');
-    expect(content).toContain('jq -r --arg version "$' + '{VERSION}"');
-    expect(content).toContain('map(select(.name == $version)) | first | .name // ""');
-    expect(content).toContain(
-      '@baekenough/oh-my-customcodex@$' + '{VERSION} confirmed by Packages API'
-    );
+  it('runs the canonical offline verifier once after build and uploads its safe manifest', async () => {
+    const testJob = extractJob(await readWorkflow(), 'test');
+    const buildIndex = testJob.indexOf('- name: Build');
+    const verifierIndex = testJob.indexOf('node scripts/verify-release-contract.mjs');
+    expect(verifierIndex).toBeGreaterThan(buildIndex);
+    expect(testJob.match(/node scripts\/verify-release-contract\.mjs/g)).toHaveLength(1);
+    expect(testJob).toContain('--mode offline');
+    expect(testJob).not.toContain('node scripts/verify-package-contract.mjs');
+    expect(testJob).toContain('name: offline-release-evidence');
   });
 
-  it('should fail GitHub Packages verification on auth/config errors and retry only eventual consistency', async () => {
-    const content = await readWorkflow();
+  it('verifies the exact tag through the canonical live verifier before registry evidence upload', async () => {
+    const verifyJob = extractJob(await readWorkflow(), 'verify-release');
+    const checkoutIndex = verifyJob.indexOf('- name: Checkout tagged source');
+    const credentialBoundaryIndex = verifyJob.indexOf(
+      '- name: Assert checkout credential boundary'
+    );
+    const prefetchIndex = verifyJob.indexOf(
+      '- name: Prefetch trusted release inputs without lifecycle scripts'
+    );
+    const liveIndex = verifyJob.indexOf('- name: Run canonical live verifier');
+    const uploadIndex = verifyJob.indexOf('- name: Upload live release evidence');
+    const prefetchStep = verifyJob.slice(prefetchIndex, liveIndex);
+    const liveStep = verifyJob.slice(liveIndex, uploadIndex);
+    expect(verifyJob).toContain(
+      'permissions:\n      actions: read\n      contents: read\n      packages: read'
+    );
+    expect(verifyJob).not.toContain('contents: write');
+    expect(verifyJob).not.toContain('packages: write');
+    expect(verifyJob).not.toContain('id-token: write');
+    expect(verifyJob).toContain('fetch-depth: 0');
+    expect(verifyJob.slice(checkoutIndex, prefetchIndex)).toContain('persist-credentials: false');
+    expect(credentialBoundaryIndex).toBeGreaterThan(prefetchIndex);
+    expect(credentialBoundaryIndex).toBeLessThan(liveIndex);
+    expect(verifyJob.slice(credentialBoundaryIndex, liveIndex)).toContain(
+      'git config --local --get-regexp'
+    );
+    expect(verifyJob.slice(credentialBoundaryIndex, liveIndex)).toContain(
+      'http\\..*\\.extraheader'
+    );
+    expect(verifyJob).toContain('name: offline-release-evidence');
+    expect(verifyJob).toContain('sha256sum --check SHA256SUMS');
+    expect(verifyJob).toContain('node scripts/verify-release-contract.mjs');
+    expect(verifyJob).toContain('--mode live');
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal GitHub Actions expression
+    expect(verifyJob).toContain('--expected-source-sha "${{ github.sha }}"');
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal shell expression
+    expect(verifyJob).toContain('--tag "v${VERSION}"');
+    expect(verifyJob).toContain('chmod 0600');
+    expect(verifyJob).toContain("'ignore-scripts=true'");
+    expect(prefetchIndex).toBeGreaterThan(-1);
+    expect(liveIndex).toBeGreaterThan(prefetchIndex);
+    expect(prefetchStep.indexOf(`git rev-parse "v\${VERSION}^{commit}"`)).toBeLessThan(
+      prefetchStep.indexOf(`npm view "oh-my-customcodex@\${VERSION}"`)
+    );
+    expect(prefetchStep.indexOf(`git rev-parse "v\${VERSION}^{commit}"`)).toBeLessThan(
+      prefetchStep.indexOf(`gh release view "v\${VERSION}"`)
+    );
+    expect(prefetchStep).toContain('npm pack --ignore-scripts');
+    expect(prefetchStep).toContain('cleanup_auth');
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal shell variable assertion
+    expect(prefetchStep).toContain('npmrc_file="${RUNNER_TEMP}/omcustomcodex-release-');
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal shell variable assertion
+    expect(prefetchStep).toContain('chmod 0600 "${npmrc_file}"');
+    expect(prefetchStep).toContain('trap cleanup_auth EXIT');
+    expect(prefetchStep).toContain(`NODE_AUTH_TOKEN: \${{ secrets.GITHUB_TOKEN }}`);
+    expect(liveStep).toContain('--live-input-dir');
+    expect(liveStep).toContain(`unset "\${name}"`);
+    expect(liveStep).toContain(
+      'unset GITHUB_OUTPUT GITHUB_ENV GITHUB_PATH GITHUB_STATE GITHUB_STEP_SUMMARY'
+    );
+    expect(
+      liveStep.indexOf(
+        'unset GITHUB_OUTPUT GITHUB_ENV GITHUB_PATH GITHUB_STATE GITHUB_STEP_SUMMARY'
+      )
+    ).toBeLessThan(liveStep.indexOf('node scripts/verify-release-contract.mjs'));
+    expect(liveStep).not.toContain('GH_TOKEN:');
+    expect(liveStep).not.toContain('NODE_AUTH_TOKEN:');
+    expect(verifyJob).toContain("steps.live_verify.outputs.evidence_safe == 'true'");
+    expect(verifyJob).toContain('if: always()');
+    expect(liveStep).not.toContain('npm view');
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal GitHub Actions expression
+    expect(verifyJob).not.toContain('gh api repos/${{ github.repository }}/releases/tags/');
+  });
 
-    expect(content).toContain("grep -qE 'HTTP 404|Not Found'");
-    expect(content).toContain('treating as eventual consistency');
-    expect(content).toContain('GitHub Packages API verification failed before exact version check');
-    expect(content).toContain('was not confirmed after $' + '{MAX_ATTEMPTS} attempts');
-    expect(content).toContain('exit 1');
-    expect(content).toContain('API ERROR');
+  it('suppresses tainted artifacts and fails only after the safe upload opportunity', async () => {
+    const verifyJob = extractJob(await readWorkflow(), 'verify-release');
+    const verifyIndex = verifyJob.indexOf('- name: Run canonical live verifier');
+    const uploadIndex = verifyJob.indexOf('- name: Upload live release evidence');
+    const failIndex = verifyJob.indexOf('- name: Enforce live verification result');
+    expect(uploadIndex).toBeGreaterThan(verifyIndex);
+    expect(failIndex).toBeGreaterThan(uploadIndex);
+    expect(verifyJob).toContain('unsafe evidence suppressed');
   });
 });

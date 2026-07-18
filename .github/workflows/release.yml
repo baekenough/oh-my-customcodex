@@ -243,6 +243,12 @@ jobs:
             tests/unit/serve/agent-generator.test.ts \
             tests/unit/serve/create-routes.integration.test.ts \
             tests/unit/serve/generation-provider.test.ts
+          run_bun_batch "release-lifecycle-contracts" \
+            tests/apply-triage-draft.test.js \
+            tests/resolve-release-target.test.js \
+            tests/safe-command-payload.test.js \
+            tests/verify-release-contract.test.js \
+            tests/unit/core/release-lifecycle-guidance.test.ts
           run_bun_batch "workflow-test-inventory" \
             tests/unit/core/ci-workflow.test.ts \
             tests/unit/core/release-workflow.test.ts
@@ -250,8 +256,25 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Verify npm and GitHub Packages artifact parity
-        run: node scripts/verify-package-contract.mjs --skip-build
+      - name: Verify offline release contract
+        id: offline_verify
+        env:
+          RELEASE_EVIDENCE_DIR: /tmp/omcustomcodex-release-${{ github.run_id }}-${{ github.run_attempt }}-offline
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          node scripts/verify-release-contract.mjs \
+            --mode offline \
+            --version "$PACKAGE_VERSION" \
+            --evidence-dir "$RELEASE_EVIDENCE_DIR"
+
+      - name: Upload offline release evidence
+        if: always() && steps.offline_verify.outputs.evidence_safe == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: offline-release-evidence
+          path: /tmp/omcustomcodex-release-${{ github.run_id }}-${{ github.run_attempt }}-offline
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7
@@ -488,108 +511,220 @@ jobs:
     name: Verify Release
     needs: [publish]
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      packages: read
     steps:
-      - name: Extract version
-        id: version
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Checkout tagged source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
-      - name: Verify npm publish
-        run: |
-          VERSION=${{ steps.version.outputs.version }}
-          for i in 1 2 3; do
-            PUBLISHED=$(npm view oh-my-customcodex@${VERSION} version 2>/dev/null || true)
-            if [ "$PUBLISHED" = "$VERSION" ]; then
-              echo "✓ npm: oh-my-customcodex@${VERSION} confirmed"
-              exit 0
-            fi
-            echo "Attempt $i: not found yet, waiting 30s..."
-            sleep 30
-          done
-          echo "::error::npm package not found after 3 attempts: oh-my-customcodex@${VERSION}"
-          exit 1
+      - name: Setup Node.js at the supported floor
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: '20.17.0'
 
-      - name: Verify GitHub Packages publish
+      - name: Download offline release evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: offline-release-evidence
+          path: ${{ runner.temp }}/release-evidence/offline-prior
+
+      - name: Validate reusable offline evidence
+        run: |
+          EVIDENCE_ROOT="${{ runner.temp }}/release-evidence/offline-prior"
+          MANIFEST="${EVIDENCE_ROOT}/manifest.json"
+          test -f "$MANIFEST"
+          (cd "$EVIDENCE_ROOT" && sha256sum --check SHA256SUMS)
+          jq -e \
+            --arg source_sha "${{ github.sha }}" \
+            '.mode == "offline" and .overall == "PASS" and .evidence_safe == true and .sourceSha == $source_sha' \
+            "$MANIFEST" >/dev/null
+
+      - name: Prefetch trusted release inputs without lifecycle scripts
         shell: bash
         run: |
           set -euo pipefail
+          VERSION=${GITHUB_REF#refs/tags/v}
+          EXPECTED_SOURCE_SHA="${{ github.sha }}"
+          PEELED_SOURCE_SHA=$(git rev-parse "v${VERSION}^{commit}")
+          test "${PEELED_SOURCE_SHA}" = "${EXPECTED_SOURCE_SHA}"
 
-          VERSION=${{ steps.version.outputs.version }}
-          PACKAGE_API="/users/baekenough/packages/npm/oh-my-customcodex/versions?per_page=100"
-          MAX_ATTEMPTS=3
+          INPUT_ROOT="/tmp/omcustomcodex-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-input"
+          test ! -e "${INPUT_ROOT}"
+          install -d -m 0700 "${INPUT_ROOT}"
+          npmrc_file="${RUNNER_TEMP}/omcustomcodex-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-auth.npmrc"
+          umask 077
+          printf '%s\n' \
+            'ignore-scripts=true' \
+            '@baekenough:registry=https://npm.pkg.github.com' \
+            "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >"${npmrc_file}"
+          chmod 0600 "${npmrc_file}"
+          cleanup_auth() { rm -f "${npmrc_file}"; }
+          trap cleanup_auth EXIT
+          export npm_config_userconfig="${npmrc_file}"
+          export npm_config_ignore_scripts=true
 
-          for ((attempt=1; attempt<=MAX_ATTEMPTS; attempt++)); do
-            body_file=$(mktemp)
-            err_file=$(mktemp)
-
-            set +e
-            gh api "${PACKAGE_API}" >"${body_file}" 2>"${err_file}"
-            api_exit=$?
-            set -e
-
-            if [ "${api_exit}" -ne 0 ]; then
-              error_text=$(cat "${err_file}")
-              rm -f "${body_file}" "${err_file}"
-
-              if grep -qE 'HTTP 404|Not Found' <<<"${error_text}"; then
-                echo "Attempt ${attempt}/${MAX_ATTEMPTS}: GitHub Packages API returned 404; treating as eventual consistency."
-              else
-                echo "::error::GitHub Packages API verification failed before exact version check: ${error_text}"
-                exit "${api_exit}"
+          retry_to_file() {
+            local destination=$1
+            shift
+            for attempt in 1 2 3; do
+              if "$@" >"${destination}"; then return 0; fi
+              if [ "${attempt}" -lt 3 ]; then sleep 20; fi
+            done
+            return 1
+          }
+          pack_exact() {
+            local output=$1
+            shift
+            local download="${INPUT_ROOT}/download-$(basename "${output}" .tgz)"
+            for attempt in 1 2 3; do
+              rm -rf "${download}"
+              install -d -m 0700 "${download}"
+              if npm pack --ignore-scripts --pack-destination "${download}" "$@"; then
+                shopt -s nullglob
+                local candidates=("${download}"/*.tgz)
+                shopt -u nullglob
+                if [ "${#candidates[@]}" -eq 1 ]; then
+                  mv -- "${candidates[0]}" "${output}"
+                  rm -rf "${download}"
+                  return 0
+                fi
               fi
-            else
-              PUBLISHED=$(jq -r --arg version "${VERSION}" 'map(select(.name == $version)) | first | .name // ""' "${body_file}")
-              rm -f "${body_file}" "${err_file}"
+              if [ "${attempt}" -lt 3 ]; then sleep 20; fi
+            done
+            return 1
+          }
 
-              if [ "${PUBLISHED}" = "${VERSION}" ]; then
-                echo "✓ GitHub Packages: @baekenough/oh-my-customcodex@${VERSION} confirmed by Packages API"
-                exit 0
-              fi
+          retry_to_file "${INPUT_ROOT}/npm.json" \
+            npm view "oh-my-customcodex@${VERSION}" name version dist.integrity dist.tarball --json
+          retry_to_file "${INPUT_ROOT}/github-packages.json" \
+            npm view "@baekenough/oh-my-customcodex@${VERSION}" name version dist.integrity dist.tarball \
+              --json --registry=https://npm.pkg.github.com
+          retry_to_file "${INPUT_ROOT}/github-release.json" \
+            gh release view "v${VERSION}" --repo "${{ github.repository }}" --json tagName,url
+          pack_exact "${INPUT_ROOT}/unscoped.tgz" "oh-my-customcodex@${VERSION}"
+          pack_exact "${INPUT_ROOT}/scoped.tgz" \
+            "@baekenough/oh-my-customcodex@${VERSION}" --registry=https://npm.pkg.github.com
 
-              echo "Attempt ${attempt}/${MAX_ATTEMPTS}: exact GitHub Packages version @baekenough/oh-my-customcodex@${VERSION} not found yet."
-            fi
-
-            if [ "${attempt}" -lt "${MAX_ATTEMPTS}" ]; then
-              sleep 30
-            fi
-          done
-
-          echo "::error::GitHub Packages exact version @baekenough/oh-my-customcodex@${VERSION} was not confirmed after ${MAX_ATTEMPTS} attempts"
-          exit 1
+          npm_sha=$(sha256sum "${INPUT_ROOT}/unscoped.tgz" | cut -d ' ' -f 1)
+          ghp_sha=$(sha256sum "${INPUT_ROOT}/scoped.tgz" | cut -d ' ' -f 1)
+          jq -n \
+            --arg version "${VERSION}" \
+            --arg tag "v${VERSION}" \
+            --arg source_sha "${EXPECTED_SOURCE_SHA}" \
+            --arg repository "${{ github.repository }}" \
+            --arg npm_sha "${npm_sha}" \
+            --arg ghp_sha "${ghp_sha}" \
+            --slurpfile npm "${INPUT_ROOT}/npm.json" \
+            --slurpfile ghp "${INPUT_ROOT}/github-packages.json" \
+            --slurpfile release "${INPUT_ROOT}/github-release.json" \
+            '{
+              schemaVersion: 1,
+              version: $version,
+              tag: $tag,
+              expectedSourceSha: $source_sha,
+              repository: $repository,
+              registries: {npm: $npm[0], githubPackages: $ghp[0]},
+              githubRelease: $release[0],
+              artifacts: {
+                unscoped: {file: "unscoped.tgz", sha256: $npm_sha},
+                scoped: {file: "scoped.tgz", sha256: $ghp_sha}
+              }
+            }' >"${INPUT_ROOT}/external-state.json"
+          rm -f \
+            "${INPUT_ROOT}/npm.json" \
+            "${INPUT_ROOT}/github-packages.json" \
+            "${INPUT_ROOT}/github-release.json"
+          chmod 0600 "${INPUT_ROOT}"/*
+          cleanup_auth
+          unset GH_TOKEN GITHUB_TOKEN NODE_AUTH_TOKEN NPM_TOKEN npm_config_userconfig
+          trap - EXIT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify GitHub Release
+      - name: Assert checkout credential boundary
+        shell: bash
         run: |
-          VERSION=${{ steps.version.outputs.version }}
-          RELEASE=$(gh api repos/${{ github.repository }}/releases/tags/v${VERSION} \
-            --jq '.tag_name' 2>/dev/null || true)
-          if [ "$RELEASE" = "v${VERSION}" ]; then
-            echo "✓ GitHub Release: v${VERSION} confirmed"
-          else
-            echo "::error::GitHub Release not found for v${VERSION}"
+          set -euo pipefail
+          credential_pattern='^(http\..*\.extraheader|credential(\..*)?\.(helper|username|password|token))$'
+          if git config --local --get-regexp "${credential_pattern}" >/dev/null 2>&1; then
+            echo "::error::checkout-local Git credential configuration remained before lifecycle execution"
             exit 1
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          isolated_git_home="/tmp/omcustomcodex-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-git-home"
+          test ! -e "${isolated_git_home}"
+          install -d -m 0700 "${isolated_git_home}"
+          if HOME="${isolated_git_home}" git config --global --get-regexp "${credential_pattern}" >/dev/null 2>&1; then
+            echo "::error::isolated lifecycle HOME contains Git credential configuration"
+            exit 1
+          fi
+          rmdir "${isolated_git_home}"
 
-      - name: Summary
-        if: always()
+      - name: Run canonical live verifier
+        id: live_verify
+        shell: bash
         run: |
-          VERSION=${{ steps.version.outputs.version }}
-          echo "## Release Verification: v${VERSION}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Target | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
-          NPM=$(npm view oh-my-customcodex@${VERSION} version 2>/dev/null || echo "NOT FOUND")
-          GHP=$(gh api "/users/baekenough/packages/npm/oh-my-customcodex/versions?per_page=100" \
-            --jq "map(select(.name == \"${VERSION}\")) | first | .name // \"NOT FOUND\"" \
-            2>/dev/null || echo "API ERROR")
-          GHR=$(gh api repos/${{ github.repository }}/releases/tags/v${VERSION} \
-            --jq '.tag_name' 2>/dev/null || echo "NOT FOUND")
-          echo "| npm | ${NPM} |" >> $GITHUB_STEP_SUMMARY
-          echo "| GitHub Packages | ${GHP} |" >> $GITHUB_STEP_SUMMARY
-          echo "| GitHub Release | ${GHR} |" >> $GITHUB_STEP_SUMMARY
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          set -uo pipefail
+          VERSION=${GITHUB_REF#refs/tags/v}
+          workflow_output=${GITHUB_OUTPUT}
+          unset GITHUB_OUTPUT GITHUB_ENV GITHUB_PATH GITHUB_STATE GITHUB_STEP_SUMMARY
+          shopt -s nocasematch
+          while IFS= read -r name; do
+            case "${name}" in
+              GH_TOKEN|GITHUB_TOKEN|NODE_AUTH_TOKEN|NPM_TOKEN|ACTIONS_*_TOKEN|GH_*_TOKEN|GITHUB_*_TOKEN|NPM_CONFIG_*AUTH*|NPM_CONFIG_*TOKEN*|npm_config_*auth*|npm_config_*token*|NODE_OPTIONS|npm_config_node_options|NPM_CONFIG_NODE_OPTIONS|BUN_OPTIONS|NODE_PATH|npm_config_node_path|NPM_CONFIG_NODE_PATH|npm_config_userconfig|NPM_CONFIG_USERCONFIG|npm_config_globalconfig|NPM_CONFIG_GLOBALCONFIG|npm_config_script_shell|NPM_CONFIG_SCRIPT_SHELL|npm_config_registry|NPM_CONFIG_REGISTRY|GH_CONFIG_DIR|GITHUB_WORKSPACE|RUNNER_TEMP|RUNNER_TOOL_CACHE|GIT_CONFIG_PARAMETERS|GIT_CONFIG_COUNT|GIT_CONFIG_KEY_*|GIT_CONFIG_VALUE_*|GIT_CONFIG_GLOBAL|GIT_CONFIG_SYSTEM|GIT_CONFIG_NOSYSTEM|GIT_CEILING_DIRECTORIES|GIT_ASKPASS|SSH_ASKPASS|GIT_SSH|GIT_SSH_COMMAND)
+                unset "${name}"
+                ;;
+            esac
+          done < <(compgen -e)
+          shopt -u nocasematch
+          set +e
+          verifier_json=$(node scripts/verify-release-contract.mjs \
+            --mode live \
+            --version "$VERSION" \
+            --tag "v${VERSION}" \
+            --expected-source-sha "${{ github.sha }}" \
+            --repository "${{ github.repository }}" \
+            --live-input-dir "/tmp/omcustomcodex-release-${{ github.run_id }}-${{ github.run_attempt }}-input" \
+            --evidence-dir "/tmp/omcustomcodex-release-${{ github.run_id }}-${{ github.run_attempt }}-live")
+          verifier_exit=$?
+          set -e
+          printf '%s\n' "${verifier_json}"
+          overall=FAIL
+          evidence_safe=false
+          if printf '%s\n' "${verifier_json}" | jq -e \
+            'has("overall") and has("evidence_safe")' >/dev/null; then
+            overall=$(printf '%s\n' "${verifier_json}" | jq -r '.overall')
+            evidence_safe=$(printf '%s\n' "${verifier_json}" | jq -r '.evidence_safe')
+          fi
+          {
+            echo "exit_code=${verifier_exit}"
+            echo "overall=${overall}"
+            echo "evidence_safe=${evidence_safe}"
+          } >>"${workflow_output}"
+          if [ "${verifier_exit}" -ne 0 ]; then
+            echo "::error::release verification failed; unsafe evidence suppressed by the verifier"
+          fi
+          exit 0
+      - name: Upload live release evidence
+        if: always() && steps.live_verify.outputs.evidence_safe == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: live-release-evidence
+          path: /tmp/omcustomcodex-release-${{ github.run_id }}-${{ github.run_attempt }}-live
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Enforce live verification result
+        if: always()
+        shell: bash
+        run: |
+          if [ "${{ steps.live_verify.outputs.exit_code }}" != "0" ] || [ "${{ steps.live_verify.outputs.overall }}" != "PASS" ]; then
+            echo "::error::Canonical live release verification failed"
+            exit 1
+          fi
+          echo "## Release verification: PASS" >>"${GITHUB_STEP_SUMMARY}"

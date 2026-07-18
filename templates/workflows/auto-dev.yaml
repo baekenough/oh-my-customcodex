@@ -1,8 +1,8 @@
 # /pipeline auto-dev — Full-auto release pipeline
-# Pre-triages open issues and release monitors → triage verify-done → plan → implement → verify → PR/release → publish → followup
+# Measures release state → drafts and reviews triage mutations → plan → commit mutations → implement → verify → release
 
 name: auto-dev
-description: "Full-auto release pipeline: pre-triage → triage → plan → implement → verify → PR → publish → followup"
+description: "Full-auto release pipeline with measured release targets and a reviewed mutation barrier"
 mode: auto
 error: halt-and-report
 observability:
@@ -23,30 +23,22 @@ steps:
       4. If behind > 0 and the worktree is dirty, halt with a manual reconcile message.
       5. Report latest tag, local HEAD, and synced/behind state.
       6. Compare open issue body `vX.Y.Z` references against local git tags and warn on references to missing tags.
-      7. Create required lifecycle labels idempotently: in-progress, verify-ready, needs-review, decision-needed.
-    description: Sync remote state, detect stale version references, and ensure lifecycle labels
-
-  - name: issue-analysis
-    depends_on: preflight-sync
-    parallel:
-      - name: pre-triage
-        skill: professor-triage
-        description: Run professor-triage on open issues that lack verify-done label, including release-monitor labels codex-release and oh-my-codex-release; never terminate from an empty verify-done query alone while release-monitor issues remain
-        condition: "open issues without label:verify-done exist OR open release-monitor issues with label:codex-release or label:oh-my-codex-release exist"
-      - name: triage
-        skill: professor-triage
-        description: Analyze verify-done and release-monitor issues against current codebase and perform automated triage
+      7. Run `node scripts/resolve-release-target.mjs --json` and persist its JSON as the release-target evidence artifact.
+         The resolver must fail closed unless it has measured Git tags, public npm, and authenticated GitHub Packages.
+         Record `gitLatest`, `npmLatest`, `ghpLatest`, `targetVersion`, measurement time, and source SHA; memory is advisory only.
+      8. Read the open issue, label, and milestone inventories without changing them. Include release-monitor queues (`codex-release`, `oh-my-codex-release`) before deciding that no work remains.
+    description: Sync remote state, detect stale references, and measure a collision-free release target
 
   - name: scope-selection
-    depends_on: issue-analysis
+    depends_on: preflight-sync
     prompt: |
-      Select one bounded release scope and protect against stale milestone reuse.
+      Select one bounded release scope from the read-only inventory and protect against stale milestone reuse.
 
       Milestone pre-check:
-      - Query all milestones, open and closed, before creating vX.Y.Z.
+      - Query all milestones, open and closed, for the measured targetVersion.
       - If the target milestone already exists and is closed, halt and require a version bump or manual reopen.
-      - If it exists and is open, reuse it.
-      - If it does not exist, create it and assign scoped issues.
+      - If it exists and is open, record it for reuse in the local draft.
+      - If it does not exist, record an idempotent milestone.ensure action in the local draft; do not create it here.
 
       Label semantics:
       - Reference `.codex/skills/pipeline/labels.md`.
@@ -54,8 +46,8 @@ steps:
       - Prefer verify-ready, codex-release, oh-my-codex-release, claude-code-release, and documentation issues.
       - Sort by P1, P2, P3, then dependency order; cap a release unit at 7 issues.
 
-      Output a release manifest with issue number, title, prerequisite, effort, and labels.
-    description: Milestone state pre-check, label filter, and bounded release scope selection
+      Output a read-only release manifest with issue number, title, prerequisite, effort, and labels.
+    description: Read-only milestone check, label filter, and bounded release scope selection
 
   - name: compression-mode-eval
     depends_on: scope-selection
@@ -92,11 +84,28 @@ steps:
       Output the selected compression_mode for downstream steps.
     description: Evaluate docs-only compression eligibility
 
-  - name: plan
+  - name: triage-draft
     depends_on: compression-mode-eval
+    prompt: |
+      Build a read-only triage draft from the measured release target, issue inventory, and repository evidence.
+
+      - Use native repository exploration and local synthesis; do not execute a mutating triage skill.
+      - Join each proposed action to direct issue, milestone, label, and code evidence.
+      - Preserve the issue's existing priority unless direct evidence justifies a reviewed change.
+      - Write a schemaVersion 1 JSON artifact with `evidenceJoined: true`, repository identity, and timestamped evidenceSources (`id`, `kind`, `source`, `observedAt`).
+      - Give every action a stable id, rationale, and non-empty evidenceRefs that resolve to those sources; only `issue.update`, `label.ensure`, and `milestone.ensure` require a `desired` snapshot.
+      - Include idempotent label.ensure, milestone.ensure, issue.update, or issue.comment actions only when evidence supports them.
+      - Comment actions use a regular non-symlink body file with the exact standalone marker `<!-- triage-action:<action-id> -->`, a complete issue precondition, positive `bodyBytes`, and lowercase `bodySha256` computed from the exact reviewed bytes.
+      - When a comment and issue update share one observed issue snapshot, order the comment before the update. Otherwise bind each later issue action precondition to the preceding desired state; the apply script validates the full sequence before its first write.
+      - Do not set `reviewed: true`; that field belongs to evidence-review.
+      - This step performs zero GitHub mutations.
+    description: Produce a local evidence-joined mutation draft without changing GitHub
+
+  - name: plan
+    depends_on: triage-draft
     skill: release-plan
-    description: Group triaged issues into release units by priority and size; skipped if compression_mode=docs-only
-    input: triage-results
+    description: Group the read-only triage draft into a release unit; skipped if compression_mode=docs-only
+    input: triage-draft
 
   - name: deep-plan
     depends_on: plan
@@ -104,8 +113,31 @@ steps:
     description: Create detailed implementation plan for each release group; skipped if compression_mode=docs-only
     foreach: release-group
 
-  - name: implement
+  - name: evidence-review
     depends_on: deep-plan
+    prompt: |
+      Review the release manifest, implementation plan, and triage draft against direct ground truth.
+
+      - Re-read every referenced issue, label, and milestone and compare it with the draft precondition.
+      - Confirm the evidence join covers every proposed mutation and no action is inferred from stale memory.
+      - For every comment action, reopen the regular non-symlink body file and confirm its exact bytes still match `bodyBytes`, `bodySha256`, and the standalone marker before authorization.
+      - Confirm targetVersion is absent from Git tags, public npm, and authenticated GitHub Packages evidence.
+      - Confirm issue priority is preserved and release-note content yields before original issue context when a body needs fitting.
+      - If any fact is stale or ambiguous, halt before mutation and regenerate the draft.
+      - Reject unknown fields and unresolved evidenceRefs. If all checks pass, write `reviewed: true` and `reviewedAt` into the local artifact and read it back.
+    description: Review joined evidence and authorize the local draft, without mutating GitHub
+
+  - name: mutation-commit
+    depends_on: evidence-review
+    prompt: |
+      Cross the mutation barrier exactly once by applying the reviewed local artifact:
+      `node scripts/apply-triage-draft.mjs --draft <triage-draft.json> --repo <owner/repo> --json`.
+
+      The script must reject stale preconditions, unknown fields, missing rationale/evidence, and malformed comment markers; skip already-satisfied actions; allow only declared action kinds; and perform direct readback after every write. Halt on any mismatch; do not improvise a replacement mutation command.
+    description: Apply only the reviewed mutation draft with idempotency and direct readback
+
+  - name: implement
+    depends_on: mutation-commit
     prompt: |
       Execute implementation plan with appropriate agents.
 
@@ -158,14 +190,11 @@ steps:
       Create release branch and pull request.
 
       Required version preflight for npm package releases:
-      - Determine NEW_VERSION before creating a release branch, PR, or tag.
-      - Version decision (semver) — PATCH-PREFERRED policy from v1.0.0 onward:
-        * No existing tags → v0.1.0.
-        * Previous tag exists → default to patch. When in doubt, patch; do not reflexively bump minor for rule/doc/skill/config/wiki/workflow edits.
-        * patch (DEFAULT): bugfixes, hardening, rule/doc/skill/config/wiki/workflow changes, compatibility notes, and release-process guardrails.
-        * minor: only a genuinely new user-facing capability, such as a new skill/agent/command adding visible surface, not a refinement of an existing one.
-        * major: breaking changes to user-facing contracts (CLI flags, public skill/command names, public API) or a deliberate milestone declaration such as v1.0.0.
-        * If a previous tag is ahead of the source version, use the next available skip-version.
+      - Re-run `node scripts/resolve-release-target.mjs --expected-target <reviewed-target> --json` immediately before the first version mutation.
+      - Determine NEW_VERSION from its targetVersion; do not recompute from memory or a single registry.
+      - The resolver always computes stable max + one patch; expected-target is assertion-only. If it mismatches, halt and re-enter evidence review.
+      - Require the refreshed source SHA to equal current HEAD.
+      - Require targetVersion to remain absent from Git, public npm, and GitHub Packages.
       - Update `package.json` and `templates/manifest.json` to NEW_VERSION in the same commit.
       - Promote `CHANGELOG.md` before the release PR/tag: move non-empty `## [Unreleased]` entries into `## [NEW_VERSION] - YYYY-MM-DD`, then re-create an empty `## [Unreleased]` section above it.
       - If `CHANGELOG.md` has no user/package-visible entry for NEW_VERSION, add a concise release summary before continuing instead of relying on GitHub auto-generated release notes.
@@ -183,23 +212,35 @@ steps:
       - Prefer `git branch -m release releases-tracking` when preservation is
         needed; do not run `git branch -D release` without explicit approval.
       - Re-run the branch-list check before `git switch -c release/vX.Y.Z`.
+
+      External-write ownership gate:
+      - Detect repository-owned tag and release automation before any external write.
+      - When automation owns the transition, merge the reviewed release PR and observe the workflow instead of duplicating its writes.
+      - Do not create or push tags manually while repository automation owns them.
+      - Any manual issue or milestone recovery must use a fresh reviewed local mutation draft, evidence review, `scripts/apply-triage-draft.mjs`, and direct readback.
     description: Create release branch and pull request
 
   - name: publish
     prompt: |
       Publish the validated release artifact after the release PR/branch stage.
 
+      Detect repository-owned tag and release automation before any external write.
+      When automation owns the transition, merge the reviewed release PR and observe the workflow; do not duplicate tag, publication, issue, or milestone writes.
+
       Project-specific behavior:
       - npm package:
         1. Confirm package name and current version from package.json
-        2. Check registry state (`npm view <pkg> version`)
+        2. Check public npm and authenticated GitHub Packages registry state
         3. If version is unchanged but release-worthy, bump semver intentionally
-        4. Run the publish path (`npm publish` or the repo's release workflow trigger)
-        5. Verify registry publication (`npm view <pkg> version`)
+        4. Prefer the repository's release workflow trigger; publish directly only when the documented contract has no automation owner
+        5. Verify publication in both registries, including the expected GitHub Packages version
       - GitHub-release artifact project:
-        1. Create/push tag if required
-        2. Trigger or create the release artifact
+        1. Prove whether repository automation or a documented manual path owns the tag
+        2. Observe the automation, or use the documented manual path only when no automation owner exists
         3. Verify the release exists and assets are available
+
+      Do not create or push tags manually while repository automation owns them.
+      Any manual issue or milestone recovery must use a fresh reviewed local mutation draft, evidence review, `scripts/apply-triage-draft.mjs`, and direct readback.
 
       Halt and report on auth, versioning, or publish verification failures.
     description: Publish the release artifact and verify external availability

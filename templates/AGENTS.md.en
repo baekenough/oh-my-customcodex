@@ -47,7 +47,7 @@ NO EXCEPTIONS. NO EXCUSES.
 |------|------|-------------|
 | R007 Agent ID | Every response starts with `┌─ Agent:` header | Add header immediately |
 | R008 Tool ID | Every tool call prefixed with `[agent][model] → Tool:` | Add prefix immediately |
-| R009 Parallel | 2+ independent tasks → parallel agents (max 4) | Stop sequential, switch to parallel |
+| R009 Parallel | 2+ independent tasks → parallel agents (harness soft/default 4, hard cap 5; Codex/OMX native capacity is runtime-defined) | Stop sequential, switch to parallel |
 | R010 Orchestrator | Orchestrator never modifies files → delegate to subagents | Stop direct modification, delegate |
 
 ---
@@ -136,7 +136,7 @@ project/
 +-- AGENTS.md                    # Entry point
 +-- .codex/
 |   +-- agents/                  # Subagent definitions (50 files)
-|   +-- rules/                   # Harness *.md policy; optional native *.rules exec policy
+|   +-- rules/                   # Harness policies (23 files); optional native *.rules exec policy
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (ecomode)
 +-- .agents/

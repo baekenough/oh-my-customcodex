@@ -151,6 +151,25 @@ case "$handler" in
 $file_paths
 EOF
     ;;
+
+  shell-reserved-var-advisor.sh)
+    if [ "$tool_name" = "Bash" ] && [ -n "$tool_command" ]; then
+      if printf '%s\n' "$tool_command" | grep -Eq '(^|[[:space:];&|])(status|path|argv)[[:space:]]*='; then
+        append_message '[Hook] Advisory: reserved shell variable assignment detected. Use run_status, cmd_path, or args instead of status, path, or argv.'
+      fi
+
+      unquoted_command=$(printf '%s\n' "$tool_command" | sed -E "s/\"[^\"]*\"//g; s/'[^']*'//g")
+      if printf '%s\n' "$unquoted_command" | grep -Eq '(^|[;&|[:space:]])gh[[:space:]]+api([[:space:]]+[^;&|[:space:]]+)*[[:space:]]+[^;&|[:space:]]*[?&][^;&|[:space:]]*'; then
+        append_message '[Hook] Advisory: quote gh api URLs containing ? or & before execution.'
+      fi
+      if printf '%s\n' "$unquoted_command" | grep -Eq '(^|[;&|[:space:]])gh[[:space:]]+api([[:space:]][^;&|]*)?[[:space:]]-[fF][[:space:]]+body='; then
+        append_message '[Hook] Advisory: stage mutation bodies in reviewed JSON and use gh api --input.'
+      fi
+      if printf '%s\n' "$tool_command" | grep -Eq 'trap[[:space:]]+"[^"]*[$][{]?[A-Za-z_][A-Za-z0-9_]*[}]?[^"]*"[[:space:]]+EXIT'; then
+        append_message '[Hook] Advisory: double-quoted EXIT trap expands variables at registration; use a named cleanup function.'
+      fi
+    fi
+    ;;
 esac
 
 emit_message

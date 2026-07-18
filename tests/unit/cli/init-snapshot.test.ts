@@ -249,7 +249,7 @@ describe('installFromSnapshot', () => {
           Object.entries(lockfile?.files ?? {}).filter(([path]) =>
             path.startsWith('.codex/hooks/scripts/')
           )
-        ).toHaveLength(5);
+        ).toHaveLength(6);
       } finally {
         await rm(linked, { recursive: true, force: true });
       }
