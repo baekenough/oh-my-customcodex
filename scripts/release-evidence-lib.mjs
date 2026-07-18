@@ -544,6 +544,10 @@ export async function inspectCanonicalTrackedEntries({
     if (sourceStats.isSymbolicLink() || !sourceStats.isFile()) {
       throw new Error(`tracked regular-file type mismatch: ${entry.path}`);
     }
+    const actualMode = (sourceStats.mode & 0o111) === 0 ? '100644' : '100755';
+    if (actualMode !== entry.mode) {
+      throw new Error(`tracked executable mode mismatch: ${entry.path}`);
+    }
     inventory.push({
       path: entry.path,
       type: 'file',

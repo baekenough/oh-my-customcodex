@@ -284,10 +284,10 @@ function buildServeEnv(port: number, projectRoot: string): NodeJS.ProcessEnv {
   return {
     ...process.env,
     OMCODEX_PORT: String(port),
-    OMCODEX_HOST: 'localhost',
+    OMCODEX_HOST: '127.0.0.1',
     OMCODEX_ORIGIN: `http://localhost:${port}`,
     OMCUSTOM_PORT: String(port),
-    OMCUSTOM_HOST: 'localhost',
+    OMCUSTOM_HOST: '127.0.0.1',
     OMCUSTOM_ORIGIN: `http://localhost:${port}`,
     OMX_PROJECT_ROOT: projectRoot,
   };

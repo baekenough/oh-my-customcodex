@@ -1,7 +1,17 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { link, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import {
+  chmod,
+  link,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  symlink,
+  utimes,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, test } from 'node:test';
@@ -12,6 +22,7 @@ import {
   copyCanonicalTrackedEntries,
   createIsolatedExecutionRoots,
   finalizeEvidence,
+  inspectCanonicalTrackedEntries,
   redactEvidenceText,
   replaceRegularFileAtomically,
   sha256,
@@ -134,7 +145,7 @@ async function verifyOfflineWithIndex(
   evidenceName = 'evidence',
   untracked = [],
   ignored = [],
-  { worktreeDrift = [], observedCalls = [] } = {}
+  { worktreeDrift = [], observedCalls = [], observedCallDetails = [] } = {}
 ) {
   await writeOfflineRepository(root);
   const evidenceDir = await absentEvidencePath();
@@ -150,6 +161,7 @@ async function verifyOfflineWithIndex(
       // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The fixture maps each verifier gate label to deterministic evidence.
       runCommand: async (call) => {
         observedCalls.push(call.label);
+        observedCallDetails.push(call);
         if (call.label === 'git-index') {
           return { status: 0, stdout: gitIndexOutput(entries), stderr: '' };
         }
@@ -182,6 +194,73 @@ async function verifyOfflineWithIndex(
     }
   );
 }
+
+test('hashes tracked worktree content instead of trusting recreated-file stat metadata', async () => {
+  const root = await fixture('tracked-content-drift-');
+  const observedCallDetails = [];
+  await verifyOfflineWithIndex(root, [], 'content-drift-evidence', [], [], {
+    observedCallDetails,
+  });
+  const call = observedCallDetails.find(({ label }) => label === 'git-worktree-index-drift');
+  assert.deepEqual(call.args, [
+    'diff',
+    '--no-ext-diff',
+    '--no-textconv',
+    '--name-only',
+    '-z',
+    '--',
+  ]);
+
+  const gitRoot = await fixture('tracked-stat-git-');
+  const generatedPath = join(gitRoot, 'generated.txt');
+  assert.equal(spawnSync('git', ['init', '--quiet'], { cwd: gitRoot }).status, 0);
+  await writeFile(generatedPath, 'same bytes\n');
+  assert.equal(spawnSync('git', ['add', 'generated.txt'], { cwd: gitRoot }).status, 0);
+  assert.equal(spawnSync('git', ['update-index', '--refresh'], { cwd: gitRoot }).status, 0);
+
+  await rm(generatedPath);
+  await writeFile(generatedPath, 'same bytes\n');
+  const future = new Date(Date.now() + 60_000);
+  await utimes(generatedPath, future, future);
+  const statOnly = spawnSync(call.command, call.args, {
+    cwd: gitRoot,
+    encoding: 'utf8',
+  });
+  assert.equal(statOnly.status, 0, statOnly.stderr);
+  assert.equal(statOnly.stdout, '');
+
+  await writeFile(generatedPath, 'different bytes\n');
+  await utimes(generatedPath, future, future);
+  const contentDrift = spawnSync(call.command, call.args, {
+    cwd: gitRoot,
+    encoding: 'utf8',
+  });
+  assert.equal(contentDrift.status, 0, contentDrift.stderr);
+  assert.equal(contentDrift.stdout, 'generated.txt\0');
+});
+
+test('rejects executable-bit drift independently of Git core.fileMode', async () => {
+  const root = await fixture('tracked-executable-mode-');
+  const scriptPath = join(root, 'script.sh');
+  await writeFile(scriptPath, '#!/bin/sh\nexit 0\n');
+  await chmod(scriptPath, 0o644);
+  await assert.rejects(
+    inspectCanonicalTrackedEntries({
+      sourceRoot: root,
+      entries: [{ mode: '100755', path: 'script.sh' }],
+    }),
+    /tracked executable mode mismatch/
+  );
+
+  await chmod(scriptPath, 0o755);
+  await assert.rejects(
+    inspectCanonicalTrackedEntries({
+      sourceRoot: root,
+      entries: [{ mode: '100644', path: 'script.sh' }],
+    }),
+    /tracked executable mode mismatch/
+  );
+});
 
 test('freezes the offline/live CLI option names', () => {
   assert.deepEqual(

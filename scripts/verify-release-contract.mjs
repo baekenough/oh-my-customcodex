@@ -891,7 +891,7 @@ async function runOfflineRepositoryPreflight(context) {
       call: {
         label: 'git-worktree-index-drift',
         command: 'git',
-        args: ['diff-files', '--name-only', '-z', '--'],
+        args: ['diff', '--no-ext-diff', '--no-textconv', '--name-only', '-z', '--'],
         cwd: repoRoot,
         env: baseEnv,
       },
