@@ -121,6 +121,34 @@ Before invoking or registering generated workflow code, run a Tier-1 sanity pass
 
 This check is mandatory for workflow scripts that will run automation, mutate GitHub state, or gate a release.
 
+## Managed Shell Advisor and Code Mode Results
+
+Before autonomous implementation, release, or R020 command gates, require the exact
+project-managed advisor rather than generic OMX/plugin hook readiness:
+
+```bash
+omcustomcodex doctor --require-shell-advisor
+```
+
+1. Stop on nonzero. For a missing managed install, run `omcustomcodex update --hooks`
+   and rerun the check. If the managed registry or assets differ from the packaged
+   version, review and back up the changes before using
+   `omcustomcodex update --hooks --force-overwrite-all`.
+2. If inactive, verify Codex hooks are enabled in the user-level
+   `$CODEX_HOME/config.toml` with `[features] hooks = true`, then trust the project
+   and review `/hooks`. An untrusted linked checkout can appear inactive because
+   runtime discovery returns no project hooks; never write trust state automatically.
+3. Official Codex routes Code Mode nested `tools.exec_command` through the canonical
+   `Bash PreToolUse` boundary. Do not add an outer JavaScript parser, a new
+   `functions.exec`/`exec_command` matcher, or widen `NATIVE_TOOL_NAMES`.
+4. Inspect the completed JavaScript result's numeric `exit_code` directly. If
+   `exit_code` is absent while a session id is present, poll the session until its
+   terminal result. Do not append `status=$?`, `path=...`, or `argv=...`, and do
+   not infer success from stdout. Keep `set -euo pipefail` inside genuinely
+   compound shell gates.
+5. Keep the advisor advisory. The readiness gate fails closed; the hook does not
+   become a hard command blocker.
+
 ## Test-Skip Is Not Completion
 
 Skipping tests, lowering coverage thresholds, narrowing the test command, or marking suites as TODO may be a temporary containment step, but it never satisfies completion by itself.

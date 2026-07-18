@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { spawnSync } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { parse } from 'yaml';
@@ -18,6 +18,20 @@ const RELEASE_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/re
 const AUTO_TAG_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/auto-tag.yml');
 const DEPLOY_TEST_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/deploy-test.yml');
 const TRIAGE_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/triage-dispatch.yml');
+const ROOT_AUTO_DEV_WORKFLOW = resolve(import.meta.dir, '../../../workflows/auto-dev.yaml');
+const TEMPLATE_AUTO_DEV_WORKFLOW = resolve(
+  import.meta.dir,
+  '../../../templates/workflows/auto-dev.yaml'
+);
+const SKILL_AUTO_DEV_WORKFLOW = resolve(
+  import.meta.dir,
+  '../../../.codex/skills/pipeline/workflows/auto-dev.yaml'
+);
+const ARTIFACT_CONTRACT_HELPER = resolve(
+  import.meta.dir,
+  '../../../.codex/skills/deep-verify/scripts/artifact-contract.mjs'
+);
+const DEEP_VERIFY_SKILL = resolve(import.meta.dir, '../../../.codex/skills/deep-verify/SKILL.md');
 const SECURITY_AUDIT_WORKFLOW = resolve(
   import.meta.dir,
   '../../../.github/workflows/security-audit.yml'
@@ -58,6 +72,47 @@ interface WorkflowDocument {
     };
   };
   jobs?: Record<string, WorkflowJob>;
+}
+
+interface AutoDevStep {
+  name?: string;
+  depends_on?: string | string[];
+  description?: string;
+  prompt?: string;
+  skill?: string;
+}
+
+interface AutoDevWorkflow {
+  steps?: AutoDevStep[];
+}
+
+function requireAutoDevStep(content: string, name: string): AutoDevStep {
+  const step = (parse(content) as AutoDevWorkflow).steps?.find(
+    (candidate) => candidate.name === name
+  );
+  expect(step, `missing auto-dev step: ${name}`).toBeDefined();
+  return step as AutoDevStep;
+}
+
+function autoDevDependencies(step: AutoDevStep): string[] {
+  if (typeof step.depends_on === 'string') return [step.depends_on];
+  return step.depends_on ?? [];
+}
+
+function expectAcyclicAutoDev(content: string): void {
+  const steps = (parse(content) as AutoDevWorkflow).steps ?? [];
+  const positions = new Map(steps.map((step, index) => [step.name, index]));
+
+  for (const [index, step] of steps.entries()) {
+    for (const dependency of autoDevDependencies(step)) {
+      const dependencyIndex = positions.get(dependency);
+      expect(dependencyIndex, `missing dependency: ${dependency}`).toBeDefined();
+      expect(
+        dependencyIndex as number,
+        `${step.name ?? 'unnamed'} must follow ${dependency}`
+      ).toBeLessThan(index);
+    }
+  }
 }
 
 function run(command: string, args: string[], cwd: string, env?: NodeJS.ProcessEnv) {
@@ -201,6 +256,146 @@ function runTriageHelper(bin: string, state: string, env?: NodeJS.ProcessEnv) {
   });
 }
 
+async function createFakeRepoLabelGh(): Promise<{ bin: string; state: string }> {
+  const directory = await mkdtemp(join(tmpdir(), 'omcodex-triage-label-gh-'));
+  const bin = join(directory, 'bin');
+  const state = join(directory, 'state');
+  await mkdir(bin, { recursive: true });
+  await mkdir(state, { recursive: true });
+  await Promise.all([
+    writeFile(join(state, 'repo-labels'), ''),
+    writeFile(join(state, 'api-count'), '0\n'),
+    writeFile(join(state, 'create-count'), '0\n'),
+    writeFile(join(state, 'labels'), ''),
+    writeFile(join(state, 'comments'), ''),
+    writeFile(join(state, 'comment-count'), '0\n'),
+    writeFile(join(state, 'edit-count'), '0\n'),
+    writeFile(join(state, 'label-api-count'), '0\n'),
+    writeFile(join(state, 'comment-api-count'), '0\n'),
+  ]);
+  await writeFile(
+    join(bin, 'gh'),
+    `#!/bin/bash
+set -euo pipefail
+state="\${FAKE_GH_STATE:?}"
+
+increment() {
+  local file="$1"
+  local value
+  value=$(cat "$state/$file")
+  value=$((value + 1))
+  printf '%s\\n' "$value" > "$state/$file"
+}
+
+if [[ "$1" == "api" ]]; then
+  [[ "\${2:-}" == "--paginate" && "\${4:-}" == "--jq" ]] || exit 61
+  case "\${3:-}" in
+    "repos/owner/repo/labels?per_page=100")
+      [[ "\${5:-}" == ".[].name" ]] || exit 62
+      increment api-count
+      call=$(cat "$state/api-count")
+      [[ "\${FAIL_REPO_LABEL_READ_ON_CALL:-0}" != "$call" ]] || exit 64
+      cat "$state/repo-labels"
+      [[ ! -f "$state/repo-labels-page-2" ]] || cat "$state/repo-labels-page-2"
+      exit 0
+      ;;
+    "repos/owner/repo/issues/123/labels?per_page=100")
+      [[ "\${5:-}" == ".[].name" ]] || exit 63
+      [[ "\${FAIL_LABEL_READ:-0}" != "1" ]] || exit 41
+      increment label-api-count
+      cat "$state/labels"
+      [[ ! -f "$state/labels-page-2" ]] || cat "$state/labels-page-2"
+      exit 0
+      ;;
+    "repos/owner/repo/issues/123/comments?per_page=100")
+      [[ "\${5:-}" == ".[].body" ]] || exit 69
+      [[ "\${FAIL_COMMENT_READ:-0}" != "1" ]] || exit 42
+      increment comment-api-count
+      cat "$state/comments"
+      [[ ! -f "$state/comments-page-2" ]] || cat "$state/comments-page-2"
+      exit 0
+      ;;
+  esac
+fi
+
+if [[ "$1 $2" == "label create" ]]; then
+  increment create-count >/dev/null
+  [[ "$3" == "triaged" ]] || exit 65
+  [[ "$*" == *'--repo owner/repo'* ]] || exit 66
+  if grep -Fqx 'triaged' "$state/repo-labels"; then
+    exit 1
+  fi
+  case "\${CREATE_MODE:-success}" in
+    success)
+      printf 'triaged\\n' >> "$state/repo-labels"
+      exit 0
+      ;;
+    race)
+      printf 'triaged\\n' >> "$state/repo-labels"
+      exit 1
+      ;;
+    fail)
+      exit 1
+      ;;
+    phantom)
+      exit 0
+      ;;
+    *)
+      exit 67
+      ;;
+  esac
+fi
+
+if [[ "$1 $2" == "issue comment" ]]; then
+  [[ "\${FAIL_COMMENT_POST:-0}" != "1" ]] || exit 46
+  increment comment-count
+  while [[ $# -gt 0 ]]; do
+    if [[ "$1" == "--body-file" ]]; then
+      cat "$2" >> "$state/comments"
+      printf '\\n' >> "$state/comments"
+      exit 0
+    fi
+    shift
+  done
+  exit 43
+fi
+
+if [[ "$1 $2" == "issue edit" ]]; then
+  increment edit-count
+  printf 'triaged\\n' > "$state/labels"
+  exit 0
+fi
+
+echo "unexpected gh invocation: $*" >&2
+exit 68
+`,
+    { mode: 0o755 }
+  );
+  return { bin, state };
+}
+
+async function runTriageLabelEnsure(bin: string, state: string, env?: NodeJS.ProcessEnv) {
+  const workflow = parseWorkflow(await readFile(TRIAGE_WORKFLOW, 'utf8'));
+  const step = requireJob(workflow, 'triage').steps?.find(
+    (candidate) => candidate.name === 'Ensure triaged label exists'
+  );
+  expect(step?.run).toBeDefined();
+  return run('bash', ['-c', step?.run ?? 'exit 1'], resolve(import.meta.dir, '../../..'), {
+    PATH: `${bin}:${process.env.PATH ?? ''}`,
+    FAKE_GH_STATE: state,
+    GH_REPO: 'owner/repo',
+    ...env,
+  });
+}
+
+async function runComposedTriageDispatch(bin: string, state: string, env?: NodeJS.ProcessEnv) {
+  const ensure = await runTriageLabelEnsure(bin, state, env);
+  if (ensure.status !== 0) {
+    return { ensure, acknowledgment: null };
+  }
+  return { ensure, acknowledgment: runTriageHelper(bin, state, env) };
+}
+
 async function readWorkflow(): Promise<string> {
   return readFile(CI_WORKFLOW, 'utf-8');
 }
@@ -338,6 +533,333 @@ describe('deploy-test.yml — preserved parent-port disposition', () => {
   });
 });
 
+describe('auto-dev — managed shell and durable verification gates', () => {
+  it('keeps the authoring pair byte-identical and all canonical workflows parseable', async () => {
+    const [root, template, skill] = await Promise.all([
+      readFile(ROOT_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(TEMPLATE_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(SKILL_AUTO_DEV_WORKFLOW, 'utf8'),
+    ]);
+
+    expect(root).toBe(template);
+    for (const content of [root, template, skill]) {
+      expect(() => parse(content)).not.toThrow();
+    }
+  });
+
+  it('fails closed on the exact managed shell advisor before implementation', async () => {
+    const workflows = await Promise.all([
+      readFile(ROOT_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(SKILL_AUTO_DEV_WORKFLOW, 'utf8'),
+    ]);
+
+    for (const content of workflows) {
+      const preflight = requireAutoDevStep(content, 'managed-shell-advisor-preflight');
+      const text = preflight.prompt ?? '';
+      const implement = requireAutoDevStep(content, 'implement');
+
+      expect(text).toContain('omcustomcodex doctor --require-shell-advisor');
+      expect(text).toContain('missing');
+      expect(text).toContain('omcustomcodex update --hooks');
+      expect(text).toContain('integrity-failed');
+      expect(text).toContain('assets-modified');
+      expect(text).toContain('review');
+      expect(text).toContain('back up');
+      expect(text).toContain('omcustomcodex update --hooks --force-overwrite-all');
+      expect(text).toContain('inactive');
+      expect(text).toContain('[features] hooks = true');
+      expect(text).toContain('untrusted linked');
+      expect(text).toContain('approval-needed');
+      expect(text).toContain('/hooks');
+      expect(text).toContain('unverified');
+      expect(text).toContain('Never write trust state automatically');
+      expect(text).toContain('generic OMX/plugin hook readiness');
+      expect(implement.depends_on).toBe('managed-shell-advisor-preflight');
+    }
+  });
+
+  it('uses the numeric Code Mode result and polls running sessions to terminal completion', async () => {
+    const workflows = await Promise.all([
+      readFile(ROOT_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(SKILL_AUTO_DEV_WORKFLOW, 'utf8'),
+    ]);
+
+    for (const content of workflows) {
+      const text = requireAutoDevStep(content, 'managed-shell-advisor-preflight').prompt ?? '';
+
+      expect(text).toContain('tools.exec_command');
+      expect(text).toContain('typeof gateResult.exit_code === "number"');
+      expect(text).toContain('gateResult.exit_code === 0');
+      expect(text).toContain('session_id');
+      expect(text).toContain('tools.write_stdin');
+      expect(text).toContain('terminal result');
+      expect(text).toMatch(/Do not infer success\s+from stdout/);
+      expect(text).toMatch(/Do not append\s+`status=\$\?`, `path=\.\.\.`, or `argv=\.\.\.`/);
+      expect(text).not.toContain('NATIVE_TOOL_NAMES.push');
+      expect(text).not.toContain('functions.exec matcher');
+    }
+  });
+
+  it('orders source preparation and final commit as an acyclic release DAG', async () => {
+    const workflowCases = await Promise.all([
+      readFile(ROOT_AUTO_DEV_WORKFLOW, 'utf8').then((content) => ({
+        content,
+        verifyStep: 'verify',
+      })),
+      readFile(SKILL_AUTO_DEV_WORKFLOW, 'utf8').then((content) => ({
+        content,
+        verifyStep: 'deep-verify',
+      })),
+    ]);
+
+    for (const { content, verifyStep } of workflowCases) {
+      expectAcyclicAutoDev(content);
+      const releasePrepare = requireAutoDevStep(content, 'release-prepare');
+      const verifyBuild = requireAutoDevStep(content, 'verify-build');
+      const deepVerify = requireAutoDevStep(content, verifyStep);
+      const artifact = requireAutoDevStep(content, 'verification-artifact');
+      const release = requireAutoDevStep(content, 'release');
+
+      expect(releasePrepare.depends_on).toBe('implement');
+      expect(verifyBuild.depends_on).toBe('release-prepare');
+      expect(artifact.depends_on).toBe(verifyStep);
+      expect(release.depends_on).toBe('verification-artifact');
+      expect(releasePrepare.prompt).toContain('scripts/resolve-release-target.mjs');
+      expect(releasePrepare.prompt).toContain('package.json');
+      expect(releasePrepare.prompt).toContain('templates/manifest.json');
+      expect(releasePrepare.prompt).toContain('CHANGELOG.md');
+      expect(releasePrepare.prompt).toContain('Do not commit');
+      expect(releasePrepare.prompt).toContain('Do not push');
+      expect(verifyBuild.prompt).toContain('allowlisted generated output');
+      expect(verifyBuild.prompt).toContain('final post-build inventory');
+      expect(verifyBuild.prompt).toContain('GIT_INDEX_FILE');
+      expect(verifyBuild.prompt).toContain('git read-tree HEAD');
+      expect(verifyBuild.prompt).toContain('git add -A -- .');
+      expect(verifyBuild.prompt).toContain(
+        'reviewedTree=$(GIT_INDEX_FILE="$reviewIndex" git write-tree)'
+      );
+      expect(verifyBuild.prompt).toContain('reviewedTree');
+      expect(deepVerify.skill).toBe('deep-verify');
+      expect(deepVerify.description).toContain('Rounds 1–7');
+      expect(deepVerify.description).toContain('Pipeline-deferred finalization');
+      expect(deepVerify.description).toContain('reviewedTree');
+      expect(artifact.prompt).toMatch(/same\s+deep-verify execution/);
+
+      const releaseText = release.prompt ?? '';
+      expect(releaseText).toMatch(/final PR\s+head/);
+      expect(releaseText).toContain('verifiedSha');
+      expect(releaseText).toContain('push');
+      expect(releaseText).toContain('merge');
+      expect(releaseText).not.toContain('re-enter');
+      expect(releaseText).not.toContain('git commit');
+      expect(releaseText).not.toContain('chore(release): bump');
+      expect(releaseText).not.toContain('Promote `CHANGELOG.md`');
+      expect(releaseText).not.toContain('update `package.json`');
+      expect(releaseText).not.toContain('git switch');
+      expect(releaseText).not.toContain('git branch -m');
+      expect(releaseText).not.toContain('git branch --list release');
+      expect(releaseText).toContain('already-existing exact release branch');
+    }
+  });
+
+  it('reviews the frozen dirty tree object instead of omitting it behind HEAD', async () => {
+    const [deepVerifySkill, root, skill] = await Promise.all([
+      readFile(DEEP_VERIFY_SKILL, 'utf8'),
+      readFile(ROOT_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(SKILL_AUTO_DEV_WORKFLOW, 'utf8'),
+    ]);
+
+    expect(deepVerifySkill).toContain('git cat-file -e "$reviewedTree^{tree}"');
+    expect(deepVerifySkill).toContain('git diff --no-ext-diff --binary develop "$reviewedTree"');
+    expect(deepVerifySkill).toMatch(/exact full[\s\S]{0,220}all six\s+reviewers/i);
+    expect(deepVerifySkill).toMatch(/must never[\s\S]{0,240}fall back to `HEAD`/i);
+
+    for (const content of [root, skill]) {
+      const verifyBuild = requireAutoDevStep(content, 'verify-build').prompt ?? '';
+      const artifact = requireAutoDevStep(content, 'verification-artifact').prompt ?? '';
+
+      expect(verifyBuild).toContain('temporary index');
+      expect(verifyBuild).toContain('reviewedTree');
+      expect(verifyBuild).toContain('40-character lowercase');
+      expect(artifact).toContain('git read-tree "$reviewedTree"');
+      expect(artifact).toContain('stagedTree=$(git write-tree)');
+      expect(artifact).toMatch(/stagedTree[\s\S]{0,120}reviewedTree/);
+      expect(artifact).toMatch(/committed[\s]+tree[\s\S]{0,160}reviewedTree/i);
+      expect(artifact).not.toContain('reviewedTree=$(git write-tree)');
+    }
+  });
+
+  it('requires a safe active-skill-relative artifact finalization in every mode', async () => {
+    const workflows = await Promise.all([
+      readFile(ROOT_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(SKILL_AUTO_DEV_WORKFLOW, 'utf8'),
+    ]);
+
+    for (const content of workflows) {
+      const text = requireAutoDevStep(content, 'verification-artifact').prompt ?? '';
+
+      expect(text).toContain('active loaded `deep-verify` skill catalog entry');
+      expect(text).toMatch(/sibling\s+`scripts\/artifact-contract\.mjs`/);
+      expect(text).not.toContain('.codex/skills/deep-verify/scripts/artifact-contract.mjs');
+      expect(text).not.toContain('.agents/skills/deep-verify/scripts/artifact-contract.mjs');
+      expect(text).toContain('standard');
+      expect(text).toContain('docs-only-self-review');
+      expect(text).toContain('lite-deterministic');
+      expect(text).toContain('converged-substitution');
+      expect(text).toContain('artifact-contract.mjs write');
+      expect(text).toMatch(/top-level\s+keys exactly `\{artifact, body\}`/);
+      expect(text).toMatch(/exclusive\s+regular/);
+      expect(text).toContain('mode 0600');
+      expect(text).toContain('writerProjectionFile');
+      expect(text).toContain('JSON data');
+      expect(text).toContain('`.path`');
+      expect(text).toContain('node "$artifactHelper" write');
+      expect(text).toContain('node "$artifactHelper" validate');
+      expect(text).toContain('node "$artifactHelper" select');
+      expect(text).toContain('--repository "$repository"');
+      expect(text).toContain('--release-version "$releaseVersion"');
+      expect(text).toContain('--verified-sha "$verifiedSha"');
+      expect(text).toContain('fail closed');
+      expect(text).toContain('selected path');
+      expect(text).toContain('git write-tree');
+      expect(text).toContain('stagedTree=$(git write-tree)');
+      expect(text).toContain('local Lore commit');
+      expect(text).toMatch(/committed\s+tree/);
+      expect(text).toContain('never relabel');
+      expect(text).toContain('final post-build inventory');
+      expect(text).toContain('Pipeline-deferred finalization');
+      expect(text).toMatch(/same\s+deep-verify execution/);
+      expect(text).toContain('Branch placement before commit');
+      expect(text).toContain('git branch --list release');
+      expect(text).toContain(['release/v$', '{releaseVersion}'].join(''));
+      expect(text.indexOf('Branch placement before commit')).toBeLessThan(
+        text.indexOf('Create the local Lore commit now')
+      );
+    }
+  });
+
+  it('executes write, validate, and exact selection for all four artifact modes', async () => {
+    const modes = [
+      'standard',
+      'docs-only-self-review',
+      'lite-deterministic',
+      'converged-substitution',
+    ] as const;
+
+    for (const [index, executionMode] of modes.entries()) {
+      const projectRoot = await mkdtemp(join(tmpdir(), `omcodex-auto-dev-${index}-`));
+      try {
+        const verifiedSha = `${index + 1}`.repeat(40);
+        const artifact = {
+          schemaVersion: 1,
+          skill: 'deep-verify',
+          date: `2026-07-19T01:23:0${index}+09:00`,
+          query: `auto-dev ${executionMode}`,
+          repository: 'owner/repo',
+          releaseVersion: '1.2.3',
+          verifiedSha,
+          executionMode,
+          verdict: 'READY',
+          findings: { initial: [], falsePositives: [], fixed: [], unresolved: [] },
+          verificationEvidence: [
+            { gate: 'auto-dev contract', outcome: 'pass', reference: `${executionMode} fixture` },
+          ],
+        };
+        const artifactInputFile = join(projectRoot, 'artifact-input.json');
+        const writerProjectionFile = join(projectRoot, 'writer-projection.json');
+        await writeFile(
+          artifactInputFile,
+          JSON.stringify({ artifact, body: `# Safe ${executionMode} report` }),
+          { flag: 'wx', mode: 0o600 }
+        );
+
+        const input = JSON.parse(await readFile(artifactInputFile, 'utf8')) as object;
+        expect(Object.keys(input).sort()).toEqual(['artifact', 'body']);
+        const writeResult = run(
+          process.execPath,
+          [
+            ARTIFACT_CONTRACT_HELPER,
+            'write',
+            '--project-root',
+            projectRoot,
+            '--input',
+            artifactInputFile,
+          ],
+          projectRoot
+        );
+        expect(writeResult.status, writeResult.stderr).toBe(0);
+        await writeFile(writerProjectionFile, writeResult.stdout, { flag: 'wx', mode: 0o600 });
+
+        const projectionInfo = await lstat(writerProjectionFile);
+        expect(projectionInfo.isFile()).toBe(true);
+        expect(projectionInfo.isSymbolicLink()).toBe(false);
+        const writerProjection = JSON.parse(await readFile(writerProjectionFile, 'utf8')) as {
+          path?: string;
+          artifact?: { executionMode?: string };
+        };
+        expect(writerProjection.artifact?.executionMode).toBe(executionMode);
+        expect(typeof writerProjection.path).toBe('string');
+
+        const validateResult = run(
+          process.execPath,
+          [ARTIFACT_CONTRACT_HELPER, 'validate', '--file', writerProjection.path as string],
+          projectRoot
+        );
+        expect(validateResult.status, validateResult.stderr).toBe(0);
+        const selectResult = run(
+          process.execPath,
+          [
+            ARTIFACT_CONTRACT_HELPER,
+            'select',
+            '--project-root',
+            projectRoot,
+            '--repository',
+            'owner/repo',
+            '--release-version',
+            '1.2.3',
+            '--verified-sha',
+            verifiedSha,
+          ],
+          projectRoot
+        );
+        expect(selectResult.status, selectResult.stderr).toBe(0);
+        const selection = JSON.parse(selectResult.stdout) as {
+          path?: string;
+          artifact?: { executionMode?: string };
+        };
+        expect(selection.path).toBe(writerProjection.path);
+        expect(selection.artifact?.executionMode).toBe(executionMode);
+      } finally {
+        await rm(projectRoot, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it('writes a new merge-SHA artifact before post-release follow-up', async () => {
+    const [root, skill] = await Promise.all([
+      readFile(ROOT_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(SKILL_AUTO_DEV_WORKFLOW, 'utf8'),
+    ]);
+
+    for (const content of [root, skill]) {
+      const postMerge = requireAutoDevStep(content, 'post-release-verification-artifact');
+      const text = postMerge.prompt ?? '';
+      const followupName = content === root ? 'followup' : 'post-release-followup';
+
+      expect(text).toContain('exact released merge SHA');
+      expect(text).toMatch(/Do\s+not copy, relabel, or reuse the pre-merge artifact/);
+      expect(text).toContain('artifact-contract.mjs write');
+      expect(text).toContain('artifact-contract.mjs validate');
+      expect(text).toContain('artifact-contract.mjs select');
+      expect(text).toMatch(/active loaded `deep-verify` skill catalog\s+entry/);
+      expect(text).toContain('post-release Source B');
+      expect(requireAutoDevStep(content, followupName).depends_on).toBe(
+        'post-release-verification-artifact'
+      );
+    }
+  });
+});
+
 describe('ci.yml — stable Bun test inventory', () => {
   it('provides deterministic OMX model lanes to the test job', async () => {
     expect(extractTestJobEnvironment(await readWorkflow())).toMatchObject({
@@ -353,6 +875,11 @@ describe('ci.yml — stable Bun test inventory', () => {
       ...CRITICAL_NATIVE_REGRESSION_FILES,
       ...RELEASE_LIFECYCLE_REGRESSION_FILES,
       ...WORKFLOW_INVENTORY_GUARDS,
+      'tests/unit/cli/doctor-shell-advisor.test.ts',
+      'tests/unit/cli/index.test.ts',
+      'tests/unit/core/managed-shell-advisor-readiness.test.ts',
+      'tests/unit/core/shell-advisor-guidance.test.ts',
+      'tests/unit/core/deep-verify-artifact-contract.test.ts',
     ]) {
       expect(inventory).toContain(testPath);
     }
@@ -641,6 +1168,168 @@ describe('triage-dispatch.yml — serialized idempotent acknowledgment', () => {
     expect(workflow.concurrency?.['cancel-in-progress']).toBe(false);
     expect(content).not.toMatch(/^\s*queue:/m);
     expect(content).toContain('bash .github/scripts/triage-dispatch.sh');
+    expect(content).not.toContain('gh label view');
+    expect(content).not.toContain('|| true');
+  });
+
+  it('executes the label ensure step without mutation when the exact label already exists', async () => {
+    const fixture = await createFakeRepoLabelGh();
+    try {
+      await writeFile(join(fixture.state, 'repo-labels'), 'P2\ntriaged\nquality\n');
+      const result = await runTriageLabelEnsure(fixture.bin, fixture.state);
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(await readFile(join(fixture.state, 'api-count'), 'utf8')).toBe('1\n');
+      expect(await readFile(join(fixture.state, 'create-count'), 'utf8')).toBe('0\n');
+    } finally {
+      await rm(resolve(fixture.bin, '..'), { recursive: true, force: true });
+    }
+  });
+
+  it('finds the exact repository label on a later paginated page', async () => {
+    const fixture = await createFakeRepoLabelGh();
+    try {
+      await writeFile(join(fixture.state, 'repo-labels'), 'P2\nquality\n');
+      await writeFile(join(fixture.state, 'repo-labels-page-2'), 'triaged\n');
+      const result = await runTriageLabelEnsure(fixture.bin, fixture.state);
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(await readFile(join(fixture.state, 'api-count'), 'utf8')).toBe('1\n');
+      expect(await readFile(join(fixture.state, 'create-count'), 'utf8')).toBe('0\n');
+    } finally {
+      await rm(resolve(fixture.bin, '..'), { recursive: true, force: true });
+    }
+  });
+
+  it('creates an absent exact label and requires a successful readback', async () => {
+    const fixture = await createFakeRepoLabelGh();
+    try {
+      await writeFile(join(fixture.state, 'repo-labels'), 'P2\nnot-triaged\n');
+      const result = await runTriageLabelEnsure(fixture.bin, fixture.state);
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(await readFile(join(fixture.state, 'api-count'), 'utf8')).toBe('2\n');
+      expect(await readFile(join(fixture.state, 'create-count'), 'utf8')).toBe('1\n');
+      expect(await readFile(join(fixture.state, 'repo-labels'), 'utf8')).toBe(
+        'P2\nnot-triaged\ntriaged\n'
+      );
+    } finally {
+      await rm(resolve(fixture.bin, '..'), { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed without creation when the initial repository-label lookup fails', async () => {
+    const fixture = await createFakeRepoLabelGh();
+    try {
+      const result = await runTriageLabelEnsure(fixture.bin, fixture.state, {
+        FAIL_REPO_LABEL_READ_ON_CALL: '1',
+      });
+
+      expect(result.status).not.toBe(0);
+      expect(await readFile(join(fixture.state, 'api-count'), 'utf8')).toBe('1\n');
+      expect(await readFile(join(fixture.state, 'create-count'), 'utf8')).toBe('0\n');
+    } finally {
+      await rm(resolve(fixture.bin, '..'), { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when successful creation cannot be confirmed by readback', async () => {
+    const fixture = await createFakeRepoLabelGh();
+    try {
+      const result = await runTriageLabelEnsure(fixture.bin, fixture.state, {
+        FAIL_REPO_LABEL_READ_ON_CALL: '2',
+      });
+
+      expect(result.status).not.toBe(0);
+      expect(await readFile(join(fixture.state, 'api-count'), 'utf8')).toBe('2\n');
+      expect(await readFile(join(fixture.state, 'create-count'), 'utf8')).toBe('1\n');
+    } finally {
+      await rm(resolve(fixture.bin, '..'), { recursive: true, force: true });
+    }
+  });
+
+  it('treats one failed create as a race only when one readback finds the exact label', async () => {
+    const raceFixture = await createFakeRepoLabelGh();
+    try {
+      const result = await runTriageLabelEnsure(raceFixture.bin, raceFixture.state, {
+        CREATE_MODE: 'race',
+      });
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(await readFile(join(raceFixture.state, 'api-count'), 'utf8')).toBe('2\n');
+      expect(await readFile(join(raceFixture.state, 'create-count'), 'utf8')).toBe('1\n');
+    } finally {
+      await rm(resolve(raceFixture.bin, '..'), { recursive: true, force: true });
+    }
+
+    const failedFixture = await createFakeRepoLabelGh();
+    try {
+      const result = await runTriageLabelEnsure(failedFixture.bin, failedFixture.state, {
+        CREATE_MODE: 'fail',
+      });
+
+      expect(result.status).not.toBe(0);
+      expect(await readFile(join(failedFixture.state, 'api-count'), 'utf8')).toBe('2\n');
+      expect(await readFile(join(failedFixture.state, 'create-count'), 'utf8')).toBe('1\n');
+    } finally {
+      await rm(resolve(failedFixture.bin, '..'), { recursive: true, force: true });
+    }
+  });
+
+  it('fails when a zero-status create does not materialize the exact label', async () => {
+    const fixture = await createFakeRepoLabelGh();
+    try {
+      const result = await runTriageLabelEnsure(fixture.bin, fixture.state, {
+        CREATE_MODE: 'phantom',
+      });
+
+      expect(result.status).not.toBe(0);
+      expect(await readFile(join(fixture.state, 'api-count'), 'utf8')).toBe('2\n');
+      expect(await readFile(join(fixture.state, 'create-count'), 'utf8')).toBe('1\n');
+    } finally {
+      await rm(resolve(fixture.bin, '..'), { recursive: true, force: true });
+    }
+  });
+
+  it('reaches the real acknowledgment helper only after repository-label readiness succeeds', async () => {
+    const fixture = await createFakeRepoLabelGh();
+    try {
+      const path = await runComposedTriageDispatch(fixture.bin, fixture.state);
+
+      expect(path.ensure.status, path.ensure.stderr).toBe(0);
+      expect(path.acknowledgment).not.toBeNull();
+      expect(path.acknowledgment?.status, path.acknowledgment?.stderr).toBe(0);
+      expect(await readFile(join(fixture.state, 'api-count'), 'utf8')).toBe('2\n');
+      expect(await readFile(join(fixture.state, 'create-count'), 'utf8')).toBe('1\n');
+      expect(await readFile(join(fixture.state, 'repo-labels'), 'utf8')).toBe('triaged\n');
+      expect(await readFile(join(fixture.state, 'comment-count'), 'utf8')).toBe('1\n');
+      expect(await readFile(join(fixture.state, 'edit-count'), 'utf8')).toBe('1\n');
+      expect(await readFile(join(fixture.state, 'labels'), 'utf8')).toBe('triaged\n');
+      expect(await readFile(join(fixture.state, 'comments'), 'utf8')).toContain(
+        '<!-- triage-dispatch:acknowledged -->'
+      );
+    } finally {
+      await rm(resolve(fixture.bin, '..'), { recursive: true, force: true });
+    }
+  });
+
+  it('does not invoke acknowledgment mutations when repository-label readiness fails', async () => {
+    const fixture = await createFakeRepoLabelGh();
+    try {
+      const path = await runComposedTriageDispatch(fixture.bin, fixture.state, {
+        FAIL_REPO_LABEL_READ_ON_CALL: '1',
+      });
+
+      expect(path.ensure.status).not.toBe(0);
+      expect(path.acknowledgment).toBeNull();
+      expect(await readFile(join(fixture.state, 'create-count'), 'utf8')).toBe('0\n');
+      expect(await readFile(join(fixture.state, 'label-api-count'), 'utf8')).toBe('0\n');
+      expect(await readFile(join(fixture.state, 'comment-api-count'), 'utf8')).toBe('0\n');
+      expect(await readFile(join(fixture.state, 'comment-count'), 'utf8')).toBe('0\n');
+      expect(await readFile(join(fixture.state, 'edit-count'), 'utf8')).toBe('0\n');
+    } finally {
+      await rm(resolve(fixture.bin, '..'), { recursive: true, force: true });
+    }
   });
 
   it('posts one marked acknowledgment and then applies the triaged label', async () => {

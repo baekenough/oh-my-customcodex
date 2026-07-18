@@ -25,11 +25,17 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { platform } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
+import { resolveTemplatePath } from '../utils/fs.js';
 import { info, warn } from '../utils/logger.js';
 import { parseNativeAgentListMetadata } from './agent-compiler.js';
-import type { CodexHookCommandHandler } from './codex-hooks.js';
-import { resolveCodexProjectRoot } from './codex-project-root.js';
+import {
+  type CodexHookCommandHandler,
+  type CodexHookRegistry,
+  compileCodexHooks,
+  validateCodexHookRegistry,
+} from './codex-hooks.js';
+import { resolveCodexProjectRoot, resolveCodexTargetRoot } from './codex-project-root.js';
 
 export const MINIMUM_OMX_VERSION = '0.20.2';
 export const OMX_PROJECT_SETUP_COMMAND = 'omx setup --scope project --merge-agents';
@@ -104,6 +110,28 @@ export interface OmxHookReadinessAssessment {
   discovered: number;
   runnable: number;
   approvalNeeded: number;
+}
+
+export type ManagedShellAdvisorReadinessStatus =
+  | OmxHookReadinessStatus
+  | 'integrity-failed'
+  | 'assets-modified';
+
+export interface ManagedShellAdvisorReadinessAssessment {
+  status: ManagedShellAdvisorReadinessStatus;
+  ready: boolean;
+  /** Exact checkout requested by the caller; retained for linked-worktree trust lookup. */
+  projectRoot: string;
+  /** Main checkout that owns Codex's project hook registry and managed scripts. */
+  codexProjectRoot: string;
+  installed: boolean;
+  discovered: number;
+}
+
+export interface ManagedShellAdvisorReadinessDeps {
+  inspectHooks?: InstallerDeps['inspectHooks'];
+  /** Test-only/package-layout override; production uses the packaged compatibility assets. */
+  templateHooksRoot?: string;
 }
 
 export interface OmxProjectSetupAssessment {
@@ -369,7 +397,7 @@ function sameProjectConfigFingerprint(left: FileStats, right: FileStats): boolea
   );
 }
 
-function readDescriptorText(descriptor: number): string {
+function readDescriptorBuffer(descriptor: number): Buffer {
   const chunks: Buffer[] = [];
   let position = 0;
   for (;;) {
@@ -379,7 +407,11 @@ function readDescriptorText(descriptor: number): string {
     chunks.push(chunk.subarray(0, bytesRead));
     position += bytesRead;
   }
-  return Buffer.concat(chunks).toString('utf8');
+  return Buffer.concat(chunks);
+}
+
+function readDescriptorText(descriptor: number): string {
+  return readDescriptorBuffer(descriptor).toString('utf8');
 }
 
 function readSafeProjectConfig(projectRoot: string): SafeProjectConfig | null {
@@ -778,6 +810,388 @@ function hasValidNativeHooksRegistry(projectRoot: string): boolean {
   } catch {
     return false;
   }
+}
+
+const MANAGED_SHELL_ADVISOR_MARKER = '# omcustomcodex-hook:shell-reserved-var-advisor.sh';
+const MANAGED_SHELL_ADVISOR_SCRIPTS = [
+  'codex-native-advisory.sh',
+  'shell-reserved-var-advisor.sh',
+] as const;
+
+type RegularFileProbe =
+  | { status: 'missing' }
+  | { status: 'invalid' }
+  | { status: 'ok'; content: Buffer; stats: FileStats };
+
+const MAX_MANAGED_HOOK_FILE_BYTES = 4 * 1024 * 1024;
+
+function readBoundedDescriptorBuffer(descriptor: number, maxBytes: number): Buffer | null {
+  const chunks: Buffer[] = [];
+  let position = 0;
+  for (;;) {
+    const remaining = maxBytes - position + 1;
+    if (remaining <= 0) return null;
+    const chunk = Buffer.allocUnsafe(Math.min(64 * 1024, remaining));
+    const bytesRead = readSync(descriptor, chunk, 0, chunk.length, position);
+    if (bytesRead === 0) break;
+    chunks.push(chunk.subarray(0, bytesRead));
+    position += bytesRead;
+  }
+  return Buffer.concat(chunks);
+}
+
+function readRegularSingleLinkBuffer(filePath: string): RegularFileProbe {
+  let descriptor: number | null = null;
+  try {
+    const pathStats = lstatSync(filePath);
+    if (
+      pathStats.isSymbolicLink() ||
+      !pathStats.isFile() ||
+      pathStats.nlink !== 1 ||
+      pathStats.size > MAX_MANAGED_HOOK_FILE_BYTES
+    ) {
+      return { status: 'invalid' };
+    }
+    descriptor = openSync(
+      filePath,
+      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK
+    );
+    const descriptorStats = fstatSync(descriptor);
+    if (
+      !descriptorStats.isFile() ||
+      descriptorStats.nlink !== 1 ||
+      descriptorStats.size > MAX_MANAGED_HOOK_FILE_BYTES ||
+      !sameProjectConfigFingerprint(pathStats, descriptorStats)
+    ) {
+      return { status: 'invalid' };
+    }
+    const content = readBoundedDescriptorBuffer(descriptor, MAX_MANAGED_HOOK_FILE_BYTES);
+    const afterRead = fstatSync(descriptor);
+    const finalPathStats = lstatSync(filePath);
+    if (
+      content === null ||
+      content.length !== afterRead.size ||
+      finalPathStats.isSymbolicLink() ||
+      !finalPathStats.isFile() ||
+      finalPathStats.nlink !== 1 ||
+      !sameProjectConfigFingerprint(descriptorStats, afterRead) ||
+      !sameProjectConfigFingerprint(afterRead, finalPathStats)
+    ) {
+      return { status: 'invalid' };
+    }
+    return { status: 'ok', content, stats: afterRead };
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === 'ENOENT'
+      ? { status: 'missing' }
+      : { status: 'invalid' };
+  } finally {
+    if (descriptor !== null) closeSync(descriptor);
+  }
+}
+
+interface ManagedDirectoryFingerprint {
+  path: string;
+  stats: FileStats;
+}
+
+type ManagedParentProbe =
+  | { status: 'missing' }
+  | { status: 'invalid' }
+  | { status: 'ok'; directories: ManagedDirectoryFingerprint[] };
+
+function probeManagedParentDirectories(
+  codexProjectRoot: string,
+  relativeFilePath: string
+): ManagedParentProbe {
+  const targetPath = resolve(codexProjectRoot, relativeFilePath);
+  const relativeTarget = relative(codexProjectRoot, targetPath);
+  if (relativeTarget.startsWith('..') || resolve(codexProjectRoot, relativeTarget) !== targetPath) {
+    return { status: 'invalid' };
+  }
+
+  const directorySegments = dirname(relativeTarget)
+    .split(/[\\/]/)
+    .filter((segment) => segment && segment !== '.');
+  const paths = [codexProjectRoot];
+  let current = codexProjectRoot;
+  for (const segment of directorySegments) {
+    current = join(current, segment);
+    paths.push(current);
+  }
+
+  const directories: ManagedDirectoryFingerprint[] = [];
+  try {
+    for (const directoryPath of paths) {
+      const stats = lstatSync(directoryPath);
+      if (
+        stats.isSymbolicLink() ||
+        !stats.isDirectory() ||
+        realpathSync(directoryPath) !== directoryPath
+      ) {
+        return { status: 'invalid' };
+      }
+      directories.push({ path: directoryPath, stats });
+    }
+    return { status: 'ok', directories };
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === 'ENOENT'
+      ? { status: 'missing' }
+      : { status: 'invalid' };
+  }
+}
+
+function sameManagedDirectoryFingerprints(
+  left: readonly ManagedDirectoryFingerprint[],
+  right: readonly ManagedDirectoryFingerprint[]
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((entry, index) => {
+      const next = right[index];
+      return (
+        next !== undefined &&
+        entry.path === next.path &&
+        sameProjectConfigFingerprint(entry.stats, next.stats)
+      );
+    })
+  );
+}
+
+interface ManagedFileSnapshot {
+  stats: FileStats;
+  parents: ManagedDirectoryFingerprint[];
+}
+
+type ManagedFileProbe =
+  | { status: 'missing' }
+  | { status: 'invalid' }
+  | { status: 'ok'; content: Buffer; snapshot: ManagedFileSnapshot };
+
+function readManagedHookFile(codexProjectRoot: string, relativeFilePath: string): ManagedFileProbe {
+  const parentsBefore = probeManagedParentDirectories(codexProjectRoot, relativeFilePath);
+  if (parentsBefore.status !== 'ok') return parentsBefore;
+  const file = readRegularSingleLinkBuffer(join(codexProjectRoot, relativeFilePath));
+  if (file.status !== 'ok') return file;
+  const parentsAfter = probeManagedParentDirectories(codexProjectRoot, relativeFilePath);
+  if (
+    parentsAfter.status !== 'ok' ||
+    !sameManagedDirectoryFingerprints(parentsBefore.directories, parentsAfter.directories)
+  ) {
+    return { status: 'invalid' };
+  }
+  return {
+    status: 'ok',
+    content: file.content,
+    snapshot: { stats: file.stats, parents: parentsAfter.directories },
+  };
+}
+
+function sameManagedFileSnapshot(left: ManagedFileSnapshot, right: ManagedFileSnapshot): boolean {
+  return (
+    sameProjectConfigFingerprint(left.stats, right.stats) &&
+    sameManagedDirectoryFingerprints(left.parents, right.parents)
+  );
+}
+
+function findManagedShellAdvisorCommand(registry: CodexHookRegistry): string | null {
+  const markerCommands = (registry.hooks.PreToolUse ?? [])
+    .filter((group) => group.matcher === '^Bash$')
+    .flatMap((group) => group.hooks.map((handler) => handler.command))
+    .filter((command) => command.endsWith(MANAGED_SHELL_ADVISOR_MARKER));
+  return markerCommands.length === 1 ? markerCommands[0] : null;
+}
+
+function compileExpectedManagedShellAdvisorCommand(
+  codexProjectRoot: string,
+  templateHooksRoot: string
+): string | null {
+  try {
+    const source: unknown = JSON.parse(readFileSync(join(templateHooksRoot, 'hooks.json'), 'utf8'));
+    return findManagedShellAdvisorCommand(
+      compileCodexHooks(source, { authoritativeRoot: codexProjectRoot }).registry
+    );
+  } catch {
+    return null;
+  }
+}
+
+type ManagedShellAdvisorInstallationProbe =
+  | {
+      status: 'ok';
+      command: string;
+      registryPath: string;
+      snapshot: ManagedShellAdvisorInstallationSnapshot;
+    }
+  | { status: 'missing' | 'integrity-failed' | 'assets-modified' };
+
+interface ManagedShellAdvisorInstallationSnapshot {
+  registry: ManagedFileSnapshot;
+  scripts: Array<{ name: string; snapshot: ManagedFileSnapshot }>;
+}
+
+function probeManagedShellAdvisorInstallation(
+  codexProjectRoot: string,
+  templateHooksRoot: string
+): ManagedShellAdvisorInstallationProbe {
+  const registryPath = join(codexProjectRoot, '.codex', 'hooks.json');
+  const registryProbe = readManagedHookFile(codexProjectRoot, '.codex/hooks.json');
+  if (registryProbe.status === 'missing') return { status: 'missing' };
+  if (registryProbe.status === 'invalid') return { status: 'integrity-failed' };
+
+  const expectedCommand = compileExpectedManagedShellAdvisorCommand(
+    codexProjectRoot,
+    templateHooksRoot
+  );
+  let installedCommand: string | null = null;
+  try {
+    const registry: unknown = JSON.parse(registryProbe.content.toString('utf8'));
+    installedCommand = findManagedShellAdvisorCommand(validateCodexHookRegistry(registry));
+  } catch {
+    // A present but unreadable/malformed registry is an integrity failure, not absence.
+  }
+  if (!expectedCommand || installedCommand !== expectedCommand) {
+    return { status: 'integrity-failed' };
+  }
+
+  const scripts: ManagedShellAdvisorInstallationSnapshot['scripts'] = [];
+  for (const scriptName of MANAGED_SHELL_ADVISOR_SCRIPTS) {
+    const installed = readManagedHookFile(
+      codexProjectRoot,
+      join('.codex', 'hooks', 'scripts', scriptName)
+    );
+    if (installed.status === 'missing') return { status: 'missing' };
+    const packaged = readRegularSingleLinkBuffer(join(templateHooksRoot, 'scripts', scriptName));
+    if (
+      installed.status !== 'ok' ||
+      packaged.status !== 'ok' ||
+      !installed.content.equals(packaged.content)
+    ) {
+      return { status: 'assets-modified' };
+    }
+    scripts.push({ name: scriptName, snapshot: installed.snapshot });
+  }
+
+  return {
+    status: 'ok',
+    command: expectedCommand,
+    registryPath,
+    snapshot: { registry: registryProbe.snapshot, scripts },
+  };
+}
+
+function changedManagedShellAdvisorState(
+  before: ManagedShellAdvisorInstallationSnapshot,
+  after: ManagedShellAdvisorInstallationSnapshot
+): 'integrity-failed' | 'assets-modified' | null {
+  if (!sameManagedFileSnapshot(before.registry, after.registry)) return 'integrity-failed';
+  if (
+    before.scripts.length !== after.scripts.length ||
+    before.scripts.some((entry, index) => {
+      const next = after.scripts[index];
+      return (
+        !next || entry.name !== next.name || !sameManagedFileSnapshot(entry.snapshot, next.snapshot)
+      );
+    })
+  ) {
+    return 'assets-modified';
+  }
+  return null;
+}
+
+function managedShellAdvisorResult(
+  projectRoot: string,
+  codexProjectRoot: string,
+  status: ManagedShellAdvisorReadinessStatus,
+  installed: boolean,
+  discovered = 0
+): ManagedShellAdvisorReadinessAssessment {
+  return {
+    status,
+    ready: status === 'runnable',
+    projectRoot,
+    codexProjectRoot,
+    installed,
+    discovered,
+  };
+}
+
+/**
+ * Fail-closed readiness for the exact package-managed reserved-variable advisor.
+ *
+ * This deliberately does not reuse general OMX hook readiness: a runnable plugin
+ * hook or unrelated project hook is not evidence that this project-owned Bash
+ * advisor is installed with packaged bytes and active in Codex's runtime registry.
+ */
+export function assessManagedShellAdvisorReadiness(
+  projectRoot: string,
+  deps: ManagedShellAdvisorReadinessDeps = {}
+): ManagedShellAdvisorReadinessAssessment {
+  const targetRoot = resolveCodexTargetRoot(projectRoot);
+  const codexProjectRoot = resolveCodexProjectRoot(targetRoot);
+  const templateHooksRoot = deps.templateHooksRoot ?? resolveTemplatePath('.claude/hooks');
+  const installation = probeManagedShellAdvisorInstallation(codexProjectRoot, templateHooksRoot);
+  if (installation.status !== 'ok') {
+    return managedShellAdvisorResult(
+      targetRoot,
+      codexProjectRoot,
+      installation.status,
+      installation.status !== 'missing'
+    );
+  }
+
+  const hooks = (deps.inspectHooks ?? inspectCodexHooks)(targetRoot);
+  const afterDiscovery = probeManagedShellAdvisorInstallation(codexProjectRoot, templateHooksRoot);
+  if (afterDiscovery.status !== 'ok') {
+    return managedShellAdvisorResult(
+      targetRoot,
+      codexProjectRoot,
+      afterDiscovery.status,
+      afterDiscovery.status !== 'missing'
+    );
+  }
+  const changedState = changedManagedShellAdvisorState(
+    installation.snapshot,
+    afterDiscovery.snapshot
+  );
+  if (changedState) {
+    return managedShellAdvisorResult(targetRoot, codexProjectRoot, changedState, true);
+  }
+  if (!hooks) {
+    return managedShellAdvisorResult(targetRoot, codexProjectRoot, 'unverified', true);
+  }
+  const exactEntries = hooks.filter(
+    (hook) =>
+      hook.source === 'project' &&
+      hook.sourcePath === afterDiscovery.registryPath &&
+      hook.command === afterDiscovery.command
+  );
+  if (exactEntries.length === 0) {
+    return managedShellAdvisorResult(targetRoot, codexProjectRoot, 'inactive', true);
+  }
+  if (
+    exactEntries.some((hook) => hook.trustStatus === 'untrusted' || hook.trustStatus === 'modified')
+  ) {
+    return managedShellAdvisorResult(
+      targetRoot,
+      codexProjectRoot,
+      'approval-needed',
+      true,
+      exactEntries.length
+    );
+  }
+  const runnable = exactEntries.filter(
+    (hook) => hook.enabled && (hook.trustStatus === 'trusted' || hook.trustStatus === 'managed')
+  );
+  if (exactEntries.length !== 1 || runnable.length !== 1) {
+    return managedShellAdvisorResult(
+      targetRoot,
+      codexProjectRoot,
+      'inactive',
+      true,
+      exactEntries.length
+    );
+  }
+  return managedShellAdvisorResult(targetRoot, codexProjectRoot, 'runnable', true, 1);
 }
 
 function assessHookReadiness(

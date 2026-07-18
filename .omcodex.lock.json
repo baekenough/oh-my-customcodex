@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.27",
-  "generatedAt": "2026-07-18T15:56:20.872Z",
-  "templateVersion": "1.0.27",
+  "generatorVersion": "1.0.28",
+  "generatedAt": "2026-07-18T19:10:34.966Z",
+  "templateVersion": "1.0.28",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e2690ef49068c522f452b7bc26089687adf98b1039841704dfcac64a6fa8a65b",
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-completion-verification.md": {
-      "templateHash": "4e2fb30b9b5dc2910c4c728a2e17ab22e42a6559e4ff76e8128538edd3572998",
-      "size": 22200,
+      "templateHash": "092db8c5edb4b77c76e1dc5672dbb866cab0550b4399298148bbd13591eb001e",
+      "size": 23754,
       "component": "rules"
     },
     ".codex/agents/be-springboot-expert.md": {
@@ -240,8 +240,8 @@
       "component": "agents"
     },
     ".codex/agents/tool-npm-expert.md": {
-      "templateHash": "1c19a04ffffecce4ffa06cf0aba05e82d6d11319dc57171204cc1402669d49e7",
-      "size": 917,
+      "templateHash": "1a56d70eae351f50d1dba5cd56284fee3e1a974e9c1714d2f496b19b3b8a5d4e",
+      "size": 935,
       "component": "agents"
     },
     ".codex/agents/tracker-checkpoint.md": {
@@ -645,8 +645,8 @@
       "component": "ontology"
     },
     ".codex/ontology/skills.yaml": {
-      "templateHash": "e8c24a3eb0dde84006c3568483ae20af7439c2adbe52aa04feeda7f5b6594bb3",
-      "size": 24192,
+      "templateHash": "874f394ad2388578f038184df189bfbecff1f7ec7dc3723c5a8cabd699e1b759",
+      "size": 24200,
       "component": "ontology"
     },
     "guides/java21/java-style-guide.md": {

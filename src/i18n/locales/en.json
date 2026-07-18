@@ -190,6 +190,7 @@
       "description": "Check and fix configuration issues",
       "fixOption": "Automatically fix issues that can be fixed",
       "updatesOption": "Check for oh-my-customcodex updates",
+      "requireShellAdvisorOption": "Require the exact managed shell advisor to be runnable",
       "updateAvailable": "Update available: v{{current}} → v{{latest}}. Run 'omcustomcodex update' to apply.",
       "updateUpToDate": "oh-my-customcodex is up to date (v{{version}})",
       "updateCheckFailed": "Update check failed ({{reason}})",

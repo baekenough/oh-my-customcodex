@@ -6,9 +6,9 @@ domain: universal
 memory: local
 effort: medium
 skills:
-  - omcodex:npm-audit
-  - omcodex:npm-publish
-  - omcodex:npm-version
+  - omcustomcodex:npm-audit
+  - omcustomcodex:npm-publish
+  - omcustomcodex:npm-version
 tools:
   - Read
   - Write

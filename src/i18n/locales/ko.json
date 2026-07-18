@@ -190,6 +190,7 @@
       "description": "설정 문제 확인 및 수정",
       "fixOption": "자동으로 수정 가능한 문제 수정",
       "updatesOption": "oh-my-customcodex 업데이트 확인",
+      "requireShellAdvisorOption": "정확한 관리형 셸 어드바이저 실행 가능 상태 요구",
       "updateAvailable": "업데이트 가능: v{{current}} → v{{latest}}. 'omcustomcodex update'를 실행하여 적용하세요.",
       "updateUpToDate": "oh-my-customcodex가 최신 상태입니다 (v{{version}})",
       "updateCheckFailed": "업데이트 확인 실패 ({{reason}})",

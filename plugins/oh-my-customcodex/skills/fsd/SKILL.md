@@ -58,6 +58,35 @@ Do NOT invent new label logic here — defer to the `pipeline` skill's auto-dev 
     └── NO  → [FSD Done] converged naturally
 ```
 
+### Managed Shell Advisor and Code Mode Gate
+
+Before an FSD iteration runs implementation or release commands, require the exact
+project-managed advisor:
+
+```bash
+omcustomcodex doctor --require-shell-advisor
+```
+
+- Stop on a nonzero result. For a missing managed install, run
+  `omcustomcodex update --hooks` and rerun the gate. If the managed registry or
+  assets differ from the packaged version, review and back up the changes before using
+  `omcustomcodex update --hooks --force-overwrite-all`.
+- If Codex reports the advisor inactive, verify hooks are enabled in the user-level
+  `$CODEX_HOME/config.toml` with `[features] hooks = true`, then trust the project and
+  review `/hooks`. An untrusted linked checkout can appear inactive because runtime
+  discovery returns no project hooks. Never write trust state automatically or accept
+  generic OMX/plugin hook readiness.
+- Official Codex routes Code Mode nested `tools.exec_command` calls through the
+  canonical `Bash PreToolUse` boundary. Do not add an outer JavaScript parser, a
+  new `functions.exec`/`exec_command` matcher, or widen `NATIVE_TOOL_NAMES`.
+- In JavaScript, inspect the completed tool result's numeric `exit_code` directly.
+  If `exit_code` is absent while a session id is present, poll that session to a
+  terminal result. Do not append `status=$?`, `path=...`, or `argv=...`, and do
+  not infer success from pass-looking stdout. Keep `set -euo pipefail` inside
+  genuinely compound shell gates.
+- The managed hook remains advisory; this preflight fails closed on readiness but
+  does not turn the advisor itself into a command blocker.
+
 ## Safety and Discipline
 
 Each iteration operates under full project rules — no relaxation because FSD is autonomous:

@@ -7,7 +7,7 @@ error: halt-and-report
 
 steps:
   - name: scan
-    skill: omcustom:update-docs
+    skill: omcustomcodex:update-docs
     description: Scan project structure for documentation gaps
 
   - name: review

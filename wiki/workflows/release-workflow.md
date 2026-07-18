@@ -1,11 +1,12 @@
 ---
 title: Release Workflow
 type: workflow
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
-  - CLAUDE.md
-  - .claude/rules/MUST-completion-verification.md
-  - .claude/rules/MUST-sync-verification.md
+  - workflows/auto-dev.yaml
+  - .codex/skills/pipeline/workflows/auto-dev.yaml
+  - .codex/rules/MUST-completion-verification.md
+  - .codex/rules/MUST-sync-verification.md
 related:
   - [[development-workflow]]
   - [[quality-workflow]]
@@ -17,28 +18,30 @@ related:
 
 # Release Workflow
 
-Releases follow a structured pipeline from issue triage through GitHub Release creation. Every step is delegated to specialist agents; the orchestrator coordinates but never executes git commands or writes files directly.
+Releases follow a structured Codex/OMX pipeline from issue triage through registry publication and direct post-release verification. Independent work is delegated when that improves throughput; the leader owns integration, mutation evidence, and final verification.
 
 ## Overview
 
-A release progresses through seven phases: triage → planning → implementation planning → implementation → verification → release → followup. The `professor-triage`, `release-plan`, `deep-plan`, `deep-verify`, and `post-release-followup` skills orchestrate each phase.
+A release progresses through preflight → triage/scope → planning → implementation → local release preparation → build verification/final-tree freeze → deep verification pending handoff → local release-branch commit and exact-SHA artifact → push/PR/merge → publication/R020 → merge-SHA artifact → followup. The `professor-triage`, `release-plan`, `deep-plan`, `deep-verify`, and `post-release-followup` skills support these phases, while `auto-dev.yaml` is the executable workflow contract.
+
+Preflight synchronizes refs and tags, rejects a dirty-behind worktree, and requires `omcustomcodex doctor --require-shell-advisor`. Missing managed hook assets may use `omcustomcodex update --hooks`; modified registry or script bytes require review and backup before the explicit `--force-overwrite-all` restoration path. An inactive result requires both supported user-level feature enablement and project trust plus `/hooks` review, because an untrusted linked worktree may appear inactive. Approval remains manual—automation never writes trust state.
 
 ## Phase 1: Professor Triage
 
-`/professor-triage` analyzes open GitHub issues against the current codebase state. It cross-references issue labels, `omc_issue_analyzer` comments, and current code to classify issues as:
+`$professor-triage` (`/professor-triage` in Claude compatibility sessions) analyzes open GitHub issues against the current codebase state. It cross-references issue labels, analyzer comments, and current code to classify issues as:
 - **verify-done**: ready for release
 - **needs-work**: requires additional implementation
 - **blocked**: external dependency pending
 
 ## Phase 2: Release Planning
 
-`/release-plan` takes the set of `verify-done` issues and groups them into release units. A release unit is a coherent set of changes that can ship together with a consistent version bump.
+`$release-plan` groups verified/eligible issues into coherent release units with a consistent version target and test shape.
 
 Output: a structured release plan with issue groupings, version number, and implementation sequence.
 
 ## Phase 3: Implementation Planning (deep-plan)
 
-`/deep-plan` runs a research → plan → verify cycle for each release unit:
+`$deep-plan` runs a research → plan → verify cycle for each release unit:
 1. Research phase: parallel analysis of affected code areas
 2. Plan phase: implementation steps with dependency ordering
 3. Verify phase: plan validation against codebase state
@@ -49,10 +52,16 @@ Development work proceeds via the [[development-workflow]]. For release-sized ch
 
 ## Phase 5: Verification (deep-verify)
 
-`/deep-verify` runs multi-angle quality verification:
+`$deep-verify` runs multi-angle quality verification:
 - Code correctness (compilation, tests)
 - Documentation accuracy (counts, links, cross-references)
 - Release criteria completeness (all issues addressed)
+
+Before verification, `release-prepare` resolves the target and finalizes every intended version, changelog, documentation, template, and generated source change without a commit. `verify-build` reads back only explicitly allowlisted generated outputs, then materializes the complete final dirty worktree/index through a private temporary index as a verified Git `reviewedTree` without changing the real index. Pipeline-deferred deep-verify passes the exact binary diff from `develop` to that tree unchanged to all six reviewers; it cannot substitute the old `HEAD` or omit uncommitted content. Any later source-scope change requires a new acyclic preparation/verification run.
+
+Every standard or reduced verification path must finish with one schema-versioned artifact under `.codex/outputs/sessions/YYYY-MM-DD/`. In the release DAG, Rounds 1–7 return an incomplete pending bundle pinned to `reviewedTree`; it is not `READY` and is not a final artifact. The immediately dependent `verification-artifact` step places the exact release branch, stages exactly that reviewed tree, creates the local Lore commit, proves both staged and committed trees equal it, injects the exact commit SHA, and completes helper `write`, `validate`, and exact repository/version/SHA `select`. A changed tree or failed finalizer leaves deep-verify incomplete and blocked. Standalone deep-verify executions still write immediately before completion. Missing, malformed, stale, wrong-SHA, or undecodable canonical evidence fails closed; conversation prose is not a producer result.
+
+Code Mode command gates consume the nested tool result's numeric `exit_code` and poll active sessions to a terminal result. They do not infer success from stdout or append reserved shell-variable probes.
 
 ### R017 Sauron Verification
 
@@ -68,21 +77,13 @@ Phase 5: Push via mgr-gitnerd (only after sauron passes)
 
 ## Phase 6: Release Execution
 
-All git operations are delegated to [[wiki/agents/mgr-gitnerd]]:
-1. Version bump in `manifest.json` and `package.json`
-2. Commit: `chore: bump version to X.Y.Z`
-3. PR creation with structured body (summary, test plan)
-4. PR merge after CI passes
-5. GitHub Release creation with generated release notes
+The release unit has already resolved its target and synchronized `package.json`, `templates/manifest.json`, generated plugin metadata, changelog, documentation, and source lockfile during local preparation. After R017/deep-verify reviews, `verification-artifact` creates the only local source commit on `release/v<version>` and proves its tree exactly matches the reviewed tree. The later `release` step does not change source or create another commit: it reads back the artifact identity, pushes that immutable commit, opens a PR with explicit closing references, and merges only after checks pass at the exact head.
 
-Release notes are generated by `/omcustomcodex-release-notes` (git history based).
+Repository automation—not the local agent—creates the annotated version tag at the merge SHA. The tag-triggered Release workflow publishes both `oh-my-customcodex` and `@baekenough/oh-my-customcodex`, creates the GitHub Release, and uploads verification evidence. Tags are never manually created, moved, or replaced.
 
 ## Phase 7: Post-Release Followup
 
-`/post-release-followup` analyzes the release workflow findings:
-- Documents what worked and what didn't
-- Updates process memory in `sys-memory-keeper`
-- Creates GitHub issues for process improvements
+After publication and CI readback, `post-release-verification-artifact` re-verifies the immutable merge and writes a new merge-SHA artifact rather than relabeling or reusing the pre-merge artifact. `$post-release-followup` selects that exact evidence, joins unresolved finding references to their original severity, and registers genuine defect/process/coverage gaps. Missing or malformed Source B evidence blocks aggregation instead of masquerading as a clean release. Homework then audits the iteration before FSD re-enumerates eligible work.
 
 ## Completion Verification (R020)
 
@@ -90,10 +91,12 @@ Per [[wiki/rules/r020]], a release is only `[Done]` when:
 
 | Criterion | Verification |
 |-----------|-------------|
-| All issues closed | Check GitHub issue status |
-| Version bumped | Read `manifest.json` and `package.json` |
-| PR merged | `gh pr view --json state` |
-| GitHub Release created | `gh release view vX.Y.Z` |
+| Exact release identity | Annotated tag peels to the PR merge SHA |
+| Both registries published | Exact version, package identity, and parity verified from npm and GitHub Packages |
+| GitHub Release/evidence | Non-draft release plus downloaded checksum evidence verified |
+| Installability | Clean isolated consumers pass lifecycle and packaged-contract smoke checks |
+| Lifecycle convergence | Issues and milestone closed; remote release branch deleted |
+| Verification handoff | Merge-SHA deep-verify artifact validates and exact selection succeeds |
 
 ## Relationships
 
@@ -103,6 +106,7 @@ Per [[wiki/rules/r020]], a release is only `[Done]` when:
 
 ## Sources
 
-- `.claude/rules/MUST-completion-verification.md` — R020 release criteria
-- `.claude/rules/MUST-sync-verification.md` — R017 sauron verification phases
-- `CLAUDE.md` — slash command descriptions for release skills
+- `workflows/auto-dev.yaml` — canonical source workflow
+- `.codex/skills/pipeline/workflows/auto-dev.yaml` — packaged plugin workflow
+- `.codex/rules/MUST-completion-verification.md` — R020 release criteria
+- `.codex/rules/MUST-sync-verification.md` — R017 verification phases

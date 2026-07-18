@@ -48,6 +48,42 @@ describe('cli command aliases', () => {
     expect(help).toContain('omcustomcodex web start');
   });
 
+  it('wires the focused shell-advisor doctor gate to a failing process exit', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'omcodex-cli-shell-advisor-'));
+    try {
+      const program = createProgram('omcustomcodex');
+      const doctor = program.commands.find((command) => command.name() === 'doctor');
+      expect(doctor?.helpInformation()).toContain('--require-shell-advisor');
+
+      const result = Bun.spawnSync({
+        cmd: [
+          process.execPath,
+          join(TEST_DIR, '../../../src/cli/index.ts'),
+          '--skip-version-check',
+          'doctor',
+          '--require-shell-advisor',
+        ],
+        cwd: tempDir,
+        env: {
+          ...process.env,
+          OMCODEX_SKIP_SELF_UPDATE: 'true',
+          OMCUSTOM_SKIP_SELF_UPDATE: 'true',
+        },
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+      const stdout = result.stdout.toString();
+
+      expect(result.exitCode).toBe(1);
+      expect(stdout).toContain('Managed shell advisor is missing');
+      expect(stdout).toContain('omcustomcodex update --hooks');
+      expect(stdout).not.toContain('Agents directory');
+      expect(stdout).not.toContain('Installed skill discovery');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
   it('publishes only the non-conflicting binary aliases', async () => {
     const packageJson = JSON.parse(await readFile(PACKAGE_JSON_PATH, 'utf-8')) as {
       bin?: Record<string, string>;

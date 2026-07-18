@@ -20,9 +20,11 @@ import {
   resolveLockfileRootContext,
 } from '../core/lockfile.js';
 import {
+  assessManagedShellAdvisorReadiness,
   assessOmxReadiness,
   ensureOmxProjectReady,
   type InstallerDeps,
+  type ManagedShellAdvisorReadinessAssessment,
   MINIMUM_OMX_VERSION,
   OMX_PROJECT_SETUP_COMMAND,
   OMX_PROJECT_SURFACE_LABELS,
@@ -42,6 +44,8 @@ export interface DoctorOptions {
   quiet?: boolean;
   /** Check for oh-my-customcodex updates */
   updates?: boolean;
+  /** Run only the fail-closed managed shell advisor readiness gate. */
+  requireShellAdvisor?: boolean;
 }
 
 /**
@@ -83,6 +87,12 @@ export interface DoctorCommandDependencies {
   ) => Promise<CheckResult[]>;
   /** Injectable mutation boundary for deterministic post-fix orchestration tests. */
   fixIssues?: typeof fixIssues;
+  /** Injectable exact-advisor check for focused CLI orchestration tests. */
+  checkManagedShellAdvisor?: typeof checkManagedShellAdvisor;
+}
+
+export interface ManagedShellAdvisorCheckDependencies {
+  assess?: (projectRoot: string) => ManagedShellAdvisorReadinessAssessment;
 }
 
 // Mirrors the native events accepted by the Codex hook compiler. Doctor keeps
@@ -764,6 +774,76 @@ export async function checkOmx(
 }
 
 /**
+ * Machine-oriented readiness gate for the exact project-managed shell advisor.
+ * It intentionally emits no hook command, hash, environment, or credential data.
+ */
+export function checkManagedShellAdvisor(
+  targetDir: string = process.cwd(),
+  dependencies: ManagedShellAdvisorCheckDependencies = {}
+): CheckResult {
+  const readiness = (dependencies.assess ?? assessManagedShellAdvisorReadiness)(targetDir);
+  const name = 'Managed shell advisor';
+
+  switch (readiness.status) {
+    case 'runnable':
+      return {
+        name,
+        status: 'pass',
+        message: 'Managed shell advisor is runnable.',
+        fixable: false,
+      };
+    case 'missing':
+      return {
+        name,
+        status: 'fail',
+        message:
+          'Managed shell advisor is missing. Run `omcustomcodex update --hooks`, then rerun this check.',
+        fixable: false,
+      };
+    case 'assets-modified':
+      return {
+        name,
+        status: 'fail',
+        message:
+          'Managed shell advisor assets differ from the packaged version. Review the intentional modification and back it up; then run `omcustomcodex update --hooks --force-overwrite-all` and rerun this check.',
+        fixable: false,
+      };
+    case 'integrity-failed':
+      return {
+        name,
+        status: 'fail',
+        message:
+          'Managed shell advisor registry differs from the packaged version. Review the modification and back it up; then run `omcustomcodex update --hooks --force-overwrite-all` and rerun this check.',
+        fixable: false,
+      };
+    case 'inactive':
+      return {
+        name,
+        status: 'fail',
+        message:
+          'Managed shell advisor is installed but inactive. Verify Codex hooks are enabled in the user-level $CODEX_HOME/config.toml with `[features] hooks = true`; also trust the project and review `/hooks`. Trust state is never written automatically. Then rerun this check.',
+        fixable: false,
+      };
+    case 'approval-needed':
+      return {
+        name,
+        status: 'fail',
+        message:
+          'Managed shell advisor needs approval. Trust the project and review it with `/hooks`; approval is never written automatically.',
+        fixable: false,
+      };
+    case 'unverified':
+      return {
+        name,
+        status: 'fail',
+        message:
+          'Managed shell advisor could not be verified through Codex app-server. Restore runtime discovery, then rerun this check.',
+        fixable: false,
+      };
+  }
+}
+
+/**
  * Check configured OMX model lane routing hints.
  *
  * This diagnostic is intentionally observational: OMX owns the runtime model
@@ -1374,18 +1454,19 @@ export async function doctorCommand(
   const layout = getProviderLayout();
   const packageVersion = readCurrentVersion();
 
-  // Run all checks
+  // The release preflight gate must not inherit unrelated doctor inventory state.
   const runChecks = dependencies.runAllChecks ?? runAllChecks;
-  const checksWithUpdate = await runChecks(
-    targetDir,
-    layout,
-    packageVersion,
-    options.updates ?? false
-  );
+  const checksWithUpdate = options.requireShellAdvisor
+    ? [(dependencies.checkManagedShellAdvisor ?? checkManagedShellAdvisor)(targetDir)]
+    : await runChecks(targetDir, layout, packageVersion, options.updates ?? false);
 
   // Apply fixes if requested
   let checks: CheckResult[] = checksWithUpdate;
-  if (options.fix && checksWithUpdate.some((check) => check.status !== 'pass' && check.fixable)) {
+  if (
+    !options.requireShellAdvisor &&
+    options.fix &&
+    checksWithUpdate.some((check) => check.status !== 'pass' && check.fixable)
+  ) {
     checks = await applyFixesAndRecheck(
       checksWithUpdate,
       targetDir,

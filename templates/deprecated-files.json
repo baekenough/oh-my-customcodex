@@ -1,5 +1,5 @@
 {
-  "description": "Files deprecated or renamed in this version. These will be removed during omcustom update.",
+  "description": "Files deprecated or renamed in this version. These will be removed during omcustomcodex update.",
   "files": [
     {
       "path": ".claude/rules/SHOULD-agent-teams.md",
