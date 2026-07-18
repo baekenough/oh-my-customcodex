@@ -1068,6 +1068,110 @@ describe('Template Validation', () => {
       expect(optimizationWiki).not.toContain('.claude/rules/MAY-optimization.md');
     });
 
+    it('locks the v2.1.210 provider-owned compatibility record', async () => {
+      const guidePath = 'guides/claude-code/15-version-compatibility.md';
+      const sourceGuide = await readFile(join(PROJECT_ROOT, guidePath), 'utf-8');
+      const templateGuide = await readFile(join(TEMPLATES_DIR, guidePath), 'utf-8');
+      const v210Section = extractMarkdownH2Section(sourceGuide, 'v2.1.210');
+
+      expect(templateGuide).toBe(sourceGuide);
+      expect(findExactMarkdownH2Index(sourceGuide, 'v2.1.210')).toBeLessThan(
+        findExactMarkdownH2Index(sourceGuide, 'v2.1.209')
+      );
+      expectContentToContainAll(v210Section, [
+        '#1673',
+        'https://github.com/anthropics/claude-code/releases/tag/v2.1.210',
+        'b7784f2c63ed4585c32bc20b94d3b64cf4fe6df3',
+        'Write(path)',
+        'auto-background',
+        '$1',
+        'MEMORY.md',
+        'hook callback timeout',
+      ]);
+      expectProviderDisposition(v210Section);
+
+      const ruleContracts = [
+        {
+          name: 'MUST-permissions.md',
+          marker: 'DETAIL: Claude Code v2.1.210 Permission Matcher Compatibility',
+          phrases: ['Write(path)', 'NotebookEdit(path)', 'Glob(path)', 'Edit(path)', 'Read(path)'],
+        },
+        {
+          name: 'MAY-optimization.md',
+          marker: 'DETAIL: Claude Code v2.1.210 Auto-Background and Grep Compatibility',
+          phrases: [
+            'auto-background',
+            'working directory',
+            'Grep content mode',
+            'No matches found',
+          ],
+        },
+        {
+          name: 'MUST-agent-design.md',
+          marker: 'DETAIL: Claude Code v2.1.210 Positional Placeholder Compatibility',
+          phrases: ['unmatched positional placeholders', '$1', '$2', 'verbatim', '$ARGUMENTS'],
+        },
+        {
+          name: 'SHOULD-memory-integration.md',
+          marker: 'DETAIL: Claude Code v2.1.210 Memory Read-Limit Compatibility',
+          phrases: ['MEMORY.md', 'read limit', 'explicit error', 'archive', 'retry'],
+        },
+        {
+          name: 'MUST-enforcement-policy.md',
+          marker: 'DETAIL: Claude Code v2.1.210 Hook Timeout Compatibility',
+          phrases: ['hook callback timeout', 'user rejection', 'phantom rejection', 'fail-closed'],
+        },
+      ];
+
+      for (const contract of ruleContracts) {
+        const sourceRule = await readFile(
+          join(PROJECT_ROOT, '.codex/rules', contract.name),
+          'utf-8'
+        );
+        const templateRule = await readFile(
+          join(TEMPLATES_DIR, '.claude/rules', contract.name),
+          'utf-8'
+        );
+        const detailBlock = extractSingleHtmlCommentContaining(sourceRule, contract.marker);
+
+        expect(templateRule).toBe(sourceRule);
+        expectContentToContainAll(detailBlock, ['Claude Code v2.1.210', ...contract.phrases]);
+        expectProviderDisposition(detailBlock);
+      }
+
+      const wikiContracts = [
+        {
+          path: 'wiki/guides/claude-code.md',
+          markers: ['v2.1.210', '#1673', 'provider-owned', 'Codex/OMX'],
+        },
+        {
+          path: 'wiki/rules/r002.md',
+          markers: ['v2.1.210', 'Write(path)', 'Edit(path)', 'Read(path)', 'Codex/OMX'],
+        },
+        {
+          path: 'wiki/rules/r005.md',
+          markers: ['v2.1.210', 'auto-background', 'absolute paths', 'Grep content mode'],
+        },
+        {
+          path: 'wiki/rules/r006.md',
+          markers: ['v2.1.210', '$1', '$2', 'verbatim', '$ARGUMENTS'],
+        },
+        {
+          path: 'wiki/rules/r011.md',
+          markers: ['v2.1.210', 'MEMORY.md', 'read limit', 'archive', 'retry'],
+        },
+        {
+          path: 'wiki/rules/r021.md',
+          markers: ['v2.1.210', 'hook callback timeout', 'phantom rejection', 'fail-closed'],
+        },
+      ];
+
+      for (const contract of wikiContracts) {
+        const wiki = await readFile(join(PROJECT_ROOT, contract.path), 'utf-8');
+        expectContentToContainAll(wiki, contract.markers);
+      }
+    });
+
     it('mirrors statusline support for native GitHub and agent-count JSON', async () => {
       const projectRoot = resolve(import.meta.dir, '../../..');
       const sourceStatusline = await readFile(join(projectRoot, '.codex/statusline.sh'), 'utf-8');

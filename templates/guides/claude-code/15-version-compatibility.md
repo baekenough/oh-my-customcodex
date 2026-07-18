@@ -2,7 +2,22 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
-The v2.1.202-v2.1.209 entries below are **provider-owned** external behavior and require **no local runtime implementation**. Codex/OMX remains the active runtime; the compatibility notes only keep packaged Claude templates and operator expectations accurate. The parent-package meanings were reviewed from oh-my-customcode commits [`a406854e`](https://github.com/baekenough/oh-my-customcode/commit/a406854e052e) and [`2329bced`](https://github.com/baekenough/oh-my-customcode/commit/2329bcede).
+The v2.1.202-v2.1.210 entries below are **provider-owned** external behavior and require **no local runtime implementation**. Codex/OMX remains the active runtime; the compatibility notes only keep packaged Claude templates and operator expectations accurate. The parent-package meanings were reviewed from oh-my-customcode commits [`a406854e`](https://github.com/baekenough/oh-my-customcode/commit/a406854e052e), [`2329bced`](https://github.com/baekenough/oh-my-customcode/commit/2329bcede), and [`aa185c36`](https://github.com/baekenough/oh-my-customcode/commit/aa185c369a9208ede60f6d8304b5ac2ac90f71ff).
+
+## v2.1.210
+
+Reviewed: 2026-07-19.
+
+Source: [official release](https://github.com/anthropics/claude-code/releases/tag/v2.1.210), tag commit [`b7784f2c63ed4585c32bc20b94d3b64cf4fe6df3`](https://github.com/anthropics/claude-code/commit/b7784f2c63ed4585c32bc20b94d3b64cf4fe6df3); parent oh-my-customcode v1.1.21; Codex port issue #1673.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Unsupported path-scoped `Write(path)`, `NotebookEdit(path)`, and `Glob(path)` permission matchers now produce a startup warning | Claude compatibility settings can expose invalid matcher assumptions instead of silently accepting them. | Record in R002; use `Edit(path)` for writes and `Read(path)` for reads while keeping Codex/OMX sandbox policy unchanged. |
+| Timeout-driven auto-background messages distinguish a timeout from an explicit background request and state that an internal `cd` does not change the session working directory | Claude follow-up commands no longer need to infer whether the foreground command hung or whether its directory transition persisted. | Record in R005; use absolute paths after Claude auto-background and do not add Codex working-directory behavior. |
+| Grep content mode no longer returns `No matches found` merely because pagination moved past the final result | Older Claude output can represent a page boundary rather than proof that a pattern is absent. | Record in R005; verify page state and keep active Codex/OMX result handling native. |
+| Unmatched positional placeholders such as `$1` and `$2` are preserved verbatim instead of silently removed | Claude compatibility skills that relied on removal can leave literal placeholders in the expanded prompt. | Record in R006; handle absent arguments explicitly with defaults, an `$ARGUMENTS` guard, or `argument-hint`; do not change Codex skill parsing. |
+| A `MEMORY.md` write that exceeds the read limit returns an explicit error instead of relying on silent truncation | Oversized Claude memory indexes become recoverable rather than appearing successfully updated. | Record in R011; archive or trim Cold entries and retry while preserving the non-blocking Codex/OMX memory boundary. |
+| A hook callback timeout is no longer reported to the model as a user rejection | Prevents a phantom rejection from stopping unattended Claude sessions. | Record in R021; retain real hook-failure propagation and the local fail-closed enforcement model. |
 
 ## v2.1.209
 

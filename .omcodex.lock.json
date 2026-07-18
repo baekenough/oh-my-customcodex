@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.26",
-  "generatedAt": "2026-07-18T14:33:08.454Z",
-  "templateVersion": "1.0.26",
+  "generatorVersion": "1.0.27",
+  "generatedAt": "2026-07-18T15:56:20.872Z",
+  "templateVersion": "1.0.27",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e2690ef49068c522f452b7bc26089687adf98b1039841704dfcac64a6fa8a65b",
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-agent-design.md": {
-      "templateHash": "9032298524b4441f26bf2051bedf84f1265ede4e19e8892509f4fc4998636c0c",
-      "size": 32767,
+      "templateHash": "d9f2133ae72017b843ae83f780b244c2cbe51cfc0a1b1812065cd5a2aff1a126",
+      "size": 33283,
       "component": "rules"
     },
     ".codex/rules/MUST-agent-identification.md": {
@@ -70,8 +70,8 @@
       "component": "rules"
     },
     ".codex/rules/MAY-optimization.md": {
-      "templateHash": "ae49b5fb9da57b47647762073e4238517b88ece2807bbcc5c83a33e0482709ff",
-      "size": 4379,
+      "templateHash": "69e0483ada44abcf291fc0c761a652273cda7df85f5c8a0accd39fc4aad1ab39",
+      "size": 5134,
       "component": "rules"
     },
     ".codex/rules/MUST-continuous-improvement.md": {
@@ -80,8 +80,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-permissions.md": {
-      "templateHash": "e242ebe57c03c99dc17d0647da2158418fe817e2c86103b2b1237538aca27996",
-      "size": 5263,
+      "templateHash": "a8a3e1ec724230a72de93eadaa46bc1a1de177087283b58ec1d2a8ed4261eef7",
+      "size": 5808,
       "component": "rules"
     },
     ".codex/rules/SHOULD-ontology-rag-routing.md": {
@@ -105,13 +105,13 @@
       "component": "rules"
     },
     ".codex/rules/SHOULD-memory-integration.md": {
-      "templateHash": "f91f2cf28544c45ab024b54e7ef84640e8c39b5a5a62126711ca4d59892dff73",
-      "size": 19914,
+      "templateHash": "47a1a4e52792cd936b2714922a44fd0daf2fee82b9aa79c910a4604be537a8d9",
+      "size": 20399,
       "component": "rules"
     },
     ".codex/rules/MUST-enforcement-policy.md": {
-      "templateHash": "c5e72b940b7a05d269c69e3ffbe402fd0d2a95523ea270f016dc45fb9740f3b8",
-      "size": 3072,
+      "templateHash": "388054b3d7ccc9e429ea19d21c69bf6a5efe4f4d6de4aa81aa34f05cb89491d1",
+      "size": 3528,
       "component": "rules"
     },
     ".codex/rules/index.yaml": {
@@ -700,8 +700,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "e31b35838bb3c41f7c75fd32f2befd83dbf23ed7e81fb2c40c9fda1bf33f3de7",
-      "size": 49129,
+      "templateHash": "35314eada368617d89060af885110d7f9b47603a46b00050c919310475ba184c",
+      "size": 51718,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {

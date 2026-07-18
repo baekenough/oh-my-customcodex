@@ -430,3 +430,7 @@ MCP tools (searchable memory backends, episodic-memory) are **orchestrator-scope
 - MCP saves are **non-blocking**: memory failure MUST NOT prevent session from ending
 - If no searchable memory backend is available: skip, log warning
 - episodic-memory: no action needed (auto-indexed after session)
+
+<!-- DETAIL: Claude Code v2.1.210 Memory Read-Limit Compatibility
+Claude Code v2.1.210 returns an explicit error when a memory write would push `MEMORY.md` past its read limit instead of silently truncating the loaded index. The write failure remains non-blocking, but it is not success: archive or trim Cold entries under Attention-Weight Memory Tiering, then retry the write. This provider-owned guard does not change native Codex/OMX memory ownership or its configured budget.
+-->

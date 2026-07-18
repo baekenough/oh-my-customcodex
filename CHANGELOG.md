@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.27] - 2026-07-19
+
+### Changed
+
+- Record Claude Code v2.1.210 behavior as provider-owned compatibility guidance while preserving Codex + OMX runtime boundaries (#1673).
+- Add a fail-closed static-Markdown-only CI fast path that keeps required jobs present and always runs package, documentation, version, template, Wiki, and security gates (#1674).
+- Remediate the vulnerable dependency graph to zero high/critical audit findings and replace the skipped npm fallback with a fail-closed native Bun audit (#1676).
+
+### Fixed
+
+- Serialize same-issue triage dispatch and use paginated label/comment readback plus a durable marker so retries converge without duplicate acknowledgments (#1677).
+
 ## [1.0.26] - 2026-07-18
 
 ### Changed
