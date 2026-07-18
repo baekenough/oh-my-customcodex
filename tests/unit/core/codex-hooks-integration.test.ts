@@ -77,6 +77,7 @@ describe('Codex-native hook integration', () => {
         'file-change-validator.sh',
         'schema-validator.sh',
         'secret-filter.sh',
+        'shell-reserved-var-advisor.sh',
       ].sort()
     );
     const logged = consoleSpies
@@ -156,11 +157,12 @@ describe('Codex-native hook integration', () => {
         '.codex/hooks/scripts/file-change-validator.sh',
         '.codex/hooks/scripts/schema-validator.sh',
         '.codex/hooks/scripts/secret-filter.sh',
+        '.codex/hooks/scripts/shell-reserved-var-advisor.sh',
       ].sort()
     );
   });
 
-  it('passes security and lists all five active scripts after a fresh native install', async () => {
+  it('passes security and lists the wrapper plus five active scripts after a fresh native install', async () => {
     await installNativeCodexHooks(tempDir, { overwrite: true });
 
     const security = await checkHookScripts(tempDir);
@@ -171,7 +173,7 @@ describe('Codex-native hook integration', () => {
 
     expect(security.status).toBe('pass');
     expect(security.details ?? []).toEqual([]);
-    expect(scriptPaths).toHaveLength(5);
+    expect(scriptPaths).toHaveLength(6);
     expect(scriptPaths).toContain('.codex/hooks/scripts/codex-native-advisory.sh');
   });
 
@@ -212,7 +214,7 @@ describe('Codex-native hook integration', () => {
       const trackedScripts = Object.entries(lockfile.files).filter(([path]) =>
         path.startsWith('.codex/hooks/scripts/')
       );
-      expect(trackedScripts).toHaveLength(5);
+      expect(trackedScripts).toHaveLength(6);
       expect(trackedScripts.every(([, entry]) => entry.root === 'codex-project')).toBe(true);
       await writeLockfile(linked, lockfile, { trustedWriteRoot: linked });
 
@@ -457,6 +459,7 @@ describe('Codex-native hook integration', () => {
       'file-change-validator.sh',
       'schema-validator.sh',
       'secret-filter.sh',
+      'shell-reserved-var-advisor.sh',
     ]) {
       expect(commands.filter((command) => command.includes(scriptName))).toHaveLength(1);
     }

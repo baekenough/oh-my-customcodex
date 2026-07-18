@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.24] - 2026-07-16
+
+### Added
+
+- Add a deterministic release-target resolver and evidence-joined mutation barrier that derives the next version from Git, npm, and GitHub Packages; validates reviewed local drafts; rejects stale preconditions; and requires authoritative readback for every external write (#1643, #1666).
+- Add one canonical offline/live release verifier with durable safe evidence, lifecycle-enabled isolated consumers, exact dual-registry parity, tracked-entry and symlink preservation, secret-safe failure handling, and CI/release-workflow integration (#1666, #1669).
+
+### Changed
+
+- Preserve upstream issue bodies up to the exact 65,536-character GitHub limit, keep execution/verification/mutation/readback phases explicit, protect display-pipe producer exit status, and make direct repository/API evidence primary when verification delegates stop mid-step (#1662).
+- Select remaining `verify-ready` work directly in post-release follow-up so completed `verify-done` issues cannot hide the actual backlog (#1668).
+- Reconcile package documentation to the measured 50 agents, 122 skills, 23 rules, and 52 guides, and document R009's four-worker soft default versus five-agent runtime hard cap (#1646).
+
+### Fixed
+
+- Make documentation validation fail closed across synchronized English, Korean, template, and guide claims; replace stale `bun.lockb` guidance; and require the packed-package offline contract in CI. The parent project's deploy-test activation was immediately reverted, so this child intentionally keeps `deploy-test.yml` inactive and uses its existing packed-package gate plus canonical verifier instead (#1647).
+- Harden generated command boundaries against nested Markdown/shell payload corruption and zsh reserved-variable or unquoted-URL hazards, while verifying canonical copies by Git entry type rather than treating symlinks as regular files (#1669).
+
 ## [1.0.23] - 2026-07-16
 
 ### Changed

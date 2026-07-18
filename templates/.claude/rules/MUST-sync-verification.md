@@ -53,6 +53,16 @@ Required checks:
 
 This section is specifically intended to catch migrations where local untracked files or stale CI path references make a release appear healthy while a clean checkout fails.
 
+### Deletion and tracked-entry history
+
+When structural verification involves a missing, moved, generated, or replaced path, inspect path history with `git log -- <path>` rather than assuming the current tree tells the whole story. Review both the latest fixes and the **deletion-adjacent** commits (`git log --diff-filter=D --summary -- <path>`) so a later recreation does not hide the change that removed the original contract.
+
+Identify the **latest pre-deletion behavior** from the commit immediately before removal and compare it with deletion-adjacent intent plus every later fix that superseded it. Do not restore an arbitrary older version merely because the path once existed; history is evidence, not automatic rollback authority.
+
+Verify the **tracked entry type**, not only path existence or rendered content. Use `git ls-files -s -- <path>` and the clean-checkout filesystem to distinguish a regular file, executable, directory replacement, submodule, and **symbolic link**. For a symbolic link, also verify the stored link target and that it resolves in the packaged/installed layout.
+
+After any approved restoration or recreation, collect fresh evidence: `git status --short`, `git diff -- <path>`, a new content hash (for example `shasum -a 256 <path>`), and the narrowest relevant test. Pre-restoration status, diff, hash, or test output cannot prove the restored result.
+
 ### Phase 4: Fix all discovered issues
 
 ### Phase 5: Commit via mgr-gitnerd

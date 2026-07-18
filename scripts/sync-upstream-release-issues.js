@@ -1,11 +1,11 @@
+import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 
 const DEFAULT_API_BASE = 'https://api.github.com';
 const DEFAULT_UPSTREAM_REPO = 'baekenough/oh-my-customcode';
 const DEFAULT_UPSTREAM_REPOS = ['openai/codex', 'Yeachan-Heo/oh-my-codex', DEFAULT_UPSTREAM_REPO];
 const USER_AGENT = 'oh-my-customcodex-release-sync';
-const MAX_RELEASE_NOTES_LENGTH = 6000;
-const MAX_ISSUE_BODY_LENGTH = 12000;
+export const GITHUB_ISSUE_BODY_CHARACTER_LIMIT = 65_536;
 const DEFAULT_RETRY_DELAY_MS = 250;
 const DEFAULT_MAX_RETRIES = 3;
 const TRANSIENT_GITHUB_STATUSES = new Set([429, 500, 502, 503, 504]);
@@ -103,30 +103,101 @@ export function extractChangelogSection(changelogText = '', releaseTag = '') {
   return match ? match[1].trim() : '';
 }
 
-function truncate(text, maxLength) {
-  if (!text) {
-    return '';
+export function countUnicodeCharacters(text = '') {
+  return Array.from(String(text)).length;
+}
+
+function sliceUnicodeCharacters(text, maximum) {
+  return Array.from(String(text)).slice(0, Math.max(0, maximum)).join('');
+}
+
+function oneLine(value, fallback) {
+  const normalized = String(value || fallback)
+    .replace(/[\r\n]+/g, ' ')
+    .trim();
+  return normalized || fallback;
+}
+
+function overflowDetails({ sourceUrl, sectionName, originalCharacters, storedCharacters, digest }) {
+  return [
+    '[Content overflow]',
+    `- Section: ${oneLine(sectionName, 'Unspecified')}`,
+    `- Source: ${oneLine(sourceUrl, 'unavailable')}`,
+    `- Original characters: ${originalCharacters}`,
+    `- Stored characters: ${storedCharacters}`,
+    `- SHA-256: ${digest}`,
+  ].join('\n');
+}
+
+export function fitGitHubIssueBody(
+  text,
+  { sourceUrl, sectionName, maxCharacters = GITHUB_ISSUE_BODY_CHARACTER_LIMIT } = {}
+) {
+  const original = String(text || '');
+  if (!Number.isSafeInteger(maxCharacters) || maxCharacters <= 0) {
+    throw new Error('maxCharacters must be a positive integer.');
+  }
+  const originalCharacters = countUnicodeCharacters(original);
+  if (originalCharacters <= maxCharacters) {
+    return original;
   }
 
-  if (text.length <= maxLength) {
-    return text;
+  const digest = createHash('sha256').update(original, 'utf8').digest('hex');
+  let storedCharacters = Math.max(0, maxCharacters - 256);
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const details = overflowDetails({
+      sourceUrl,
+      sectionName,
+      originalCharacters,
+      storedCharacters,
+      digest,
+    });
+    const separator = storedCharacters > 0 ? '\n\n' : '';
+    const available = Math.max(0, maxCharacters - countUnicodeCharacters(separator + details));
+    const prefix = sliceUnicodeCharacters(original, available).trimEnd();
+    const actualStored = countUnicodeCharacters(prefix);
+    const fitted =
+      prefix +
+      (actualStored > 0 ? '\n\n' : '') +
+      overflowDetails({
+        sourceUrl,
+        sectionName,
+        originalCharacters,
+        storedCharacters: actualStored,
+        digest,
+      });
+
+    if (actualStored === storedCharacters && countUnicodeCharacters(fitted) <= maxCharacters) {
+      return fitted;
+    }
+    storedCharacters = actualStored;
   }
 
-  return `${text.slice(0, maxLength - 21).trimEnd()}\n\n...[truncated]`;
+  throw new Error('Could not fit explicit overflow metadata inside the body character budget.');
+}
+
+function explicitOverflowNotice(text, { sourceUrl, sectionName }) {
+  const original = String(text || '');
+  return overflowDetails({
+    sourceUrl,
+    sectionName,
+    originalCharacters: countUnicodeCharacters(original),
+    storedCharacters: 0,
+    digest: createHash('sha256').update(original, 'utf8').digest('hex'),
+  });
 }
 
 export function buildTargetIssuePayload({ upstreamRepo, release, issue }) {
   const marker = buildUpstreamIssueMarker(upstreamRepo, issue.number);
-  const releaseNotes = truncate(release.body || '(no release notes)', MAX_RELEASE_NOTES_LENGTH);
-  const originalBody = truncate(issue.body || '(no issue body)', MAX_ISSUE_BODY_LENGTH);
+  const releaseNotes = release.body || '(no release notes)';
+  const originalBody = issue.body || '(no issue body)';
   const labels =
     Array.isArray(issue.labels) && issue.labels.length > 0
       ? issue.labels.map((label) => `\`${label.name}\``).join(', ')
       : '(none)';
 
-  return {
-    title: `[${upstreamRepo}] Port #${issue.number}: ${issue.title}`,
-    body: `${marker}
+  const beforeOriginal = `${marker}
 
 ## Upstream Source
 - Release: [${release.tag_name}](${release.html_url})
@@ -138,24 +209,66 @@ export function buildTargetIssuePayload({ upstreamRepo, release, issue }) {
 ${issue.title}
 
 ## Original Description
-${originalBody}
-
-## Release Context
-${releaseNotes}
+`;
+  const beforeReleaseNotes = '\n\n## Release Context\n';
+  const afterReleaseNotes = `
 
 ## Porting Note
-This issue was auto-created because the upstream release referenced this issue. Track the Codex-native port here.`,
+This issue was auto-created because the upstream release referenced this issue. Track the Codex-native port here.`;
+  const buildBody = (original, notes) =>
+    beforeOriginal + original + beforeReleaseNotes + notes + afterReleaseNotes;
+
+  let body = buildBody(originalBody, releaseNotes);
+  if (countUnicodeCharacters(body) > GITHUB_ISSUE_BODY_CHARACTER_LIMIT) {
+    const releaseBudget =
+      GITHUB_ISSUE_BODY_CHARACTER_LIMIT -
+      countUnicodeCharacters(
+        beforeOriginal + originalBody + beforeReleaseNotes + afterReleaseNotes
+      );
+
+    if (releaseBudget > 512) {
+      const fittedReleaseNotes = fitGitHubIssueBody(releaseNotes, {
+        sourceUrl: release.html_url,
+        sectionName: 'Release Context',
+        maxCharacters: releaseBudget,
+      });
+      body = buildBody(originalBody, fittedReleaseNotes);
+    }
+
+    if (countUnicodeCharacters(body) > GITHUB_ISSUE_BODY_CHARACTER_LIMIT) {
+      const releaseNotice = explicitOverflowNotice(releaseNotes, {
+        sourceUrl: release.html_url,
+        sectionName: 'Release Context',
+      });
+      const originalBudget =
+        GITHUB_ISSUE_BODY_CHARACTER_LIMIT -
+        countUnicodeCharacters(
+          beforeOriginal + beforeReleaseNotes + releaseNotice + afterReleaseNotes
+        );
+      const fittedOriginalBody = fitGitHubIssueBody(originalBody, {
+        sourceUrl: issue.html_url,
+        sectionName: 'Original Description',
+        maxCharacters: originalBudget,
+      });
+      body = buildBody(fittedOriginalBody, releaseNotice);
+    }
+  }
+
+  if (countUnicodeCharacters(body) > GITHUB_ISSUE_BODY_CHARACTER_LIMIT) {
+    throw new Error('Target issue body exceeded the GitHub character limit after fitting.');
+  }
+
+  return {
+    title: `[${upstreamRepo}] Port #${issue.number}: ${issue.title}`,
+    body,
   };
 }
 
 export function buildReleaseUpdatePayload({ upstreamRepo, release }) {
   const marker = buildUpstreamReleaseMarker(upstreamRepo, release.tag_name);
-  const releaseNotes = truncate(release.body || '(no release notes)', MAX_RELEASE_NOTES_LENGTH);
+  const releaseNotes = release.body || '(no release notes)';
   const releaseTitle = release.name?.trim() || release.tag_name;
-
-  return {
-    title: `[${upstreamRepo}] Track upstream release ${release.tag_name}`,
-    body: `${marker}
+  const beforeReleaseNotes = `${marker}
 
 ## Upstream Release
 - Repository: \`${upstreamRepo}\`
@@ -164,10 +277,23 @@ export function buildReleaseUpdatePayload({ upstreamRepo, release }) {
 - Published: \`${release.published_at || release.created_at || 'unknown'}\`
 
 ## Release Notes
-${releaseNotes}
+`;
+  const afterReleaseNotes = `
 
 ## Porting Note
-This issue was auto-created because a dependency upstream published a release without referenced GitHub issues in its release notes or changelog. Review the release and decide whether oh-my-customcodex needs compatibility updates.`,
+This issue was auto-created because a dependency upstream published a release without referenced GitHub issues in its release notes or changelog. Review the release and decide whether oh-my-customcodex needs compatibility updates.`;
+  const notesBudget =
+    GITHUB_ISSUE_BODY_CHARACTER_LIMIT -
+    countUnicodeCharacters(beforeReleaseNotes + afterReleaseNotes);
+  const fittedReleaseNotes = fitGitHubIssueBody(releaseNotes, {
+    sourceUrl: release.html_url,
+    sectionName: 'Release Notes',
+    maxCharacters: notesBudget,
+  });
+
+  return {
+    title: `[${upstreamRepo}] Track upstream release ${release.tag_name}`,
+    body: beforeReleaseNotes + fittedReleaseNotes + afterReleaseNotes,
   };
 }
 

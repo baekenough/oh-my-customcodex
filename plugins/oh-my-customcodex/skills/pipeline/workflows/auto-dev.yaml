@@ -1,15 +1,15 @@
 name: auto-dev
 description: "Automated development pipeline — from issue triage to release"
-version: "2.1.0"
+version: "2.2.0"
 
 # Design rule: each pipeline run produces ONE bounded release unit (3-7 issues), not all open issues.
 # This pipeline is a project-agnostic template. Project-specific overrides belong in
 # the project's own workflows/auto-dev.yaml (e.g., AgentNav, second-brain).
 
 steps:
-  - name: pre-triage
+  - name: preflight-sync
     prompt: |
-      Phase 0 — Sync local with remote.
+      Phase 0 — Sync local with remote and establish read-only release evidence.
 
       1. Fetch all remote state:
          git fetch --all --tags --prune
@@ -21,9 +21,9 @@ steps:
       3. If behind > 0:
          - Working tree clean (git status --short empty):
            git pull --ff-only
-           report: "[pre-triage] synced $behind commits"
+           report: "[preflight-sync] synced $behind commits"
          - Working tree dirty:
-           HALT with "[pre-triage] $behind commits behind, working tree dirty — manual reconcile required"
+           HALT with "[preflight-sync] $behind commits behind, working tree dirty — manual reconcile required"
            exit 1
 
       4. Report current state:
@@ -31,63 +31,41 @@ steps:
          - Local HEAD: git rev-parse --short HEAD
          - Behind state: synced or 0
 
-      5. Cross-reference checks (advisory, do NOT halt):
-         a. Memory vs git consistency:
-            - latest_tag=$(git tag --sort=-v:refname | head -1)
-            - Compare with "Last release" or equivalent line in pipeline memory/context
-            - If mismatch: stderr warning "[pre-triage] WARNING: memory says vX.Y.Z but git latest tag is vA.B.C — update memory after pipeline completion"
-            - Do NOT halt
+      5. Resolve the release target from direct evidence:
+         - Run `node scripts/resolve-release-target.mjs --json`.
+         - The resolver must measure stable versions from Git tags, public npm, and authenticated GitHub Packages.
+         - Persist `gitLatest`, `npmLatest`, `ghpLatest`, `targetVersion`, measurement time, source SHA, and sanitized probe summaries.
+         - Treat session memory as advisory only. Halt on network, authentication, parse, or ambiguous-empty evidence.
 
+      6. Cross-reference checks (advisory, do NOT mutate):
+         a. Memory vs measured evidence:
+            - Compare the remembered release with the resolver's baseVersion.
+            - If they differ, warn and keep the measured result authoritative.
          b. Issue body stale version references:
             - Retrieve open issues: gh issue list --state open --limit 100 --json number,body
-            - Extract vX.Y.Z patterns from each issue body
-            - Retrieve git tag list: git tag --list
-            - Warn when an issue references a version not present in git tags:
-              "[pre-triage] WARNING: Issue #N references vX.Y.Z (not in git tags) — body may be stale"
-            - Output all warnings as advisory log; do NOT halt
+            - Extract vX.Y.Z patterns and compare them with `git tag --list`.
+            - Warn when an issue references a missing tag; do not rewrite the issue here.
 
-      Phase 1 — Ensure required labels exist, then scan issues.
+      7. Read the complete GitHub inventory without changing it:
+         - gh issue list --state open --limit 100 --json number,title,labels,body,milestone
+         - gh issue list --state open --label codex-release --limit 100 --json number,title,labels,body,milestone
+         - gh issue list --state open --label oh-my-codex-release --limit 100 --json number,title,labels,body,milestone
+         - Read all open and closed milestones and existing lifecycle labels.
+         - Group issues by dependency, release-monitor status, decision block, effort, and priority.
+         - Never terminate auto-dev from an empty `verify-done` query alone while open release-monitor issues remain.
 
-      1. Create labels if missing (idempotent):
-         gh label create in-progress --color "FBCA04" --description "Work in progress" --force 2>/dev/null
-         gh label create verify-ready --color "0E8A16" --description "Ready for verification" --force 2>/dev/null
-         gh label create needs-review --color "D93F0B" --description "Needs manual review" --force 2>/dev/null
-         gh label create decision-needed --color "B60205" --description "Decision required before automation" --force 2>/dev/null
-
-      2. Scan open GitHub issues:
-         gh issue list --state open --limit 100 --json number,title,labels,body,milestone
-
-         Also scan release-monitor queues even when `verify-done` is empty:
-         gh issue list --state open --label codex-release --limit 100 --json number,title,labels,body,milestone
-         gh issue list --state open --label oh-my-codex-release --limit 100 --json number,title,labels,body,milestone
-
-      3. Group by label and compute for each issue:
-         - dependencies: parse "see #N", "depends on #N", "#N 참조" from body
-         - release_monitor: true when labels include codex-release or oh-my-codex-release
-         - blocked_by_decision: true if body references any decision-needed issue
-         - effort: XS/S/M/L from scope
-         - order: topological sort over dependencies
-
-      4. Output: dependency-sorted issue table with blocked_by_decision and release_monitor flags.
-         Never terminate auto-dev from an empty `verify-done` query alone while open release-monitor issues remain.
-    description: "Sync remote, stale-version check, memory consistency check, scan issues"
-
+      This phase is read-only with respect to GitHub. Missing labels, milestones, assignments, or comments become proposed actions in triage-draft.
+    description: "Sync remote state, measure all release registries, and inventory issues without GitHub mutation"
   - name: scope-selection
     prompt: |
-      Select a single bounded release scope (3-7 issues) for THIS pipeline run.
+      Select a single bounded release scope (3-7 issues) for THIS pipeline run using the measured targetVersion.
 
-      ## Step 0 — Milestone state pre-check
+      ## Step 0 — Read-only milestone state pre-check
 
-      Before creating a milestone for version vX.Y.Z:
-      1. Query all milestones (open and closed):
-         existing=$(gh api 'repos/{owner}/{repo}/milestones?state=all&per_page=100' --jq '.[] | select(.title == "vX.Y.Z") | "\(.number)|\(.state)"')
-      2. Evaluate:
-         - If existing && state=closed:
-           HALT with "[scope-selection] BLOCKED: milestone vX.Y.Z already exists and is closed. Bump version or reopen milestone manually."
-         - If existing && state=open:
-           Use existing milestone as-is (do not create new)
-         - If not existing:
-           Create new milestone: gh api repos/{owner}/{repo}/milestones --method POST --field title="vX.Y.Z"
+      Query all milestones (open and closed) for targetVersion.
+      - If the target milestone exists and is closed, HALT for target re-resolution or an explicit reviewed reopen action.
+      - If it exists and is open, record its number for the draft precondition.
+      - If it does not exist, record a `milestone.ensure` proposal with a null precondition; do not create it here.
 
       ## Step 1 — Label-based filtering
 
@@ -101,25 +79,19 @@ steps:
 
       ## Step 2 — Selection rules
 
-      1. Determine release tier:
-         - No tags yet → v0.1.0
-         - Otherwise: highest-priority open tier (bug → chore → feature)
-      2. Apply Step 1 filter (label-based exclusion and preference)
-      3. Include release-monitor issues after explicit impact triage:
-         - If code/docs changes are needed, include the issue in the release manifest.
-         - If no change is needed, comment with evidence and close or mark as triaged.
-      4. Sort by dependency: prerequisites before dependents
-      5. Cap at 7 issues; if priority issues < 7, stop at that priority (don't mix tiers)
-      6. Minimum 1 issue or 1 release-monitor triage action; if 0 eligible and 0 release-monitor actions, halt with "no eligible issues for auto-dev run"
+      1. Use the resolver's targetVersion; do not independently choose a semver.
+      2. Apply Step 1 filtering without changing labels.
+      3. Include release-monitor issues after read-only impact analysis.
+      4. Sort by dependency: prerequisites before dependents.
+      5. Cap at 7 issues; if priority issues < 7, stop at that priority.
+      6. Minimum 1 issue or 1 evidence-backed release-monitor action; otherwise halt with "no eligible issues for auto-dev run".
 
-      Assign scoped issues to milestone.
-      Output markdown release manifest:
+      Output and persist a read-only markdown release manifest:
         | order | # | title | prerequisite | effort | labels |
 
-      Persist manifest as pipeline state for subsequent steps.
-    description: "Milestone state pre-check, label filter, pick 3-7 issues as v{X.Y.Z} scope"
-    depends_on: pre-triage
-
+      Do not assign issues, create milestones, comment, close, reopen, or edit labels in this phase.
+    description: "Read-only milestone check, label filter, and bounded targetVersion scope"
+    depends_on: preflight-sync
   - name: compression-mode-eval
     prompt: |
       Evaluate whether this pipeline run qualifies for compression mode.
@@ -141,7 +113,7 @@ steps:
 
       If both conditions match:
       - Set compression_mode=docs-only.
-      - Triage step: skip professor-triage skill; perform direct manifest summary instead.
+      - Triage-draft step: perform a concise evidence join without skipping the mutation barrier.
       - Plan step: skip release-plan skill; single-response plan instead.
       - Deep-plan step: skip deep-plan skill; single-response implementation notes instead.
       - Deep-verify step: skip deep-verify skill; perform self-review checklist instead.
@@ -166,53 +138,98 @@ steps:
 
       Otherwise:
       - Set compression_mode=standard.
-      - Execute all pipeline steps normally with full skill spawns.
+      - Execute the detailed plan, implementation, verification, release, and CI stages normally.
       - Log: "[compression-mode] standard mode (scope={n}, mixed labels or large scope)".
 
       Output compression_mode as pipeline state for downstream steps.
     description: "Evaluate compression eligibility; set compression_mode state"
     depends_on: scope-selection
 
-  - name: triage
-    skill: professor-triage
-    description: "Cross-analysis triage with priority assessment (scoped to release manifest) — skipped if compression_mode=docs-only"
-    depends_on: compression-mode-eval
+  - name: triage-draft
+    prompt: |
+      Produce a local schemaVersion 1 triage draft from the release manifest and direct repository/GitHub evidence.
 
+      - Use native repository exploration and local synthesis; do not execute a mutating triage tool.
+      - Preserve the original issue priority unless current direct evidence justifies a change.
+      - Set `evidenceJoined: true` only after joining every proposed action to one or more current evidence sources.
+      - Record each evidence source with a stable id, kind, source URI, and observedAt timestamp.
+      - Record every action with a stable id, kind, rationale, and non-empty evidenceRefs; only `issue.update`, `label.ensure`, and `milestone.ensure` require a `desired` snapshot.
+      - Comment actions use a regular non-symlink body file with the exact standalone marker `<!-- triage-action:<action-id> -->`, a complete issue precondition, positive `bodyBytes`, and lowercase `bodySha256` computed from the exact reviewed bytes.
+      - When a comment and issue update share one observed issue snapshot, order the comment before the update. Otherwise bind each later issue action precondition to the preceding desired state; the apply script validates the full sequence before its first write.
+      - Set `reviewed: false` and `reviewedAt: null`; evidence-review owns authorization.
+      - Write the JSON artifact locally and read it back. This step performs zero GitHub mutations.
+    description: "Build an evidence-joined local triage draft without changing GitHub"
+    depends_on: compression-mode-eval
   - name: plan
     skill: release-plan
     description: "Release unit plan from triaged issues — skipped if compression_mode=docs-only"
-    depends_on: triage
+    depends_on: triage-draft
 
   - name: deep-plan
     skill: deep-plan
     description: "Research-validated implementation plan (research → plan → verify) — skipped if compression_mode=docs-only"
     depends_on: plan
 
+  - name: evidence-review
+    prompt: |
+      Review the implementation plan and triage draft against direct ground truth before any triage mutation.
+
+      1. Re-read every referenced issue, label, milestone, repository file, and release-target artifact.
+      2. Confirm every evidenceRef resolves to a current evidence source and every rationale follows from that evidence.
+      3. Confirm each precondition still matches, targetVersion remains the stable max-plus-patch result, and it is absent from Git, public npm, and GitHub Packages.
+      4. Confirm the draft has no unknown fields, no substring-only comment markers, and no priority rewrite without direct evidence.
+      5. For every comment action, reopen the regular non-symlink body file and confirm its exact bytes still match `bodyBytes`, `bodySha256`, and the standalone marker before authorization.
+      6. On stale, missing, or ambiguous evidence: halt and regenerate triage-draft.
+      7. On success: set `reviewed: true`, set a fresh `reviewedAt`, write the artifact, and perform local direct readback.
+    description: "Authorize only a complete evidence-joined mutation draft"
+    depends_on: deep-plan
+
+  - name: mutation-commit
+    prompt: |
+      Cross the triage mutation barrier once using only the reviewed artifact:
+
+        node scripts/apply-triage-draft.mjs --draft <triage-draft.json> --repo <owner/repo> --json
+
+      The script must reject stale preconditions, unknown fields/action kinds, missing rationale/evidence, and malformed comment markers. It must skip already-satisfied actions idempotently and perform direct readback after every write. Halt on mismatch; do not improvise an alternate mutation command.
+    description: "Apply the reviewed draft idempotently with direct readback"
+    depends_on: evidence-review
+
+
   - name: implement
     prompt: |
       Execute the deep-plan output for the scoped release manifest.
 
       Per-issue lifecycle:
-      1. Start: gh issue edit <N> --add-label in-progress --assignee @me
-      2. Comment: gh issue comment <N> --body "Implementation started via auto-dev pipeline"
+      1. Before dispatch, read back each issue's complete current state and build a fresh local schemaVersion 1 lifecycle draft for the start transition:
+         - Preserve the current state and milestone, assign the issue, add in-progress without discarding unrelated labels, and propose the implementation-started comment using a regular non-symlink body file, an exact standalone idempotency marker, positive `bodyBytes`, and lowercase `bodySha256` bound to the reviewed bytes.
+         - Order that comment before the issue update because both actions share the same observed precondition; the apply script validates the complete sequential precondition chain before its first write.
+         - Join every proposed action to the current issue/label/milestone evidence, leave `reviewed: false`, and write then locally read back the draft.
+      2. Apply the mandatory lifecycle mutation protocol to the start draft: reviewed draft -> evidence review -> apply-triage-draft -> direct readback.
+         - Re-read every referenced GitHub resource, require exact preconditions and evidenceRefs, then set a fresh `reviewedAt` only when the evidence review passes.
+         - Apply only with `node scripts/apply-triage-draft.mjs --draft <lifecycle-draft.json> --repo <owner/repo> --json`; halt on any rejection or readback mismatch.
       3. Dispatch specialist agents per file domain:
          - Detect file types in scope and route to matching agent
          - Use specialized agents (lang-*, be-*, fe-*, infra-*) over general-purpose
       4. TDD via superpowers:test-driven-development when tests apply
       5. Commit via mgr-gitnerd with `Fixes #<N>` trailer in body
-      6. On success: remove in-progress, add verify-ready
-      7. On failure: remove in-progress, add needs-review, comment error summary
+      6. After the implementation outcome is known, re-enter the lifecycle mutation protocol with new direct evidence and a fresh draft; the start draft cannot authorize outcome-dependent actions.
+         - Success draft: preserve unrelated issue state, remove in-progress, and add verify-ready.
+         - Failure draft: preserve unrelated issue state, place the error-summary comment before the update when both share the observed snapshot, then remove in-progress and add needs-review. Bind the comment to a regular non-symlink body file, a new exact standalone idempotency marker, positive `bodyBytes`, and lowercase `bodySha256` for the reviewed bytes.
+         - For either outcome repeat reviewed draft -> evidence review -> apply-triage-draft -> direct readback, with fresh preconditions, evidence timestamps, and `reviewedAt`.
+      7. Any later retry or outcome-dependent lifecycle action must re-enter the same fresh-draft protocol. Never reuse a stale reviewed artifact.
 
       Rules:
       - Parallel execution per R009 (max 4 concurrent, respect dependencies)
       - Issues whose prerequisites failed in-run MUST be skipped (log reason)
       - No direct orchestrator writes (R010)
+      - Every implementation-phase GitHub lifecycle change, including start, success, failure, retry, labels, assignment, and comments, must use the reviewed local draft and `scripts/apply-triage-draft.mjs` with direct readback.
+      - Never run a direct lifecycle mutation command or improvise a fallback when the draft, evidence review, apply step, or readback fails; halt and regenerate the draft from current evidence.
       - Codex-managed `.codex/` edits use the normal edit/patch flow
       - Claude Code `bypassPermissions` can write `.claude/skills/`, `.claude/agents/`, and `.claude/commands/` directly on v2.1.121+, with broader protected-path writes available on v2.1.126+
       - If `.claude` template parity changes are required, make them explicit and verify sensitive-path guard tests
       - Use `/tmp/{skill}-{timestamp}.md` only as a historical fallback for older Claude Code versions, non-bypass sessions, or runs that still surface a protected-path prompt
     description: "Per-issue implementation with lifecycle and specialist routing"
-    depends_on: deep-plan
+    depends_on: mutation-commit
 
   - name: verify-build
     prompt: |
@@ -263,18 +280,14 @@ steps:
 
   - name: release
     prompt: |
-      Create a GitHub Release.
+      Create and merge the reviewed release PR, then observe repository-owned release automation.
 
       1. Version:
-         - Version decision (semver) — PATCH-PREFERRED policy from v1.0.0 onward:
-           * No existing tags → v0.1.0.
-           * Previous tag exists → default to patch. When in doubt, patch; do not reflexively bump minor for rule/doc/skill/config/wiki/workflow edits.
-           * patch (DEFAULT): bugfixes, hardening, rule/doc/skill/config/wiki/workflow changes, compatibility notes, and release-process guardrails.
-           * minor: only a genuinely new user-facing capability, such as a new skill/agent/command adding visible surface, not a refinement of an existing one.
-           * major: breaking changes to user-facing contracts (CLI flags, public skill/command names, public API) or a deliberate milestone declaration such as v1.0.0.
-           * If a previous tag is ahead of the source version, use the next available skip-version.
+         - Re-run `node scripts/resolve-release-target.mjs --expected-target <reviewed-target> --json` immediately before the first version mutation.
+         - The resolver always computes targetVersion as stable max + one patch across Git, public npm, and authenticated GitHub Packages; expected-target is assertion-only.
+         - Require sourceSha to equal current HEAD and halt if expected-target no longer matches the measured target.
          - For npm projects: update `package.json` and `templates/manifest.json`
-           to the chosen version in the same commit before tag creation.
+           to targetVersion in the same commit before tag creation.
          - Promote `CHANGELOG.md` before tag creation: move non-empty
            `## [Unreleased]` entries into `## [VERSION] - YYYY-MM-DD`,
            re-create an empty `## [Unreleased]`, and add a concise summary
@@ -282,22 +295,40 @@ steps:
          - Run `bash .github/scripts/verify-version-sync.sh` after the bump and
            before tag or PR creation.
       2. Release notes via omcustomcodex-release-notes skill
-      3. Delegate to mgr-gitnerd:
+      3. Delegate the release PR to mgr-gitnerd:
          - preflight: `git branch --list release --format='%(refname:short)'`
            before creating `release/v*`; if a local `release` branch exists,
            prove it is merged/backed up and prefer renaming it to
            `releases-tracking` over deleting it
-         - git tag + push
-         - gh release create
-      4. Close milestone
-         - After closing a milestone, verify by milestone number (not title-only search) and retry once before reporting missing.
-      5. Close verify-ready issues with "Fixed in v{version}"
-         Label needs-review issues as "Deferred from v{version}"
+         - stage the reviewed PR body through `scripts/safe-command-payload.mjs`
+           and use its body file instead of inline shell interpolation
+         - push only `release/v*`, open the PR to `develop`, wait for required
+           checks, and merge only after direct readback proves them green
+      4. Preserve repository automation ownership:
+         - The Auto Tag workflow owns annotated tag creation, provisional closure
+           of scoped issues and the target milestone, and release-branch deletion.
+         - The tag-triggered Release workflow owns npm, GitHub Packages, and GitHub Release publication plus live verification.
+         - Do not create or push release tags manually.
+         - Do not create the GitHub Release manually.
+         - Do not directly close or relabel scoped issues or the milestone.
+      5. Use the mutation barrier for recovery:
+         - Every non-automated recovery mutation for an issue or milestone,
+           including reopen or corrective relabeling, requires a fresh reviewed draft.
+         - Repeat reviewed draft -> evidence review ->
+           `node scripts/apply-triage-draft.mjs --draft <draft.json> --repo <owner/repo> --json`
+           -> direct readback. Halt instead of using a direct mutation fallback.
+      6. Read back the automated outcome:
+         - Correlate the Auto Tag run to the merged PR head SHA and the Release
+           run to the peeled tag commit.
+         - After Auto Tag closes a milestone, verify by milestone number (not
+           title-only search) and retry once before reporting missing.
+         - Verify every scoped issue state, milestone counts, release-branch
+           deletion, exact registry versions, GitHub Release, and safe live evidence.
 
       Adapt release mechanism to project:
-      - npm project: PR + merge + npm publish verification
-      - Non-npm: direct tag on main (trunk-based)
-    description: "Git tag + GitHub Release + close milestone/issues"
+      - This npm repository: PR + merge + repository automation + publication verification
+      - Other repositories: first detect and respect their own tag/release automation contract
+    description: "Merge the release PR, observe Auto Tag/Release automation, and verify external state"
     depends_on: deep-verify
 
   - name: ci-check

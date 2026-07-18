@@ -31,6 +31,12 @@ Inspired by [ouroboros PR #353](https://github.com/Q00/ouroboros/pull/353) capab
 Claude Code v2.1.208 fixes settings and environment parsing for numbers written in scientific notation, along with Edit, Read, Grep, and Glob reliability defects. These are provider-owned fixes; retain capability-aware scheduling and validate the active Codex/OMX tool result rather than assuming cross-provider parity.
 -->
 
+### Display-pipe exit status
+
+A **display pipe** such as `command | head`, `command | tail`, or `command | tee` is not proof that the producer succeeded: the shell commonly reports the final consumer's status. Keep dependent release and verification gates sequential, and inspect the producer directly.
+
+When a display pipe is unavoidable, execute it under **explicit Bash** with `set -o pipefail` and capture `${PIPESTATUS[0]}` before running another command. Do not assume zsh and Bash expose the same pipeline-status variables. A zero status from `head`, `tail`, or `tee` never overrides a non-zero producer status.
+
 ## Token Optimization
 
 - Include only necessary info, remove duplicates, use summaries

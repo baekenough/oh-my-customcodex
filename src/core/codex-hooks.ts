@@ -37,12 +37,16 @@ const NATIVE_EVENTS = new Set([
 
 const TOOL_MATCHER_EVENTS = new Set(['PreToolUse', 'PermissionRequest', 'PostToolUse']);
 const MATCHER_IGNORED_EVENTS = new Set(['UserPromptSubmit', 'Stop']);
-const SELF_FILTERING_PREDICATE_SCRIPTS = new Set(['destructive-git-guard.sh']);
+const SELF_FILTERING_PREDICATE_SCRIPTS = new Set([
+  'destructive-git-guard.sh',
+  'shell-reserved-var-advisor.sh',
+]);
 const NATIVE_VALIDATED_SCRIPT_NAMES = [
   'destructive-git-guard.sh',
   'file-change-validator.sh',
   'schema-validator.sh',
   'secret-filter.sh',
+  'shell-reserved-var-advisor.sh',
 ] as const;
 const NATIVE_VALIDATED_SCRIPTS = new Set<string>(NATIVE_VALIDATED_SCRIPT_NAMES);
 export const CODEX_NATIVE_HOOK_WRAPPER_SCRIPT = 'codex-native-advisory.sh';

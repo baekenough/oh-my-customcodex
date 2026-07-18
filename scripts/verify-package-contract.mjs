@@ -41,7 +41,11 @@ const ACTIVE_NATIVE_HOOK_SCRIPTS = [
   'file-change-validator.sh',
   'schema-validator.sh',
   'secret-filter.sh',
+  'shell-reserved-var-advisor.sh',
 ];
+const MANAGED_NATIVE_HOOK_MARKERS = ACTIVE_NATIVE_HOOK_SCRIPTS.filter(
+  (script) => script !== 'codex-native-advisory.sh'
+);
 
 const skipBuild = process.argv.includes('--skip-build');
 const keepTemp = process.argv.includes('--keep-temp');
@@ -616,23 +620,38 @@ void [options, version, defaultVersion, root, template, installFunction];
 }
 
 async function verifyCleanConsumer({ packageName, artifact, consumerDir, homeDir }) {
-  await Promise.all([mkdir(consumerDir, { recursive: true }), mkdir(homeDir, { recursive: true })]);
+  const codexHome = join(homeDir, 'codex-home');
+  const npmCache = join(homeDir, 'npm-cache');
+  const npmPrefix = join(homeDir, 'npm-prefix');
+  const npmUserconfig = join(homeDir, 'npmrc');
+  await Promise.all(
+    [consumerDir, homeDir, codexHome, npmCache, npmPrefix].map((directory) =>
+      mkdir(directory, { recursive: true })
+    )
+  );
+  await writeFile(npmUserconfig, 'ignore-scripts=false\n', { mode: 0o600 });
+  const consumerEnv = {
+    ...process.env,
+    HOME: homeDir,
+    USERPROFILE: homeDir,
+    CODEX_HOME: codexHome,
+    npm_config_cache: npmCache,
+    npm_config_userconfig: npmUserconfig,
+    npm_config_prefix: npmPrefix,
+    npm_config_ignore_scripts: 'false',
+    INIT_CWD: consumerDir,
+  };
+  delete consumerEnv.NODE_PATH;
+  delete consumerEnv.npm_config_node_path;
+  delete consumerEnv.NPM_CONFIG_NODE_PATH;
   await writeFile(
     join(consumerDir, 'package.json'),
     `${JSON.stringify({ private: true, type: 'module' }, null, 2)}\n`
   );
-  run(
-    'npm',
-    [
-      'install',
-      '--ignore-scripts',
-      '--no-audit',
-      '--no-fund',
-      '--no-package-lock',
-      artifact.tarballPath,
-    ],
-    { cwd: consumerDir }
-  );
+  run('npm', ['install', '--no-audit', '--no-fund', '--no-package-lock', artifact.tarballPath], {
+    cwd: consumerDir,
+    env: consumerEnv,
+  });
   pass(`${packageName} clean npm consumer install completed`);
 
   const productionPackages = await installedProductionPackages(consumerDir);
@@ -653,7 +672,10 @@ async function verifyCleanConsumer({ packageName, artifact, consumerDir, homeDir
   );
 
   await writeConsumerSmokeFiles(consumerDir, packageName);
-  const esmResult = run(process.execPath, ['esm-smoke.mjs'], { cwd: consumerDir });
+  const esmResult = run(process.execPath, ['esm-smoke.mjs'], {
+    cwd: consumerDir,
+    env: consumerEnv,
+  });
   assert.match(
     esmResult.stdout,
     new RegExp(`"version":"${artifact.packageJson.version.replaceAll('.', '\\.')}"`)
@@ -662,7 +684,10 @@ async function verifyCleanConsumer({ packageName, artifact, consumerDir, homeDir
 
   const tscPath = join(REPO_ROOT, 'node_modules', 'typescript', 'bin', 'tsc');
   assert(existsSync(tscPath), 'repository TypeScript compiler is missing; run bun install first');
-  run(process.execPath, [tscPath, '--project', join(consumerDir, 'tsconfig.json')]);
+  run(process.execPath, [tscPath, '--project', join(consumerDir, 'tsconfig.json')], {
+    cwd: consumerDir,
+    env: consumerEnv,
+  });
   pass(`${packageName} strict clean-consumer TypeScript declaration check`);
 
   const installedRoot = join(consumerDir, 'node_modules', packageName);
@@ -676,19 +701,193 @@ async function verifyCleanConsumer({ packageName, artifact, consumerDir, homeDir
       : installedPackageJson.bin?.omcustomcodex;
   const cliPath = join(installedRoot, packageRelativePath(installedBin, 'installed CLI bin'));
   assert(existsSync(cliPath), `installed CLI is missing: ${cliPath}`);
+  const cliVersion = run(process.execPath, [cliPath, '--version'], {
+    cwd: consumerDir,
+    env: consumerEnv,
+  });
+  assert.equal(cliVersion.stdout.trim(), artifact.packageJson.version);
+  const cliHelp = run(process.execPath, [cliPath, '--help'], {
+    cwd: consumerDir,
+    env: consumerEnv,
+  });
+  assert.match(cliHelp.stdout, /Usage:/);
+  const doctor = run(process.execPath, [cliPath, '--skip-version-check', 'doctor'], {
+    cwd: consumerDir,
+    env: consumerEnv,
+  });
+  assert.doesNotMatch(`${doctor.stdout}\n${doctor.stderr}`, /\n\s+at\s+\S+|Error:\s/);
+  pass(`${packageName} clean CLI version, help, and doctor smoke checks`);
 
   const hookFixtureDir = join(consumerDir, 'native-hook-footprint');
-  await mkdir(hookFixtureDir, { recursive: true });
+  const fakeToolDir = join(homeDir, 'fake-tools');
+  const foreignSentinel = join(hookFixtureDir, 'foreign-command-ran');
+  const foreignGroups = [
+    {
+      matcher: '^Bash$',
+      owner: 'foreign-one',
+      hooks: [
+        {
+          type: 'command',
+          command: `printf foreign > ${JSON.stringify(foreignSentinel)}`,
+          timeout: 7,
+          sentinel: { preserved: true },
+        },
+      ],
+    },
+    {
+      matcher: '^apply_patch$',
+      owner: 'foreign-two',
+      hooks: [{ type: 'command', command: 'printf foreign-two', timeout: 9 }],
+    },
+  ];
+  await mkdir(join(hookFixtureDir, '.codex'), { recursive: true });
+  await mkdir(fakeToolDir, { recursive: true });
+  await Promise.all([
+    writeFile(join(fakeToolDir, 'rtk'), '#!/bin/sh\nexit 0\n', { mode: 0o755 }),
+    writeFile(join(fakeToolDir, 'codex'), '#!/bin/sh\nexit 0\n', { mode: 0o755 }),
+    writeFile(
+      join(fakeToolDir, 'omx'),
+      '#!/bin/sh\nif [ "$1" = "--version" ]; then\n  printf "oh-my-codex v0.20.2\\n"\nfi\nexit 0\n',
+      { mode: 0o755 }
+    ),
+  ]);
+  await writeFile(
+    join(hookFixtureDir, '.codex', 'hooks.json'),
+    `${JSON.stringify({ foreignMetadata: { untouched: true }, hooks: { PreToolUse: foreignGroups } }, null, 2)}\n`
+  );
   const installedPublicApi = await import(
     pathToFileURL(join(installedRoot, 'dist', 'index.js')).href
   );
-  const hookInstall = await installedPublicApi.install({
-    targetDir: hookFixtureDir,
-    components: ['hooks'],
-    force: true,
-    skipConfirm: true,
+  const managedEnvironment = {
+    PATH: process.env.PATH,
+    HOME: process.env.HOME,
+    USERPROFILE: process.env.USERPROFILE,
+    CODEX_HOME: process.env.CODEX_HOME,
+    OMCODEX_REGISTRY_DIR: process.env.OMCODEX_REGISTRY_DIR,
+  };
+  Object.assign(process.env, {
+    PATH: `${fakeToolDir}${delimiter}${process.env.PATH ?? ''}`,
+    HOME: homeDir,
+    USERPROFILE: homeDir,
+    CODEX_HOME: codexHome,
+    OMCODEX_REGISTRY_DIR: join(homeDir, 'registry'),
   });
-  assert.equal(hookInstall.success, true, hookInstall.error);
+  try {
+    const hookInstall = await installedPublicApi.install({
+      targetDir: hookFixtureDir,
+      components: ['hooks'],
+      force: true,
+      skipConfirm: true,
+    });
+    assert.equal(hookInstall.success, true, hookInstall.error);
+    const installedRegistryPath = join(hookFixtureDir, '.codex', 'hooks.json');
+    const firstRegistryText = await readFile(installedRegistryPath, 'utf8');
+    const projectForeignGroups = (registryText) =>
+      JSON.parse(registryText)
+        .hooks.PreToolUse.slice(0, foreignGroups.length)
+        .map((group) => ({
+          ...group,
+          hooks: group.hooks.filter(
+            (hook) =>
+              !(typeof hook.command === 'string' && hook.command.includes('# omcustomcodex-hook:'))
+          ),
+        }));
+    const assertManagedHookMarkersExactlyOnce = (registryText, phase) => {
+      const commands = Object.values(JSON.parse(registryText).hooks)
+        .flat()
+        .flatMap((group) => group.hooks)
+        .map((hook) => hook.command)
+        .filter((command) => typeof command === 'string');
+      const observedMarkers = commands
+        .map((command) => command.match(/# omcustomcodex-hook:([^\s#]+\.sh)\s*$/)?.[1])
+        .filter(Boolean);
+      assert.deepEqual(
+        [...new Set(observedMarkers)].sort(),
+        [...MANAGED_NATIVE_HOOK_MARKERS].sort(),
+        `${phase}: managed hook marker inventory changed`
+      );
+      const counts = new Map(
+        MANAGED_NATIVE_HOOK_MARKERS.map((marker) => [
+          marker,
+          observedMarkers.filter((observed) => observed === marker).length,
+        ])
+      );
+      for (const [marker, count] of counts) {
+        assert.equal(count, 1, `${phase}: managed hook marker must appear exactly once: ${marker}`);
+      }
+    };
+    assert.deepEqual(
+      projectForeignGroups(firstRegistryText),
+      foreignGroups,
+      'foreign PreToolUse group order or content changed during install'
+    );
+    assertManagedHookMarkersExactlyOnce(firstRegistryText, 'install');
+    assert(!existsSync(foreignSentinel), 'foreign hook command executed during install');
+
+    const modifiedHookScriptPath = join(
+      hookFixtureDir,
+      '.codex',
+      'hooks',
+      'scripts',
+      'schema-validator.sh'
+    );
+    const userModifiedHookScript = Buffer.concat([
+      await readFile(modifiedHookScriptPath),
+      Buffer.from('\n# package-contract user modification\n'),
+    ]);
+    await writeFile(modifiedHookScriptPath, userModifiedHookScript);
+
+    const firstHookUpdate = await installedPublicApi.update({
+      targetDir: hookFixtureDir,
+      components: ['hooks'],
+      force: true,
+    });
+    assert.equal(firstHookUpdate.success, true, firstHookUpdate.error);
+    assert.deepEqual(
+      await readFile(modifiedHookScriptPath),
+      userModifiedHookScript,
+      'native hook update overwrote a user-modified managed script'
+    );
+    assert(!existsSync(foreignSentinel), 'foreign hook command executed during update');
+
+    const registryAfterFirstUpdate = await readFile(installedRegistryPath);
+    assert.deepEqual(
+      projectForeignGroups(registryAfterFirstUpdate.toString('utf8')),
+      foreignGroups,
+      'foreign PreToolUse group order or content changed during update'
+    );
+    assertManagedHookMarkersExactlyOnce(registryAfterFirstUpdate.toString('utf8'), 'first update');
+    const modifiedScriptAfterFirstUpdate = await readFile(modifiedHookScriptPath);
+    const secondHookUpdate = await installedPublicApi.update({
+      targetDir: hookFixtureDir,
+      components: ['hooks'],
+      force: true,
+    });
+    assert.equal(secondHookUpdate.success, true, secondHookUpdate.error);
+    assert.deepEqual(
+      await readFile(installedRegistryPath),
+      registryAfterFirstUpdate,
+      'second native hook update changed the registry bytes'
+    );
+    assertManagedHookMarkersExactlyOnce(
+      (await readFile(installedRegistryPath)).toString('utf8'),
+      'second update'
+    );
+    assert.deepEqual(
+      await readFile(modifiedHookScriptPath),
+      modifiedScriptAfterFirstUpdate,
+      'second native hook update changed the user-modified script bytes'
+    );
+    assert(!existsSync(foreignSentinel), 'foreign hook command executed during update');
+  } finally {
+    for (const [name, value] of Object.entries(managedEnvironment)) {
+      if (value === undefined) {
+        delete process.env[name];
+      } else {
+        process.env[name] = value;
+      }
+    }
+  }
   const installedHookScripts = (
     await readdir(join(hookFixtureDir, '.codex', 'hooks', 'scripts'))
   ).sort();
@@ -714,9 +913,7 @@ async function verifyCleanConsumer({ packageName, artifact, consumerDir, homeDir
   const webUrl = `http://localhost:${port}`;
   await writeEvaluationFixture(homeDir);
   const webEnv = {
-    ...process.env,
-    HOME: homeDir,
-    USERPROFILE: homeDir,
+    ...consumerEnv,
     NO_COLOR: '1',
   };
   delete webEnv.OMCODEX_PORT;

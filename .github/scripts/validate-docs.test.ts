@@ -4,8 +4,13 @@ import {
   programmaticValidation,
   buildPrompt,
   collectImplementationStats,
+  extractInventoryClaims,
   extractSlashCommandsFromReadme,
+  loadRequiredDocumentation,
+  REQUIRED_DOCUMENT_CLAIMS,
+  validateDocumentationClaims,
   validateSlashCommands,
+  type DocumentationInput,
   type ImplementationStats,
   type ValidationResult,
   type SlashCommandValidation,
@@ -260,6 +265,22 @@ describe('extractSlashCommandsFromReadme', () => {
 
     expect(result).toEqual([]);
   });
+
+  test('extracts dollar-prefixed namespaced invocations and ignores arguments', () => {
+    const readme = `
+| Invocation | Description |
+|------------|-------------|
+| \`$omcustomcodex:feedback\` | Submit feedback |
+| \`$pipeline resume\` | Resume a pipeline |
+| \`/legacy-command\` | Compatibility invocation |
+`;
+
+    expect(extractSlashCommandsFromReadme(readme)).toEqual([
+      'omcustomcodex:feedback',
+      'pipeline',
+      'legacy-command',
+    ]);
+  });
 });
 
 describe('validateSlashCommands', () => {
@@ -306,6 +327,150 @@ describe('validateSlashCommands', () => {
     expect(result.phantom).toEqual([]);
 
     rmSync(base, { recursive: true, force: true });
+  });
+
+  test('accepts a dollar-prefixed namespaced frontmatter invocation', () => {
+    const base = mkdtempSync(join(tmpdir(), 'validate-docs-skill-'));
+    const skillDir = join(base, 'omcodex-feedback');
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(join(skillDir, 'SKILL.md'), '---\nname: omcustomcodex:feedback\n---\n');
+
+    const result = validateSlashCommands(
+      '| `$omcustomcodex:feedback` | Submit feedback |',
+      base,
+    );
+
+    expect(result.valid).toEqual(['omcustomcodex:feedback']);
+    expect(result.phantom).toEqual([]);
+
+    rmSync(base, { recursive: true, force: true });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// deterministic multi-document inventory validation
+// ---------------------------------------------------------------------------
+
+describe('validateDocumentationClaims', () => {
+  const inventoryStats: ImplementationStats = {
+    ...STATS_ALL_MATCH,
+    agent_count: 50,
+    skill_count: 122,
+    rule_count: 23,
+    guide_count: 52,
+  };
+
+  test('extracts every recognizable English and Korean inventory claim', () => {
+    const claims = extractInventoryClaims(`
+50 agents. 122 skills. 23 rules.
+### Guides (52)
+## 하네스 행동 정책 (23개)
+├── agents/ # 50개 에이전트 정의
+├── skills/ # 설치된 스킬 (122 디렉토리)
+└── guides/ # 레퍼런스 문서 (52 토픽)
+`);
+
+    expect(claims.agents).toEqual([50, 50]);
+    expect(claims.skills).toEqual([122, 122]);
+    expect(claims.rules).toEqual([23, 23]);
+    expect(claims.guides).toEqual([52, 52]);
+  });
+
+  test.each([
+    ['README.md', '49 agents.', 'agents', 49, 50],
+    ['README_ko.md', '121개 스킬.', 'skills', 121, 122],
+  ] as const)(
+    'reports a stale claim in %s with the complete mismatch evidence',
+    (documentPath, content, field, claimed, actual) => {
+      const result = validateDocumentationClaims(
+        inventoryStats,
+        [{ path: documentPath, content }],
+        { [documentPath]: [field] },
+      );
+
+      expect(result.issues).toEqual([
+        {
+          kind: 'mismatch',
+          path: documentPath,
+          field,
+          claimed,
+          actual,
+        },
+      ]);
+    },
+  );
+
+  test('reports every stale claim even when another claim in the same document is correct', () => {
+    const documents: DocumentationInput[] = [
+      {
+        path: 'templates/README.md',
+        content: '### Skills (122)\n| +-- skills/ # skill modules (120 SKILL.md files)',
+      },
+    ];
+
+    const result = validateDocumentationClaims(inventoryStats, documents, {
+      'templates/README.md': ['skills'],
+    });
+
+    expect(result.issues).toEqual([
+      {
+        kind: 'mismatch',
+        path: 'templates/README.md',
+        field: 'skills',
+        claimed: 120,
+        actual: 122,
+      },
+    ]);
+  });
+
+  test('fails closed when a required document claim is missing', () => {
+    const result = validateDocumentationClaims(
+      inventoryStats,
+      [{ path: 'README_ko.md', content: '50개 에이전트.' }],
+      { 'README_ko.md': ['agents', 'skills'] },
+    );
+
+    expect(result.issues).toContainEqual({
+      kind: 'missing',
+      path: 'README_ko.md',
+      field: 'skills',
+      actual: 122,
+    });
+  });
+
+  test('cannot hide a stale secondary document behind a correct primary README', () => {
+    const documents: DocumentationInput[] = [
+      { path: 'README.md', content: '50 agents. 122 skills. 23 rules.\n### Guides (52)' },
+      {
+        path: 'templates/CLAUDE.md.en',
+        content:
+          '| +-- agents/ # Subagent definitions (50 files)\n' +
+          '| +-- skills/ # Skills (122 directories)\n' +
+          '| +-- rules/ # Global rules (22 files)\n' +
+          '+-- guides/ # Reference docs (52 topics)',
+      },
+    ];
+
+    const result = validateDocumentationClaims(inventoryStats, documents, {
+      'README.md': ['agents', 'skills', 'rules', 'guides'],
+      'templates/CLAUDE.md.en': ['agents', 'skills', 'rules', 'guides'],
+    });
+
+    expect(result.issues).toContainEqual({
+      kind: 'mismatch',
+      path: 'templates/CLAUDE.md.en',
+      field: 'rules',
+      claimed: 22,
+      actual: 23,
+    });
+  });
+
+  test('validates every required repository document against measured implementation counts', async () => {
+    const stats = await collectImplementationStats();
+    const documents = await loadRequiredDocumentation();
+    const result = validateDocumentationClaims(stats, documents, REQUIRED_DOCUMENT_CLAIMS);
+
+    expect(result.issues).toEqual([]);
   });
 });
 
@@ -467,7 +632,7 @@ describe('buildPrompt', () => {
     expect(prompt).toContain('skills 개수: README=10, 실제=2');
   });
 
-  test('includes slash command success message when no phantom commands', () => {
+  test('includes skill invocation success message when no phantom commands', () => {
     const prompt = buildPrompt(
       STATS_ALL_MATCH,
       README_WITH_CANONICAL_BLOCKS,
@@ -476,11 +641,11 @@ describe('buildPrompt', () => {
       SLASH_COMMAND_VALIDATION_CLEAN,
     );
 
-    expect(prompt).toContain('README의 모든 슬래시 커맨드');
+    expect(prompt).toContain('README의 모든 스킬 호출');
     expect(prompt).toContain('SKILL.md가 존재합니다');
   });
 
-  test('includes phantom slash command details when present', () => {
+  test('includes phantom skill invocation details when present', () => {
     const prompt = buildPrompt(
       STATS_ALL_MATCH,
       README_WITH_CANONICAL_BLOCKS,
@@ -489,8 +654,8 @@ describe('buildPrompt', () => {
       SLASH_COMMAND_VALIDATION_WITH_PHANTOM,
     );
 
-    expect(prompt).toContain('Phantom 슬래시 커맨드 발견');
-    expect(prompt).toContain('/nonexistent-command');
+    expect(prompt).toContain('Phantom 스킬 호출 발견');
+    expect(prompt).toContain('$nonexistent-command');
   });
 
   test('includes readme content in the prompt', () => {

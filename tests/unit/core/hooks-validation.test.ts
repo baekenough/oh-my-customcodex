@@ -523,8 +523,11 @@ describe('Hooks Validation', () => {
 
       expect(advisorHook).toBeDefined();
       expect(advisorHook?.matcher).toContain('tool == "Bash"');
-      expect(advisorHook?.matcher).toContain('status|path|argv');
+      expect(advisorHook?.matcher).toContain('tool == "Bash"');
+      expect(advisorHook?.matcher).toContain('gh[[:space:]]+api');
       expect(advisorHook?.description).toContain('reserved variable');
+      expect(advisorHook?.description).toContain('gh api');
+      expect(advisorHook?.description).toContain('EXIT trap');
     });
 
     it('should keep source and template shell reserved-variable advisor registration in sync', async () => {

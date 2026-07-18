@@ -22,6 +22,12 @@ Before declaring any task `[Done]`, verify completion against task-type-specific
 
 Before [Done]: (1) Verify ACTUAL outcome not just attempt — "ran command" ≠ "succeeded". (2) Check task-type criteria above. (3) No unchecked items. (4) Would bet $100 it's complete.
 
+## Evidence-Joined Mutation Completion
+
+For issue triage, release lifecycle, and other external-state automation, an intent summary is not mutation authorization. First complete an **evidence join** that links every proposed state change to current repository and external facts. Persist a **reviewed local mutation draft** with explicit preconditions, desired state, stable action ids, and repository identity before the first write.
+
+At the mutation barrier, reject stale preconditions and unknown action kinds, skip already-satisfied actions idempotently, and verify **direct ground truth** rather than trusting the command attempt. Every applied write requires **direct readback** from the authoritative API or registry before it can count as complete.
+
 ## Workflow Prompt and Verifier Ground Truth
 
 When a workflow delegates to `agent()` or equivalent subagent calls, complete the full prompt string before the call. Do not append guardrails, fact sheets, or critical constraints to the returned value after the agent has already run.
@@ -162,15 +168,18 @@ Subagents often report failures as "pre-existing", "baseline", or "unchanged". T
 Never accept "pre-existing" without direct base-branch evidence. A false "pre-existing" claim can mask a regression introduced by the current change.
 -->
 
-### Verification-Delegation Non-Termination
+### Verification Delegation — Direct Ground Truth First
 
-When delegating structural verification, release-quality judgment, or a quality gate, the prompt must state: **do not end the turn without a final PASS/FAIL verdict**. A mid-step verifier report is not completion evidence. If a verifier stops while still comparing hashes, reading logs, or drafting findings, resume it and obtain the final verdict before proceeding.
+**Direct ground truth is primary**: inspect the authoritative diff, files, test output, registry/API state, and other task-specific evidence before deciding whether a delegated verifier needs another turn. A missing, malformed, or mid-step PASS/FAIL sentence is not by itself a reason to resume the delegate and is never a reason to discard sufficient canonical evidence.
 
-| Anti-pattern | Required |
-|--------------|----------|
-| Verification delegate stops after partial analysis with no verdict | Prompt for a final PASS/FAIL and resume on mid-step termination |
+Resume a verification delegate **only when** direct ground truth shows unfinished verification work, an incomplete diagnosis, or a concrete evidence gap that the same delegate can still close. If authoritative evidence already establishes the outcome, the parent must synthesize the PASS/FAIL verdict locally and continue without a formatting-only resume.
 
-Origin: upstream #1443; prevents incomplete R017/deep-verify handoffs from being treated as release evidence.
+| Observed state | Required action |
+|----------------|-----------------|
+| Canonical evidence is sufficient; delegated verdict syntax is absent or malformed | Synthesize the verdict from direct ground truth; do not resume for phrasing |
+| Canonical evidence exposes unfinished work, incomplete diagnosis, or a named evidence gap | Resume with that exact remaining task, then verify the new evidence directly |
+
+Origin: upstream #1443. The intent is to prevent incomplete R017/deep-verify evidence from being accepted, not to create unconditional verifier-resume loops.
 
 > **Claude Code v2.1.199+ compatibility**: subagent API errors are reported to the parent instead of being self-reported as success. This lowers false-success frequency, but R020 still requires canonical ground-truth verification (`git status`, grep, tests, validation scripts, registry/API checks) before accepting a subagent report.
 

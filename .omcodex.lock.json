@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.23",
-  "generatedAt": "2026-07-16T07:40:11.966Z",
-  "templateVersion": "1.0.23",
+  "generatorVersion": "1.0.24",
+  "generatedAt": "2026-07-16T11:15:30.046Z",
+  "templateVersion": "1.0.24",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e2690ef49068c522f452b7bc26089687adf98b1039841704dfcac64a6fa8a65b",
@@ -60,8 +60,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-sync-verification.md": {
-      "templateHash": "cf4c6f6723b77b7c67e2db45e3a5c7eb178d65bf2b06802f48a4728b24575a12",
-      "size": 7533,
+      "templateHash": "5652549a58834a3677c1b5404fed5efa5e8bdce572bfa1a625dabecf27f5fe74",
+      "size": 8923,
       "component": "rules"
     },
     ".codex/rules/MUST-agent-teams.md": {
@@ -70,8 +70,8 @@
       "component": "rules"
     },
     ".codex/rules/MAY-optimization.md": {
-      "templateHash": "c78dbf9c56d1e89435af85c3cb3ad0094e50a334e1f3c17380586a5a08689f1c",
-      "size": 3759,
+      "templateHash": "ae49b5fb9da57b47647762073e4238517b88ece2807bbcc5c83a33e0482709ff",
+      "size": 4379,
       "component": "rules"
     },
     ".codex/rules/MUST-continuous-improvement.md": {
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-completion-verification.md": {
-      "templateHash": "ab389e28f68b85708244584144becac22f0924e3027d251f4fa1fcdfec4777b2",
-      "size": 20830,
+      "templateHash": "d8c5b9531858e1de60a2594dd349a130ee392eb50661afd8bc5375e4132e034b",
+      "size": 22230,
       "component": "rules"
     },
     ".codex/agents/be-springboot-expert.md": {
@@ -465,8 +465,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/shell-reserved-var-advisor.sh": {
-      "templateHash": "e40e0fcaa211b1db0ead6a533dc42b95f7aafe41e73862267bf102c0b24c1ee8",
-      "size": 1025,
+      "templateHash": "ca85e1f86f5bb6aa36b9e28050b65a1fcfb4eecba29ce49d0efe0f846cfe0538",
+      "size": 2170,
       "component": "hooks"
     },
     ".codex/hooks/scripts/secret-filter.sh": {
@@ -555,8 +555,8 @@
       "component": "hooks"
     },
     ".codex/hooks/scripts/codex-native-advisory.sh": {
-      "templateHash": "18187109e6d6e4851b3eeeb4f4c046b01f716d01164520b452cce19a76b02a80",
-      "size": 7001,
+      "templateHash": "68ded5b09f8b947cb5f2322f14ba35f1cdef422be0f0e9e175e69326f81316eb",
+      "size": 8308,
       "component": "hooks"
     },
     ".codex/hooks/scripts/agent-capability-precheck.sh": {
@@ -610,8 +610,8 @@
       "component": "hooks"
     },
     ".codex/hooks/hooks.json": {
-      "templateHash": "82380747501959f192c6cef316fa66524461637ead8dcfbc47fcd9ea5299cb4b",
-      "size": 29300,
+      "templateHash": "b4a02d1d5d7d8a7e11798afce79dd85ae918870fbf49be118109800dc2a391c7",
+      "size": 29340,
       "component": "hooks"
     },
     ".codex/contexts/ecomode.md": {

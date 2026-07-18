@@ -242,6 +242,7 @@ describe('Codex-native hooks', () => {
           'file-change-validator.sh',
           'schema-validator.sh',
           'secret-filter.sh',
+          'shell-reserved-var-advisor.sh',
         ].some((scriptName) => command.includes(scriptName))
       )
     ).toBe(true);
@@ -276,6 +277,7 @@ describe('Codex-native hooks', () => {
     expect(findHandler(registry, 'secret-filter.sh').timeout).toBeGreaterThan(0);
     expect(findHandler(registry, 'schema-validator.sh').timeout).toBeGreaterThan(0);
     expect(findHandler(registry, 'file-change-validator.sh').timeout).toBeGreaterThan(0);
+    expect(findHandler(registry, 'shell-reserved-var-advisor.sh').timeout).toBeGreaterThan(0);
 
     const installedScripts = await readdir(join(tempDir, '.codex', 'hooks', 'scripts'));
     expect(installedScripts.sort()).toEqual(
@@ -285,6 +287,7 @@ describe('Codex-native hooks', () => {
         'file-change-validator.sh',
         'schema-validator.sh',
         'secret-filter.sh',
+        'shell-reserved-var-advisor.sh',
       ].sort()
     );
     expect(
@@ -598,6 +601,23 @@ describe('Codex-native hooks', () => {
       })
     );
     expect(destructiveOutput).not.toHaveProperty('additionalContext');
+
+    const shellAdvisory = await runHandler(
+      findHandler(registry, 'shell-reserved-var-advisor.sh').command,
+      cwd,
+      {
+        ...commonPayload(cwd, 'PreToolUse'),
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'status=1; gh api /repos/o/r/runs?status=done&per_page=1',
+        },
+      }
+    );
+    expect(shellAdvisory.exitCode).toBe(0);
+    expect(shellAdvisory.stderr).toBe('');
+    const shellOutput = parseAdvisoryOutput(shellAdvisory.stdout);
+    expect(shellOutput.systemMessage).toContain('reserved shell variable');
+    expect(shellOutput.systemMessage).toContain('quote gh api URLs');
 
     const schema = await runHandler(findHandler(registry, 'schema-validator.sh').command, cwd, {
       ...commonPayload(cwd, 'PreToolUse'),

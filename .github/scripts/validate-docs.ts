@@ -30,6 +30,144 @@ export interface SlashCommandValidation {
   phantom: string[]; // Commands listed in README but missing SKILL.md
 }
 
+export type InventoryField = 'agents' | 'skills' | 'rules' | 'guides';
+
+export interface DocumentationInput {
+  path: string;
+  content: string;
+}
+
+export interface DocumentationCountIssue {
+  kind: 'missing' | 'mismatch';
+  path: string;
+  field: InventoryField;
+  claimed?: number;
+  actual: number;
+}
+
+export interface DocumentationValidationResult {
+  issues: DocumentationCountIssue[];
+}
+
+export const REQUIRED_DOCUMENT_CLAIMS: Readonly<
+  Record<string, readonly InventoryField[]>
+> = {
+  'README.md': ['agents', 'skills', 'rules', 'guides'],
+  'README_ko.md': ['agents', 'skills', 'rules', 'guides'],
+  'templates/README.md': ['agents', 'skills', 'rules', 'guides'],
+  'templates/AGENTS.md.en': ['agents', 'skills', 'rules', 'guides'],
+  'templates/AGENTS.md.ko': ['agents', 'skills', 'rules', 'guides'],
+  'templates/CLAUDE.md': ['agents', 'skills', 'rules', 'guides'],
+  'templates/CLAUDE.md.en': ['agents', 'skills', 'rules', 'guides'],
+  'templates/CLAUDE.md.ko': ['agents', 'skills', 'rules', 'guides'],
+};
+
+const FIELD_TO_STAT: Record<InventoryField, keyof ImplementationStats> = {
+  agents: 'agent_count',
+  skills: 'skill_count',
+  rules: 'rule_count',
+  guides: 'guide_count',
+};
+
+const INVENTORY_CLAIM_PATTERNS: Record<InventoryField, readonly RegExp[]> = {
+  agents: [
+    /\b(\d+)\s+(?:installed\s+)?agents?\b/gi,
+    /(\d+)\s*\uac1c\s*\uc5d0\uc774\uc804\ud2b8/g,
+    /(?:agents?|agent definitions?|subagent definitions?)\s*\((\d+)[^)]*\)/gi,
+    /(?:\uc5d0\uc774\uc804\ud2b8|\uc5d0\uc774\uc804\ud2b8 \uc815\uc758|\uc11c\ube0c\uc5d0\uc774\uc804\ud2b8 \uc815\uc758)\s*\((\d+)[^)]*\)/g,
+  ],
+  skills: [
+    /\b(\d+)\s+(?:installed\s+)?skills?\b/gi,
+    /(\d+)\s*\uac1c\s*\uc2a4\ud0ac/g,
+    /(?:skills?|skill modules?|installed skills?)\s*\((\d+)[^)]*\)/gi,
+    /(?:\uc2a4\ud0ac|\uc2a4\ud0ac \ubaa8\ub4c8|\uc124\uce58\ub41c \uc2a4\ud0ac)\s*\((\d+)[^)]*\)/g,
+  ],
+  rules: [
+    /\b(\d+)\s+(?:global\s+)?rules?\b/gi,
+    /(\d+)\s*\uac1c\s*(?:\ud558\ub124\uc2a4\s*)?\uaddc\uce59/g,
+    /(?:rules?|global rules?|harness policies|harness behavioral policies)\s*\((\d+)[^)]*\)/gi,
+    /(?:\uaddc\uce59|\uc804\uc5ed \uaddc\uce59|\ud558\ub124\uc2a4 \uc815\ucc45|\ud558\ub124\uc2a4 \ud589\ub3d9 \uc815\ucc45)\s*\((\d+)[^)]*\)/g,
+  ],
+  guides: [
+    /\b(\d+)\s+(?:reference\s+)?guides?\b/gi,
+    /(\d+)\s*\uac1c\s*(?:\ub808\ud37c\ub7f0\uc2a4\s*)?(?:\uac00\uc774\ub4dc|\ubb38\uc11c)/g,
+    /(?:guides?|reference docs?|reference documents?)\s*\((\d+)[^)]*\)/gi,
+    /(?:\uac00\uc774\ub4dc|\ub808\ud37c\ub7f0\uc2a4 \ubb38\uc11c)\s*\((\d+)[^)]*\)/g,
+  ],
+};
+
+export function extractInventoryClaims(
+  content: string,
+): Record<InventoryField, number[]> {
+  const claims: Record<InventoryField, number[]> = {
+    agents: [],
+    skills: [],
+    rules: [],
+    guides: [],
+  };
+
+  for (const line of content.split(/\r?\n/)) {
+    for (const field of Object.keys(INVENTORY_CLAIM_PATTERNS) as InventoryField[]) {
+      const lineClaims = new Set<number>();
+      for (const pattern of INVENTORY_CLAIM_PATTERNS[field]) {
+        pattern.lastIndex = 0;
+        let match: RegExpExecArray | null;
+        while ((match = pattern.exec(line)) !== null) {
+          lineClaims.add(Number.parseInt(match[1], 10));
+        }
+      }
+      claims[field].push(...lineClaims);
+    }
+  }
+
+  return claims;
+}
+
+export function validateDocumentationClaims(
+  stats: ImplementationStats,
+  documents: readonly DocumentationInput[],
+  requirements: Readonly<Record<string, readonly InventoryField[]>> = REQUIRED_DOCUMENT_CLAIMS,
+): DocumentationValidationResult {
+  const documentsByPath = new Map(documents.map((document) => [document.path, document.content]));
+  const issues: DocumentationCountIssue[] = [];
+
+  for (const [documentPath, requiredFields] of Object.entries(requirements)) {
+    const content = documentsByPath.get(documentPath) ?? '';
+    const claims = extractInventoryClaims(content);
+
+    for (const field of requiredFields) {
+      const actual = stats[FIELD_TO_STAT[field]] as number;
+      if (claims[field].length === 0) {
+        issues.push({ kind: 'missing', path: documentPath, field, actual });
+        continue;
+      }
+
+      for (const claimed of claims[field]) {
+        if (claimed !== actual) {
+          issues.push({
+            kind: 'mismatch',
+            path: documentPath,
+            field,
+            claimed,
+            actual,
+          });
+        }
+      }
+    }
+  }
+
+  return { issues };
+}
+
+export async function loadRequiredDocumentation(): Promise<DocumentationInput[]> {
+  return Promise.all(
+    Object.keys(REQUIRED_DOCUMENT_CLAIMS).map(async (documentPath) => ({
+      path: documentPath,
+      content: await extractReadmeClaims(documentPath),
+    })),
+  );
+}
+
 export async function collectImplementationStats(): Promise<ImplementationStats> {
   const stats: ImplementationStats = {
     agent_count: 0,
@@ -121,12 +259,13 @@ export function extractNamesFromReadme(readme: string): { agents: string[]; skil
 }
 
 /**
- * Extracts slash command names from the README slash-commands table.
- * Matches table rows of the form: | `/command-name` | Description |
+ * Extracts skill invocation names from README tables.
+ * Supports Codex-native `$name`, namespaced `$namespace:name`, optional
+ * arguments, and legacy `/name` compatibility entries.
  */
 export function extractSlashCommandsFromReadme(readmeContent: string): string[] {
   const commands: string[] = [];
-  const pattern = /^\|\s*`\/([a-z][a-z0-9-]*)`\s*\|/gm;
+  const pattern = /^\|\s*`(?:\$|\/)([a-z][a-z0-9:-]*)(?:\s+[^`]*)?`\s*\|/gm;
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(readmeContent)) !== null) {
     commands.push(match[1]);
@@ -167,13 +306,13 @@ function toSlashAliases(skillDirName: string, frontmatterName: string | null): s
 }
 
 /**
- * Validates that every slash command listed in the README has a corresponding
+ * Validates that every documented skill invocation has a corresponding
  * SKILL.md file under templates/.claude/skills/.
  *
  * Compatibility rule:
  * - accept direct directory matches
  * - accept matches against skill frontmatter `name:`
- * - accept slash-form aliases for namespaced skills (`omcustomcodex:feedback` -> `omcustomcodex-feedback`)
+ * - accept compatibility aliases for namespaced skills (`omcustomcodex:feedback` -> `omcustomcodex-feedback`)
  */
 export function validateSlashCommands(readmeContent: string, skillsDir: string): SlashCommandValidation {
   const commands = extractSlashCommandsFromReadme(readmeContent);
@@ -258,6 +397,7 @@ export function buildPrompt(
   readmeKo: string,
   validation: ValidationResult,
   slashCommandValidation: SlashCommandValidation,
+  documentationValidation: DocumentationValidationResult = { issues: [] },
 ): string {
   const statsJson = JSON.stringify(stats, null, 2);
 
@@ -288,13 +428,23 @@ ${validation.extraInReadme.skills.length > 0 ? `- README에만 있는 skills (�
 ${validation.countMismatches.map((m) => `- ${m.field} 개수: README=${m.readme}, 실제=${m.actual}`).join('\n')}`
 }
 
-### 슬래시 커맨드 검증 (확정 - 변경 금지)
+### 다중 문서 inventory claim 검증 (확정 - 변경 금지)
+
+${documentationValidation.issues.length === 0
+  ? '✅ 필수 README/템플릿 문서의 모든 inventory claim이 실제 구현과 일치합니다.'
+  : documentationValidation.issues.map((issue) =>
+      issue.kind === 'missing'
+        ? `- ${issue.path}: 필수 ${issue.field} claim 누락 (실제=${issue.actual})`
+        : `- ${issue.path}: ${issue.field} claim=${issue.claimed}, 실제=${issue.actual}`
+    ).join('\n')}
+
+### 스킬 호출 검증 (확정 - 변경 금지)
 
 ${slashCommandValidation.phantom.length === 0
-  ? `✅ README의 모든 슬래시 커맨드(${slashCommandValidation.valid.length}개)에 대응하는 SKILL.md가 존재합니다.`
-  : `❌ Phantom 슬래시 커맨드 발견 (README에 있으나 SKILL.md 미존재):
-${slashCommandValidation.phantom.map((c) => `- /${c}`).join('\n')}
-유효한 커맨드(${slashCommandValidation.valid.length}개): ${slashCommandValidation.valid.map((c) => `/${c}`).join(', ')}`
+  ? `✅ README의 모든 스킬 호출(${slashCommandValidation.valid.length}개)에 대응하는 SKILL.md가 존재합니다.`
+  : `❌ Phantom 스킬 호출 발견 (README에 있으나 SKILL.md 미존재):
+${slashCommandValidation.phantom.map((c) => `- $${c}`).join('\n')}
+유효한 스킬 호출(${slashCommandValidation.valid.length}개): ${slashCommandValidation.valid.map((c) => `$${c}`).join(', ')}`
 }
 
 ---
@@ -341,7 +491,7 @@ ${readmeKo}
 **중요**: 다음은 ⚠️가 아닌 ℹ️로 표시하세요:
 - 스킬/에이전트 분류에 대한 의견 (예: "X는 Y 카테고리가 더 적합")
 - 번역 톤이나 스타일의 사소한 차이
-- 슬래시 커맨드 등재 여부에 대한 제안 (실제 EN↔KO 불일치가 아닌 경우)
+- 스킬 호출 등재 여부에 대한 제안 (실제 EN↔KO 불일치가 아닌 경우)
 - 양쪽 README에서 동일하게 존재하는 잠재적 문제 (이것은 EN↔KO 불일치가 아님)
 
 ## 응답 형식 (Markdown)
@@ -386,6 +536,7 @@ function printProgrammaticResults(
   stats: ImplementationStats,
   validation: ValidationResult,
   slashCommandValidation: SlashCommandValidation,
+  documentationValidation: DocumentationValidationResult,
 ): boolean {
   console.log('📋 Programmatic Validation Results');
 
@@ -395,6 +546,7 @@ function printProgrammaticResults(
     validation.extraInReadme.agents.length > 0 ||
     validation.extraInReadme.skills.length > 0 ||
     validation.countMismatches.length > 0 ||
+    documentationValidation.issues.length > 0 ||
     slashCommandValidation.phantom.length > 0;
 
   // Agent count line
@@ -429,12 +581,28 @@ function printProgrammaticResults(
     console.log(`❌ Phantom skills in README: ${validation.extraInReadme.skills.join(', ')}`);
   }
 
-  // Slash commands
+  for (const issue of documentationValidation.issues) {
+    if (issue.kind === 'missing') {
+      console.log(
+        `❌ ${issue.path}: missing required ${issue.field} claim (actual=${issue.actual})`,
+      );
+    } else {
+      console.log(
+        `❌ ${issue.path}: ${issue.field} claim=${issue.claimed}, actual=${issue.actual}`,
+      );
+    }
+  }
+
+  // Skill invocations
   if (slashCommandValidation.phantom.length > 0) {
-    console.log(`❌ Phantom slash commands: ${slashCommandValidation.phantom.map((c) => `/${c}`).join(', ')}`);
-    console.log(`✅ Slash commands: ${slashCommandValidation.valid.length} valid, ${slashCommandValidation.phantom.length} phantom`);
+    console.log(
+      `❌ Phantom skill invocations: ${slashCommandValidation.phantom.map((command) => `$${command}`).join(', ')}`,
+    );
+    console.log(
+      `✅ Skill invocations: ${slashCommandValidation.valid.length} valid, ${slashCommandValidation.phantom.length} phantom`,
+    );
   } else {
-    console.log(`✅ Slash commands: ${slashCommandValidation.valid.length} valid, 0 phantom`);
+    console.log(`✅ Skill invocations: ${slashCommandValidation.valid.length} valid, 0 phantom`);
   }
 
   return !hasProgrammaticIssues;
@@ -445,7 +613,11 @@ async function main() {
 
   try {
     const stats = await collectImplementationStats();
-    const readmeEn = await extractReadmeClaims('README.md');
+    const documents = await loadRequiredDocumentation();
+    const documentsByPath = new Map(
+      documents.map((document) => [document.path, document.content]),
+    );
+    const readmeEn = documentsByPath.get('README.md') ?? '';
 
     if (!readmeEn) {
       console.log('⚠️ README.md를 찾을 수 없습니다.');
@@ -454,11 +626,21 @@ async function main() {
     }
 
     const validation = programmaticValidation(stats, readmeEn);
+    const documentationValidation = validateDocumentationClaims(
+      stats,
+      documents,
+      REQUIRED_DOCUMENT_CLAIMS,
+    );
     const skillsDir = path.join('templates', '.claude/skills');
     const slashCommandValidation = validateSlashCommands(readmeEn, skillsDir);
 
     if (programmaticOnly) {
-      const passed = printProgrammaticResults(stats, validation, slashCommandValidation);
+      const passed = printProgrammaticResults(
+        stats,
+        validation,
+        slashCommandValidation,
+        documentationValidation,
+      );
       const status = passed ? 'PASS' : 'FAIL';
       console.log(`\n<!-- VALIDATION_STATUS: ${status} -->`);
       if (!passed) {
@@ -467,13 +649,20 @@ async function main() {
       return;
     }
 
-    const readmeKo = await extractReadmeClaims('README_ko.md');
+    const readmeKo = documentsByPath.get('README_ko.md') ?? '';
 
     const result = await createOpenAITextResponse({
       apiKey: process.env.OPENAI_API_KEY,
       model: process.env.OPENAI_MODEL || 'gpt-5',
       maxOutputTokens: 2048,
-      prompt: buildPrompt(stats, readmeEn, readmeKo, validation, slashCommandValidation),
+      prompt: buildPrompt(
+        stats,
+        readmeEn,
+        readmeKo,
+        validation,
+        slashCommandValidation,
+        documentationValidation,
+      ),
     });
     console.log(result);
 
@@ -484,6 +673,7 @@ async function main() {
       validation.extraInReadme.agents.length > 0 ||
       validation.extraInReadme.skills.length > 0 ||
       validation.countMismatches.length > 0 ||
+      documentationValidation.issues.length > 0 ||
       slashCommandValidation.phantom.length > 0;
     // Check for explicit LLM verdict first, fall back to marker detection
     const hasExplicitFail = /최종 판정[\s\S]*?\*\*(❌\s*)?FAIL\*\*/i.test(result);

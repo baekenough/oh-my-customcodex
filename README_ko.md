@@ -123,7 +123,9 @@ Reasoning sandwich 패턴은 분석·검증의 effort를 높이고 기계적 구
 
 ### 병렬 실행
 
-독립 작업은 병렬로 실행됩니다 (R009). 메시지당 최대 4개 동시 에이전트:
+독립 작업은 병렬로 실행됩니다 (R009). 리포 하네스 soft/default 디스패치
+크기는 4, hard cap은 5이며 Codex/OMX native capacity는 런타임에서
+결정되어 사용 가능한 슬롯이 더 적을 수 있습니다:
 
 ```
 Agent(lang-golang-expert):frontier/high  ┐
@@ -243,7 +245,7 @@ Agent(arch-documenter):spark/low         ┘
 
 ---
 
-## 하네스 행동 정책 (22개)
+## 하네스 행동 정책 (23개)
 
 이 Markdown 정책은 `AGENTS.md` 지침 계층을 통해 로드되며 Codex native
 Starlark 명령 규칙이 아닙니다.
@@ -251,7 +253,7 @@ Starlark 명령 규칙이 아닙니다.
 | 우선순위 | 수 | 목적 |
 |---------|-----|------|
 | **MUST** | 14 | 안전, 권한, 에이전트 설계, 식별, 오케스트레이션, 검증, 완료 검증, 집행 정책 |
-| **SHOULD** | 6 | 상호작용, 오류 처리, 메모리, HUD, ecomode, ontology 라우팅 |
+| **SHOULD** | 8 | 상호작용, 오류 처리, 메모리, HUD, ecomode, ontology 라우팅, 검증 래더, 위키 동기화 |
 | **MAY** | 1 | 최적화 |
 
 핵심 규칙: R010 (오케스트레이터 직접 쓰기 금지), R009 (병렬 실행 의무), R017 (푸시 전 sauron 검증), R020 (완료 선언 전 검증 의무), R021 (어드바이저리 우선 집행 모델).
