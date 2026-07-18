@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.29",
-  "generatedAt": "2026-07-18T19:51:00.540Z",
-  "templateVersion": "1.0.29",
+  "generatorVersion": "1.0.30",
+  "generatedAt": "2026-07-18T20:17:11.541Z",
+  "templateVersion": "1.0.30",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e2690ef49068c522f452b7bc26089687adf98b1039841704dfcac64a6fa8a65b",
@@ -410,14 +410,14 @@
       "root": "codex-project"
     },
     ".codex/hooks/scripts/stage-blocker.sh": {
-      "templateHash": "4441419f3704b387a322567be6b732c5ff9909bfee72f8aa282955c0c008efa0",
-      "size": 795,
+      "templateHash": "36dac421a6aad5382cfdc530a6d6f984d126055a24cedca6c030850036993db0",
+      "size": 819,
       "component": "hooks",
       "root": "codex-project"
     },
     ".codex/hooks/scripts/task-state-precompact.sh": {
-      "templateHash": "ab36d0f07daeb812cd29b9a530299cc5473eb9b03017dc39d116d00f8ae98de3",
-      "size": 1909,
+      "templateHash": "66e82afe09ce6b5f51fad7c9ed375b91936639aa82befbb8ce9bab5833ab4e97",
+      "size": 1921,
       "component": "hooks",
       "root": "codex-project"
     },
@@ -656,8 +656,8 @@
       "root": "codex-project"
     },
     ".codex/hooks/hooks.json": {
-      "templateHash": "b4a02d1d5d7d8a7e11798afce79dd85ae918870fbf49be118109800dc2a391c7",
-      "size": 29340,
+      "templateHash": "d949e19d393538bdb668fb784b711e237d12e3307fd36d093813142d053e7a5e",
+      "size": 29341,
       "component": "hooks",
       "root": "codex-project"
     },
@@ -807,8 +807,8 @@
       "component": "guides"
     },
     "guides/openai-codex/01-version-compatibility.md": {
-      "templateHash": "42a6b2efec1d3a6ed249464684164f5f54a83668142d0ad09e41a315dbcb2575",
-      "size": 25298,
+      "templateHash": "a4042fd3efb38830aec66e074a97e461f08b821c241cc045f363cf1cc77e9252",
+      "size": 26552,
       "component": "guides"
     },
     "guides/openai-codex/index.yaml": {

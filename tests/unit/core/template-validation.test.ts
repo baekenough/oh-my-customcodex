@@ -2009,6 +2009,7 @@ describe('Template Validation', () => {
     expect(source).toContain('rust-v0.138.0');
     expect(source).toContain('rust-v0.143.0');
     expect(source).toContain('rust-v0.144.3');
+    expect(source).toContain('rust-v0.144.6');
     expect(source).toContain('oh-my-codex v0.20.2 / OMX compatibility baseline');
     expect(source).toContain('rust-v0.144.4-rust-v0.144.5 / CLI final state');
     expect(source).toContain('v0.20.1');
@@ -2036,6 +2037,7 @@ describe('Template Validation', () => {
       '#1641',
       '#1663',
       '#1664',
+      '#1683',
     ]) {
       expect(source).toContain(issue);
     }
@@ -2043,6 +2045,9 @@ describe('Template Validation', () => {
       expect(document).toContain('0.20.2');
       expect(document).toContain('rust-v0.144.4');
       expect(document).toContain('rust-v0.144.5');
+      expect(document).toContain('rust-v0.144.6');
+      expect(document).toContain('272,000');
+      expect(document).toContain('provider-owned');
       expect(document).toContain('MINIMUM_OMX_VERSION');
       expect(document).toContain('Yeachan-Heo/oh-my-codex#3147');
       expect(document).toContain('#3151');
@@ -2054,7 +2059,7 @@ describe('Template Validation', () => {
       expect(document).not.toMatch(
         /(?:Yeachan-Heo\/oh-my-codex#3147[^\n]*(?:remain|remains) open|(?:remain|remains) open[^\n]*Yeachan-Heo\/oh-my-codex#3147)/i
       );
-      for (const issue of ['#1641', '#1663', '#1664']) {
+      for (const issue of ['#1641', '#1663', '#1664', '#1683']) {
         expect(document).toContain(issue);
       }
     }

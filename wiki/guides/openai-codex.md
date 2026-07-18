@@ -1,7 +1,7 @@
 ---
 title: "OpenAI Codex Compatibility Guide"
 type: guide
-updated: 2026-07-16
+updated: 2026-07-19
 sources:
   - guides/openai-codex/01-version-compatibility.md
 related:
@@ -30,6 +30,8 @@ This guide tracks Codex/OMX runtime compatibility notes separately from Claude C
 ## Current Release Note
 
 `oh-my-codex v0.20.2` is tracked for #1664 and is now the packaged `MINIMUM_OMX_VERSION` baseline. It preserves foreign Codex hook coordinates across repeated setup through upstream #3151, closing `Yeachan-Heo/oh-my-codex#3147`, and hardens native `spawn_agent` role binding, child-stop behavior, fresh App Ralplan bootstrap, prompt/session provenance, and `AGENTS.md` merge policy. The child package keeps its bounded setup normalization as defense in depth but does not copy OMX routing, state, or setup engines.
+
+OpenAI Codex `rust-v0.144.6` is tracked for #1683. It refreshes the bundled GPT-5.6 Sol/Terra/Luna instructions and corrects their context windows to 272,000 tokens. Those prompts and window values are provider-owned Codex model-manager metadata, so this child records the final state without copying them into package routing, changing OMX lanes, or inventing a minimum Codex version.
 
 OpenAI Codex `rust-v0.144.4` and `rust-v0.144.5` are tracked for #1641 and #1663. The `0.144.4` release note reports no user-facing change, while divergent tag evidence includes release-branch projection `d82b7e5d4c` of PR #32875 and the selected Guardian model's `ModelMessages.auto_review.policy` final state, with precedence `guardian_policy_config` -> catalog policy -> built-in fallback. `0.144.5` strengthens dangerous-command handling for forced `rm` forms and denial reasons. Both remain external Codex runtime behavior; this package records compatibility without implementing Guardian, a command detector, or a minimum Codex floor.
 
