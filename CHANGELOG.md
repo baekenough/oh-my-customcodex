@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.29] - 2026-07-19
+
+### Changed
+
+- Scope structured-development stage markers by parent PID across source, compatibility templates, and packaged plugin assets; correct the session auto-fix hook type and normalize direct hook entrypoint modes (#1649).
+- Record provider-boundary decisions to retain deterministic rules and the active DAG, task, loop, and alias surfaces until Codex/OMX provides trustworthy activation evidence or semantically equivalent native replacements (#1658, #1659).
+
+### Fixed
+
+- Pin every cache and artifact action in release-sensitive workflows to verified commit SHAs, and make wiki sync stop after its secret preflight when `OMCODEX_MASTER` is unavailable (#1649).
+
+### Removed
+
+- Remove confirmed unreferenced issue-analysis, teammate-notification, template-sync, wiki-sync, CI-status, and completed TODO artifacts inherited from the parent harness (#1649).
+
 ## [1.0.28] - 2026-07-19
 
 ### Changed

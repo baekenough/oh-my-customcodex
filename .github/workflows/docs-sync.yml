@@ -14,23 +14,30 @@ jobs:
   sync-wiki:
     name: Sync Wiki Pages
     runs-on: macos-latest
-    # Only run if WIKI_PAT secret is configured
+    # Only run if OMCODEX_MASTER secret is configured
     if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' }}
 
     steps:
       - name: Check PAT secret
+        id: pat
+        env:
+          OMCODEX_MASTER: ${{ secrets.OMCODEX_MASTER }}
         run: |
-          if [ -z "${{ secrets.OMCODEX_MASTER }}" ]; then
+          if [ -z "$OMCODEX_MASTER" ]; then
             echo "::warning::OMCODEX_MASTER secret is not configured. Skipping wiki sync."
             echo "To enable wiki sync, create a Personal Access Token with 'repo' scope"
             echo "and add it as a repository secret named OMCODEX_MASTER."
-            exit 0
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Checkout repository
+        if: steps.pat.outputs.configured == 'true'
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
 
       - name: Checkout wiki
+        if: steps.pat.outputs.configured == 'true'
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
         with:
           repository: ${{ github.repository }}.wiki
@@ -39,6 +46,7 @@ jobs:
         continue-on-error: true
 
       - name: Check wiki checkout
+        if: steps.pat.outputs.configured == 'true'
         id: wiki-checkout
         run: |
           if [ -d "wiki-repo/.git" ]; then
@@ -49,7 +57,7 @@ jobs:
           fi
 
       - name: Sync wiki pages
-        if: steps.wiki-checkout.outputs.wiki_exists == 'true'
+        if: steps.pat.outputs.configured == 'true' && steps.wiki-checkout.outputs.wiki_exists == 'true'
         run: |
           if [ -d "wiki" ] && [ "$(ls -A wiki/*.md 2>/dev/null)" ]; then
             cp wiki/*.md wiki-repo/
@@ -60,7 +68,7 @@ jobs:
           fi
 
       - name: Check for changes
-        if: steps.wiki-checkout.outputs.wiki_exists == 'true'
+        if: steps.pat.outputs.configured == 'true' && steps.wiki-checkout.outputs.wiki_exists == 'true'
         id: changes
         working-directory: wiki-repo
         run: |
@@ -71,7 +79,7 @@ jobs:
           fi
 
       - name: Commit and push wiki changes
-        if: steps.wiki-checkout.outputs.wiki_exists == 'true' && steps.changes.outputs.has_changes == 'true'
+        if: steps.pat.outputs.configured == 'true' && steps.wiki-checkout.outputs.wiki_exists == 'true' && steps.changes.outputs.has_changes == 'true'
         working-directory: wiki-repo
         run: |
           git config user.name "github-actions[bot]"
@@ -81,6 +89,7 @@ jobs:
           git push
 
       - name: Create summary
+        if: steps.pat.outputs.configured == 'true'
         run: |
           echo "## Wiki Sync Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

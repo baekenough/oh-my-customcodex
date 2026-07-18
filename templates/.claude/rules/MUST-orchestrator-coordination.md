@@ -342,7 +342,7 @@ When the user explicitly signals full-delegation intent, the orchestrator operat
 ### Activation Protocol
 
 1. User gives explicit autonomous signal (not inferred from task complexity)
-2. Verify stage-blocker is NOT active (`/tmp/.codex-dev-stage` must not exist)
+2. Verify stage-blocker is NOT active (`/tmp/.codex-dev-stage-$PPID` must not exist)
 3. Create marker: `echo 1 > /tmp/.codex-autonomous-$PPID`
 4. Announce: `[Autonomous Mode] Activated for current task scope`
 
@@ -374,7 +374,7 @@ When the user explicitly signals full-delegation intent, the orchestrator operat
 ### Mutual Exclusion
 
 - Autonomous mode and `/structured-dev-cycle` (stage-blocker) are **mutually exclusive**
-- If `/tmp/.codex-dev-stage` exists → autonomous mode CANNOT be activated
+- If `/tmp/.codex-dev-stage-$PPID` exists → autonomous mode CANNOT be activated
 - If autonomous mode is active → `/structured-dev-cycle` should not be started
 
 ### Self-Check
@@ -388,7 +388,7 @@ When the user explicitly signals full-delegation intent, the orchestrator operat
 ║     NO  → Do NOT activate                                        ║
 ║                                                                   ║
 ║  2. Is stage-blocker inactive?                                   ║
-║     (/tmp/.codex-dev-stage does NOT exist)                      ║
+║     (/tmp/.codex-dev-stage-$PPID does NOT exist)                ║
 ║     YES → Continue                                               ║
 ║     NO  → Cannot activate (mutually exclusive)                   ║
 ║                                                                   ║
