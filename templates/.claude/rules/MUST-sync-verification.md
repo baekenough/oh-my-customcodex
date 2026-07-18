@@ -15,8 +15,22 @@ Every `git push` requires: `mgr-sauron:watch` → all pass → `git push`
 | Round | Actions |
 |-------|---------|
 | 1-2 | mgr-supplier:audit, mgr-updater:docs (sync check), fix issues |
-| 3-4 | Re-verify mgr-supplier:audit + re-run mgr-updater:docs, fix remaining |
-| 5 | Final: all counts match, frontmatter valid, skill refs exist, memory scopes valid, routing patterns updated |
+| 3-4 | Conditional re-verification: skip only when Round 1 and Round 2 both report exactly 0 issues; otherwise re-run mgr-supplier:audit + mgr-updater:docs and fix remaining |
+| 5 | Consume deterministic script evidence, then verify frontmatter, skill refs, memory scopes, and routing patterns semantically |
+
+Record a clean-path Round 3 and Round 4 as `SKIPPED (clean)`. Any warning, issue, execution error, or indeterminate result requires both rounds to run. Deep Review rounds are never skipped.
+
+Round 5 consumes these deterministic results instead of asking an LLM to re-derive their output:
+
+```text
+[script] bash .github/scripts/verify-template-sync.sh
+[script] bash .github/scripts/verify-wiki-sync.sh
+[script] bash .github/scripts/verify-version-sync.sh
+[script] bash .github/scripts/verify-fork-list.sh
+[script] bun run .github/scripts/validate-docs.ts --programmatic-only
+```
+
+A failing or unavailable script fails closed. Script evidence does not replace semantic frontmatter, skill refs, memory-scope, or routing review.
 
 Also run: mgr-claude-code-bible:verify (official spec compliance)
 
@@ -77,8 +91,8 @@ After any approved restoration or recreation, collect fresh evidence: `git statu
 ╔══════════════════════════════════════════════════════════════════╗
 ║  BEFORE COMMITTING, ASK YOURSELF:                                ║
 ║                                                                   ║
-║  1. Did I complete all 5 rounds of manager verification?         ║
-║  2. Did I complete all 3 rounds of deep review?                  ║
+║  1. Did I run all required manager rounds and record clean skips?║
+║  2. Did I complete all 3 rounds of deep review (never skipped)?  ║
 ║  3. Did I fix all discovered issues?                             ║
 ║  4. Are all counts matching across all sources?                  ║
 ║  5. Am I delegating to mgr-gitnerd for the commit?               ║

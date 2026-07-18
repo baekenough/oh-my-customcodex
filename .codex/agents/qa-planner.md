@@ -3,7 +3,7 @@ name: qa-planner
 description: Use when you need to create detailed QA plans from requirements and specifications, including test strategy design, risk-based prioritization, test scenario identification, and acceptance criteria definition
 model_lane: frontier
 domain: universal
-memory: project
+memory: local
 model_reasoning_effort: high
 maxTurns: 20
 disallowedTools: [Bash]

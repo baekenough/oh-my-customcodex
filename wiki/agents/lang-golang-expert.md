@@ -1,7 +1,7 @@
 ---
 title: lang-golang-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/lang-golang-expert.md
 related:
@@ -29,7 +29,7 @@ Pairs naturally with [[be-go-backend-expert]] for backend service concerns beyon
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `go-best-practices`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 - **Soul**: enabled (identity layer active)
 

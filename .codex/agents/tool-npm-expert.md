@@ -3,7 +3,7 @@ name: tool-npm-expert
 description: Use for npm package publishing workflows, semantic versioning (major/minor/patch), package.json optimization, and dependency audits
 model_lane: frontier
 domain: universal
-memory: project
+memory: local
 model_reasoning_effort: medium
 skills:
   - omcodex:npm-audit

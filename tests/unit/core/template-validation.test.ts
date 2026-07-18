@@ -1309,6 +1309,141 @@ describe('Template Validation', () => {
     });
   });
 
+  describe('ported audit regression contracts', () => {
+    it('advertises plain harness-eval invocations for Codex and Claude-compatible runtimes', async () => {
+      const files = [
+        '.codex/skills/harness-eval/SKILL.md',
+        'templates/.claude/skills/harness-eval/SKILL.md',
+      ];
+
+      for (const relativePath of files) {
+        const content = await readFile(join(PROJECT_ROOT, relativePath), 'utf-8');
+
+        expect(parseFrontmatter(content).fields.name).toBe('harness-eval');
+        expect(content).toContain('$harness-eval');
+        expect(content).toContain('/harness-eval');
+        expect(content).toContain('Codex');
+        expect(content).toContain('Claude Code');
+        expect(content).not.toContain('omcustomcodex:harness-eval');
+      }
+
+      for (const relativePath of [
+        '.codex/skills/adaptive-harness/SKILL.md',
+        'templates/.claude/skills/adaptive-harness/SKILL.md',
+        '.codex/skills/evaluator-optimizer/SKILL.md',
+        'templates/.claude/skills/evaluator-optimizer/SKILL.md',
+      ]) {
+        const content = await readFile(join(PROJECT_ROOT, relativePath), 'utf-8');
+        expect(content).toContain('$harness-eval');
+        expect(content).not.toContain('omcustomcodex:harness-eval');
+      }
+    });
+
+    it('advertises plain claude-native invocations and isolates Claude scheduling syntax', async () => {
+      const files = [
+        '.codex/skills/claude-native/SKILL.md',
+        'templates/.claude/skills/claude-native/SKILL.md',
+      ];
+
+      for (const relativePath of files) {
+        const content = await readFile(join(PROJECT_ROOT, relativePath), 'utf-8');
+
+        expect(parseFrontmatter(content).fields.name).toBe('claude-native');
+        expect(content).toContain('$claude-native');
+        expect(content).toContain('/claude-native');
+        expect(content).toContain('Codex / OMX');
+        expect(content).toContain('Claude Code-compatible scheduling surface');
+        expect(content).not.toContain('omcustomcodex:claude-native');
+        expect(content).toContain('/schedule "daily at 9am: /claude-native"');
+      }
+    });
+
+    it('removes dead operator references and binds rule history to durable provenance', async () => {
+      const [vercelSkill, completionRule, memoryRule, verificationRule, wikiWorkflow] =
+        await Promise.all([
+          readFile(join(PROJECT_ROOT, '.codex/skills/vercel-deploy/SKILL.md'), 'utf-8'),
+          readFile(join(PROJECT_ROOT, '.codex/rules/MUST-completion-verification.md'), 'utf-8'),
+          readFile(join(PROJECT_ROOT, '.codex/rules/SHOULD-memory-integration.md'), 'utf-8'),
+          readFile(join(PROJECT_ROOT, '.codex/rules/SHOULD-verification-ladder.md'), 'utf-8'),
+          readFile(join(PROJECT_ROOT, 'templates/.github/workflows/wiki-sync.yml'), 'utf-8'),
+        ]);
+      const removedFeedbackFiles = [
+        'feedback_github_workflows_inventory.md',
+        'feedback_subagent_pre_existing_claims.md',
+        'feedback_bun_mock_module.md',
+      ];
+
+      expect(vercelSkill).not.toContain('scripts/deploy.sh');
+      expect(vercelSkill).not.toContain('## Scripts');
+      for (const rule of [completionRule, memoryRule]) {
+        expect(rule).toContain('issue #869');
+        for (const filename of removedFeedbackFiles) {
+          expect(rule).not.toContain(filename);
+        }
+      }
+      expect(verificationRule).toContain('Compact Output');
+      expect(verificationRule).not.toContain('"저렴한 검증 우선"');
+      expect(wikiWorkflow).not.toContain('/omcustom:wiki');
+      expect(wikiWorkflow.match(/\/omcustomcodex:wiki/g)).toHaveLength(2);
+    });
+
+    it('keeps monitoring-setup references namespaced across both provider invocation surfaces', async () => {
+      const pairs = [
+        ['guides/agent-eval/README.md', 'templates/guides/agent-eval/README.md'],
+        [
+          '.codex/skills/monitoring-setup/SKILL.md',
+          'templates/.claude/skills/monitoring-setup/SKILL.md',
+        ],
+        [
+          '.codex/skills/token-efficiency-audit/SKILL.md',
+          'templates/.claude/skills/token-efficiency-audit/SKILL.md',
+        ],
+      ] as const;
+
+      for (const [sourcePath, templatePath] of pairs) {
+        const [source, template] = await Promise.all([
+          readFile(join(PROJECT_ROOT, sourcePath), 'utf-8'),
+          readFile(join(PROJECT_ROOT, templatePath), 'utf-8'),
+        ]);
+
+        expect(template, templatePath).toBe(source);
+        expect(source).toContain('$omcustomcodex:monitoring-setup');
+        expect(source).toContain('/omcustomcodex:monitoring-setup');
+        expect(source).not.toContain('`monitoring-setup`');
+        expect(source).not.toContain('/monitoring-setup disable');
+        expect(source).not.toMatch(/(^|[^a-z])omcodex:monitoring-setup/);
+      }
+
+      const skill = await readFile(
+        join(PROJECT_ROOT, '.codex/skills/monitoring-setup/SKILL.md'),
+        'utf-8'
+      );
+      expect(parseFrontmatter(skill).fields.name).toBe('omcustomcodex:monitoring-setup');
+    });
+
+    it('keeps every corrected source asset byte-identical to its packaged template mirror', async () => {
+      const mirroredPaths = [
+        'skills/harness-eval/SKILL.md',
+        'skills/claude-native/SKILL.md',
+        'skills/adaptive-harness/SKILL.md',
+        'skills/evaluator-optimizer/SKILL.md',
+        'skills/vercel-deploy/SKILL.md',
+        'rules/MUST-completion-verification.md',
+        'rules/SHOULD-memory-integration.md',
+        'rules/SHOULD-verification-ladder.md',
+      ];
+
+      for (const relativePath of mirroredPaths) {
+        const [source, template] = await Promise.all([
+          readFile(join(PROJECT_ROOT, '.codex', relativePath), 'utf-8'),
+          readFile(join(PROJECT_ROOT, 'templates/.claude', relativePath), 'utf-8'),
+        ]);
+
+        expect(template, relativePath).toBe(source);
+      }
+    });
+  });
+
   describe('repo root provider layout validation', () => {
     const PROJECT_ROOT = resolve(import.meta.dir, '../../..');
 

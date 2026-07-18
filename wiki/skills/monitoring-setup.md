@@ -1,7 +1,7 @@
 ---
 title: Monitoring Setup
 type: skill
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/skills/monitoring-setup/SKILL.md
 related:
@@ -14,13 +14,13 @@ Enable/disable OpenTelemetry console monitoring for GPT Codex + OMX usage tracki
 
 ## Overview
 
-Configures `.codex/settings.local.json` to enable or disable OpenTelemetry console monitoring. When enabled, the Codex + OMX harness outputs usage metrics (cost, tokens, sessions, LOC, commits, PRs, active time) and events to the terminal via `CLAUDE_CODE_ENABLE_TELEMETRY`, `OTEL_METRICS_EXPORTER`, and `OTEL_LOGS_EXPORTER` env vars. Supports `enable`, `disable`, and `status` subcommands.
+Configures `.codex/settings.local.json` to enable or disable OpenTelemetry console monitoring. When enabled, the Codex + OMX harness outputs usage metrics (cost, tokens, sessions, LOC, commits, PRs, active time) and events to the terminal via `CLAUDE_CODE_ENABLE_TELEMETRY`, `OTEL_METRICS_EXPORTER`, and `OTEL_LOGS_EXPORTER` env vars. Supports `enable`, `disable`, and `status` subcommands with explicit Codex/OMX and Claude Code invocation forms.
 
 ## Key Details
 
 - **Scope**: package
 - **User-invocable**: yes
-- **Command**: `/omcustomcodex:monitoring-setup`
+- **Command**: `$omcustomcodex:monitoring-setup` (Codex/OMX); `/omcustomcodex:monitoring-setup` (Claude Code compatibility)
 - **Effort**: not specified
 - **Argument hint**: `[enable|disable|status]`
 
@@ -32,4 +32,4 @@ Configures `.codex/settings.local.json` to enable or disable OpenTelemetry conso
 
 ## Sources
 
-- `.codex/skills/monitoring-setup/SKILL.md` — skill definition
+- `.codex/skills/monitoring-setup/SKILL.md` — skill definition and provider-specific invocation contract

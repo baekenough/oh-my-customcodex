@@ -1,7 +1,7 @@
 ---
 title: arch-speckit-agent
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/arch-speckit-agent.md
 related:
@@ -24,7 +24,7 @@ A key differentiator is support for EARS (Easy Approach to Requirements Syntax) 
 - **Model**: sonnet
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 - **Source**: external from `https://github.com/github/spec-kit`
 - **Prerequisites**: Python 3.11+, uv, Git

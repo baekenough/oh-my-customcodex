@@ -1,7 +1,7 @@
 ---
 title: fe-vercel-agent
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/fe-vercel-agent.md
 related:
@@ -29,7 +29,7 @@ The agent combines three specialized skills: `react-best-practices`, `web-design
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `react-best-practices`, `web-design-guidelines`, `vercel-deploy`, `impeccable-design`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: medium
 - **Source**: external from https://github.com/vercel-labs/agent-skills (v1.0.0)
 

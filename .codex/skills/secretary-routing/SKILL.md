@@ -84,7 +84,7 @@ If the selected agent has `soul: true` in frontmatter, read and prepend `.codex/
 5. Report result to user
 ```
 
-> **Permission Mode**: When spawning agents, pass `mode: "bypassPermissions"` in the Agent tool call if the session uses bypassPermissions. Without explicit mode, CC defaults to `acceptEdits`.
+> **Claude compatibility `Agent` calls only (R010 “Delegated Permission Ownership”)**: Pass `mode: "bypassPermissions"` when the active Claude session uses bypass permissions. Native Codex `spawn_agent` has no `mode` parameter; use the installed `agent_type` and active Codex runtime permissions instead.
 
 ### 2. Batch/Parallel Task Routing
 

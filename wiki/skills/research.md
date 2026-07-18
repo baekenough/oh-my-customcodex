@@ -1,7 +1,7 @@
 ---
 title: Research
 type: skill
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/skills/research/SKILL.md
 related:
@@ -17,15 +17,16 @@ related:
 
 ## Overview
 
-Spawns 10 parallel research agents (Agent Teams when available, R018) to analyze a topic from different angles simultaneously. Each team investigates a specific aspect (architecture, security, performance, ecosystem, etc.), then a synthesizer agent aggregates findings with cross-validation. Produces a comprehensive research report saved to `.claude/outputs/`. Designed for complex architectural decisions or technology evaluations.
+Coordinates 10 parallel research perspectives and a synthesis pass for complex topics. Native Codex agents are selected through installed `agent_type` roles under active runtime permissions; the native call has no `mode` field. Only Claude compatibility `Agent` calls conditionally pass `mode: "bypassPermissions"` when the Claude session already uses bypass permissions.
 
 ## Key Details
 
 - **Scope**: core
 - **User-invocable**: yes
-- **Command**: `/research`
+- **Command**: `$research` (Codex/OMX); `/research` (Claude Code compatibility)
 - **Effort**: not specified
 - **Context**: fork
+- **Permission boundary**: provider-specific per R010 Delegated Permission Ownership
 
 ## Relationships
 

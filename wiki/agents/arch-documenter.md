@@ -1,7 +1,7 @@
 ---
 title: arch-documenter
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/arch-documenter.md
 related:
@@ -18,14 +18,14 @@ Architecture documentation specialist for generating system design docs, API spe
 
 `arch-documenter` handles all software architecture documentation needs. It produces human-readable technical artifacts — from high-level system overviews to detailed API contracts — using standard formats like Markdown, Mermaid diagrams, and OpenAPI/Swagger specs. It cannot execute code or deploy systems; its role is purely documentation and specification.
 
-The agent operates with `project`-scoped memory, meaning it retains knowledge about the project structure across sessions.
+The agent uses `local`-scoped memory for agent-specific project learnings without adding those records to the tracked project-memory surface.
 
 ## Key Details
 
 - **Model**: sonnet
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob (no Bash)
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 - **Limitations**: cannot execute commands, cannot deploy
 

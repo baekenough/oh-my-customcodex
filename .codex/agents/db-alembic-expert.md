@@ -3,7 +3,7 @@ name: db-alembic-expert
 description: Alembic migration specialist for generating, reviewing, fixing, and advising on SQLAlchemy database migrations
 model_lane: frontier
 domain: backend
-memory: project
+memory: local
 model_reasoning_effort: high
 tools:
   - Read

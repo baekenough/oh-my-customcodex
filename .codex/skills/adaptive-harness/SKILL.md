@@ -238,8 +238,8 @@ Analyzes session history and eval-core data to populate `usage_stats` and `failu
 ### Step 1: Collect Data Sources
 
 - `.codex/outputs/` — session artifacts and eval results
-- `.codex/agent-memory/` — agent memory files with usage patterns
-- Any harness eval output from `/omcustomcodex:harness-eval`
+- `.codex/agent-memory-local/` — managed local agent memory files with usage patterns
+- Any harness eval output from `$harness-eval` (Codex / OMX; `/harness-eval` on Claude Code)
 
 ### Step 2: Extract Patterns
 

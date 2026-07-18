@@ -51,3 +51,6 @@ target/
 # OMX runtime state
 .omx/
 .codex/outputs/
+
+# Agent-local session memory (never tracked, including nested worker roots)
+**/agent-memory-local/

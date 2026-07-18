@@ -120,7 +120,7 @@ For **new file creation**, **boilerplate**, or **test code generation**:
 ### Step 3: Expert Agent Selection
 Route to appropriate language/framework expert based on file extension and keyword mapping.
 
-> **Permission Mode**: When spawning agents, pass `mode: "bypassPermissions"` in the Agent tool call if the session uses bypassPermissions. Without explicit mode, CC defaults to `acceptEdits`.
+> **Claude compatibility `Agent` calls only (R010 “Delegated Permission Ownership”)**: Pass `mode: "bypassPermissions"` when the active Claude session uses bypass permissions. Native Codex `spawn_agent` has no `mode` parameter; use the installed `agent_type` and active Codex runtime permissions instead.
 
 ### Step 4: Ontology-RAG Enrichment (R019)
 

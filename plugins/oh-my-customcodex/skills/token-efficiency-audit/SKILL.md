@@ -14,7 +14,7 @@ This skill is for configuration-level optimization, not runtime behavior shaping
 
 - `guides/cc-token-saver/README.md` for plugin-level token protection
 - R013 ecomode for runtime compression
-- `omcodex:monitoring-setup` for telemetry and usage visibility
+- `$omcustomcodex:monitoring-setup` in Codex / OMX (`/omcustomcodex:monitoring-setup` on Claude Code) for telemetry and usage visibility
 
 ## Modes
 

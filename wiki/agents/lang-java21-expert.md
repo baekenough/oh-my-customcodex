@@ -1,7 +1,7 @@
 ---
 title: lang-java21-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/lang-java21-expert.md
 related:
@@ -29,7 +29,7 @@ Uses `java21-best-practices` skill and `guides/java21/`. Complements [[be-spring
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `java21-best-practices`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 
 ## Relationships

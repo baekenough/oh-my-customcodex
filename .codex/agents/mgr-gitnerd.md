@@ -3,7 +3,7 @@ name: mgr-gitnerd
 description: Use when you need to handle Git operations and GitHub workflow management, including commits, branches, PRs, and history management following best practices
 model_lane: frontier
 domain: universal
-memory: project
+memory: local
 model_reasoning_effort: medium
 maxTurns: 20
 limitations:

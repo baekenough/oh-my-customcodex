@@ -1,7 +1,7 @@
 ---
 title: sec-codeql-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/sec-codeql-expert.md
 related:
@@ -25,7 +25,7 @@ Runs in a **sandbox** isolation mode for safety.
 - **Domain**: devops
 - **Tools**: Read, Write, Grep, Bash
 - **Skills**: `cve-triage`, `adversarial-review`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 - **Isolation**: sandbox
 

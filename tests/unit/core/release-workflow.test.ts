@@ -188,6 +188,7 @@ describe('release.yml — publish safeguards', () => {
     const liveIndex = verifyJob.indexOf('- name: Run canonical live verifier');
     const uploadIndex = verifyJob.indexOf('- name: Upload live release evidence');
     const prefetchStep = verifyJob.slice(prefetchIndex, liveIndex);
+    const credentialBoundaryStep = verifyJob.slice(credentialBoundaryIndex, liveIndex);
     const liveStep = verifyJob.slice(liveIndex, uploadIndex);
     expect(verifyJob).toContain(
       'permissions:\n      actions: read\n      contents: read\n      packages: read'
@@ -199,12 +200,20 @@ describe('release.yml — publish safeguards', () => {
     expect(verifyJob.slice(checkoutIndex, prefetchIndex)).toContain('persist-credentials: false');
     expect(credentialBoundaryIndex).toBeGreaterThan(prefetchIndex);
     expect(credentialBoundaryIndex).toBeLessThan(liveIndex);
-    expect(verifyJob.slice(credentialBoundaryIndex, liveIndex)).toContain(
-      'git config --local --get-regexp'
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal shell snippet assertion
+    expect(credentialBoundaryStep).toContain('git config "${config_scope}" --get-regexp');
+    expect(credentialBoundaryStep).toContain(
+      "credential_pattern='^(http(\\..*)?\\.extraheader|credential(\\..*)?\\.(helper|username|password|token))$'"
     );
-    expect(verifyJob.slice(credentialBoundaryIndex, liveIndex)).toContain(
-      'http\\..*\\.extraheader'
+    expect(credentialBoundaryStep).not.toContain('(?:');
+    expect(credentialBoundaryStep).toContain('credential_status=$?');
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal shell snippet assertion
+    expect(credentialBoundaryStep).toContain('case "${credential_status}" in');
+    expect(credentialBoundaryStep).toMatch(
+      /0\)[\s\S]*return 1[\s\S]*1\)[\s\S]*return 0[\s\S]*\*\)[\s\S]*return 1/
     );
+    expect(credentialBoundaryStep.match(/assert_no_git_credentials --local/g)).toHaveLength(1);
+    expect(credentialBoundaryStep.match(/assert_no_git_credentials --global/g)).toHaveLength(1);
     expect(verifyJob).toContain('name: offline-release-evidence');
     expect(verifyJob).toContain('sha256sum --check SHA256SUMS');
     expect(verifyJob).toContain('node scripts/verify-release-contract.mjs');

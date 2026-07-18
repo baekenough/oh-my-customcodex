@@ -1,7 +1,7 @@
 ---
 title: sys-memory-keeper
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/sys-memory-keeper.md
 related:
@@ -31,7 +31,7 @@ When work targets `.claude/**`, `templates/.claude/**`, or Claude-compatibility 
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `memory-management`, `memory-save`, `memory-recall`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: medium
 - **Max Turns**: 15
 - **Limitations**: cannot modify source code, cannot execute tests

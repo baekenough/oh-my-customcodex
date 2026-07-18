@@ -489,4 +489,4 @@ Agent(
 | result-aggregation | Team results formatted per aggregation skill |
 | multi-model-verification | Phase 2 uses multi-model verification pattern |
 
-When spawning agents via the Agent tool during this skill execution, always pass `mode: "bypassPermissions"` when the session uses bypass permissions. The Agent tool default (`acceptEdits`) can cause permission prompts during unattended execution.
+**Claude compatibility `Agent` calls only (R010 “Delegated Permission Ownership”)**: Pass `mode: "bypassPermissions"` when the active Claude session uses bypass permissions. Native Codex `spawn_agent` has no `mode` parameter; use the installed `agent_type` and active Codex runtime permissions instead.

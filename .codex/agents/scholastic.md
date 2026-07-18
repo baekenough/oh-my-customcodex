@@ -3,7 +3,7 @@ name: scholastic
 description: Ontology-first reasoning reviewer for category mistakes, hidden assumptions, modality separation, scholastic critique, and minimal-repair proposals
 model_lane: frontier
 domain: universal
-memory: project
+memory: local
 model_reasoning_effort: high
 limitations:
   - "read-only reviewer; does not implement code changes"

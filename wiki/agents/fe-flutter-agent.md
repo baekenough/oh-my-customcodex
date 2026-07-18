@@ -1,7 +1,7 @@
 ---
 title: fe-flutter-agent
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/fe-flutter-agent.md
 related:
@@ -23,7 +23,7 @@ Expert Flutter/Dart cross-platform app developer covering widget composition, st
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `flutter-best-practices`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: medium
 
 ## Default Stack

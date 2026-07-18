@@ -1,7 +1,7 @@
 ---
 title: lang-typescript-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/lang-typescript-expert.md
 related:
@@ -32,7 +32,7 @@ Uses `typescript-best-practices` skill and `guides/typescript/`.
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `typescript-best-practices`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 
 ## Relationships

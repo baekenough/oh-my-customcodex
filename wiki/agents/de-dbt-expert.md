@@ -1,7 +1,7 @@
 ---
 title: de-dbt-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/de-dbt-expert.md
 related:
@@ -27,7 +27,7 @@ Uses `dbt-best-practices` skill and `guides/dbt/` for reference.
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `dbt-best-practices`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 
 ## Relationships

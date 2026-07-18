@@ -13,7 +13,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { delimiter, dirname, join } from 'node:path';
 import { afterEach, test } from 'node:test';
 
 import {
@@ -36,6 +36,11 @@ import {
 } from '../scripts/verify-release-contract.mjs';
 
 const roots = [];
+const POSIX_GIT_CREDENTIAL_PATTERN =
+  '^(http(\\..*)?\\.extraheader|credential(\\..*)?\\.(helper|username|password|token))$';
+const MALFORMED_GIT_CREDENTIAL_PATTERN =
+  '^(http\\..*\\.extraheader|credential(?:\\..*)?\\.(?:helper|username|password|token))$';
+
 async function fixture(prefix = 'release-contract-') {
   const root = await mkdtemp(join(tmpdir(), prefix));
   roots.push(root);
@@ -137,6 +142,51 @@ async function writeTrustedLiveInput(
     )}\n`
   );
   return inputRoot;
+}
+
+function spawnRecordedCommand(call, args = call.args) {
+  const result = spawnSync(call.command, args, {
+    cwd: call.cwd,
+    env: call.env,
+    encoding: 'utf8',
+  });
+  if (result.error) throw result.error;
+  return { status: result.status ?? 1, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
+}
+
+async function verifyCheckoutCredentialGate(root, runCredentialCommand = spawnRecordedCommand) {
+  const evidenceDir = await absentEvidencePath('checkout-credential-evidence-');
+  await mkdir(join(root, 'home'), { recursive: true });
+  let credentialCall;
+  const result = await verifyReleaseContract(
+    {
+      mode: 'live',
+      version: '1.0.0',
+      tag: 'v1.0.0',
+      expectedSourceSha: 'abc123',
+      repository: 'o/r',
+      evidenceDir,
+      repoRoot: root,
+    },
+    {
+      env: { PATH: process.env.PATH, HOME: join(root, 'home') },
+      runCommand: async (call) => {
+        if (call.label === 'tag-peel') {
+          return { status: 0, stdout: 'abc123\n', stderr: '' };
+        }
+        if (call.label === 'checkout-local-credentials') {
+          credentialCall = call;
+          return runCredentialCommand(call);
+        }
+        throw new Error(`unexpected command: ${call.label}`);
+      },
+    }
+  );
+  assert.ok(credentialCall);
+  const gate = result.gates.find(({ name }) => name === 'checkout-local-credentials');
+  assert.ok(gate);
+  const details = JSON.parse(await readFile(join(result.evidenceDir, gate.log), 'utf8'));
+  return { credentialCall, details, gate };
 }
 
 async function verifyOfflineWithIndex(
@@ -1090,6 +1140,152 @@ test('a tag peel mismatch fails before every registry and release probe', async 
     calls.map(({ label }) => label),
     ['tag-peel']
   );
+});
+
+test('checkout credential gate accepts its POSIX ERE only on Git no-match exit 1', async () => {
+  const root = await fixture('credential-pattern-no-match-');
+  const initialized = spawnSync('git', ['init', '--quiet'], { cwd: root, encoding: 'utf8' });
+  assert.equal(initialized.status, 0, initialized.stderr);
+
+  const { credentialCall, details, gate } = await verifyCheckoutCredentialGate(root);
+
+  assert.deepEqual(credentialCall.args, [
+    'config',
+    '--local',
+    '--get-regexp',
+    POSIX_GIT_CREDENTIAL_PATTERN,
+  ]);
+  assert.equal(gate.status, 'PASS');
+  assert.deepEqual(details, {
+    exitStatus: 1,
+    credentialEntryPresent: false,
+    commandError: false,
+  });
+});
+
+test('checkout credential gate fails on Git matching-credential exit 0', async () => {
+  const root = await fixture('credential-pattern-match-');
+  const initialized = spawnSync('git', ['init', '--quiet'], { cwd: root, encoding: 'utf8' });
+  assert.equal(initialized.status, 0, initialized.stderr);
+  const configured = spawnSync(
+    'git',
+    ['config', '--local', 'credential.https://example.com.helper', 'store'],
+    { cwd: root, encoding: 'utf8' }
+  );
+  assert.equal(configured.status, 0, configured.stderr);
+
+  const { details, gate } = await verifyCheckoutCredentialGate(root);
+
+  assert.equal(gate.status, 'FAIL');
+  assert.deepEqual(details, {
+    exitStatus: 0,
+    credentialEntryPresent: true,
+    commandError: false,
+  });
+});
+
+test('checkout credential gate catches unscoped and scoped HTTP extraheaders', async () => {
+  for (const [fixtureName, key] of [
+    ['unscoped', 'http.extraheader'],
+    ['scoped', 'http.https://example.com.extraheader'],
+  ]) {
+    const root = await fixture(`credential-pattern-http-${fixtureName}-`);
+    const initialized = spawnSync('git', ['init', '--quiet'], { cwd: root, encoding: 'utf8' });
+    assert.equal(initialized.status, 0, initialized.stderr);
+    const configured = spawnSync('git', ['config', '--local', key, 'fixture-header'], {
+      cwd: root,
+      encoding: 'utf8',
+    });
+    assert.equal(configured.status, 0, configured.stderr);
+
+    const { details, gate } = await verifyCheckoutCredentialGate(root);
+
+    assert.equal(gate.status, 'FAIL', key);
+    assert.deepEqual(
+      details,
+      {
+        exitStatus: 0,
+        credentialEntryPresent: true,
+        commandError: false,
+      },
+      key
+    );
+  }
+});
+
+test('checkout credential gate fails closed on malformed regex and command errors', async () => {
+  const root = await fixture('credential-pattern-errors-');
+  const initialized = spawnSync('git', ['init', '--quiet'], { cwd: root, encoding: 'utf8' });
+  assert.equal(initialized.status, 0, initialized.stderr);
+
+  const malformed = await verifyCheckoutCredentialGate(root, (call) =>
+    spawnRecordedCommand(call, [...call.args.slice(0, -1), MALFORMED_GIT_CREDENTIAL_PATTERN])
+  );
+  assert.equal(malformed.gate.status, 'FAIL');
+  assert.deepEqual(malformed.details, {
+    exitStatus: 6,
+    credentialEntryPresent: false,
+    commandError: false,
+  });
+
+  const commandError = await verifyCheckoutCredentialGate(root, () => {
+    throw new Error('simulated git execution failure');
+  });
+  assert.equal(commandError.gate.status, 'FAIL');
+  assert.deepEqual(commandError.details, {
+    exitStatus: 128,
+    credentialEntryPresent: false,
+    commandError: true,
+  });
+});
+
+test('checkout credential gate fails closed when the real child is signal-terminated', async () => {
+  const root = await fixture('credential-pattern-signal-');
+  const bin = join(root, 'bin');
+  const home = join(root, 'home');
+  await mkdir(bin, { recursive: true });
+  await mkdir(home, { recursive: true });
+  const fakeGit = join(bin, 'git');
+  await writeFile(
+    fakeGit,
+    `#!/bin/sh
+if [ "$1" = "rev-parse" ]; then
+  printf '%s\\n' 'abc123'
+  exit 0
+fi
+if [ "$1" = "config" ]; then
+  kill -TERM "$$"
+fi
+exit 2
+`
+  );
+  await chmod(fakeGit, 0o755);
+  const evidenceDir = await absentEvidencePath('checkout-credential-signal-evidence-');
+
+  const result = await verifyReleaseContract(
+    {
+      mode: 'live',
+      version: '1.0.0',
+      tag: 'v1.0.0',
+      expectedSourceSha: 'abc123',
+      repository: 'o/r',
+      evidenceDir,
+      repoRoot: root,
+    },
+    {
+      env: { PATH: `${bin}${delimiter}${process.env.PATH}`, HOME: home },
+    }
+  );
+
+  const gate = result.gates.find(({ name }) => name === 'checkout-local-credentials');
+  assert.ok(gate);
+  assert.equal(gate.status, 'FAIL');
+  const details = JSON.parse(await readFile(join(result.evidenceDir, gate.log), 'utf8'));
+  assert.deepEqual(details, {
+    exitStatus: 128,
+    credentialEntryPresent: false,
+    commandError: true,
+  });
 });
 
 test('runs local tarball lifecycle and CLI calls only inside a credential-free verifier process', async () => {

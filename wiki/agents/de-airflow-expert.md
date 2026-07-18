@@ -1,7 +1,7 @@
 ---
 title: de-airflow-expert
 type: agent
-updated: 2026-04-18
+updated: 2026-07-18
 sources:
   - .codex/agents/de-airflow-expert.md
 related:
@@ -26,7 +26,7 @@ Uses `airflow-best-practices` skill and `guides/airflow/` for reference document
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `airflow-best-practices`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 
 ## Relationships

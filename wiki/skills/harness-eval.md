@@ -1,7 +1,7 @@
 ---
 title: Harness Eval
 type: skill
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/skills/harness-eval/SKILL.md
 related:
@@ -15,13 +15,13 @@ Structured SE task evaluation using 15-task benchmark for agent quality assessme
 
 ## Overview
 
-Runs a structured benchmark of 15 canonical software engineering tasks to evaluate agent quality, rule compliance, and system health. Each task tests specific capabilities (code review, refactoring, agent creation, git operations, etc.) and is scored against defined criteria. Results identify weak areas and regression from previous versions. Used for release qualification and continuous improvement.
+Runs a structured benchmark of 15 canonical software engineering tasks to evaluate agent quality, rule compliance, and system health. Each task tests specific capabilities (code review, refactoring, agent creation, git operations, etc.) and is scored against defined criteria. Results identify weak areas and regression from previous versions. Its rubric can also seed the [[evaluator-optimizer]] pipeline.
 
 ## Key Details
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcustomcodex:harness-eval`
+- **Command**: `$harness-eval` (Codex/OMX); `/harness-eval` (Claude Code compatibility)
 - **Effort**: not specified
 
 ## Relationships

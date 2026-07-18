@@ -1,7 +1,7 @@
 ---
 title: db-alembic-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/db-alembic-expert.md
 related:
@@ -26,7 +26,7 @@ Escalates from sonnet to opus after 2 failures (escalation policy enabled).
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `alembic-best-practices`, `postgres-best-practices`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 - **Limitations**: cannot apply migrations directly to production databases; cannot detect rename intent without explicit instruction
 

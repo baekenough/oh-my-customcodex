@@ -15,10 +15,57 @@ interface RuleContract {
   template: string;
   visibleLimit: number;
   detailMarkers: string[];
+  visiblePhrases?: string[];
   compatibilityDetails?: CompatibilityDetail[];
 }
 
 const RULES: RuleContract[] = [
+  {
+    source: '.codex/rules/MUST-agent-identification.md',
+    template: 'templates/.claude/rules/MUST-agent-identification.md',
+    visibleLimit: 2_500,
+    detailMarkers: ['DETAIL: Skill Invocation Violation Examples'],
+    visiblePhrases: [
+      'Every response MUST start with agent identification',
+      'Short answers, diagnostics, status pings, and corrections are not exempt',
+      'When the orchestrator invokes a skill via the Skill tool',
+    ],
+    compatibilityDetails: [
+      {
+        marker: 'DETAIL: Skill Invocation Violation Examples',
+        phrases: ['Incorrect: Skill as separate display', 'Correct: With sub-skill'],
+        hiddenPhrases: ['Incorrect: Skill as separate display', 'Correct: With sub-skill'],
+      },
+    ],
+  },
+  {
+    source: '.codex/rules/MUST-tool-identification.md',
+    template: 'templates/.claude/rules/MUST-tool-identification.md',
+    visibleLimit: 5_600,
+    detailMarkers: [
+      'DETAIL: Full violation examples',
+      'DETAIL: Consolidated Tool Identification Examples',
+    ],
+    visiblePhrases: [
+      'Every tool call MUST be prefixed with agent and model identification',
+      'Required-Parameter Completeness Check',
+      'Parallel Spawn Prefix Rule',
+      'Multi-Turn Self-Check',
+    ],
+    compatibilityDetails: [
+      {
+        marker: 'DETAIL: Consolidated Tool Identification Examples',
+        phrases: [
+          '[mgr-creator][frontier/medium] → Write:',
+          'Parallel spawn description parameter:',
+        ],
+        hiddenPhrases: [
+          '[mgr-creator][frontier/medium] → Write:',
+          'Parallel spawn description parameter:',
+        ],
+      },
+    ],
+  },
   {
     source: '.codex/rules/MUST-agent-design.md',
     template: 'templates/.claude/rules/MUST-agent-design.md',
@@ -154,6 +201,10 @@ describe('context optimization guidance', () => {
 
       for (const marker of rule.detailMarkers) {
         expect(source).toContain(marker);
+      }
+
+      for (const phrase of rule.visiblePhrases ?? []) {
+        expect(stripHtmlComments(source)).toContain(phrase);
       }
 
       expectCompatibilityDetailsToBeHidden(source, rule.compatibilityDetails ?? []);

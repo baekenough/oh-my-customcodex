@@ -4,7 +4,7 @@ description: Expert security code analyst using CodeQL for vulnerability detecti
 model_lane: frontier
 model_reasoning_effort: high
 domain: devops
-memory: project
+memory: local
 isolation: sandbox
 skills:
   - cve-triage

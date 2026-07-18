@@ -1,7 +1,7 @@
 ---
 title: Vercel Deploy
 type: skill
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/skills/vercel-deploy/SKILL.md
 related:
@@ -12,17 +12,17 @@ related:
 
 # Vercel Deploy
 
-Deploy applications to Vercel with environment configuration and preview URLs.
+Deploy applications to Vercel with framework auto-detection and preview URLs.
 
 ## Overview
 
-Automates Vercel deployments: pre-deploy checks (build passes, tests pass), `vercel deploy` execution, environment variable management, preview URL generation, and production promotion. Supports `--preview` (preview deployment) and `--prod` (production deployment) modes. Handles environment-specific config via Vercel CLI. Delegates git operations to `mgr-gitnerd` and file edits to `fe-vercel-agent`.
+Detects supported frameworks from `package.json`, excludes `node_modules/`, `.git/`, and environment files from the deployment bundle, uploads the prepared project to Vercel, and returns preview and claim URLs. Authenticated deployment requires the Vercel CLI or an API token; claimable anonymous deployments have temporary preview URLs. The current skill has no repository-local deployment-wrapper dependency.
 
 ## Key Details
 
 - **Scope**: core
 - **User-invocable**: yes
-- **Command**: `/vercel-deploy`
+- **Command**: `$vercel-deploy` (Codex/OMX); `/vercel-deploy` (Claude Code compatibility)
 - **Effort**: not specified
 
 ## Relationships

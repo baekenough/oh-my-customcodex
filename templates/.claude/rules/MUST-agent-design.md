@@ -72,15 +72,17 @@ Claude Code v2.1.208 reports an Agent tool configuration error when `tools:` res
 
 ### Optional Frontmatter
 
-Key native optional fields: `memory`, `model_reasoning_effort`, `skills`, `soul`,
-`isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`,
+Key native optional fields: `model_reasoning_effort`, `skills`, `soul`, `isolation`,
+`background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`,
 `permissionMode`, `disallowedTools`, `limitations`, `domain`, and
 `disableSkillShellExecution`. Compatibility templates may use `effort`; the compiler
 normalizes it to `model_reasoning_effort`.
 
+`memory` is compatibility/source metadata: the compiler does not emit `memory` into native Codex TOML or compiled config. Native persistence uses active Codex memory.
+
 <!-- DETAIL: Optional Frontmatter (full yaml block)
 ```yaml
-memory: project            # user | project | local
+memory: local              # user | project | local; managed package default
 effort: high               # low | medium | high | xhigh | default | max
 skills: [skill-1, ...]     # Skill name references
 source:                    # For external agents
@@ -220,7 +222,7 @@ hooks:
 
 ## Permission Mode Guidance
 
-CC defaults `mode` to `acceptEdits` if not specified — always pass `mode: "bypassPermissions"` explicitly in Agent tool calls when the session uses bypass permissions. See guidance details via Read tool.
+> Canonical owner: R010 “Delegated Permission Ownership”. Native Codex `spawn_agent` has no `mode`; Claude compatibility Agent calls pass `mode: "bypassPermissions"` only when that session uses bypass permissions.
 
 | Mode | Behavior |
 |------|----------|
@@ -281,7 +283,7 @@ When `escalation.enabled: true`, the model-escalation hooks will track outcomes 
 | `project` | `.codex/agent-memory/<name>/` | Yes |
 | `local` | `.codex/agent-memory-local/<name>/` | No |
 
-When enabled: first 200 lines of MEMORY.md loaded into system prompt.
+Managed packaged agents default to `local`; custom agents may opt into `project`. These are compatibility/source locations, not native compiler output. Compatible consumers load the first 200 MEMORY.md lines.
 
 ## Soul Identity
 
@@ -308,15 +310,13 @@ Skills persist output to `.codex/outputs/sessions/{YYYY-MM-DD}/{skill-name}-{HHm
 
 ## Sensitive Path Handling
 
-Claude Code still treats `.claude/` and `templates/.claude/` as protected compatibility surfaces, but the current behavior is version-sensitive rather than a universal prompt wall.
+Use the normal Codex edit/patch flow for active `.codex/**` paths; never add a Claude-only `/tmp` wrapper there.
 
-This Codex port uses `.codex/` as the active runtime surface. `.codex/**` edits should use the normal Codex edit/patch flow with no Claude-only `/tmp` wrapper.
+For Claude compatibility writes:
 
-**Current compatibility rule**:
-
-- **CC v2.1.121+**: `bypassPermissions` no longer prompts for direct writes to `.claude/skills/`, `.claude/agents/`, and `.claude/commands/`.
-- **CC v2.1.126+**: `bypassPermissions` also bypasses prompts for broader protected paths such as `.claude/**`, `.git/**`, `.vscode/**`, and shell config files.
-- **Historical fallback only**: if the target runtime is older than v2.1.121, not running with `bypassPermissions`, or still surfaces a protected-path prompt, use `/tmp/{skill}-{timestamp}.md` only as a compatibility fallback for the final `.claude/**` or `templates/.claude/**` write.
+- **CC v2.1.121+**: `bypassPermissions` covers `.claude/{skills,agents,commands}/**`.
+- **CC v2.1.126+**: coverage extends to broader protected paths.
+- **Historical fallback only**: use `/tmp/{skill}-{timestamp}.md` for the final write on older or still-prompting Claude runtimes.
 
 <!-- DETAIL: Sensitive Path Behavior table and Recommended practice
 | Path pattern | Guidance |

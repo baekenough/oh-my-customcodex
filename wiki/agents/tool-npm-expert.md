@@ -1,7 +1,7 @@
 ---
 title: tool-npm-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/tool-npm-expert.md
 related:
@@ -27,7 +27,7 @@ Uses three focused skills: `npm-audit`, `npm-publish`, and `npm-version`. Works 
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Bash
 - **Skills**: `npm-audit`, `npm-publish`, `npm-version`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: medium
 
 ## Relationships

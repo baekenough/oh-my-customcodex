@@ -1,6 +1,6 @@
 ---
 name: omcustomcodex:sauron-watch
-description: Full R017 verification (5+3 rounds) before commit
+description: Full R017 verification with cost-aware 5+3 rounds before commit
 scope: harness
 disable-model-invocation: false
 user-invocable: true
@@ -25,19 +25,25 @@ Ensure complete synchronization of agents, skills, documentation, and project st
 □ Fix any issues found
 ```
 
-#### Round 3-4: Re-verify + Update
+#### Round 3-4: Conditional Re-verify + Update
+
+Round 1 and Round 2 both report exactly 0 issues before these rounds may be skipped. Record both as `SKIPPED (clean)`. Any warning, issue, execution error, or indeterminate result requires Round 3 and Round 4 to run.
+
 ```
-□ mgr-supplier:audit - Re-verify after fixes
-□ mgr-updater:docs - Re-run and apply any detected changes
-□ Fix any remaining issues
+□ Exact clean: Round 3 — SKIPPED (clean); Round 4 — SKIPPED (clean)
+□ Otherwise: mgr-supplier:audit - Re-verify after fixes
+□ Otherwise: mgr-updater:docs - Re-run and apply any detected changes
+□ Otherwise: fix any remaining issues
 ```
 
-#### Round 5: Final Count Verification
+#### Round 5: Deterministic Evidence + Semantic Verification
 ```
-□ Agent count matches: AGENTS.md vs actual .md files
-□ Skill count matches: AGENTS.md vs actual SKILL.md files
-□ Memory field distribution correct
-□ Hook/context/guide/rule counts match
+□ [script] bash .github/scripts/verify-template-sync.sh
+□ [script] bash .github/scripts/verify-wiki-sync.sh
+□ [script] bash .github/scripts/verify-version-sync.sh
+□ [script] bash .github/scripts/verify-fork-list.sh
+□ [script] bun run .github/scripts/validate-docs.ts --programmatic-only
+□ Consume successful script output for deterministic count/template/wiki/version/docs checks
 □ All frontmatter valid
 □ All skill refs exist
 □ All memory scopes valid (project|user|local)
@@ -45,6 +51,8 @@ Ensure complete synchronization of agents, skills, documentation, and project st
 ```
 
 ### Phase 2: Deep Review (3 rounds)
+
+Deep Review rounds are never skipped, including after an exact-clean manager path.
 
 #### Deep Round 1: Workflow Alignment
 ```
@@ -206,14 +214,17 @@ Starting full R017 verification...
   ✓ Documentation sync: OK
 
 [Round 3/5] Re-verify: mgr-supplier:audit
-  ✓ All dependencies valid
+  — SKIPPED (clean): Round 1 and Round 2 both reported exactly 0 issues
 
 [Round 4/5] Re-verify: mgr-updater:docs
-  ✓ No changes needed
+  — SKIPPED (clean): no warning, issue, execution error, or indeterminate result
 
-[Round 5/5] Final count verification
-  ✓ Agents: 41/41 match
-  ✓ Skills: 55/55 match
+[Round 5/5] Deterministic evidence + semantic verification
+  ✓ [script] verify-template-sync.sh
+  ✓ [script] verify-wiki-sync.sh
+  ✓ [script] verify-version-sync.sh
+  ✓ [script] verify-fork-list.sh
+  ✓ [script] validate-docs.ts --programmatic-only
   ✓ All frontmatter valid
   ✓ All skill refs valid
   ✓ All memory scopes valid

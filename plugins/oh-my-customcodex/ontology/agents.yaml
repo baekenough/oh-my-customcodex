@@ -48,7 +48,7 @@ agents:
     class: LanguageExpert
     description: "Expert Go developer for writing idiomatic, performant Go code. Use for Go files (*.go, go.mod, go.sum), Go-related keywords, implementing concurrent systems, reviewing Go code, and optimizing Go applications."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [go-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -60,7 +60,7 @@ agents:
     class: LanguageExpert
     description: "Expert Python developer for writing Pythonic, clean code following PEP 8. Use for Python files (*.py, requirements.txt, pyproject.toml), Python-related keywords, designing Python APIs, reviewing Python code, and optimizing Python applications."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [python-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -72,7 +72,7 @@ agents:
     class: LanguageExpert
     description: "Expert Rust developer for writing safe, performant, idiomatic Rust code. Use for Rust files (*.rs, Cargo.toml), Rust-related keywords, designing safe APIs, debugging ownership/lifetime issues, and implementing high-performance systems."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [rust-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -84,7 +84,7 @@ agents:
     class: LanguageExpert
     description: "Expert Kotlin developer for writing idiomatic, concise, null-safe Kotlin code. Use for Kotlin files (*.kt, *.kts), Kotlin-related keywords, Android development, Kotlin multiplatform projects, and migrating Java to Kotlin."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [kotlin-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -96,7 +96,7 @@ agents:
     class: LanguageExpert
     description: "Expert TypeScript developer for writing type-safe, maintainable, scalable TypeScript code. Use for TypeScript files (*.ts, *.tsx, tsconfig.json), TypeScript-related keywords, designing APIs with type contracts, migrating JavaScript to TypeScript, and Node.js backend services."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [typescript-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -108,7 +108,7 @@ agents:
     class: LanguageExpert
     description: "Expert Java 21 developer for modern Java with Virtual Threads, Pattern Matching, Record Patterns, and Sequenced Collections. Use for Java files (*.java, pom.xml, build.gradle), Java-related keywords, high-concurrency systems, data-centric APIs with Records, and migrating from older Java versions."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: []
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -120,7 +120,7 @@ agents:
     class: BackendExpert
     description: "Expert FastAPI developer for building high-performance async Python APIs. Use for FastAPI projects, Python async/await patterns, Pydantic models, API architecture design, and performance optimization."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [fastapi-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -132,7 +132,7 @@ agents:
     class: BackendExpert
     description: "Expert Spring Boot 3.5.x developer for enterprise-grade Java 21 applications. Use for Spring Boot projects, Java/Kotlin enterprise apps, RESTful APIs, microservices architecture, Spring Data, security patterns, virtual threads, and GraalVM native images."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [springboot-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -144,7 +144,7 @@ agents:
     class: BackendExpert
     description: "Expert Go backend developer for production-ready services following Uber style guide and standard layout. Use for Go backend services, HTTP/gRPC servers, microservices in Go, concurrent systems, and Go performance optimization."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [go-backend-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -156,7 +156,7 @@ agents:
     class: BackendExpert
     description: "Expert Express.js developer for production-ready Node.js APIs following security best practices and 12-factor app principles. Use for Express.js APIs, REST API architectures, middleware chains, authentication/authorization, security hardening, and Node.js performance optimization."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: []
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -168,7 +168,7 @@ agents:
     class: BackendExpert
     description: "Expert NestJS developer for opinionated, scalable Node.js applications with TypeScript. Use for NestJS projects, decorator-based patterns (@Injectable, @Module, @Controller), enterprise API architectures, authentication/authorization guards, DTO validation, and modular architecture."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: []
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -180,7 +180,7 @@ agents:
     class: FrontendExpert
     description: "Use for React/Next.js optimization, web design review (accessibility, UX), Vercel deployment automation, and bundle size optimization"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: medium
     skills: [react-best-practices, web-design-guidelines, vercel-deploy]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -192,7 +192,7 @@ agents:
     class: FrontendExpert
     description: "Use for Vue 3 Composition API development, single-file components, Pinia state management, and Vue Router navigation"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: medium
     skills: []
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -204,7 +204,7 @@ agents:
     class: FrontendExpert
     description: "Use for Svelte compiler-based reactivity, reactive statements ($:), Svelte stores, and SvelteKit full-stack development with SSR"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: medium
     skills: []
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -216,7 +216,7 @@ agents:
     class: FrontendExpert
     description: "Use for Flutter/Dart cross-platform development, widget composition, state management (Riverpod, BLoC), and mobile/desktop app optimization"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: medium
     skills: [flutter-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -228,7 +228,7 @@ agents:
     class: DataEngineer
     description: "Expert Apache Airflow developer for DAG authoring, testing, and debugging. Use for DAG files (*.py in dags/), airflow.cfg, Airflow-related keywords, scheduling patterns, and pipeline orchestration."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [airflow-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -240,7 +240,7 @@ agents:
     class: DataEngineer
     description: "Expert dbt developer for SQL modeling, testing, and documentation. Use for dbt model files (*.sql in models/), schema.yml, dbt_project.yml, dbt-related keywords, and analytics engineering workflows."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [dbt-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -252,7 +252,7 @@ agents:
     class: DataEngineer
     description: "Expert Apache Spark developer for PySpark and Scala distributed data processing. Use for Spark jobs (*.py, *.scala), spark-submit configs, Spark-related keywords, and large-scale data transformation."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [spark-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -264,7 +264,7 @@ agents:
     class: DataEngineer
     description: "Expert Apache Kafka developer for event streaming, topic design, and producer-consumer patterns. Use for Kafka configs, streaming applications, event-driven architectures, and message broker design."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [kafka-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -276,7 +276,7 @@ agents:
     class: DataEngineer
     description: "Expert Snowflake developer for cloud data warehouse design, query optimization, and data loading. Use for Snowflake SQL, warehouse configuration, clustering keys, data sharing, and Iceberg table integration."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [snowflake-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -288,7 +288,7 @@ agents:
     class: DataEngineer
     description: "Expert data pipeline architect for ETL/ELT design, orchestration patterns, data quality, and cross-tool integration. Use for pipeline architecture decisions, data quality frameworks, lineage tracking, and multi-tool coordination."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [pipeline-architecture-patterns]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -336,7 +336,7 @@ agents:
     class: ToolingExpert
     description: "Use for npm package publishing workflows, semantic versioning (major/minor/patch), package.json optimization, and dependency audits"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: medium
     skills: [npm-audit, npm-publish, npm-version]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -348,7 +348,7 @@ agents:
     class: ToolingExpert
     description: "Use for bundle size analysis, tree-shaking verification, performance profiling, dead code detection, and build optimization recommendations"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: medium
     skills: [optimize-analyze, optimize-bundle, optimize-report]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -360,7 +360,7 @@ agents:
     class: ToolingExpert
     description: "Use for Bun runtime development, bunfig.toml configuration, Bun test runner, fast bundling, and Node.js to Bun migrations"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: medium
     skills: []
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -372,7 +372,7 @@ agents:
     class: Architect
     description: "Use for generating architecture documentation, API specifications (OpenAPI), Architecture Decision Records (ADRs), technical diagrams (Mermaid/PlantUML), and README maintenance"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: []
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -384,7 +384,7 @@ agents:
     class: Architect
     description: "Use for spec-driven development, transforming requirements into executable specifications, defining project constitution, creating technical plans, and generating TDD task lists"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: []
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -420,7 +420,7 @@ agents:
     class: QAAgent
     description: "Use when you need to create detailed QA plans from requirements and specifications, including test strategy design, risk-based prioritization, test scenario identification, and acceptance criteria definition"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: []
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -432,7 +432,7 @@ agents:
     class: QAAgent
     description: "Use when you need to create comprehensive QA documentation from detailed plans, including test cases, test reports, and quality documentation"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: medium
     skills: []
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -444,7 +444,7 @@ agents:
     class: QAAgent
     description: "Use when you need to execute tests based on detailed plans and documentation, perform manual and automated testing, report defects, and validate fixes"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: medium
     skills: []
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -456,7 +456,7 @@ agents:
     class: ManagerAgent
     description: "Use when you need to create new agents following design guidelines. Automatically researches authoritative references before agent creation to ensure high-quality knowledge base"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [create-agent]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -468,7 +468,7 @@ agents:
     class: ManagerAgent
     description: "Use when you need to update external agents, skills, and guides from their upstream sources, checking versions and applying updates"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: medium
     skills: [update-external, update-docs]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -492,7 +492,7 @@ agents:
     class: ManagerAgent
     description: "Use when you need to handle Git operations and GitHub workflow management, including commits, branches, PRs, and history management following best practices"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: medium
     skills: []
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -504,7 +504,7 @@ agents:
     class: ManagerAgent
     description: "Use when you need automated verification of R017 compliance, executing mandatory multi-round verification (5 manager rounds + 3 deep review rounds) before commits"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: [sauron-watch]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -516,7 +516,7 @@ agents:
     class: ManagerAgent
     description: "Fetches latest Claude Code official documentation from code.claude.com and verifies agents/skills compliance against the official spec. Use when you need to check official Claude Code documentation or verify frontmatter fields."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: medium
     skills: [claude-code-bible]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -528,7 +528,7 @@ agents:
     class: SystemAgent
     description: "Use when you need to manage session memory persistence using native memory plus omx-memory, save context before compaction, restore context on session start, or query past memories"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: medium
     skills: [memory-management, memory-save, memory-recall]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -552,7 +552,7 @@ agents:
     class: SystemAgent
     description: "Use when pipeline or DAG execution needs checkpoint persistence, state transition validation, or resume-after-failure support"
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: medium
     skills: [dag-orchestration, pipeline-guards]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
@@ -564,7 +564,7 @@ agents:
     class: CoordinationAgent
     description: "Ontology-first reasoning reviewer for category mistakes, hidden assumptions, modality separation, scholastic critique, and minimal-repair proposals."
     model_lane: frontier
-    memory: project
+    memory: local
     model_reasoning_effort: high
     skills: []
     tools: [Read, Grep, Glob]

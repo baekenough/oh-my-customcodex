@@ -1,7 +1,7 @@
 ---
 title: mgr-claude-code-bible
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/mgr-claude-code-bible.md
 related:
@@ -26,7 +26,7 @@ This agent is invoked by [[mgr-sauron]] during Phase 1 verification (R017).
 - **Domain**: universal
 - **Tools**: Read, Write, Grep, Bash
 - **Skills**: `claude-code-bible`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: medium
 - **Max Turns**: 20
 

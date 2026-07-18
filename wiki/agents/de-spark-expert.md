@@ -1,7 +1,7 @@
 ---
 title: de-spark-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/de-spark-expert.md
 related:
@@ -26,7 +26,7 @@ Uses `spark-best-practices` skill and `guides/spark/` for reference.
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `spark-best-practices`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 
 ## Relationships

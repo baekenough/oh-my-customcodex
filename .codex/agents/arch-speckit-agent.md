@@ -3,7 +3,7 @@ name: arch-speckit-agent
 description: Use for spec-driven development, transforming requirements into executable specifications, defining project constitution, creating technical plans, and generating TDD task lists
 model_lane: frontier
 domain: universal
-memory: project
+memory: local
 model_reasoning_effort: high
 tools:
   - Read

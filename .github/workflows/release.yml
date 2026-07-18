@@ -653,18 +653,40 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          credential_pattern='^(http\..*\.extraheader|credential(\..*)?\.(helper|username|password|token))$'
-          if git config --local --get-regexp "${credential_pattern}" >/dev/null 2>&1; then
-            echo "::error::checkout-local Git credential configuration remained before lifecycle execution"
-            exit 1
-          fi
+          credential_pattern='^(http(\..*)?\.extraheader|credential(\..*)?\.(helper|username|password|token))$'
+          assert_no_git_credentials() {
+            local config_scope="$1"
+            local boundary_error="$2"
+            local credential_status
+
+            if git config "${config_scope}" --get-regexp "${credential_pattern}" >/dev/null 2>&1; then
+              credential_status=0
+            else
+              credential_status=$?
+            fi
+
+            case "${credential_status}" in
+              0)
+                echo "::error::${boundary_error}"
+                return 1
+                ;;
+              1)
+                return 0
+                ;;
+              *)
+                echo "::error::Git credential boundary inspection failed for ${config_scope} configuration (exit ${credential_status})"
+                return 1
+                ;;
+            esac
+          }
+
+          assert_no_git_credentials --local \
+            "checkout-local Git credential configuration remained before lifecycle execution"
           isolated_git_home="/tmp/omcustomcodex-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-git-home"
           test ! -e "${isolated_git_home}"
           install -d -m 0700 "${isolated_git_home}"
-          if HOME="${isolated_git_home}" git config --global --get-regexp "${credential_pattern}" >/dev/null 2>&1; then
-            echo "::error::isolated lifecycle HOME contains Git credential configuration"
-            exit 1
-          fi
+          HOME="${isolated_git_home}" assert_no_git_credentials --global \
+            "isolated lifecycle HOME contains Git credential configuration"
           rmdir "${isolated_git_home}"
 
       - name: Run canonical live verifier

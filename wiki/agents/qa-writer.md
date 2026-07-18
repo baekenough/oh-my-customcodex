@@ -1,7 +1,7 @@
 ---
 title: qa-writer
 type: agent
-updated: 2026-04-12
+updated: 2026-07-18
 sources:
   - .codex/agents/qa-writer.md
 related:
@@ -25,7 +25,7 @@ Results are passed to [[qa-engineer]] for execution and archived to [[arch-docum
 - **Model**: sonnet
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob (no Bash)
-- **Memory**: project
+- **Memory**: local
 - **Effort**: medium
 - **Max Turns**: 20
 - **Limitations**: cannot execute tests, cannot modify source code

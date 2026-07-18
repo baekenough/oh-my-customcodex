@@ -3,7 +3,7 @@ name: de-snowflake-expert
 description: Expert Snowflake developer for cloud data warehouse design, query optimization, and data loading. Use for Snowflake SQL, warehouse configuration, clustering keys, data sharing, and Iceberg table integration.
 model_lane: frontier
 domain: data-engineering
-memory: project
+memory: local
 model_reasoning_effort: high
 skills:
   - snowflake-best-practices

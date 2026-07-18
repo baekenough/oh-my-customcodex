@@ -76,4 +76,4 @@ After PASS, return an implementation-ready plan with file scopes, dependencies, 
 
 ## Permission Mode
 
-When spawning agents, explicitly pass `mode: "bypassPermissions"` if the runtime supports it. Defaults may override agent frontmatter and reintroduce permission prompts during unattended execution.
+**Claude compatibility `Agent` calls only (R010 “Delegated Permission Ownership”)**: Pass `mode: "bypassPermissions"` when the active Claude session uses bypass permissions. Native Codex `spawn_agent` has no `mode` parameter; use the installed `agent_type` and active Codex runtime permissions instead.

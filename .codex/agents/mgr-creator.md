@@ -3,7 +3,7 @@ name: mgr-creator
 description: Use when you need to create new agents following design guidelines. Automatically researches authoritative references before agent creation to ensure high-quality knowledge base
 model_lane: frontier
 domain: universal
-memory: project
+memory: local
 model_reasoning_effort: high
 skills:
   - create-agent
@@ -66,7 +66,7 @@ When invoked as routing fallback (not explicit `/create-agent`):
 4. Create minimal viable agent with:
    - Detected skills and relevant guides
    - `frontier` capability lane with `medium` reasoning effort (default)
-   - `project` memory scope
+   - `local` memory scope
 5. Agent is persisted (not ephemeral) for future reuse
 
 Dynamic mode skips user confirmation and creates the agent immediately to fulfill the pending task.
