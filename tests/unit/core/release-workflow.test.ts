@@ -96,6 +96,34 @@ describe('release.yml — CI gate', () => {
 });
 
 describe('release.yml — publish safeguards', () => {
+  it('keeps tests read-only and credential-free while preserving publish and verification auth', async () => {
+    const content = await readWorkflow();
+    const testJob = extractJob(content, 'test');
+    const publishJob = extractJob(content, 'publish');
+    const verifyJob = extractJob(content, 'verify-release');
+    const testCheckoutIndex = testJob.indexOf('- name: Checkout');
+    const testSetupBunIndex = testJob.indexOf('- name: Setup Bun');
+    const testCheckoutStep = testJob.slice(testCheckoutIndex, testSetupBunIndex);
+
+    expect(testJob).toContain('permissions:\n      contents: read\n    env:');
+    expect(testCheckoutIndex).toBeGreaterThan(-1);
+    expect(testSetupBunIndex).toBeGreaterThan(testCheckoutIndex);
+    expect(testCheckoutStep).toContain('persist-credentials: false');
+    expect(testJob).toContain('- name: Setup Node.js for npm');
+    expect(testJob).not.toContain('registry-url:');
+    expect(testJob).not.toContain('NODE_AUTH_TOKEN:');
+
+    expect(publishJob).toContain("registry-url: 'https://registry.npmjs.org'");
+    expect(publishJob).toContain(`NODE_AUTH_TOKEN: \${{ secrets.NPM_TOKEN }}`);
+    expect(publishJob).toContain("registry-url: 'https://npm.pkg.github.com'");
+    expect(publishJob).toContain(`NODE_AUTH_TOKEN: \${{ secrets.GITHUB_TOKEN }}`);
+
+    expect(verifyJob).toContain(
+      '- name: Prefetch trusted release inputs without lifecycle scripts'
+    );
+    expect(verifyJob).toContain(`NODE_AUTH_TOKEN: \${{ secrets.GITHUB_TOKEN }}`);
+  });
+
   it('should verify version sync before npm publish checks', async () => {
     const content = await readWorkflow();
     const verifyBuildIndex = content.indexOf('- name: Verify build artifacts');

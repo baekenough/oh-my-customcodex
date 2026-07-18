@@ -312,7 +312,7 @@ test('rejects a symlinked evidence directory', async () => {
   await assert.rejects(
     verifyReleaseContract(
       { mode: 'offline', evidenceDir: evidence, repoRoot: root, version: '1.0.0' },
-      { fixtureMode: true }
+      { fixtureMode: true, env: {} }
     ),
     /evidence directory.*symbolic link/i
   );
@@ -327,7 +327,7 @@ test('requires an absent evidence leaf and never deletes a pre-existing destinat
   await assert.rejects(
     verifyReleaseContract(
       { mode: 'offline', evidenceDir: evidence, repoRoot: root, version: '1.0.0' },
-      { fixtureMode: true }
+      { fixtureMode: true, env: {} }
     ),
     /absent dedicated leaf/i
   );
@@ -621,6 +621,7 @@ test('offline invokes verify-package-contract exactly once with --skip-build and
     { mode: 'offline', evidenceDir, repoRoot: root, version: '1.0.0' },
     {
       fixtureMode: true,
+      env: {},
       runCommand: async (call) => {
         calls.push(call);
         return { status: 0, stdout: 'PASS', stderr: '' };
@@ -1017,6 +1018,7 @@ test('writes safe evidence and returns FAIL for an ordinary offline package subg
     },
     {
       fixtureMode: true,
+      env: {},
       runCommand: async (call) => {
         calls.push(call.label);
         return { status: 1, stdout: '', stderr: 'ordinary failure' };

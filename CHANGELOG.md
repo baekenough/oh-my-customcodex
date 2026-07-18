@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.25] - 2026-07-18
+
+### Changed
+
+- Deliver the accumulated, unpublished `v1.0.24` release-target, mutation-evidence, package-verifier, documentation, command-boundary, and post-release follow-up changes to registry consumers upgrading from `1.0.23` to `1.0.25` (#1643, #1646, #1647, #1662, #1666, #1668, #1669).
+
+### Fixed
+
+- Keep the Release `Test` job credential-free by preventing `actions/setup-node` from exporting registry placeholders there, while retaining authentication only in the publish and live-verification boundaries (#1671).
+- Fix forward from the immutable, unpublished `v1.0.24` tag to `v1.0.25`, with hermetic offline-verifier fixtures that do not inherit runner credentials (#1671).
+
 ## [1.0.24] - 2026-07-16
 
 ### Added
