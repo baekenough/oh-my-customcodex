@@ -4,7 +4,12 @@ on:
   issues:
     types: [opened, labeled]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
 permissions:
+  contents: read
   issues: write
 
 jobs:
@@ -12,17 +17,23 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
       ISSUE_NUMBER: ${{ github.event.issue.number }}
       ISSUE_TITLE: ${{ github.event.issue.title }}
     steps:
+      - name: Checkout triage helper
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
+
       - name: Ensure triaged label exists
         run: |
           set -euo pipefail
-          gh label create triaged \
-            --color "C5DEF5" \
-            --description "Issue acknowledged by triage dispatch" \
-            --repo "${{ github.repository }}" \
-            2>/dev/null || true
+          if ! gh label create triaged \
+                 --color "C5DEF5" \
+                 --description "Issue acknowledged by triage dispatch" \
+                 --repo "$GH_REPO" \
+                 2>/dev/null; then
+            gh label view triaged --repo "$GH_REPO" >/dev/null
+          fi
 
       - name: Record issue type
         run: |
@@ -33,25 +44,4 @@ jobs:
           echo "Triage acknowledgment will be posted only when the issue is not already triaged."
 
       - name: Post triage acknowledgment
-        run: |
-          set -euo pipefail
-          REPO="${{ github.repository }}"
-
-          # Check whether the issue is already triaged to avoid duplicate
-          # comments on repeated 'labeled' events or pre-labeled opened issues.
-          if gh issue view "$ISSUE_NUMBER" \
-               --repo "$REPO" \
-               --json labels \
-               --jq '.labels[].name' \
-             | grep -qx "triaged"; then
-            echo "Issue #${ISSUE_NUMBER} already triaged — skipping comment and label."
-            exit 0
-          fi
-
-          gh issue comment "$ISSUE_NUMBER" \
-            --repo "$REPO" \
-            --body "Thanks for filing this issue! It has been acknowledged by our triage dispatch and will be reviewed shortly. Detailed triage is performed by the professor-triage skill during active development sessions."
-
-          gh issue edit "$ISSUE_NUMBER" \
-            --repo "$REPO" \
-            --add-label "triaged"
+        run: bash .github/scripts/triage-dispatch.sh

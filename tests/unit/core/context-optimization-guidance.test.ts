@@ -21,6 +21,53 @@ interface RuleContract {
 
 const RULES: RuleContract[] = [
   {
+    source: '.codex/rules/MUST-permissions.md',
+    template: 'templates/.claude/rules/MUST-permissions.md',
+    visibleLimit: 5_000,
+    detailMarkers: [
+      'DETAIL: Claude Code v2.1.203-v2.1.208 Permission Compatibility',
+      'DETAIL: Claude Code v2.1.210 Permission Matcher Compatibility',
+    ],
+    compatibilityDetails: [
+      {
+        marker: 'DETAIL: Claude Code v2.1.210 Permission Matcher Compatibility',
+        phrases: [
+          'Claude Code v2.1.210',
+          'Write(path)',
+          'NotebookEdit(path)',
+          'Glob(path)',
+          'Edit(path)',
+          'Read(path)',
+        ],
+        hiddenPhrases: ['Claude Code v2.1.210', 'Write(path)', 'NotebookEdit(path)', 'Glob(path)'],
+      },
+    ],
+  },
+  {
+    source: '.codex/rules/MAY-optimization.md',
+    template: 'templates/.claude/rules/MAY-optimization.md',
+    visibleLimit: 4_000,
+    detailMarkers: [
+      'DETAIL: Claude Code v2.1.206 Context Optimization Compatibility',
+      'DETAIL: Claude Code v2.1.208 Tool Reliability Compatibility',
+      'DETAIL: Claude Code v2.1.210 Auto-Background and Grep Compatibility',
+    ],
+    compatibilityDetails: [
+      {
+        marker: 'DETAIL: Claude Code v2.1.210 Auto-Background and Grep Compatibility',
+        phrases: [
+          'Claude Code v2.1.210',
+          'auto-background',
+          'working directory',
+          'absolute paths',
+          'Grep content mode',
+          'No matches found',
+        ],
+        hiddenPhrases: ['Claude Code v2.1.210', 'Grep content mode', 'No matches found'],
+      },
+    ],
+  },
+  {
     source: '.codex/rules/MUST-agent-identification.md',
     template: 'templates/.claude/rules/MUST-agent-identification.md',
     visibleLimit: 2_500,
@@ -77,6 +124,7 @@ const RULES: RuleContract[] = [
       'DETAIL: Skill Optional Fields',
       'DETAIL: Claude Code v2.1.204 Headless SessionStart Compatibility',
       'DETAIL: Claude Code v2.1.208 Agent Tool Validation Compatibility',
+      'DETAIL: Claude Code v2.1.210 Positional Placeholder Compatibility',
     ],
     compatibilityDetails: [
       {
@@ -104,6 +152,18 @@ const RULES: RuleContract[] = [
           'Claude Code v2.1.208',
           'Claude Code v2.1.208 reports an Agent tool configuration error when `tools:` resolves to an empty set',
         ],
+      },
+      {
+        marker: 'DETAIL: Claude Code v2.1.210 Positional Placeholder Compatibility',
+        phrases: [
+          'Claude Code v2.1.210',
+          'unmatched positional placeholders',
+          '$1',
+          '$2',
+          'verbatim',
+          '$ARGUMENTS',
+        ],
+        hiddenPhrases: ['Claude Code v2.1.210', 'unmatched positional placeholders'],
       },
     ],
   },
@@ -133,6 +193,44 @@ const RULES: RuleContract[] = [
       'DETAIL: Why Immediate',
       'DETAIL: Session-End Flow',
       'DETAIL: Session-End Self-Check',
+      'DETAIL: Claude Code v2.1.210 Memory Read-Limit Compatibility',
+    ],
+    compatibilityDetails: [
+      {
+        marker: 'DETAIL: Claude Code v2.1.210 Memory Read-Limit Compatibility',
+        phrases: [
+          'Claude Code v2.1.210',
+          'MEMORY.md',
+          'read limit',
+          'explicit error',
+          'archive',
+          'retry',
+        ],
+        hiddenPhrases: ['Claude Code v2.1.210', 'read limit', 'explicit error'],
+      },
+    ],
+  },
+  {
+    source: '.codex/rules/MUST-enforcement-policy.md',
+    template: 'templates/.claude/rules/MUST-enforcement-policy.md',
+    visibleLimit: 2_500,
+    detailMarkers: [
+      'DETAIL: Hard Enforcement Candidates',
+      'DETAIL: Claude Code v2.1.210 Hook Timeout Compatibility',
+    ],
+    compatibilityDetails: [
+      {
+        marker: 'DETAIL: Claude Code v2.1.210 Hook Timeout Compatibility',
+        phrases: [
+          'Claude Code v2.1.210',
+          'hook callback timeout',
+          'user rejection',
+          'phantom rejection',
+          'fail-closed',
+          'Codex/OMX',
+        ],
+        hiddenPhrases: ['Claude Code v2.1.210', 'hook callback timeout', 'phantom rejection'],
+      },
     ],
   },
   {

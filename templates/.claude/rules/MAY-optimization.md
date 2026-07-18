@@ -31,6 +31,10 @@ Inspired by [ouroboros PR #353](https://github.com/Q00/ouroboros/pull/353) capab
 Claude Code v2.1.208 fixes settings and environment parsing for numbers written in scientific notation, along with Edit, Read, Grep, and Glob reliability defects. These are provider-owned fixes; retain capability-aware scheduling and validate the active Codex/OMX tool result rather than assuming cross-provider parity.
 -->
 
+<!-- DETAIL: Claude Code v2.1.210 Auto-Background and Grep Compatibility
+Claude Code v2.1.210 distinguishes timeout-driven auto-background from an explicit background request and reports that `cd` inside an auto-backgrounded command does not change the session working directory. Use absolute paths for dependent follow-up commands after that Claude transition. The release also fixes Grep content mode returning `No matches found` when pagination has moved past the final result; on older Claude versions, treat that message as a possible page boundary rather than proof that the pattern is absent. These are provider-owned tool behaviors; keep verifying the active Codex/OMX result and do not copy Claude working-directory state into this runtime.
+-->
+
 ### Display-pipe exit status
 
 A **display pipe** such as `command | head`, `command | tail`, or `command | tee` is not proof that the producer succeeded: the shell commonly reports the final consumer's status. Keep dependent release and verification gates sequential, and inspect the producer directly.

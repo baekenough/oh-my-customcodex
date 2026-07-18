@@ -46,6 +46,10 @@ Promotion requires: (1) measured violation rate data, (2) user approval, (3) rol
 
 Claude Code v2.1.199+ displays stderr from SessionStart/Setup/SubagentStart hooks when they exit 2. This strengthens observability for hard-block and advisory hooks in packaged Claude templates, complementing structured `hookSpecificOutput.additionalContext` without changing the Codex/OMX enforcement model.
 
+<!-- DETAIL: Claude Code v2.1.210 Hook Timeout Compatibility
+Claude Code v2.1.210 fixes a hook callback timeout being reported to the model as a user rejection, which could create a phantom rejection and leave unattended Claude sessions waiting. Keep propagating real hook failures and enforcing the local fail-closed boundary. This provider-owned reporting fix does not change Codex/OMX hook semantics or weaken the advisory-first enforcement model.
+-->
+
 ## Integration
 
 | Rule | Interaction |

@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-07-16
+updated: 2026-07-19
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/15-version-compatibility.md
@@ -20,6 +20,10 @@ Reference documentation for Claude Code capabilities, features, and API integrat
 ## Overview
 
 Covers Claude's advanced API features for building Claude Code-compatible applications and agents. Topics include the 1M token context window, Agent Skills, batch processing, citations, extended thinking, Files API, structured outputs, and tool use. Also documents built-in tools (Bash, code execution, computer use, MCP connector, web fetch/search). Used by `mgr-claude-code-bible` for spec compliance verification.
+
+## v2.1.210 compatibility updates
+
+Reviewed for #1673 from the official Claude Code v2.1.210 release and parent oh-my-customcode v1.1.21. The guide records six behavior impacts across five rules: permission matcher warnings, timeout auto-background/current-directory reporting, Grep end-of-pagination reporting, unmatched positional placeholder preservation, explicit `MEMORY.md` read-limit errors, and hook-timeout rejection reporting. Every item is provider-owned compatibility guidance; no Codex/OMX runtime, minimum-version, hook, sandbox, or routing behavior is added.
 
 ## v2.1.178 compatibility updates
 

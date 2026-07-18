@@ -70,6 +70,10 @@ Claude Code v2.1.204 fixes SessionStart hook output streaming in headless sessio
 Claude Code v2.1.208 reports an Agent tool configuration error when `tools:` resolves to an empty set because every named tool is unrecognized. Keep compatibility agent tool names valid, while Codex-native dispatch continues to use installed OMX roles and `agent_type`.
 -->
 
+<!-- DETAIL: Claude Code v2.1.210 Positional Placeholder Compatibility
+Claude Code v2.1.210 fixes unmatched positional placeholders such as `$1` and `$2` being silently stripped from a skill or command body: they are now preserved verbatim. Compatibility skills must handle an absent argument explicitly with default text, an `$ARGUMENTS` guard, or `argument-hint` instead of depending on silent removal. This provider-owned prompt-expansion behavior does not change Codex/OMX skill parsing or native dispatch.
+-->
+
 ### Optional Frontmatter
 
 Key native optional fields: `model_reasoning_effort`, `skills`, `soul`, `isolation`,

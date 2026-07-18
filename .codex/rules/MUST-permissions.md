@@ -65,6 +65,10 @@ The same Claude release changed `AskUserQuestion` so dialogs no longer auto-cont
 Claude Code v2.1.203 adds a grey pause badge in the footer when Manual permission mode is active. Claude Code v2.1.207 removes the Auto mode opt-in requirement for Bedrock, Vertex, and Foundry, adds the managed `disableAutoMode` setting, and fixes consent handling for noninteractive remote managed settings. Claude Code v2.1.208 improves permission matcher compilation and caching. These provider-owned changes do not alter the Codex/OMX sandbox or approval policy.
 -->
 
+<!-- DETAIL: Claude Code v2.1.210 Permission Matcher Compatibility
+Claude Code v2.1.210 warns at startup when permission rules use unsupported path-scoped `Write(path)`, `NotebookEdit(path)`, or `Glob(path)` matchers. In Claude compatibility settings, express file-write scopes with `Edit(path)` and read/glob scopes with `Read(path)` instead. The tool-tier table above lists available tool names; it does not redefine Claude's matcher grammar. This provider-owned validation change does not alter the Codex/OMX sandbox or approval policy.
+-->
+
 ## Permission Request Format
 
 ```
