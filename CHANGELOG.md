@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.30] - 2026-07-19
+
+### Changed
+
+- Record OpenAI Codex `rust-v0.144.6` final-state compatibility: refreshed GPT-5.6 Sol/Terra/Luna bundled instructions and corrected 272,000-token context windows remain provider-owned runtime metadata rather than package routing constants (#1683).
+
 ## [1.0.29] - 2026-07-19
 
 ### Changed

@@ -13,6 +13,15 @@ Source: upstream oh-my-codex release `v0.20.2`, Codex-port issue #1664.
 | Fresh authenticated App leaders can bootstrap Ralplan role intent through fail-closed leader attestation and atomic recovery (#3184); prompt/session provenance and canonical Ralplan state are isolated across concurrent chats (#3158, #3168). | These changes harden planning and session boundaries that the harness delegates to OMX. | Record them as external capabilities and keep package completion claims grounded in repository and runtime evidence. |
 | Setup preserves an explicit `AGENTS.md` merge policy, foreign Codex hook coordinates, and other operator-owned configuration (#3151, #3164). | This aligns with the child package's preservation contract without transferring setup-engine ownership into `oh-my-customcodex`. | Keep the current package-owned readiness and preservation checks; do not copy upstream setup internals or relax the existing tests. |
 
+## rust-v0.144.6 / GPT-5.6 model metadata final state
+
+Source: upstream OpenAI Codex release `rust-v0.144.6`, Codex-port issue #1683.
+
+| Change | Impact on oh-my-customcodex | Action |
+| --- | --- | --- |
+| `rust-v0.144.6` refreshes the bundled instructions for GPT-5.6 Sol, Terra, and Luna and corrects each model's context window to 272,000 tokens (#33972, #34009). | Bundled prompts and model-window metadata are provider-owned Codex runtime inputs. This package resolves model lanes through the active Codex/OMX configuration and has no package-owned context-window constant or model manager to patch. | Record the corrected final state, consume it through the installed Codex runtime, and do not copy the prompts or the 272,000-token value into package routing/configuration. |
+| The official tag comparison changes `codex-rs/models-manager/models.json` plus release-version metadata, without a new app-server, hook, package-layout, or configuration contract for this child package. | Raising a package-owned Codex floor or changing OMX lane selection would invent a dependency boundary that the repository does not enforce. | Keep the existing provider boundary and compatibility tests; no source migration or minimum Codex version is required. |
+
 ## rust-v0.144.4-rust-v0.144.5 / CLI final state
 
 Sources: upstream OpenAI Codex releases `rust-v0.144.4` and `rust-v0.144.5`; Codex-port issues #1641 and #1663.
