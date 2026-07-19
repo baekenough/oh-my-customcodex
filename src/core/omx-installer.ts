@@ -5,24 +5,21 @@
 // execSync is used here with fully hardcoded command strings (no user input),
 // so there is no shell injection risk. Global npm install requires a shell.
 import { type ExecSyncOptions, execFileSync, execSync } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
 import {
   closeSync,
   constants,
-  fchmodSync,
   fstatSync,
   fsyncSync,
+  ftruncateSync,
   lstatSync,
   openSync,
   readdirSync,
   readFileSync,
   readSync,
   realpathSync,
-  renameSync,
   type Stats,
   statSync,
-  unlinkSync,
-  writeFileSync,
+  writeSync,
 } from 'node:fs';
 import { platform } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -181,6 +178,8 @@ const defaultDeps: InstallerDeps = {
 
 const OMX_PROJECT_HOOK_TRUST_START = '# OMX-owned Codex hook trust state';
 const OMX_PROJECT_HOOK_TRUST_END = '# End OMX-owned Codex hook trust state';
+const DEFAULT_NATIVE_STATUS_LINE =
+  'status_line = ["model-with-reasoning", "git-branch", "context-remaining", "total-input-tokens", "total-output-tokens", "five-hour-limit", "weekly-limit"]';
 const CODEX_HOOKS_LIST_CLIENT = String.raw`
 const { spawn } = require('node:child_process');
 const cwd = process.env.OMCUSTOMCODEX_HOOKS_CWD;
@@ -382,6 +381,9 @@ interface SafeProjectConfig {
   path: string;
   descriptor: number;
   stats: FileStats;
+  parentPath: string;
+  parentDescriptor: number;
+  parentStats: FileStats;
   content: string;
 }
 
@@ -395,6 +397,21 @@ function sameProjectConfigFingerprint(left: FileStats, right: FileStats): boolea
     left.mtimeMs === right.mtimeMs &&
     left.ctimeMs === right.ctimeMs
   );
+}
+
+function sameProjectConfigIdentity(left: FileStats, right: FileStats): boolean {
+  return (
+    left.dev === right.dev &&
+    left.ino === right.ino &&
+    left.mode === right.mode &&
+    left.nlink === right.nlink &&
+    left.uid === right.uid &&
+    left.gid === right.gid
+  );
+}
+
+function sameProjectDirectoryIdentity(left: FileStats, right: FileStats): boolean {
+  return left.dev === right.dev && left.ino === right.ino && left.mode === right.mode;
 }
 
 function readDescriptorBuffer(descriptor: number): Buffer {
@@ -416,6 +433,7 @@ function readDescriptorText(descriptor: number): string {
 
 function readSafeProjectConfig(projectRoot: string): SafeProjectConfig | null {
   let descriptor: number | null = null;
+  let parentDescriptor: number | null = null;
   try {
     const resolvedRoot = resolve(projectRoot);
     const rootStats = lstatSync(resolvedRoot);
@@ -425,6 +443,14 @@ function readSafeProjectConfig(projectRoot: string): SafeProjectConfig | null {
     const codexStats = lstatSync(codexDir);
     if (codexStats.isSymbolicLink() || !codexStats.isDirectory()) return null;
     if (realpathSync(codexDir) !== codexDir) return null;
+    parentDescriptor = openSync(
+      codexDir,
+      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
+    );
+    const parentStats = fstatSync(parentDescriptor);
+    if (!parentStats.isDirectory() || !sameProjectDirectoryIdentity(codexStats, parentStats)) {
+      return null;
+    }
 
     const path = join(codexDir, 'config.toml');
     descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
@@ -443,18 +469,77 @@ function readSafeProjectConfig(projectRoot: string): SafeProjectConfig | null {
     const content = readDescriptorText(descriptor);
     const afterRead = fstatSync(descriptor);
     if (!sameProjectConfigFingerprint(stats, afterRead)) return null;
-    const config = { path, descriptor, stats: afterRead, content };
+    const config = {
+      path,
+      descriptor,
+      stats: afterRead,
+      parentPath: codexDir,
+      parentDescriptor,
+      parentStats,
+      content,
+    };
     descriptor = null;
+    parentDescriptor = null;
     return config;
   } catch {
     return null;
   } finally {
     if (descriptor !== null) closeSync(descriptor);
+    if (parentDescriptor !== null) closeSync(parentDescriptor);
+  }
+}
+
+function isMissingPathError(error: unknown): boolean {
+  return error !== null && typeof error === 'object' && 'code' in error && error.code === 'ENOENT';
+}
+
+function classifyMissingSafeProjectConfig(projectRoot: string): NativeStatusLineSeedResult {
+  let codexDir: string;
+  try {
+    const resolvedRoot = resolve(projectRoot);
+    const rootStats = lstatSync(resolvedRoot);
+    if (rootStats.isSymbolicLink() || !rootStats.isDirectory()) return 'unsafe';
+    codexDir = join(realpathSync(resolvedRoot), '.codex');
+  } catch {
+    return 'unsafe';
+  }
+
+  try {
+    const codexStats = lstatSync(codexDir);
+    if (codexStats.isSymbolicLink() || !codexStats.isDirectory()) return 'unsafe';
+    if (realpathSync(codexDir) !== codexDir) return 'unsafe';
+  } catch (error) {
+    return isMissingPathError(error) ? 'missing' : 'unsafe';
+  }
+
+  try {
+    lstatSync(join(codexDir, 'config.toml'));
+    return 'unsafe';
+  } catch (error) {
+    return isMissingPathError(error) ? 'missing' : 'unsafe';
+  }
+}
+
+function isSameSafeProjectParent(config: SafeProjectConfig): boolean {
+  try {
+    const descriptorStats = fstatSync(config.parentDescriptor);
+    const pathStats = lstatSync(config.parentPath);
+    return (
+      descriptorStats.isDirectory() &&
+      !pathStats.isSymbolicLink() &&
+      pathStats.isDirectory() &&
+      sameProjectDirectoryIdentity(config.parentStats, descriptorStats) &&
+      sameProjectDirectoryIdentity(config.parentStats, pathStats) &&
+      realpathSync(config.parentPath) === config.parentPath
+    );
+  } catch {
+    return false;
   }
 }
 
 function isSameSafeProjectConfig(config: SafeProjectConfig): boolean {
   try {
+    if (!isSameSafeProjectParent(config)) return false;
     const descriptorStats = fstatSync(config.descriptor);
     const pathStats = lstatSync(config.path);
     if (
@@ -475,45 +560,578 @@ function isSameSafeProjectConfig(config: SafeProjectConfig): boolean {
   }
 }
 
-function replaceSafeProjectConfig(config: SafeProjectConfig, content: string): boolean {
-  const parentPath = dirname(config.path);
-  const temporaryPath = join(
-    parentPath,
-    `.config.toml.omcustomcodex-${process.pid}-${randomUUID()}.tmp`
-  );
-  let descriptor: number | null = null;
-  let parentDescriptor: number | null = null;
+type ProjectConfigRewritePhase = 'before-write' | 'after-write' | 'before-rollback';
+type ProjectConfigRewriteHook = (phase: ProjectConfigRewritePhase, descriptor: number) => void;
+let projectConfigRewriteHookForTests: ProjectConfigRewriteHook | null = null;
+
+/** @internal Deterministic filesystem-race seam; not re-exported by the package API. */
+export function setProjectConfigRewriteHookForTests(hook: ProjectConfigRewriteHook | null): void {
+  projectConfigRewriteHookForTests = hook;
+}
+
+class ProjectConfigRewriteRecoveryError extends Error {
+  override name = 'ProjectConfigRewriteRecoveryError';
+}
+
+function closeDescriptorQuietly(descriptor: number | null): void {
+  if (descriptor === null) return;
   try {
-    parentDescriptor = openSync(
-      parentPath,
-      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
-    );
-    if (!fstatSync(parentDescriptor).isDirectory()) return false;
-    descriptor = openSync(
-      temporaryPath,
-      constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY | constants.O_NOFOLLOW,
-      config.stats.mode
-    );
-    writeFileSync(descriptor, content, 'utf8');
-    fchmodSync(descriptor, config.stats.mode);
-    fsyncSync(descriptor);
     closeSync(descriptor);
-    descriptor = null;
-    if (!isSameSafeProjectConfig(config)) return false;
-    renameSync(temporaryPath, config.path);
-    fsyncSync(parentDescriptor);
-    return true;
+  } catch {
+    // Recovery errors retain the actionable failure instead of masking it with EBADF.
+  }
+}
+
+function writeDescriptorExact(descriptor: number, content: string): void {
+  const bytes = Buffer.from(content);
+  let offset = 0;
+  while (offset < bytes.length) {
+    const written = writeSync(descriptor, bytes, offset, bytes.length - offset, offset);
+    if (written <= 0) throw new Error('Project config write made no progress.');
+    offset += written;
+  }
+  ftruncateSync(descriptor, bytes.length);
+  fsyncSync(descriptor);
+  if (!readDescriptorBuffer(descriptor).equals(bytes)) {
+    throw new Error('Project config content verification failed.');
+  }
+}
+
+function hasOriginalProjectConfigIdentity(config: SafeProjectConfig, descriptor: number): boolean {
+  try {
+    return sameProjectConfigIdentity(config.stats, fstatSync(descriptor));
   } catch {
     return false;
-  } finally {
-    if (descriptor !== null) closeSync(descriptor);
-    if (parentDescriptor !== null) closeSync(parentDescriptor);
+  }
+}
+
+function rollbackProjectConfig(config: SafeProjectConfig, descriptor: number): boolean {
+  try {
+    projectConfigRewriteHookForTests?.('before-rollback', descriptor);
+    writeDescriptorExact(descriptor, config.content);
+    return (
+      hasOriginalProjectConfigIdentity(config, descriptor) &&
+      readDescriptorText(descriptor) === config.content
+    );
+  } catch {
+    return false;
+  }
+}
+
+function hasCommittedProjectConfig(
+  config: SafeProjectConfig,
+  descriptor: number,
+  content: string
+): boolean {
+  try {
+    return (
+      readDescriptorText(descriptor) === content &&
+      hasOriginalProjectConfigIdentity(config, descriptor) &&
+      isSameSafeProjectParent(config) &&
+      realpathSync(config.path) === config.path &&
+      sameProjectConfigIdentity(config.stats, lstatSync(config.path))
+    );
+  } catch {
+    return false;
+  }
+}
+
+function rewriteSafeProjectConfig(config: SafeProjectConfig, content: string): boolean {
+  let descriptor: number | null = null;
+  let mutationStarted = false;
+  try {
+    if (!isSameSafeProjectConfig(config)) return false;
+    descriptor = openSync(config.path, constants.O_RDWR | constants.O_NOFOLLOW);
+    if (
+      !sameProjectConfigFingerprint(config.stats, fstatSync(descriptor)) ||
+      readDescriptorText(descriptor) !== config.content ||
+      !isSameSafeProjectConfig(config)
+    ) {
+      return false;
+    }
+
     try {
-      unlinkSync(temporaryPath);
-    } catch {
-      // The successful rename consumes the temporary path.
+      projectConfigRewriteHookForTests?.('before-write', descriptor);
+      mutationStarted = true;
+      writeDescriptorExact(descriptor, content);
+      projectConfigRewriteHookForTests?.('after-write', descriptor);
+      if (hasCommittedProjectConfig(config, descriptor, content)) return true;
+      throw new Error('Project config path changed during descriptor rewrite.');
+    } catch (error) {
+      if (!mutationStarted) return false;
+      if (rollbackProjectConfig(config, descriptor)) return false;
+      const message = error instanceof Error ? error.message : String(error);
+      throw new ProjectConfigRewriteRecoveryError(
+        `Project config rewrite failed and rollback could not be verified: ${message}`
+      );
+    }
+  } catch (error) {
+    if (error instanceof ProjectConfigRewriteRecoveryError) throw error;
+    return false;
+  } finally {
+    closeDescriptorQuietly(descriptor);
+  }
+}
+
+function closeSafeProjectConfig(config: SafeProjectConfig): void {
+  try {
+    closeSync(config.descriptor);
+  } finally {
+    closeSync(config.parentDescriptor);
+  }
+}
+
+type NativeStatusLineSeedResult = 'ready' | 'missing' | 'unsafe';
+
+interface TomlScanState {
+  multiline: 'basic' | 'literal' | null;
+  arrayDepth: number;
+  inlineDepth: number;
+  invalid: boolean;
+}
+type TomlStatementLine = [start: number, text: string];
+type TomlTableLine = [path: string, array: boolean, start: number];
+const SIMPLE_TOML_KEY = String.raw`(?:[A-Za-z0-9_-]+|"(?:\\.|[^"\\\r\n])*"|'[^'\r\n]*')`;
+const TOML_KEY_PATH = String.raw`${SIMPLE_TOML_KEY}(?:\s*\.\s*${SIMPLE_TOML_KEY})*`;
+const TUI_KEY = `(?:tui|"tui"|'tui')`;
+const STATUS_LINE_KEY = `(?:status_line|"status_line"|'status_line')`;
+const TABLE_LINE = new RegExp(String.raw`^\s*\[\s*(${TOML_KEY_PATH})\s*\]\s*(?:#.*)?$`);
+const ARRAY_TABLE_LINE = new RegExp(String.raw`^\s*\[\[\s*(${TOML_KEY_PATH})\s*\]\]\s*(?:#.*)?$`);
+const STATUS_LINE_ASSIGNMENT = new RegExp(String.raw`^\s*${STATUS_LINE_KEY}\s*=`);
+const STATUS_LINE_PREFIX = new RegExp(String.raw`^\s*${STATUS_LINE_KEY}(?:\s*[.=]|\s*$)`);
+const ROOT_TUI_STATUS = new RegExp(String.raw`^\s*${TUI_KEY}\s*\.\s*${STATUS_LINE_KEY}\s*=`);
+const ROOT_TUI_STATUS_PREFIX = new RegExp(
+  String.raw`^\s*${TUI_KEY}\s*\.\s*${STATUS_LINE_KEY}(?:\s*[.=]|\s*$)`
+);
+const ROOT_TUI_DOTTED = new RegExp(
+  String.raw`^\s*(${TUI_KEY}\s*\.\s*${SIMPLE_TOML_KEY}(?:\s*\.\s*${SIMPLE_TOML_KEY})*)\s*=`
+);
+const ROOT_TUI_ASSIGNMENT = new RegExp(String.raw`^\s*${TUI_KEY}\s*=`);
+const ROOT_TUI_PREFIX = new RegExp(String.raw`^\s*${TUI_KEY}(?:\s*[.=]|\s*$)`);
+const SIMPLE_INLINE_TUI_START = new RegExp(String.raw`^\s*${TUI_KEY}\s*=\s*\{`);
+const EXACT_STATUS_LINE_KEY = new RegExp(`^${STATUS_LINE_KEY}$`);
+const INLINE_TABLE_TOKEN = /"(?:\\.|[^"\\\r\n])*"|'[^'\r\n]*'|#|[,[\]{}=]/g;
+const TOML_TOKEN = /"""|'''|"(?:\\.|[^"\\\r\n])*"|'[^'\r\n]*'|#|[[\]{}]|["']/g;
+const TOML_BASIC_KEY_ESCAPES: Record<string, string> = {
+  b: '\b',
+  t: '\t',
+  n: '\n',
+  f: '\f',
+  r: '\r',
+  '"': '"',
+  '\\': '\\',
+};
+const DEPTH_CHANGE: Record<string, ['arrayDepth' | 'inlineDepth', number]> = {
+  '[': ['arrayDepth', 1],
+  ']': ['arrayDepth', -1],
+  '{': ['inlineDepth', 1],
+  '}': ['inlineDepth', -1],
+};
+
+interface DecodedTomlBasicKey {
+  value: string;
+  escaped: boolean;
+}
+
+type TomlBasicKeyDecodeResult = DecodedTomlBasicKey | 'not-basic' | 'invalid';
+
+interface DecodedTomlKeyEscape {
+  value: string;
+  nextIndex: number;
+}
+
+function decodeTomlUnicodeEscape(
+  text: string,
+  index: number,
+  width: number
+): DecodedTomlKeyEscape | null {
+  const digits = text.slice(index + 1, index + 1 + width);
+  if (digits.length !== width || !/^[0-9A-Fa-f]+$/.test(digits)) return null;
+  const codePoint = Number.parseInt(digits, 16);
+  if (codePoint > 0x10ffff || (codePoint >= 0xd800 && codePoint <= 0xdfff)) return null;
+  return { value: String.fromCodePoint(codePoint), nextIndex: index + 1 + width };
+}
+
+function decodeTomlKeyEscape(text: string, index: number): DecodedTomlKeyEscape | null {
+  const escapeCode = text[index];
+  if (!escapeCode) return null;
+  const simple = TOML_BASIC_KEY_ESCAPES[escapeCode];
+  if (simple !== undefined) return { value: simple, nextIndex: index + 1 };
+  if (escapeCode === 'u') return decodeTomlUnicodeEscape(text, index, 4);
+  if (escapeCode === 'U') return decodeTomlUnicodeEscape(text, index, 8);
+  return null;
+}
+
+function isValidTomlBasicKeyCharacter(character: string): boolean {
+  const code = character.charCodeAt(0);
+  return (code >= 0x20 || code === 0x09) && code !== 0x7f;
+}
+
+function decodeTomlBasicKey(text: string): TomlBasicKeyDecodeResult {
+  let cursor = /^\s*/.exec(text)?.[0].length ?? 0;
+  if (text[cursor] !== '"') return 'not-basic';
+
+  let value = '';
+  let escaped = false;
+  cursor += 1;
+  while (cursor < text.length) {
+    const character = text[cursor];
+    if (character === '"') return { value, escaped };
+    if (character === '\\') {
+      const decoded = decodeTomlKeyEscape(text, cursor + 1);
+      if (!decoded) return 'invalid';
+      value += decoded.value;
+      escaped = true;
+      cursor = decoded.nextIndex;
+    } else {
+      if (!isValidTomlBasicKeyCharacter(character)) return 'invalid';
+      value += character;
+      cursor += 1;
     }
   }
+  return 'invalid';
+}
+
+function classifyEscapedTomlKey(text: string, relevantKey: string): 'none' | 'unsafe' {
+  const key = decodeTomlBasicKey(text);
+  if (key === 'not-basic') return 'none';
+  if (key === 'invalid') return 'unsafe';
+  return key.escaped && key.value === relevantKey ? 'unsafe' : 'none';
+}
+
+function decodeTomlKeyPath(path: string): DecodedTomlBasicKey[] | null {
+  const keys: DecodedTomlBasicKey[] = [];
+  for (const match of path.matchAll(new RegExp(SIMPLE_TOML_KEY, 'g'))) {
+    const text = match[0];
+    const basic = decodeTomlBasicKey(text);
+    if (basic === 'invalid') return null;
+    if (basic !== 'not-basic') keys.push(basic);
+    else {
+      keys.push({
+        value: text.startsWith("'") ? text.slice(1, -1) : text,
+        escaped: false,
+      });
+    }
+  }
+  return keys;
+}
+
+function classifyRootTuiDotted(text: string): 'dotted' | 'none' | 'unsafe' {
+  const match = ROOT_TUI_DOTTED.exec(text);
+  if (!match) return 'none';
+  const path = decodeTomlKeyPath(match[1]);
+  if (!path || path[1]?.value === 'status_line') return 'unsafe';
+  return 'dotted';
+}
+
+function isEscapedQuote(content: string, index: number): boolean {
+  let slashCount = 0;
+  for (let cursor = index - 1; cursor >= 0 && content[cursor] === '\\'; cursor -= 1)
+    slashCount += 1;
+  return slashCount % 2 === 1;
+}
+
+function continueMultiline(line: string, start: number, state: TomlScanState): number {
+  const delimiter = state.multiline === 'basic' ? '"""' : "'''";
+  let closing = line.indexOf(delimiter, start);
+  while (closing >= 0) {
+    if (state.multiline === 'literal' || !isEscapedQuote(line, closing)) {
+      state.multiline = null;
+      return closing + 3;
+    }
+    closing = line.indexOf(delimiter, closing + 1);
+  }
+  return line.length;
+}
+
+function applyTomlToken(token: string, state: TomlScanState): boolean {
+  if (token === '#') return false;
+  if (token === '"""' || token === "'''") state.multiline = token === '"""' ? 'basic' : 'literal';
+  else if (token === '"' || token === "'") state.invalid = true;
+  else if (token in DEPTH_CHANGE) {
+    const [depth, change] = DEPTH_CHANGE[token];
+    state[depth] = ((state[depth] as number) + change) as never;
+    if ((state[depth] as number) < 0) state.invalid = true;
+  }
+  return !state.invalid;
+}
+
+function scanTomlLine(line: string, state: TomlScanState): void {
+  TOML_TOKEN.lastIndex = 0;
+  while (TOML_TOKEN.lastIndex < line.length) {
+    if (state.multiline) {
+      TOML_TOKEN.lastIndex = continueMultiline(line, TOML_TOKEN.lastIndex, state);
+      if (state.multiline) return;
+      continue;
+    }
+    const match = TOML_TOKEN.exec(line);
+    if (!match || !applyTomlToken(match[0], state)) return;
+  }
+}
+
+function collectStatementLines(content: string): TomlStatementLine[] | null {
+  const state: TomlScanState = { multiline: null, arrayDepth: 0, inlineDepth: 0, invalid: false };
+  const lines: TomlStatementLine[] = [];
+  let start = 0;
+  while (start < content.length) {
+    const newline = content.indexOf('\n', start);
+    const next = newline < 0 ? content.length : newline + 1;
+    const end =
+      newline < 0 ? content.length : content[newline - 1] === '\r' ? newline - 1 : newline;
+    const line = content.slice(start, end);
+    if (!state.multiline && state.arrayDepth === 0 && state.inlineDepth === 0) {
+      lines.push([start, line.replace(/^\uFEFF/, '')]);
+    }
+    scanTomlLine(line, state);
+    start = next;
+  }
+  return state.invalid || state.multiline || state.arrayDepth !== 0 || state.inlineDepth !== 0
+    ? null
+    : lines;
+}
+
+function parseTableLine(line: TomlStatementLine): TomlTableLine | null {
+  const arrayMatch = ARRAY_TABLE_LINE.exec(line[1]);
+  if (arrayMatch) return [arrayMatch[1], true, line[0]];
+  const match = TABLE_LINE.exec(line[1]);
+  return match ? [match[1], false, line[0]] : null;
+}
+
+interface InlineTableScanState {
+  arrayDepth: number;
+  inlineDepth: number;
+  fieldStart: number;
+  hasStatusLine: boolean;
+}
+
+interface InlineTuiAnalysis {
+  contentStart: number;
+  closingIndex: number;
+  hasStatusLine: boolean;
+}
+
+function classifyInlineTableKey(
+  text: string,
+  index: number,
+  state: InlineTableScanState
+): 'continue' | 'unsafe' {
+  const key = text.slice(state.fieldStart, index).trim();
+  if (classifyEscapedTomlKey(key, 'status_line') === 'unsafe') return 'unsafe';
+  if (EXACT_STATUS_LINE_KEY.test(key)) {
+    state.hasStatusLine = true;
+    return 'continue';
+  }
+  return STATUS_LINE_PREFIX.test(key) ? 'unsafe' : 'continue';
+}
+
+function applyInlineTableToken(
+  text: string,
+  token: string,
+  index: number,
+  state: InlineTableScanState
+): 'continue' | 'closed' | 'unsafe' {
+  if (token.startsWith('"') || token.startsWith("'")) return 'continue';
+  if (token === '#') return 'unsafe';
+  if (token in DEPTH_CHANGE) {
+    const [depth, change] = DEPTH_CHANGE[token];
+    state[depth] += change;
+    if (state[depth] < 0) return 'unsafe';
+    if (state.inlineDepth === 0) return state.arrayDepth === 0 ? 'closed' : 'unsafe';
+    return 'continue';
+  }
+  if (state.inlineDepth !== 1 || state.arrayDepth !== 0) return 'continue';
+  if (token === ',') {
+    state.fieldStart = index + 1;
+    return 'continue';
+  }
+  return token === '=' ? classifyInlineTableKey(text, index, state) : 'continue';
+}
+
+function analyzeSimpleInlineTui(text: string): InlineTuiAnalysis | null {
+  const start = SIMPLE_INLINE_TUI_START.exec(text);
+  if (!start) return null;
+  const state: InlineTableScanState = {
+    arrayDepth: 0,
+    inlineDepth: 1,
+    fieldStart: start[0].length,
+    hasStatusLine: false,
+  };
+  INLINE_TABLE_TOKEN.lastIndex = state.fieldStart;
+  for (const match of text.matchAll(INLINE_TABLE_TOKEN)) {
+    const result = applyInlineTableToken(text, match[0], match.index, state);
+    if (result === 'unsafe') return null;
+    if (result === 'closed') {
+      if (!/^\s*(?:#.*)?$/.test(text.slice(match.index + 1))) return null;
+      return {
+        contentStart: start[0].length,
+        closingIndex: match.index,
+        hasStatusLine: state.hasStatusLine,
+      };
+    }
+  }
+  return null;
+}
+
+function classifyTuiStatement(text: string, table: 'root' | 'tui' | 'other') {
+  if (table === 'other') return 'none';
+  const relevantKey = table === 'tui' ? 'status_line' : 'tui';
+  if (classifyEscapedTomlKey(text, relevantKey) === 'unsafe') return 'unsafe';
+  if (table === 'tui') {
+    if (STATUS_LINE_ASSIGNMENT.test(text)) return 'has-status';
+    return STATUS_LINE_PREFIX.test(text) ? 'unsafe' : 'none';
+  }
+  if (ROOT_TUI_STATUS.test(text)) return 'has-status';
+  if (ROOT_TUI_STATUS_PREFIX.test(text)) return 'unsafe';
+  const dotted = classifyRootTuiDotted(text);
+  if (dotted !== 'none') return dotted;
+  if (ROOT_TUI_ASSIGNMENT.test(text)) return 'unsafe';
+  return ROOT_TUI_PREFIX.test(text) ? 'unsafe' : 'none';
+}
+
+function classifyTuiTable(table: TomlTableLine, duplicate: boolean): 'tui' | 'other' | 'unsafe' {
+  const path = decodeTomlKeyPath(table[0]);
+  if (!path) return 'unsafe';
+  const [root] = path;
+  if (root?.value !== 'tui') return 'other';
+  return root.escaped || table[1] || path.length !== 1 || duplicate ? 'unsafe' : 'tui';
+}
+
+type InlineTuiLocation = Omit<InlineTuiAnalysis, 'hasStatusLine'>;
+
+interface NativeStatusLineAnalysis {
+  tables: TomlTableLine[];
+  currentTable: 'root' | 'tui' | 'other';
+  hasStatusLine: boolean;
+  rootDottedTui: boolean;
+  hasRootInlineTui: boolean;
+  inlineTui: InlineTuiLocation | null;
+  tuiTableIndex: number | null;
+}
+
+function applyNativeStatusTable(state: NativeStatusLineAnalysis, table: TomlTableLine): boolean {
+  state.tables.push(table);
+  const kind = classifyTuiTable(table, state.tuiTableIndex !== null || state.hasRootInlineTui);
+  if (kind === 'unsafe') return false;
+  state.currentTable = kind;
+  if (kind === 'tui') state.tuiTableIndex = state.tables.length - 1;
+  return true;
+}
+
+function applyNativeStatusStatement(
+  state: NativeStatusLineAnalysis,
+  statement: TomlStatementLine
+): boolean {
+  const text = statement[1];
+  if (/^\s*\[/.test(text)) return false;
+  if (state.currentTable === 'root' && ROOT_TUI_ASSIGNMENT.test(text)) {
+    const inline = analyzeSimpleInlineTui(text);
+    if (!inline || state.hasRootInlineTui || state.rootDottedTui) return false;
+    state.hasRootInlineTui = true;
+    state.hasStatusLine ||= inline.hasStatusLine;
+    if (!inline.hasStatusLine) {
+      state.inlineTui = {
+        contentStart: statement[0] + inline.contentStart,
+        closingIndex: statement[0] + inline.closingIndex,
+      };
+    }
+    return true;
+  }
+
+  const classification = classifyTuiStatement(text, state.currentTable);
+  if (classification === 'unsafe') return false;
+  state.hasStatusLine ||= classification === 'has-status';
+  if (classification !== 'dotted') return true;
+  if (state.hasRootInlineTui) return false;
+  state.rootDottedTui = true;
+  return true;
+}
+
+function analyzeNativeStatusLineConfig(content: string): NativeStatusLineAnalysis | null {
+  const statements = collectStatementLines(content);
+  if (!statements) return null;
+  const state: NativeStatusLineAnalysis = {
+    tables: [],
+    currentTable: 'root',
+    hasStatusLine: false,
+    rootDottedTui: false,
+    hasRootInlineTui: false,
+    inlineTui: null,
+    tuiTableIndex: null,
+  };
+  for (const statement of statements) {
+    const table = parseTableLine(statement);
+    if (
+      table ? !applyNativeStatusTable(state, table) : !applyNativeStatusStatement(state, statement)
+    )
+      return null;
+  }
+  return state;
+}
+
+function insertTomlLine(content: string, index: number, line: string, eol: '\n' | '\r\n'): string {
+  const before = content.slice(0, index);
+  const after = content.slice(index);
+  const separator = before.length > 0 && !before.endsWith('\n') ? eol : '';
+  return `${before}${separator}${line}${eol}${after}`;
+}
+
+function addNativeStatusLineToInline(content: string, inline: InlineTuiLocation): string {
+  let insertion = inline.closingIndex;
+  while (insertion > inline.contentStart && /[ \t]/.test(content[insertion - 1])) insertion -= 1;
+  const hasFields = content.slice(inline.contentStart, insertion).trim().length > 0;
+  const addition = hasFields ? `, ${DEFAULT_NATIVE_STATUS_LINE}` : DEFAULT_NATIVE_STATUS_LINE;
+  return `${content.slice(0, insertion)}${addition}${content.slice(insertion)}`;
+}
+
+function addNativeStatusLine(content: string): string | null {
+  const analysis = analyzeNativeStatusLineConfig(content);
+  if (!analysis) return null;
+  if (analysis.hasStatusLine) return content;
+  if (analysis.inlineTui) return addNativeStatusLineToInline(content, analysis.inlineTui);
+
+  const eol = content.includes('\r\n') ? '\r\n' : '\n';
+  if (analysis.tuiTableIndex !== null) {
+    const bodyEnd = analysis.tables[analysis.tuiTableIndex + 1]?.[2] ?? content.length;
+    return insertTomlLine(content, bodyEnd, DEFAULT_NATIVE_STATUS_LINE, eol);
+  }
+  if (analysis.rootDottedTui) {
+    const insertion = analysis.tables[0]?.[2] ?? content.length;
+    return insertTomlLine(content, insertion, `tui.${DEFAULT_NATIVE_STATUS_LINE}`, eol);
+  }
+
+  const separator =
+    content.length === 0
+      ? ''
+      : content.endsWith(`${eol}${eol}`)
+        ? ''
+        : content.endsWith(eol)
+          ? eol
+          : `${eol}${eol}`;
+  return `${content}${separator}[tui]${eol}${DEFAULT_NATIVE_STATUS_LINE}${eol}`;
+}
+
+function ensureNativeProjectStatusLine(projectRoot: string): NativeStatusLineSeedResult {
+  const config = readSafeProjectConfig(projectRoot);
+  if (!config) return classifyMissingSafeProjectConfig(projectRoot);
+
+  try {
+    const next = addNativeStatusLine(config.content);
+    if (next === null) return 'unsafe';
+    if (next === config.content) return isSameSafeProjectConfig(config) ? 'ready' : 'unsafe';
+    return rewriteSafeProjectConfig(config, next) ? 'ready' : 'unsafe';
+  } finally {
+    closeSafeProjectConfig(config);
+  }
+}
+
+function requireNativeProjectStatusLine(projectRoot: string): void {
+  const result = ensureNativeProjectStatusLine(projectRoot);
+  if (result === 'ready') return;
+  throw new Error(
+    result === 'missing'
+      ? 'OMX project setup remains incomplete because setup completed without .codex/config.toml'
+      : 'Unable to safely update .codex/config.toml after OMX project setup.'
+  );
 }
 
 /** Remove OMX trust records that Codex intentionally ignores at project scope. */
@@ -532,9 +1150,9 @@ export function removeIneffectiveProjectHookTrustState(projectRoot: string): boo
     const before = config.content.slice(0, start).replace(/[ \t]*$/, '');
     const after = config.content.slice(end).replace(/^\r?\n/, '');
     const next = `${before}${before.endsWith('\n') ? '' : '\n'}${after}`;
-    return replaceSafeProjectConfig(config, next);
+    return rewriteSafeProjectConfig(config, next);
   } finally {
-    closeSync(config.descriptor);
+    closeSafeProjectConfig(config);
   }
 }
 
@@ -1594,6 +2212,132 @@ function provisionError(
   };
 }
 
+const PROJECT_CONFIG_MANUAL_RECOVERY =
+  'Inspect and repair .codex/config.toml manually before retrying OMX project setup.';
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function resolveInitialProjectReadiness(
+  assessment: OmxReadinessAssessment,
+  statusLine: NativeStatusLineSeedResult,
+  setupCommand: string
+): OmxProjectProvisionResult | null {
+  if (assessment.ready && statusLine !== 'ready') {
+    return provisionError(
+      assessment,
+      false,
+      setupCommand,
+      statusLine === 'missing'
+        ? 'Project readiness became stale because .codex/config.toml disappeared; refusing to rerun setup.'
+        : 'Unable to safely update .codex/config.toml with the native Codex status line.'
+    );
+  }
+  if (statusLine === 'unsafe') {
+    return provisionError(
+      assessment,
+      false,
+      setupCommand,
+      'Unable to safely access .codex/config.toml before OMX project setup.'
+    );
+  }
+  if (!assessment.ready) return null;
+  return {
+    success: true,
+    attempted: false,
+    command: setupCommand,
+    assessment,
+  };
+}
+
+interface InitialProjectReadiness {
+  assessment: OmxReadinessAssessment;
+  result: OmxProjectProvisionResult | null;
+}
+
+function prepareInitialProjectReadiness(
+  projectRoot: string,
+  deps: InstallerDeps,
+  setupCommand: string
+): InitialProjectReadiness {
+  try {
+    removeIneffectiveProjectHookTrustState(projectRoot);
+    const assessment = assessOmxReadiness(projectRoot, deps);
+    const statusLine = ensureNativeProjectStatusLine(projectRoot);
+    if (assessment.ready && statusLine === 'ready') {
+      const refreshedAssessment = assessOmxReadiness(projectRoot, deps);
+      return {
+        assessment: refreshedAssessment,
+        result: refreshedAssessment.ready
+          ? resolveInitialProjectReadiness(refreshedAssessment, statusLine, setupCommand)
+          : provisionError(
+              refreshedAssessment,
+              false,
+              setupCommand,
+              'Project readiness became stale after .codex/config.toml status-line preparation; refusing to rerun setup.'
+            ),
+      };
+    }
+    return {
+      assessment,
+      result: resolveInitialProjectReadiness(assessment, statusLine, setupCommand),
+    };
+  } catch (error) {
+    if (!(error instanceof ProjectConfigRewriteRecoveryError)) throw error;
+    const assessment = assessOmxReadiness(projectRoot, deps);
+    return {
+      assessment,
+      result: provisionError(
+        assessment,
+        false,
+        setupCommand,
+        `Unable to safely prepare .codex/config.toml: ${errorMessage(error)}. ${PROJECT_CONFIG_MANUAL_RECOVERY}`
+      ),
+    };
+  }
+}
+
+function runOmxProjectSetup(
+  projectRoot: string,
+  deps: InstallerDeps,
+  assessment: OmxReadinessAssessment,
+  setupCommand: string
+): OmxProjectProvisionResult | null {
+  try {
+    deps.exec(setupCommand, {
+      cwd: assessment.project.projectRoot,
+      stdio: 'inherit',
+      timeout: 120000,
+    });
+    removeIneffectiveProjectHookTrustState(projectRoot);
+    requireNativeProjectStatusLine(projectRoot);
+    return null;
+  } catch (error) {
+    let cleanupError: unknown;
+    try {
+      removeIneffectiveProjectHookTrustState(projectRoot);
+    } catch (secondaryError) {
+      cleanupError = secondaryError;
+    }
+    const cleanupDetail = cleanupError
+      ? ` Project config cleanup also failed: ${errorMessage(cleanupError)}.`
+      : '';
+    const requiresManualRecovery =
+      error instanceof ProjectConfigRewriteRecoveryError ||
+      cleanupError instanceof ProjectConfigRewriteRecoveryError;
+    const recoveryDetail = requiresManualRecovery
+      ? ` ${PROJECT_CONFIG_MANUAL_RECOVERY}`
+      : ` Run manually: ${setupCommand}`;
+    return provisionError(
+      assessOmxReadiness(projectRoot, deps),
+      true,
+      setupCommand,
+      `OMX project setup failed: ${errorMessage(error)}.${cleanupDetail}${recoveryDetail}`
+    );
+  }
+}
+
 /**
  * Ensure both the OMX CLI capability and the project-scoped runtime surfaces exist.
  * The command is hardcoded and executes with an explicit cwd, so project paths never
@@ -1605,16 +2349,9 @@ export function ensureOmxProjectReady(
   options: OmxProjectSetupOptions = {}
 ): OmxProjectProvisionResult {
   const setupCommand = buildOmxProjectSetupCommand(options);
-  removeIneffectiveProjectHookTrustState(projectRoot);
-  let assessment = assessOmxReadiness(projectRoot, deps);
-  if (assessment.ready) {
-    return {
-      success: true,
-      attempted: false,
-      command: setupCommand,
-      assessment,
-    };
-  }
+  const initial = prepareInitialProjectReadiness(projectRoot, deps, setupCommand);
+  if (initial.result) return initial.result;
+  let assessment = initial.assessment;
 
   if (assessment.capability.status !== 'ready') {
     if (!installOmx(deps)) {
@@ -1645,23 +2382,8 @@ export function ensureOmxProjectReady(
     );
   }
 
-  try {
-    deps.exec(setupCommand, {
-      cwd: assessment.project.projectRoot,
-      stdio: 'inherit',
-      timeout: 120000,
-    });
-    removeIneffectiveProjectHookTrustState(projectRoot);
-  } catch (error) {
-    removeIneffectiveProjectHookTrustState(projectRoot);
-    const message = error instanceof Error ? error.message : String(error);
-    return provisionError(
-      assessOmxReadiness(projectRoot, deps),
-      true,
-      setupCommand,
-      `OMX project setup failed: ${message}. Run manually: ${setupCommand}`
-    );
-  }
+  const setupError = runOmxProjectSetup(projectRoot, deps, assessment, setupCommand);
+  if (setupError) return setupError;
 
   assessment = assessOmxReadiness(projectRoot, deps);
   if (assessment.project.hookReadiness.status === 'approval-needed') {
