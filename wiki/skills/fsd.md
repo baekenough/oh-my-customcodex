@@ -66,7 +66,9 @@ Issue eligibility follows `/pipeline auto-dev` label selection exactly — inclu
 
 Before implementation or release commands, every iteration runs `omcustomcodex doctor --require-shell-advisor`. The gate passes only when the exact project-managed Bash advisor matches packaged registry/script bytes and Codex app-server reports that exact entry enabled and trusted or runtime-managed. Generic OMX/plugin hook readiness is not a substitute.
 
-A missing managed install is repaired with `omcustomcodex update --hooks`. Modified registry or advisor assets require review and backup before `omcustomcodex update --hooks --force-overwrite-all`. For an inactive result, verify both the user-level `[features] hooks = true` setting and project trust through `/hooks`, because an untrusted linked worktree can also appear inactive. Approval remains manual; FSD never writes trust state automatically.
+A missing managed install is repaired with `omcustomcodex update --hooks`. In a source checkout this is a registry-only bootstrap: it verifies the selected source assets are regular, single-link, byte-identical files and preserves them even when the release runs from a linked worktree. If source assets are modified, restore the reviewed tracked source instead of force-overwriting it; never bypass the source guard through `installNativeCodexHooks` or another internal installer. Packaged installs may still use `omcustomcodex update --hooks --force-overwrite-all` after review and backup.
+
+For an inactive result, verify both the user-level `[features] hooks = true` setting and project trust through `/hooks`, because an untrusted linked worktree can also appear inactive. Approval remains manual; FSD never writes trust state automatically.
 
 Official Code Mode already sends nested `tools.exec_command` through Bash `PreToolUse`. JavaScript gates inspect the completed result's numeric `exit_code`, polling an active session until terminal. They do not add an outer parser/matcher, infer success from stdout, or append shell special-variable probes such as `status=$?`.
 
