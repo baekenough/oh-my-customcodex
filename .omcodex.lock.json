@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.33",
-  "generatedAt": "2026-07-19T11:26:13.104Z",
-  "templateVersion": "1.0.33",
+  "generatorVersion": "1.0.34",
+  "generatedAt": "2026-07-19T13:11:01.717Z",
+  "templateVersion": "1.0.34",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e2690ef49068c522f452b7bc26089687adf98b1039841704dfcac64a6fa8a65b",
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".codex/rules/MUST-completion-verification.md": {
-      "templateHash": "c9b9fa6a3cf6ca7dda6c560a57c7effa6ce22a7461ec0dcf2a542bcd3206138e",
-      "size": 25248,
+      "templateHash": "486be3f7433d9cbd132d6d6c105c978a8c6e116a81d43e81fd75c4e80c5732d1",
+      "size": 26459,
       "component": "rules"
     },
     ".codex/agents/be-springboot-expert.md": {

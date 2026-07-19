@@ -501,6 +501,9 @@ steps:
          and executionMode already defined above. The safe body may summarize
          reviewed evidence but must exclude credentials, complete environment
          dumps, unredacted sensitive logs, and shell-interpolated finding text.
+         The caller-supplied Markdown `body` must not contain any `<!-- deep-verify-counts:... -->` marker.
+         The helper appends exactly one count marker from the validated structured findings.
+         A caller-supplied structured marker fails closed with `artifact body already contains a structured count marker`.
       3. Run the `artifact-contract.mjs write` command with the input file and
          direct stdout to the already-verified regular projection file:
 
@@ -640,8 +643,25 @@ steps:
 
       - Resolve the exact released merge SHA from direct develop-merge, annotated
         tag-peel, Release, and automation evidence. Fast-forward a clean release
-        worktree to that immutable commit and rerun the required post-merge
-        verification on that exact tree.
+        worktree to that immutable commit. Set `verify_dir` and `expected_sha`
+        from that evidence, then run the R020 Exact-Worktree Verification Guard
+        and all required post-merge install and test gates in the same compound shell:
+
+          set -euo pipefail
+          : "${verify_dir:?}" "${expected_sha:?}"
+          verify_dir=$(cd -P -- "$verify_dir" && pwd)
+          cd -- "$verify_dir"
+          verify_root=$(git rev-parse --show-toplevel)
+          actual_sha=$(git rev-parse HEAD)
+          test "$PWD" = "$verify_dir"
+          test "$verify_root" = "$verify_dir"
+          test "$actual_sha" = "$expected_sha"
+          printf 'R020_HEAD=%s\nR020_WORKTREE=%s\n' "$actual_sha" "$verify_root"
+          bun install --frozen-lockfile
+          bun test
+
+        A guard run in one subprocess followed by verification in another working directory does not satisfy this contract.
+        Artifact helper steps remain separate and must satisfy their existing cwd and identity-validation contract.
       - Resolve `artifactHelper` from the active loaded `deep-verify` skill catalog
         entry's exact `SKILL.md`, using only its sibling
         `scripts/artifact-contract.mjs`. Require regular non-symlink assets; do
@@ -649,6 +669,9 @@ steps:
       - Create a new schemaVersion 1 `standard` input with `verifiedSha` equal to
         the exact released merge SHA and evidence from the post-merge gates. Do
         not copy, relabel, or reuse the pre-merge artifact.
+        The caller-supplied Markdown `body` must not contain any `<!-- deep-verify-counts:... -->` marker.
+        The helper appends exactly one count marker from the validated structured findings.
+        A caller-supplied structured marker fails closed with `artifact body already contains a structured count marker`.
       - Run the `artifact-contract.mjs write` command, capture its JSON projection
         as data, then run `artifact-contract.mjs validate` on the returned file
         and `artifact-contract.mjs select` with the exact repository, released

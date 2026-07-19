@@ -28,6 +28,10 @@ const SKILL_AUTO_DEV_WORKFLOW = resolve(
   import.meta.dir,
   '../../../.codex/skills/pipeline/workflows/auto-dev.yaml'
 );
+const PLUGIN_AUTO_DEV_WORKFLOW = resolve(
+  import.meta.dir,
+  '../../../plugins/oh-my-customcodex/skills/pipeline/workflows/auto-dev.yaml'
+);
 const ARTIFACT_CONTRACT_HELPER = resolve(
   import.meta.dir,
   '../../../.codex/skills/deep-verify/scripts/artifact-contract.mjs'
@@ -591,14 +595,16 @@ describe('deploy-test.yml — release PR Verdaccio gate', () => {
 
 describe('auto-dev — managed shell and durable verification gates', () => {
   it('keeps the authoring pair byte-identical and all canonical workflows parseable', async () => {
-    const [root, template, skill] = await Promise.all([
+    const [root, template, skill, plugin] = await Promise.all([
       readFile(ROOT_AUTO_DEV_WORKFLOW, 'utf8'),
       readFile(TEMPLATE_AUTO_DEV_WORKFLOW, 'utf8'),
       readFile(SKILL_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(PLUGIN_AUTO_DEV_WORKFLOW, 'utf8'),
     ]);
 
     expect(root).toBe(template);
-    for (const content of [root, template, skill]) {
+    expect(skill).toBe(plugin);
+    for (const content of [root, template, skill, plugin]) {
       expect(() => parse(content)).not.toThrow();
     }
   });
@@ -937,17 +943,50 @@ describe('auto-dev — managed shell and durable verification gates', () => {
   });
 
   it('writes a new merge-SHA artifact before post-release follow-up', async () => {
-    const [root, skill] = await Promise.all([
+    const [root, template, skill, plugin] = await Promise.all([
       readFile(ROOT_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(TEMPLATE_AUTO_DEV_WORKFLOW, 'utf8'),
       readFile(SKILL_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(PLUGIN_AUTO_DEV_WORKFLOW, 'utf8'),
     ]);
 
-    for (const content of [root, skill]) {
+    for (const content of [root, template, skill, plugin]) {
       const postMerge = requireAutoDevStep(content, 'post-release-verification-artifact');
       const text = postMerge.prompt ?? '';
-      const followupName = content === root ? 'followup' : 'post-release-followup';
+      const followupName =
+        content === root || content === template ? 'followup' : 'post-release-followup';
+      const orderedGuard = [
+        'set -euo pipefail',
+        `: "\${verify_dir:?}" "\${expected_sha:?}"`,
+        'verify_dir=$(cd -P -- "$verify_dir" && pwd)',
+        'cd -- "$verify_dir"',
+        'verify_root=$(git rev-parse --show-toplevel)',
+        'actual_sha=$(git rev-parse HEAD)',
+        'test "$PWD" = "$verify_dir"',
+        'test "$verify_root" = "$verify_dir"',
+        'test "$actual_sha" = "$expected_sha"',
+        'printf \'R020_HEAD=%s\\nR020_WORKTREE=%s\\n\' "$actual_sha" "$verify_root"',
+        'bun install --frozen-lockfile',
+        'bun test',
+      ];
 
       expect(text).toContain('exact released merge SHA');
+      let previous = -1;
+      for (const marker of orderedGuard) {
+        const index = text.indexOf(marker);
+        expect(index, `missing or out-of-order exact-worktree guard: ${marker}`).toBeGreaterThan(
+          previous
+        );
+        previous = index;
+      }
+      expect(text).toContain(
+        'A guard run in one subprocess followed by verification in another working directory does not satisfy this contract.'
+      );
+      expect(text).toContain('required post-merge install and test gates');
+      expect(text).not.toContain('every required post-merge gate');
+      expect(text).toContain(
+        'Artifact helper steps remain separate and must satisfy their existing cwd and identity-validation contract.'
+      );
       expect(text).toMatch(/Do\s+not copy, relabel, or reuse the pre-merge artifact/);
       expect(text).toContain('artifact-contract.mjs write');
       expect(text).toContain('artifact-contract.mjs validate');
@@ -957,6 +996,30 @@ describe('auto-dev — managed shell and durable verification gates', () => {
       expect(requireAutoDevStep(content, followupName).depends_on).toBe(
         'post-release-verification-artifact'
       );
+    }
+  });
+
+  it('keeps helper-owned count markers out of every artifact writer input prompt', async () => {
+    const workflows = await Promise.all([
+      readFile(ROOT_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(TEMPLATE_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(SKILL_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(PLUGIN_AUTO_DEV_WORKFLOW, 'utf8'),
+    ]);
+
+    for (const content of workflows) {
+      for (const stepName of ['verification-artifact', 'post-release-verification-artifact']) {
+        const text = requireAutoDevStep(content, stepName).prompt ?? '';
+        expect(text).toContain(
+          'The caller-supplied Markdown `body` must not contain any `<!-- deep-verify-counts:... -->` marker.'
+        );
+        expect(text).toContain(
+          'The helper appends exactly one count marker from the validated structured findings.'
+        );
+        expect(text).toContain(
+          'A caller-supplied structured marker fails closed with `artifact body already contains a structured count marker`.'
+        );
+      }
     }
   });
 

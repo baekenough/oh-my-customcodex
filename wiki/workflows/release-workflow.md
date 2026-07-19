@@ -83,7 +83,11 @@ Repository automation—not the local agent—creates the annotated version tag 
 
 ## Phase 7: Post-Release Followup
 
-After publication and CI readback, `post-release-verification-artifact` re-verifies the immutable merge and writes a new merge-SHA artifact rather than relabeling or reusing the pre-merge artifact. `$post-release-followup` selects that exact evidence, joins unresolved finding references to their original severity, and registers genuine defect/process/coverage gaps. Missing or malformed Source B evidence blocks aggregation instead of masquerading as a clean release. Homework then audits the iteration before FSD re-enumerates eligible work.
+After publication and CI readback, `post-release-verification-artifact` resolves the immutable merge SHA from the merged PR, peeled annotated tag, GitHub Release, and automation evidence. It fast-forwards a clean verification worktree, then runs the post-merge install/test gate in one compound Bash shell: require `verify_dir` and `expected_sha`, normalize and enter the physical directory, read the Git top-level and full `HEAD`, assert `PWD`, root, and SHA equality, and only then run `bun install --frozen-lockfile` and `bun test`. A worktree guard performed in a different subprocess or working directory does not satisfy R020.
+
+Artifact persistence remains a deliberately separate boundary rather than being implied by that shell. The workflow separately preserves the intended project cwd, resolves `artifact-contract.mjs` beside the active loaded deep-verify skill, requires regular non-symlink assets, and creates a fresh merge-SHA input whose Markdown `body` omits the helper-owned `deep-verify-counts` marker. Helper `write` pins the supplied project path, readback `validate` checks the persisted bytes, and exact repository/version/SHA `select` correlates identity; the helper derives exactly one count marker from validated findings. The returned projection and path must identify the newly written merge-SHA artifact, never the pre-merge artifact or a file under another checkout.
+
+`$post-release-followup` selects that exact evidence, joins unresolved finding references to their original severity, and registers genuine defect/process/coverage gaps. Missing, malformed, stale, wrong-SHA, wrong-cwd, or collision evidence blocks aggregation instead of masquerading as a clean release. Homework then audits the iteration before FSD re-enumerates eligible work.
 
 ## Completion Verification (R020)
 

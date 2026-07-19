@@ -34,6 +34,7 @@ const TEMPLATE_HELPER = join(
 );
 const SKILL = join(ROOT, '.codex/skills/deep-verify/SKILL.md');
 const TEMPLATE_SKILL = join(ROOT, 'templates/.claude/skills/deep-verify/SKILL.md');
+const PLUGIN_SKILL = join(ROOT, 'plugins/oh-my-customcodex/skills/deep-verify/SKILL.md');
 const POST_RELEASE = join(ROOT, '.codex/skills/post-release-followup/SKILL.md');
 const TEMPLATE_POST_RELEASE = join(ROOT, 'templates/.claude/skills/post-release-followup/SKILL.md');
 const HARDCODED_SOURCE_HELPER = '.codex/skills/deep-verify/scripts/artifact-contract.mjs';
@@ -143,7 +144,18 @@ describe('deep-verify artifact contract', () => {
 
   it('keeps source and install-mirror helper and skill contracts byte-identical', async () => {
     expect(await readFile(TEMPLATE_HELPER, 'utf8')).toBe(await readFile(HELPER, 'utf8'));
-    expect(await readFile(TEMPLATE_SKILL, 'utf8')).toBe(await readFile(SKILL, 'utf8'));
+    const sourceSkill = await readFile(SKILL, 'utf8');
+    expect(await readFile(TEMPLATE_SKILL, 'utf8')).toBe(sourceSkill);
+    expect(await readFile(PLUGIN_SKILL, 'utf8')).toBe(sourceSkill);
+    expect(sourceSkill).toContain(
+      'The caller-supplied Markdown `body` must not contain any `<!-- deep-verify-counts:... -->` marker.'
+    );
+    expect(sourceSkill).toContain(
+      'The helper appends exactly one count marker from the validated structured findings.'
+    );
+    expect(sourceSkill).toContain(
+      'A caller-supplied structured marker fails closed with `artifact body already contains a structured count marker`.'
+    );
     expect(await readFile(TEMPLATE_POST_RELEASE, 'utf8')).toBe(
       await readFile(POST_RELEASE, 'utf8')
     );
@@ -153,6 +165,27 @@ describe('deep-verify artifact contract', () => {
     const validated = validateArtifactContent(serializeArtifact(artifact(), '# Human report'));
     expect(validated.findings.initial[0]?.id).toBe('DV-001');
     expect(validated.findings.fixed[0]?.findingId).toBe('DV-001');
+  });
+
+  it('owns count-marker generation and rejects a caller-supplied marker with a stable diagnostic', async () => {
+    const written = await writeArtifact({
+      projectRoot,
+      artifact: artifact(),
+      body: '# Marker-free caller report',
+    });
+    const serialized = await readFile(written.path, 'utf8');
+    const markers = serialized.match(/<!-- deep-verify-counts:[^\r\n]* -->/g) ?? [];
+
+    expect(markers).toEqual([
+      '<!-- deep-verify-counts:{"initial":1,"falsePositives":0,"fixed":1,"unresolved":0} -->',
+    ]);
+    await expect(
+      writeArtifact({
+        projectRoot,
+        artifact: artifact({ date: '2026-07-19T01:23:46+09:00' }),
+        body: '# Caller-owned marker is forbidden\n\n<!-- deep-verify-counts:{"initial":1,"falsePositives":0,"fixed":1,"unresolved":0} -->',
+      })
+    ).rejects.toThrow('artifact body already contains a structured count marker');
   });
 
   it('rejects duplicate ids within a bucket and across terminal buckets without rejecting lifecycle ids', () => {

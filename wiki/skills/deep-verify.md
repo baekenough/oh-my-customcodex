@@ -24,6 +24,8 @@ The release pipeline has one deliberately narrower handoff: `verify-build` mater
 
 Writing is collision-safe and fail-closed: symlink, hardlink, FIFO/non-regular, malformed, pre-existing, byte-substituted, or readback-invalid artifacts cannot produce a `READY` result. Critical reads are bounded and correlate path/fd fingerprints before and after use. The session/date directory identity remains pinned across discovery and publication, so a concurrent outside-symlink swap cannot redirect selection or writing. Selection uses frontmatter time plus a lexical tie-breaker, never mtime, and requires exact repository/version/SHA correlation. An undecodable canonical candidate or the newest relevant malformed candidate blocks fallback to older evidence.
 
+The Markdown report body has a strict producer boundary. Callers must omit every `<!-- deep-verify-counts:... -->` marker from the input `body`; the helper derives counts from validated structured findings and appends exactly one marker to the persisted report. Supplying a structured marker fails closed with `artifact body already contains a structured count marker`. The generated marker summarizes frontmatter findings and never replaces them.
+
 The supported execution modes are `standard`, `docs-only-self-review`, `lite-deterministic`, and `converged-substitution`. Reduced and substituted runs retain their actual scope in `verificationEvidence`; conversation-only prose is not a producer result. [[post-release-followup]] consumes only the exact selected artifact and joins unresolved outcome references back to their initial severity.
 
 ## Key Details
@@ -34,6 +36,7 @@ The supported execution modes are `standard`, `docs-only-self-review`, `lite-det
 - **Effort**: not specified
 - **Artifact**: `.codex/outputs/sessions/YYYY-MM-DD/deep-verify-HHmmss.md`
 - **Selector keys**: repository + semantic release version + exact verified SHA
+- **Body ownership**: callers omit `deep-verify-counts`; the helper derives and writes exactly one marker
 - **Pipeline handoff**: pending Rounds 1–7 evidence is pinned to `reviewedTree` and becomes complete only in the immediately dependent same-tree commit-and-artifact finalizer
 
 ## Relationships

@@ -308,7 +308,18 @@ describe('release verification rules', () => {
     ],
     [
       'MUST-completion-verification.md',
-      ['evidence join', 'reviewed local mutation draft', 'direct ground truth', 'direct readback'],
+      [
+        'evidence join',
+        'reviewed local mutation draft',
+        'direct ground truth',
+        'direct readback',
+        'Exact-Worktree Verification Guard',
+        'verify_dir=$(cd -P -- "$verify_dir" && pwd)',
+        'git rev-parse --show-toplevel',
+        'test "$actual_sha" = "$expected_sha"',
+        'post-merge install and test commands',
+        'Artifact helper write, validate, and select steps remain separate',
+      ],
     ],
   ] as const;
 
@@ -337,5 +348,20 @@ describe('release verification rules', () => {
     expect(source).not.toContain('do not end the turn without a final PASS/FAIL verdict');
     expect(source).not.toContain('resume it and obtain the final verdict');
     expect(source).not.toContain('resume on mid-step termination');
+  });
+
+  it('scopes exact-worktree same-shell execution to post-merge install and test commands', async () => {
+    const source = await readFile(
+      resolve(import.meta.dir, '../../../.codex/rules/MUST-completion-verification.md'),
+      'utf8'
+    );
+
+    expect(source).toContain(
+      'This same-shell guard governs post-merge install and test commands only.'
+    );
+    expect(source).toContain(
+      'Artifact helper write, validate, and select steps remain separate and must'
+    );
+    expect(source).not.toContain('install, test, build, and artifact');
   });
 });
