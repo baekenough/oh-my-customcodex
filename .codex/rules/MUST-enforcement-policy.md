@@ -50,6 +50,10 @@ Claude Code v2.1.199+ displays stderr from SessionStart/Setup/SubagentStart hook
 Claude Code v2.1.210 fixes a hook callback timeout being reported to the model as a user rejection, which could create a phantom rejection and leave unattended Claude sessions waiting. Keep propagating real hook failures and enforcing the local fail-closed boundary. This provider-owned reporting fix does not change Codex/OMX hook semantics or weaken the advisory-first enforcement model.
 -->
 
+<!-- DETAIL: Claude Code v2.1.211-v2.1.214 Hook Enforcement Compatibility
+Claude Code v2.1.211 keeps a PreToolUse hook's `ask` decision as the minimum prompt floor for unsandboxed Bash in Auto mode. v2.1.212 preserves a `continue:false` halt when a tool fails or completes mid-stream and stops reporting hook infrastructure errors as user rejection. v2.1.214 restores documented blocking for exit code 2 even when hook stdout JSON is schema-invalid. These provider-owned enforcement fixes do not change Codex/OMX hook semantics or weaken this repository's advisory-first and fail-closed boundaries.
+-->
+
 ## Integration
 
 | Rule | Interaction |

@@ -17,6 +17,7 @@ const CI_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/ci.yml'
 const RELEASE_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/release.yml');
 const AUTO_TAG_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/auto-tag.yml');
 const DEPLOY_TEST_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/deploy-test.yml');
+const WIKI_LOG = resolve(import.meta.dir, '../../../wiki/log.jsonl');
 const TRIAGE_WORKFLOW = resolve(import.meta.dir, '../../../.github/workflows/triage-dispatch.yml');
 const ROOT_AUTO_DEV_WORKFLOW = resolve(import.meta.dir, '../../../workflows/auto-dev.yaml');
 const TEMPLATE_AUTO_DEV_WORKFLOW = resolve(
@@ -505,8 +506,8 @@ describe('ci.yml — offline release evidence', () => {
   });
 });
 
-describe('deploy-test.yml — preserved parent-port disposition', () => {
-  it('stays off develop and outside CI and tag/release required-workflow lists', async () => {
+describe('deploy-test.yml — release PR Verdaccio gate', () => {
+  it('runs only for release PRs targeting develop with a real ephemeral publish token', async () => {
     const [deployTestContent, ciContent, autoTagContent, releaseContent] = await Promise.all([
       readFile(DEPLOY_TEST_WORKFLOW, 'utf-8'),
       readWorkflow(),
@@ -519,9 +520,41 @@ describe('deploy-test.yml — preserved parent-port disposition', () => {
       extractRequiredWorkflowNames(parseWorkflow(autoTagContent)),
       extractRequiredWorkflowNames(parseWorkflow(releaseContent)),
     ];
+    const deployTestJob = requireJob(deployTestWorkflow, 'deploy-test');
+    const checkoutStep = deployTestJob.steps?.find((step) => step.name === 'Checkout');
+    const verifyHeadStep = deployTestJob.steps?.find(
+      (step) => step.name === 'Verify immutable PR head'
+    );
+    const configureStep = deployTestJob.steps?.find(
+      (step) => step.name === 'Configure npm for Verdaccio'
+    );
+    const publishStep = deployTestJob.steps?.find((step) => step.name === 'Publish to Verdaccio');
+    const installStep = deployTestJob.steps?.find((step) => step.name === 'Test global install');
 
-    expect(deployTestWorkflow.on?.pull_request?.branches).toEqual(['release/**']);
-    expect(deployTestWorkflow.on?.pull_request?.branches).not.toContain('develop');
+    expect(deployTestWorkflow.on?.pull_request?.branches).toEqual(['develop']);
+    expect(deployTestWorkflow.permissions).toEqual({ contents: 'read' });
+    expect(deployTestJob.if).toContain("startsWith(github.head_ref, 'release/')");
+    expect(deployTestJob.if).toContain(
+      'github.event.pull_request.head.repo.full_name == github.repository'
+    );
+    expect(checkoutStep?.with?.ref).toBe(`\${{ github.event.pull_request.head.sha }}`);
+    expect(verifyHeadStep?.run).toContain('git rev-parse HEAD');
+    expect(verifyHeadStep?.run).toContain(`\${{ github.event.pull_request.head.sha }}`);
+    expect(configureStep?.run).toContain('curl -sf -X PUT');
+    expect(configureStep?.run).toContain('org.couchdb.user:test');
+    expect(configureStep?.run).toContain("jq -r '.token'");
+    expect(configureStep?.run).toContain('test -n "$TOKEN"');
+    expect(configureStep?.run).toContain('test "$TOKEN" != "null"');
+    expect(configureStep?.run).toContain('_authToken "$TOKEN"');
+    expect(publishStep?.run).toContain(
+      'npm publish --ignore-scripts --registry http://localhost:4873/'
+    );
+    expect(installStep?.run).toContain('npm install -g oh-my-customcodex');
+    expect(installStep?.run).toContain('--registry http://localhost:4873/');
+    expect(deployTestContent).toContain('omcustomcodex --version');
+    expect(deployTestContent).toContain('omcustomcodex --help');
+    expect(deployTestContent).not.toContain('oh-my-customcode --registry');
+    expect(deployTestContent).not.toMatch(/\bomcustom\b/);
     expect(
       Object.values(ciWorkflow.jobs ?? {}).some((job) => job.name?.includes('Deploy Test'))
     ).toBe(false);
@@ -530,6 +563,29 @@ describe('deploy-test.yml — preserved parent-port disposition', () => {
       expect(requiredWorkflows).toContain('CI');
       expect(requiredWorkflows).not.toContain('Deploy Test');
     }
+  });
+
+  it('records the release workflow page in the v1.0.32 wiki ingest event', async () => {
+    const events = (await readFile(WIKI_LOG, 'utf-8'))
+      .trim()
+      .split('\n')
+      .map(
+        (line) =>
+          JSON.parse(line) as {
+            target: string;
+            pages_updated: number;
+            details?: { reason?: string };
+          }
+      );
+    const event = events.find(
+      ({ details }) =>
+        details?.reason === 'v1.0.32 Claude compatibility and release integrity bundle'
+    );
+    const targets = event?.target.split(',') ?? [];
+
+    expect(targets).toContain('workflows/auto-dev.yaml');
+    expect(targets).toContain('.codex/skills/pipeline/workflows/auto-dev.yaml');
+    expect(event?.pages_updated).toBe(9);
   });
 });
 
@@ -646,7 +702,7 @@ describe('auto-dev — managed shell and durable verification gates', () => {
       expect(artifact.prompt).toMatch(/same\s+deep-verify execution/);
 
       const releaseText = release.prompt ?? '';
-      expect(releaseText).toMatch(/final PR\s+head/);
+      expect(releaseText).toMatch(/final\s+PR\s+head/);
       expect(releaseText).toContain('verifiedSha');
       expect(releaseText).toContain('push');
       expect(releaseText).toContain('merge');
@@ -663,15 +719,27 @@ describe('auto-dev — managed shell and durable verification gates', () => {
   });
 
   it('separates remote merge from worktree cleanup and bans source mutation after freeze', async () => {
-    const workflows = await Promise.all([
+    const [autoTagContent, ...workflows] = await Promise.all([
+      readFile(AUTO_TAG_WORKFLOW, 'utf8'),
       readFile(ROOT_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(TEMPLATE_AUTO_DEV_WORKFLOW, 'utf8'),
       readFile(SKILL_AUTO_DEV_WORKFLOW, 'utf8'),
     ]);
 
+    expect(autoTagContent).not.toContain('Delete merged release branch');
+    expect(autoTagContent).not.toContain('git push origin --delete');
+
     for (const content of workflows) {
+      const verifyBuildText = requireAutoDevStep(content, 'verify-build').prompt ?? '';
       const artifactText = requireAutoDevStep(content, 'verification-artifact').prompt ?? '';
       const releaseText = requireAutoDevStep(content, 'release').prompt ?? '';
 
+      const wikiGate = verifyBuildText.indexOf('bash .github/scripts/verify-wiki-sync.sh');
+      const frozenTree = verifyBuildText.indexOf(
+        'reviewedTree=$(GIT_INDEX_FILE="$reviewIndex" git write-tree)'
+      );
+      expect(wikiGate).toBeGreaterThanOrEqual(0);
+      expect(frozenTree).toBeGreaterThan(wikiGate);
       expect(artifactText).toContain('source-mutating build, package, sync, or autofix command');
       expect(artifactText).toContain('new acyclic pipeline run');
       expect(releaseText).toContain('Merge without `--delete-branch`');
@@ -682,6 +750,14 @@ describe('auto-dev — managed shell and durable verification gates', () => {
       expect(releaseText).toContain('gh api --method DELETE');
       expect(releaseText).toContain('git/refs/heads/');
       expect(releaseText).toContain('remote ref is absent');
+      expect(releaseText).toContain('bounded readback');
+      expect(releaseText).toContain('set -euo pipefail');
+      expect(releaseText).toContain('never infer success from a display pipe or stale output');
+      expect(releaseText).toContain('--match-head-commit "$verifiedSha"');
+      expect(releaseText).toContain('at most 5 attempts');
+      expect(releaseText).toContain('sleep 2 seconds');
+      expect(releaseText).toContain('exclusive temporary directory');
+      expect(releaseText).toContain('/bin/bash');
       expect(releaseText).toContain('Never switch, delete, or rename a local branch');
       expect(releaseText).not.toContain('release-branch deletion');
     }
@@ -881,6 +957,29 @@ describe('auto-dev — managed shell and durable verification gates', () => {
       expect(requireAutoDevStep(content, followupName).depends_on).toBe(
         'post-release-verification-artifact'
       );
+    }
+  });
+
+  it('requires the Verdaccio PR check at the immutable release head before merge', async () => {
+    const workflows = await Promise.all([
+      readFile(ROOT_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(TEMPLATE_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(SKILL_AUTO_DEV_WORKFLOW, 'utf8'),
+    ]);
+
+    for (const content of workflows) {
+      const releasePrompt = requireAutoDevStep(content, 'release').prompt ?? '';
+      expect(releasePrompt).toContain('Deploy Test with Verdaccio');
+      expect(releasePrompt).toContain('headRefOid');
+      expect(releasePrompt).toContain('statusCheckRollup');
+      expect(releasePrompt).toContain('verifiedSha');
+      expect(releasePrompt).toContain('SUCCESS');
+      expect(releasePrompt).toMatch(/latest\s+matching\s+check run/);
+      expect(releasePrompt).toContain('startedAt');
+      expect(releasePrompt).toContain('completed-time');
+      expect(releasePrompt).toContain('database-ID');
+      expect(releasePrompt).toMatch(/absent, pending,\s+skipped, neutral, or unsuccessful/);
+      expect(releasePrompt).not.toContain('exactly one non-skipped');
     }
   });
 });

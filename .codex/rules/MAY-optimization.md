@@ -35,6 +35,10 @@ Claude Code v2.1.208 fixes settings and environment parsing for numbers written 
 Claude Code v2.1.210 distinguishes timeout-driven auto-background from an explicit background request and reports that `cd` inside an auto-backgrounded command does not change the session working directory. Use absolute paths for dependent follow-up commands after that Claude transition. The release also fixes Grep content mode returning `No matches found` when pagination has moved past the final result; on older Claude versions, treat that message as a possible page boundary rather than proof that the pattern is absent. These are provider-owned tool behaviors; keep verifying the active Codex/OMX result and do not copy Claude working-directory state into this runtime.
 -->
 
+<!-- DETAIL: Claude Code v2.1.212 MCP Auto-Background Compatibility
+Claude Code v2.1.212 moves MCP tool calls that run longer than 2 minutes into the background by default; compatibility sessions may tune or disable that threshold with `CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS`. Treat a slow MCP call as provider-managed background work rather than a hang, while continuing to verify its terminal result. This provider-owned behavior does not change Codex/OMX tool scheduling, timeout, or completion semantics.
+-->
+
 ### Display-pipe exit status
 
 A **display pipe** such as `command | head`, `command | tail`, or `command | tee` is not proof that the producer succeeded: the shell commonly reports the final consumer's status. Keep dependent release and verification gates sequential, and inspect the producer directly.

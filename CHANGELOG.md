@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.32] - 2026-07-19
+
+### Changed
+
+- Record Claude Code v2.1.211, v2.1.212, and v2.1.214 as provider-owned compatibility behavior while preserving Codex/OMX routing, permissions, hook, and verification boundaries (#1688).
+- Require CI completion reports to distinguish full execution from the `full_ci=false` documentation-only fast path using job duration and step-log evidence (#1689).
+- Make the R009 verify-Bash plus action-delegate asymmetry explicit so every announced independent call is dispatched in the same message (#1690).
+- Activate the release-PR Verdaccio deploy test for `release/*` heads targeting `develop`, using a real ephemeral adduser token and lifecycle-safe `npm publish --ignore-scripts`, and require its latest successful non-skipped result at the immutable PR head before merge without rejecting valid rerun history (#1691).
+- Move Wiki drift verification before the reviewed-tree freeze, give the pipeline sole ownership of remote release-ref deletion, and require explicit-Bash bounded readback with exclusive temporary projections (#1692).
+
+### Fixed
+
+- Remove Auto Tag's duplicate release-branch deletion so merge readback, remote-ref cleanup, and absence verification converge under one owner (#1692).
+
 ## [1.0.31] - 2026-07-19
 
 ### Changed

@@ -1210,6 +1210,181 @@ describe('Template Validation', () => {
       }
     });
 
+    it('locks the v2.1.211, v2.1.212, and v2.1.214 provider-owned compatibility record', async () => {
+      const guidePath = 'guides/claude-code/15-version-compatibility.md';
+      const sourceGuide = await readFile(join(PROJECT_ROOT, guidePath), 'utf-8');
+      const templateGuide = await readFile(join(TEMPLATES_DIR, guidePath), 'utf-8');
+      const releaseContracts = [
+        {
+          version: 'v2.1.214',
+          sha: '07dcb0e13580b21174ff1bf6a7e1d5ead3b61d60',
+          phrases: ['dir/**', '**/dir/**', 'deny', 'ask', 'exit code 2'],
+        },
+        {
+          version: 'v2.1.212',
+          sha: '67f390c9a0b1440d369aebe2ff6a5023db35bf8e',
+          phrases: ['MCP', 'CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS', 'mode', 'parent'],
+        },
+        {
+          version: 'v2.1.211',
+          sha: 'c39cb0f14bfe8bb519bae5bfc55add6867c5e2ab',
+          phrases: ['background agent', 'fabricating', 'PreToolUse', 'ask'],
+        },
+      ];
+
+      expect(templateGuide).toBe(sourceGuide);
+      const headingOrder = ['v2.1.214', 'v2.1.212', 'v2.1.211', 'v2.1.210'].map((heading) =>
+        findExactMarkdownH2Index(sourceGuide, heading)
+      );
+      expect(headingOrder).toEqual([...headingOrder].sort((left, right) => left - right));
+
+      for (const contract of releaseContracts) {
+        const section = extractMarkdownH2Section(sourceGuide, contract.version);
+        expectContentToContainAll(section, [
+          '#1688',
+          `https://github.com/anthropics/claude-code/releases/tag/${contract.version}`,
+          contract.sha,
+          ...contract.phrases,
+        ]);
+        expectProviderDisposition(section);
+      }
+
+      const ruleContracts = [
+        {
+          name: 'MAY-optimization.md',
+          marker: 'DETAIL: Claude Code v2.1.212 MCP Auto-Background Compatibility',
+          phrases: ['MCP', '2 minutes', 'CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS'],
+        },
+        {
+          name: 'MUST-agent-design.md',
+          marker: 'DETAIL: Claude Code v2.1.212 Agent Permission Inheritance Compatibility',
+          phrases: ['mode', 'deprecated', 'parent session'],
+        },
+        {
+          name: 'MUST-completion-verification.md',
+          marker: 'DETAIL: Claude Code v2.1.211 Background Agent Completion Compatibility',
+          phrases: ['background agent', 'real completion', 'fabricating results'],
+        },
+        {
+          name: 'MUST-enforcement-policy.md',
+          marker: 'DETAIL: Claude Code v2.1.211-v2.1.214 Hook Enforcement Compatibility',
+          phrases: ['PreToolUse', 'ask', 'continue:false', 'exit code 2'],
+        },
+        {
+          name: 'MUST-orchestrator-coordination.md',
+          marker: 'DETAIL: Claude Code v2.1.212 Delegated Permission Compatibility',
+          phrases: ['mode', 'deprecated', 'parent session'],
+        },
+        {
+          name: 'MUST-permissions.md',
+          marker: 'DETAIL: Claude Code v2.1.212-v2.1.214 Permission Compatibility',
+          phrases: ['mode', 'dir/**', '**/dir/**', 'deny', 'ask'],
+        },
+      ];
+
+      for (const contract of ruleContracts) {
+        const sourceRule = await readFile(
+          join(PROJECT_ROOT, '.codex/rules', contract.name),
+          'utf-8'
+        );
+        const templateRule = await readFile(
+          join(TEMPLATES_DIR, '.claude/rules', contract.name),
+          'utf-8'
+        );
+        const detailBlock = extractSingleHtmlCommentContaining(sourceRule, contract.marker);
+
+        expect(templateRule).toBe(sourceRule);
+        expectContentToContainAll(detailBlock, contract.phrases);
+        expectProviderDisposition(detailBlock);
+      }
+
+      const agentDesign = await readFile(
+        join(PROJECT_ROOT, '.codex/rules/MUST-agent-design.md'),
+        'utf-8'
+      );
+      const orchestrator = await readFile(
+        join(PROJECT_ROOT, '.codex/rules/MUST-orchestrator-coordination.md'),
+        'utf-8'
+      );
+      expectContentToContainAll(agentDesign, [
+        'Before Claude Code v2.1.212',
+        'v2.1.212+ deprecates and ignores',
+        'inherits the parent session permission mode',
+      ]);
+      expectContentToContainAll(orchestrator, [
+        'Before Claude Code v2.1.212',
+        'Claude Code v2.1.212+ ignores the per-call field',
+        'inherits the parent session permission mode',
+      ]);
+
+      const parallelRule = await readFile(
+        join(PROJECT_ROOT, '.codex/rules/MUST-parallel-execution.md'),
+        'utf-8'
+      );
+      const completionRule = await readFile(
+        join(PROJECT_ROOT, '.codex/rules/MUST-completion-verification.md'),
+        'utf-8'
+      );
+      expectContentToContainAll(parallelRule, [
+        'Verify-Bash + action-delegate asymmetry',
+        'SAME message',
+        'verification Bash',
+        'action delegate',
+      ]);
+      expectContentToContainAll(completionRule, [
+        'CI Job Conclusion vs Actual Execution',
+        'full_ci=false',
+        'Report documentation-only fast path',
+        'duration',
+        'step log',
+      ]);
+
+      const wikiContracts = [
+        {
+          path: 'wiki/guides/claude-code.md',
+          markers: ['v2.1.211', 'v2.1.212', 'v2.1.214', '#1688', 'Codex/OMX'],
+        },
+        {
+          path: 'wiki/rules/r002.md',
+          markers: ['v2.1.212', 'mode', 'v2.1.214', 'dir/**', 'deny', 'ask'],
+        },
+        {
+          path: 'wiki/rules/r005.md',
+          markers: ['v2.1.212', 'MCP', 'CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS'],
+        },
+        {
+          path: 'wiki/rules/r006.md',
+          markers: ['v2.1.212', 'mode', 'parent session', 'v2.1.214', '**/dir/**'],
+        },
+        {
+          path: 'wiki/rules/r009.md',
+          markers: ['Verify-Bash + action-delegate asymmetry', 'SAME message'],
+        },
+        {
+          path: 'wiki/rules/r010.md',
+          markers: ['v2.1.212', 'mode', 'parent session'],
+        },
+        {
+          path: 'wiki/rules/r020.md',
+          markers: [
+            'v2.1.211',
+            'background agent',
+            'CI Job Conclusion vs Actual Execution',
+            'full_ci=false',
+          ],
+        },
+        {
+          path: 'wiki/rules/r021.md',
+          markers: ['v2.1.211', 'PreToolUse', 'v2.1.212', 'continue:false', 'v2.1.214'],
+        },
+      ];
+
+      for (const contract of wikiContracts) {
+        const wiki = await readFile(join(PROJECT_ROOT, contract.path), 'utf-8');
+        expectContentToContainAll(wiki, contract.markers);
+      }
+    });
+
     it('mirrors statusline support for native GitHub and agent-count JSON', async () => {
       const projectRoot = resolve(import.meta.dir, '../../..');
       const sourceStatusline = await readFile(join(projectRoot, '.codex/statusline.sh'), 'utf-8');

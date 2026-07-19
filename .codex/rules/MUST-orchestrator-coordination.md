@@ -251,7 +251,7 @@ Native prompts still state task scope, allowed writes, and forbidden actions, bu
 
 ### Claude compatibility
 
-For a Claude compatibility `Agent` call, explicitly pass `mode: "bypassPermissions"` when the active Claude session uses bypass permissions. Claude's Agent tool otherwise defaults to `acceptEdits`, which can override frontmatter and interrupt unattended compatibility workflows.
+Before Claude Code v2.1.212, explicitly pass `mode: "bypassPermissions"` to a compatibility `Agent` call when the active Claude session uses bypass permissions; those clients otherwise default to `acceptEdits`, which can override frontmatter. Claude Code v2.1.212+ ignores the per-call field and inherits the parent session permission mode, so diagnose unattended prompts from the parent session instead.
 
 This conditional requirement applies only to the Claude compatibility surface. Defensive inline reminders remain in agent-spawning compatibility skills because prior measured failures showed that a distant rule reference can be lost during delegation.
 
@@ -284,6 +284,10 @@ Claude Code v2.1.200+ further hardens background sessions and agents: sleep/wake
 
 <!-- DETAIL: Claude Code v2.1.208-v2.1.209 Background Agent Compatibility
 Claude Code v2.1.208 adds `CLAUDE_CODE_PROCESS_WRAPPER` and fixes background reply, attach, version-selection, and daemon lifecycle failures. Claude Code v2.1.209 allows `/model` and other dialogs in background `claude agents` sessions. These are provider-owned controls and do not change Codex/OMX delegation, permission, or process-wrapper policy.
+-->
+
+<!-- DETAIL: Claude Code v2.1.212 Delegated Permission Compatibility
+Claude Code v2.1.212 deprecated and ignores the Agent/Task `mode` parameter, so delegated Claude work inherits the parent session permission mode. Keep the compatibility field only for older provider versions and diagnose unattended prompts from the parent session on newer versions. This provider-owned change does not add a `mode` argument to native Codex/OMX dispatch or relax repository delegation authority.
 -->
 
 ## Agent Capability Pre-Check

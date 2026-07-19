@@ -69,6 +69,10 @@ Claude Code v2.1.203 adds a grey pause badge in the footer when Manual permissio
 Claude Code v2.1.210 warns at startup when permission rules use unsupported path-scoped `Write(path)`, `NotebookEdit(path)`, or `Glob(path)` matchers. In Claude compatibility settings, express file-write scopes with `Edit(path)` and read/glob scopes with `Read(path)` instead. The tool-tier table above lists available tool names; it does not redefine Claude's matcher grammar. This provider-owned validation change does not alter the Codex/OMX sandbox or approval policy.
 -->
 
+<!-- DETAIL: Claude Code v2.1.212-v2.1.214 Permission Compatibility
+Claude Code v2.1.212 deprecated and ignores the Agent/Task `mode` parameter, making the parent session permission mode authoritative for Claude subagents. Claude Code v2.1.214 narrows a single-segment `dir/**` allow rule to `<cwd>/dir`; use `**/dir/**` for any-depth matching, while `deny` and `ask` rules remain any-depth. These provider-owned changes do not alter the Codex/OMX sandbox or approval policy.
+-->
+
 ## Permission Request Format
 
 ```

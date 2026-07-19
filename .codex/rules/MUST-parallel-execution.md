@@ -33,6 +33,7 @@ Before writing/editing multiple files:
 4. Agent Teams available? → **Check R018 criteria before spawning 2+ agents; announce 3+ agent gate result**
 5. Running agent stalled (2x+ duration)? → Spawn independent follow-up tasks immediately
 6. Parallel dispatch announced? → put all announced tool calls in the same message
+   - **Verify-Bash + action-delegate asymmetry**: dispatch the verification Bash and Agent/Workflow action delegate in the SAME message; never announce both and omit the delegate.
 
 ### LLM Batch Output Token Budget
 
@@ -56,6 +57,9 @@ The giant-prompt heuristic governs input tokens. The symmetric output-side rule:
 
 ❌ WRONG: Announce "milestone 생성 + 구조 확인 병렬" but dispatch only one tool; run the other next turn (announce-execution mismatch)
 ✓ CORRECT: When announcing N parallel tools, include ALL N tool calls in the SAME message as the announcement
+
+❌ WRONG: Announce "verification Bash + action delegate in parallel" but dispatch only the verification Bash
+✓ CORRECT: Dispatch BOTH the verification Bash and the action delegate (Agent/Workflow) in the SAME message
 ```
 -->
 

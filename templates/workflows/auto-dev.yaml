@@ -269,8 +269,12 @@ steps:
       9. Read back and review the exact bytes and meaning of every accepted
          generated output, and prove it was derived from the current prepared
          source rather than treating build drift as an implicit fix.
-      10. After that readback, freeze the exact final post-build inventory. Then
-          materialize its tracked and intended untracked content as a Git tree
+      10. Before freezing, run `bash .github/scripts/verify-wiki-sync.sh`
+          and require success. This read-only drift gate must execute after all
+          intended Wiki/source updates and before `git write-tree`; a failure
+          returns to source preparation instead of accepting post-freeze repair.
+      11. After that readback and Wiki gate, freeze the exact final post-build
+          inventory. Then materialize its tracked and intended untracked content as a Git tree
           without touching the real index:
           - First require the complete NUL-safe status inventory to equal the
             reviewed final inventory; reject every unrelated path.
@@ -283,7 +287,7 @@ steps:
             `git cat-file -e "$reviewedTree^{tree}"`, require
             `git cat-file -t "$reviewedTree"` to equal `tree`, remove the
             temporary index, and prove the real index was unchanged.
-      11. Pin the final post-build inventory to reviewedTree and pass both to
+      12. Pin the final post-build inventory to reviewedTree and pass both to
           verify/deep-verify. Pipeline-deferred review must use
           `git diff --no-ext-diff --binary develop "$reviewedTree"` as the actual
           six-reviewer input; falling back to HEAD or a live dirty diff is
@@ -466,10 +470,23 @@ steps:
       - Any manual issue or milestone recovery must use a fresh reviewed local mutation draft, evidence review, `scripts/apply-triage-draft.mjs`, and direct readback.
       - Stage the reviewed PR body through `scripts/safe-command-payload.mjs`,
         push only the already-existing exact release branch at verifiedSha, open
-        the PR to `develop`, require all checks at that exact head, and merge
-        only after direct readback proves them green.
+        the PR to `develop`, and query `headRefOid,statusCheckRollup` directly.
+        Require `headRefOid` to equal verifiedSha and require every check to pass
+        at that exact head. For `Deploy Test with Verdaccio`, select the latest
+        matching check run by `startedAt` with a deterministic completed-time or
+        database-ID tie-break instead of rejecting legitimate rerun history.
+        Require that latest run to be non-skipped with terminal conclusion
+        `SUCCESS`; absent, pending, skipped, neutral, or unsuccessful is a merge blocker.
+        Merge only after direct readback proves this exact check rollup green.
+      - Run `gh pr merge "$prNumber" --merge --match-head-commit "$verifiedSha"`
+        using the directly read PR number. The expected-head guard is mandatory;
+        any concurrent head change must fail closed instead of merging.
       - Merge without `--delete-branch`; remote merge mutation and branch cleanup
         are separate operations in linked or multi-worktree execution.
+      - Perform merge/ref polling as a bounded readback under explicit
+        `/bin/bash` with `set -euo pipefail`. Use an exclusive temporary directory
+        for JSON projections, allow at most 5 attempts, and sleep 2 seconds
+        between attempts; never infer success from a display pipe or stale output.
       - Immediately read the PR back and require `state=MERGED`, a non-empty
         `mergedAt`, and an exact `mergeCommit.oid` before any cleanup.
       - Only after that authoritative readback, delete the remote release ref with
