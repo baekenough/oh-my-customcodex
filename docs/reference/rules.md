@@ -201,6 +201,9 @@ Native HUD and status-line policy:
 
 - OMX HUD for harness workflow state
 - Codex `/statusline` and `[tui].status_line` for the native footer
+- Absence-only native footer seeding for project config mirrored into isolated OMX `CODEX_HOME`
+- Byte-for-byte preservation of custom and explicitly empty status-line assignments
+- Fail-closed handling of unsafe project config paths
 - Native hook notifications for bounded progress events
 - Claude command statusline assets kept behind compatibility boundaries
 

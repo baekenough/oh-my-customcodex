@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.33] - 2026-07-19
+
+### Fixed
+
+- Seed the native Codex footer only when a project has no `[tui].status_line`, so project-scoped OMX runtimes retain status visibility without overwriting custom or explicitly empty preferences (#1694).
+
 ## [1.0.32] - 2026-07-19
 
 ### Changed

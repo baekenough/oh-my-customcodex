@@ -12,7 +12,12 @@
 
 OMX HUD is the harness status surface. The Codex footer is a native user
 preference configured interactively with `/statusline` or in Codex
-`config.toml`; project init and update must not overwrite that preference.
+`config.toml`; project init and update must not overwrite an existing
+preference. Because a project-scoped OMX runtime mirrors the project's
+`.codex/config.toml` into its isolated `CODEX_HOME`, init and update seed the
+default native footer only when the project has no `[tui].status_line`
+assignment. An existing custom assignment, including an explicitly empty
+array, is preserved byte-for-byte.
 
 Do not install `.codex/statusline.sh` or write Claude `statusLine` JSON into
 `.codex/settings.local.json`. Those are not Codex configuration surfaces.
@@ -33,8 +38,21 @@ source of truth; a hook notification must not invent completion or progress.
 
 Use `/statusline` in an interactive Codex session to select footer items. The
 equivalent configuration lives under `[tui].status_line` in Codex
-`config.toml`. Keep this separate from project-installed harness state so user
-formatting and existing native configuration remain byte-for-byte preserved.
+`config.toml`. The absence-only project default is `model-with-reasoning`,
+`git-branch`, `context-remaining`, `total-input-tokens`,
+`total-output-tokens`, `five-hour-limit`, and `weekly-limit`. This seed makes
+the native footer available after OMX isolates and mirrors project
+configuration; it is not a harness-owned replacement for a user preference.
+Keep user formatting and every existing native assignment byte-for-byte
+preserved. If `.codex/config.toml` cannot be read or rewritten safely because
+of a symlink, hardlink, or identity race, fail closed rather than following the
+unsafe path, rerunning setup from a stale ready assessment, or silently claiming
+readiness. A required change is written only through the verified config file
+descriptor, followed by file sync and exact readback, so a path swap cannot
+redirect the write to a replacement inode. Synchronous write failures attempt
+an exact original-content rollback and surface uncertain recovery explicitly.
+This descriptor-bound rewrite preserves the existing inode metadata but does
+not claim crash atomicity across process termination or power loss.
 
 ## Claude Compatibility Boundary
 

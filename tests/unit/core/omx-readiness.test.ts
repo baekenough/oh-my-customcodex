@@ -1,13 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import {
   chmodSync,
+  closeSync,
   linkSync,
   mkdirSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   statSync,
   symlinkSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -21,6 +24,7 @@ import {
   type InstallerDeps,
   OMX_PROJECT_SETUP_COMMAND,
   removeIneffectiveProjectHookTrustState,
+  setProjectConfigRewriteHookForTests,
 } from '../../../src/core/omx-installer.ts';
 
 const ALL_SURFACES = [
@@ -32,6 +36,17 @@ const ALL_SURFACES = [
   'nativeHooks',
   'mcp',
 ];
+
+const DEFAULT_NATIVE_STATUS_LINE =
+  'status_line = ["model-with-reasoning", "git-branch", "context-remaining", "total-input-tokens", "total-output-tokens", "five-hour-limit", "weekly-limit"]';
+
+const PROJECT_CONFIG_TAIL = [
+  '',
+  '[mcp_servers.omx_state]',
+  'command = "node"',
+  'enabled = true',
+  '',
+] as const;
 
 function readyDeps(
   onSetup?: (command: string, cwd: string) => void,
@@ -113,6 +128,37 @@ function writeCompleteProject(projectRoot: string): void {
       },
     })
   );
+}
+
+function projectConfigPath(projectRoot: string): string {
+  return join(projectRoot, '.codex', 'config.toml');
+}
+
+function projectConfig(lines: readonly string[], eol = '\n'): string {
+  return [
+    'developer_instructions = "You have oh-my-codex installed."',
+    ...lines,
+    ...PROJECT_CONFIG_TAIL,
+  ].join(eol);
+}
+
+function writeProjectConfig(projectRoot: string, config: string): string {
+  writeCompleteProject(projectRoot);
+  const path = projectConfigPath(projectRoot);
+  writeFileSync(path, config);
+  return path;
+}
+
+function ensureReadyWithoutSetup(projectRoot: string): string {
+  const result = ensureOmxProjectReady(projectRoot, readyDeps());
+  expect(result.success).toBe(true);
+  expect(result.attempted).toBe(false);
+  return readFileSync(projectConfigPath(projectRoot), 'utf8');
+}
+
+function insertBeforeTable(config: string, declaration: string, eol = '\n'): string {
+  const table = config.indexOf('[mcp_servers.omx_state]');
+  return `${config.slice(0, table)}${declaration}${eol}${config.slice(table)}`;
 }
 
 function writeOmx0202NativeHooks(projectRoot: string): void {
@@ -221,6 +267,7 @@ describe('OMX complete project readiness', () => {
   });
 
   afterEach(async () => {
+    setProjectConfigRewriteHookForTests(null);
     await rm(projectRoot, { recursive: true, force: true });
   });
 
@@ -409,7 +456,7 @@ describe('OMX complete project readiness', () => {
     expect(readFileSync(sentinelPath, 'utf8')).toBe('unchanged');
   });
 
-  it('atomically preserves config permissions while removing project trust state', () => {
+  it('rewrites the verified config inode while preserving ownership and permissions', () => {
     const codexDir = join(projectRoot, '.codex');
     const configPath = join(codexDir, 'config.toml');
     mkdirSync(codexDir);
@@ -418,68 +465,129 @@ describe('OMX complete project readiness', () => {
       '# before\n# OMX-owned Codex hook trust state\n[hooks.state."stale"]\ntrusted_hash = "sha256:stale"\n# End OMX-owned Codex hook trust state\n# after\n'
     );
     chmodSync(configPath, 0o640);
+    const before = statSync(configPath);
 
     expect(removeIneffectiveProjectHookTrustState(projectRoot)).toBe(true);
-    expect(statSync(configPath).mode & 0o777).toBe(0o640);
+    const after = statSync(configPath);
+    expect(after.ino).toBe(before.ino);
+    expect(after.dev).toBe(before.dev);
+    expect(after.uid).toBe(before.uid);
+    expect(after.gid).toBe(before.gid);
+    expect(after.mode & 0o777).toBe(0o640);
     expect(readFileSync(configPath, 'utf8')).toBe('# before\n# after\n');
-    expect(readdirSync(codexDir).some((name) => name.endsWith('.tmp'))).toBe(false);
   });
 
-  it('fails closed when the project config changes while cleanup is staged', async () => {
+  it('rolls back the verified inode without writing through a swapped parent path', () => {
     const codexDir = join(projectRoot, '.codex');
     const configPath = join(codexDir, 'config.toml');
-    const readyPath = join(projectRoot, 'watcher-ready');
+    const originalCodexDir = `${codexDir}-original`;
+    const outsideCodexDir = `${codexDir}-outside`;
+    const outsideConfig = join(outsideCodexDir, 'config.toml');
+    const originalContent =
+      '# before\n# OMX-owned Codex hook trust state\n[hooks.state."stale"]\ntrusted_hash = "sha256:stale"\n# End OMX-owned Codex hook trust state\n# after\n';
+    const outsideContent = 'EXTERNAL=must survive\n';
     mkdirSync(codexDir);
-    writeFileSync(
-      configPath,
-      `# OMX-owned Codex hook trust state\n[hooks.state."stale"]\ntrusted_hash = "sha256:stale"\n# End OMX-owned Codex hook trust state\n${'x'.repeat(64 * 1024 * 1024)}`
-    );
+    mkdirSync(outsideCodexDir);
+    writeFileSync(configPath, originalContent);
+    writeFileSync(outsideConfig, outsideContent);
+    setProjectConfigRewriteHookForTests((phase) => {
+      if (phase !== 'before-write') return;
+      renameSync(codexDir, originalCodexDir);
+      symlinkSync(outsideCodexDir, codexDir, 'dir');
+    });
 
-    const watcher = Bun.spawn(
-      [
-        process.execPath,
-        '-e',
-        String.raw`
-const fs = require('node:fs');
-const configPath = process.env.OMCC_CONFIG_PATH;
-const codexDir = process.env.OMCC_CODEX_DIR;
-fs.writeFileSync(process.env.OMCC_READY_PATH, 'ready');
-const deadline = Date.now() + 10_000;
-while (Date.now() < deadline) {
-  const staged = fs.readdirSync(codexDir).some((name) =>
-    name.startsWith('.config.toml.omcustomcodex-') && name.endsWith('.tmp')
-  );
-  if (!staged) continue;
-  const descriptor = fs.openSync(configPath, 'w');
-  fs.writeSync(descriptor, 'CONCURRENT=must survive\n');
-  fs.fsyncSync(descriptor);
-  fs.closeSync(descriptor);
-  process.exit(0);
-}
-process.exit(2);
-`,
-      ],
-      {
-        env: {
-          ...process.env,
-          OMCC_CONFIG_PATH: configPath,
-          OMCC_CODEX_DIR: codexDir,
-          OMCC_READY_PATH: readyPath,
-        },
-        stdout: 'pipe',
-        stderr: 'pipe',
-      }
-    );
-
-    const readyDeadline = Date.now() + 5_000;
-    while (!(await Bun.file(readyPath).exists()) && Date.now() < readyDeadline) {
-      await Bun.sleep(5);
+    try {
+      expect(removeIneffectiveProjectHookTrustState(projectRoot)).toBe(false);
+      expect(readFileSync(outsideConfig, 'utf8')).toBe(outsideContent);
+      expect(readFileSync(join(originalCodexDir, 'config.toml'), 'utf8')).toBe(originalContent);
+    } finally {
+      setProjectConfigRewriteHookForTests(null);
+      unlinkSync(codexDir);
+      renameSync(originalCodexDir, codexDir);
+      rmSync(outsideCodexDir, { recursive: true, force: true });
     }
-    expect(await Bun.file(readyPath).exists()).toBe(true);
+  });
+
+  it('rolls back the original bytes when descriptor rewrite verification fails', () => {
+    const configPath = join(projectRoot, '.codex', 'config.toml');
+    const originalContent =
+      '# before\n# OMX-owned Codex hook trust state\n[hooks.state."stale"]\ntrusted_hash = "sha256:stale"\n# End OMX-owned Codex hook trust state\n# after\n';
+    mkdirSync(join(projectRoot, '.codex'));
+    writeFileSync(configPath, originalContent);
+    setProjectConfigRewriteHookForTests((phase) => {
+      if (phase === 'after-write') throw new Error('injected verification failure');
+    });
 
     expect(removeIneffectiveProjectHookTrustState(projectRoot)).toBe(false);
-    expect(await watcher.exited).toBe(0);
-    expect(readFileSync(configPath, 'utf8')).toBe('CONCURRENT=must survive\n');
+    expect(readFileSync(configPath, 'utf8')).toBe(originalContent);
+  });
+
+  it('surfaces an explicit recovery error when rollback cannot be verified', () => {
+    const configPath = join(projectRoot, '.codex', 'config.toml');
+    const originalContent =
+      '# before\n# OMX-owned Codex hook trust state\n[hooks.state."stale"]\ntrusted_hash = "sha256:stale"\n# End OMX-owned Codex hook trust state\n# after\n';
+    mkdirSync(join(projectRoot, '.codex'));
+    writeFileSync(configPath, originalContent);
+    setProjectConfigRewriteHookForTests((phase, descriptor) => {
+      if (phase !== 'after-write') return;
+      closeSync(descriptor);
+      throw new Error('injected descriptor loss');
+    });
+
+    expect(() => removeIneffectiveProjectHookTrustState(projectRoot)).toThrow(
+      /rollback could not be verified/
+    );
+  });
+
+  it('returns a structured pre-setup failure when trust cleanup recovery is uncertain', () => {
+    writeCompleteProject(projectRoot);
+    const configPath = projectConfigPath(projectRoot);
+    writeFileSync(
+      configPath,
+      `${readFileSync(configPath, 'utf8')}# OMX-owned Codex hook trust state\n[hooks.state."stale"]\ntrusted_hash = "sha256:stale"\n# End OMX-owned Codex hook trust state\n`
+    );
+    let setupCalls = 0;
+    setProjectConfigRewriteHookForTests((phase, descriptor) => {
+      if (phase !== 'after-write') return;
+      closeSync(descriptor);
+      throw new Error('injected cleanup descriptor loss');
+    });
+
+    const result = ensureOmxProjectReady(
+      projectRoot,
+      readyDeps(() => {
+        setupCalls += 1;
+      })
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.attempted).toBe(false);
+    expect(setupCalls).toBe(0);
+    expect(result.error).toContain('rollback could not be verified');
+    expect(result.error).toContain('repair .codex/config.toml manually');
+  });
+
+  it('returns a structured pre-setup failure when status-line recovery is uncertain', () => {
+    writeCompleteProject(projectRoot);
+    let setupCalls = 0;
+    setProjectConfigRewriteHookForTests((phase, descriptor) => {
+      if (phase !== 'after-write') return;
+      closeSync(descriptor);
+      throw new Error('injected status-line descriptor loss');
+    });
+
+    const result = ensureOmxProjectReady(
+      projectRoot,
+      readyDeps(() => {
+        setupCalls += 1;
+      })
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.attempted).toBe(false);
+    expect(setupCalls).toBe(0);
+    expect(result.error).toContain('rollback could not be verified');
+    expect(result.error).toContain('repair .codex/config.toml manually');
   });
 
   it('rejects native agent TOML that fails the shared metadata parser', () => {
@@ -714,6 +822,9 @@ process.exit(2);
     expect(result.attempted).toBe(true);
     expect(result.success).toBe(true);
     expect(result.assessment.status).toBe('ready');
+    expect(readFileSync(join(projectRoot, '.codex', 'config.toml'), 'utf8')).toContain(
+      DEFAULT_NATIVE_STATUS_LINE
+    );
   });
 
   it('does not rerun setup for an already complete project', () => {
@@ -732,13 +843,501 @@ process.exit(2);
     expect(result.success).toBe(true);
   });
 
+  it('fails closed without rerunning setup when a ready config disappears', () => {
+    writeCompleteProject(projectRoot);
+    const configPath = projectConfigPath(projectRoot);
+    let inspectCalls = 0;
+    let setupCalls = 0;
+    const deps = readyDeps(() => {
+      setupCalls += 1;
+      writeCompleteProject(projectRoot);
+    });
+    const inspectHooks = deps.inspectHooks;
+    deps.inspectHooks = (root) => {
+      inspectCalls += 1;
+      if (inspectCalls === 1) rmSync(configPath);
+      return inspectHooks?.(root) ?? [];
+    };
+
+    const result = ensureOmxProjectReady(projectRoot, deps);
+
+    expect(result.attempted).toBe(false);
+    expect(result.success).toBe(false);
+    expect(setupCalls).toBe(0);
+    expect(result.error).toContain('readiness became stale');
+    expect(() => readFileSync(configPath, 'utf8')).toThrow();
+  });
+
+  it('fails closed when a ready config is replaced by a safe OMX-incomplete config', () => {
+    writeCompleteProject(projectRoot);
+    const configPath = projectConfigPath(projectRoot);
+    const replacementConfig = 'developer_instructions = "replacement config"\n';
+    let inspectCalls = 0;
+    let setupCalls = 0;
+    const deps = readyDeps(() => {
+      setupCalls += 1;
+      writeCompleteProject(projectRoot);
+    });
+    const inspectHooks = deps.inspectHooks;
+    deps.inspectHooks = (root) => {
+      inspectCalls += 1;
+      if (inspectCalls === 1) writeFileSync(configPath, replacementConfig);
+      return inspectHooks?.(root) ?? [];
+    };
+
+    const result = ensureOmxProjectReady(projectRoot, deps);
+    const savedConfig = readFileSync(configPath, 'utf8');
+
+    expect(result.success).toBe(false);
+    expect(result.attempted).toBe(false);
+    expect(result.assessment.ready).toBe(false);
+    expect(setupCalls).toBe(0);
+    expect(result.error).toContain('readiness became stale');
+    expect(savedConfig).toContain(replacementConfig);
+    expect(savedConfig).toContain(DEFAULT_NATIVE_STATUS_LINE);
+    expect(savedConfig).not.toContain('[mcp_servers.omx_state]');
+  });
+
+  it('seeds the native project status line without rerunning setup for a ready project', () => {
+    writeCompleteProject(projectRoot);
+    let setupCalls = 0;
+    const deps = readyDeps(() => {
+      setupCalls += 1;
+    });
+
+    const firstResult = ensureOmxProjectReady(projectRoot, deps);
+    const seededConfig = readFileSync(projectConfigPath(projectRoot), 'utf8');
+    const secondResult = ensureOmxProjectReady(projectRoot, deps);
+    const savedConfig = readFileSync(projectConfigPath(projectRoot), 'utf8');
+
+    for (const result of [firstResult, secondResult]) {
+      expect(result.success).toBe(true);
+      expect(result.attempted).toBe(false);
+    }
+    expect(setupCalls).toBe(0);
+    expect(savedConfig).toBe(seededConfig);
+    expect(savedConfig).toContain(DEFAULT_NATIVE_STATUS_LINE);
+    expect(savedConfig.match(/^\[tui\]$/gm)).toHaveLength(1);
+    expect(savedConfig.match(/^[ \t]*status_line[ \t]*=/gm)).toHaveLength(1);
+  });
+
+  for (const { name, config, declarationPattern } of [
+    {
+      name: 'custom native status line',
+      config: projectConfig([
+        '',
+        '[tui]',
+        '# user-selected footer',
+        'status_line=["model", "context-used"]',
+      ]),
+      declarationPattern: /^[ \t]*status_line[ \t]*=/gm,
+    },
+    {
+      name: 'disabled native status line',
+      config: projectConfig(['', '[tui]', 'status_line = []']),
+      declarationPattern: /^[ \t]*status_line[ \t]*=/gm,
+    },
+    {
+      name: 'quoted tui table and key',
+      config: projectConfig(['["tui"]', '"status_line" = []']),
+      declarationPattern: /^"status_line"[ \t]*=/gm,
+    },
+    {
+      name: 'root dotted key',
+      config: projectConfig(['tui.status_line = []']),
+      declarationPattern: /^tui\.status_line[ \t]*=/gm,
+    },
+    {
+      name: 'root inline table',
+      config: projectConfig(['tui = { status_line = [] }']),
+      declarationPattern: /^tui[ \t]*=/gm,
+    },
+    {
+      name: 'root inline table with a second-field status line',
+      config: projectConfig(['tui = { animations = false, status_line = [] }']),
+      declarationPattern: /^tui[ \t]*=/gm,
+    },
+    {
+      name: 'root inline table with a quoted second-field status line',
+      config: projectConfig(['tui = { animations = false, "status_line" = [] }']),
+      declarationPattern: /^tui[ \t]*=/gm,
+    },
+  ]) {
+    it(`preserves a ${name} byte-for-byte without duplication`, () => {
+      writeProjectConfig(projectRoot, config);
+      const savedConfig = ensureReadyWithoutSetup(projectRoot);
+
+      expect(savedConfig).toBe(config);
+      expect(savedConfig.match(declarationPattern)).toHaveLength(1);
+    });
+  }
+
+  it('preserves a read-only custom status line without opening the config for write', () => {
+    const originalConfig = projectConfig(['', '[tui]', 'status_line = ["model"]']);
+    const configPath = writeProjectConfig(projectRoot, originalConfig);
+    chmodSync(configPath, 0o444);
+    const before = statSync(configPath);
+
+    const savedConfig = ensureReadyWithoutSetup(projectRoot);
+    const after = statSync(configPath);
+
+    expect(savedConfig).toBe(originalConfig);
+    expect(after.ino).toBe(before.ino);
+    expect(after.mode & 0o777).toBe(0o444);
+  });
+
+  for (const { name, lines, hasRealTui } of [
+    {
+      name: 'multiline basic string before an actual tui table',
+      lines: ['banner = """', '[tui]', '[fake]', '"""', '', '[tui]', 'animations = false'],
+      hasRealTui: true,
+    },
+    {
+      name: 'multiline basic string with fake table headers',
+      lines: ['banner = """', '[tui]', '[fake]', '"""'],
+      hasRealTui: false,
+    },
+    {
+      name: 'same-line multiline string before an actual tui table',
+      lines: ['banner = """[fake]"""', '', '[tui]', 'animations = false'],
+      hasRealTui: true,
+    },
+    {
+      name: 'same-line literal triple string',
+      lines: ["banner = '''[tui]'''"],
+      hasRealTui: false,
+    },
+    {
+      name: 'multiline array comment and value',
+      lines: ['panels = [', '  "model",', '  # [tui]', '  "[tui]",', ']'],
+      hasRealTui: false,
+    },
+  ] as const) {
+    it(`does not treat a fake tui table inside a ${name} as a real table`, () => {
+      const originalConfig = projectConfig(lines);
+      const expectedConfig = hasRealTui
+        ? insertBeforeTable(originalConfig, DEFAULT_NATIVE_STATUS_LINE)
+        : `${originalConfig}\n[tui]\n${DEFAULT_NATIVE_STATUS_LINE}\n`;
+      writeProjectConfig(projectRoot, originalConfig);
+
+      const savedConfig = ensureReadyWithoutSetup(projectRoot);
+
+      expect(savedConfig).toBe(expectedConfig);
+      expect(savedConfig.match(/^\[tui\]$/gm)).toHaveLength(
+        lines.filter((line) => line === '[tui]').length + (hasRealTui ? 0 : 1)
+      );
+      expect(savedConfig.match(/^[ \t]*status_line[ \t]*=/gm)).toHaveLength(1);
+    });
+  }
+
+  it('scans a large tokenless scalar config without rescanning the remaining file per line', () => {
+    const scalarLines = Array.from({ length: 300_000 }, (_, index) => `plain_${index} = 1`);
+    const originalConfig = projectConfig(scalarLines);
+    writeProjectConfig(projectRoot, originalConfig);
+
+    const savedConfig = ensureReadyWithoutSetup(projectRoot);
+
+    expect(savedConfig).toBe(`${originalConfig}\n[tui]\n${DEFAULT_NATIVE_STATUS_LINE}\n`);
+  }, 15_000);
+
+  it('scans a large multiline body without searching ahead from every line', () => {
+    const multilineBody = Array.from({ length: 300_000 }, () => 'plain multiline body');
+    const originalConfig = projectConfig([
+      'banner = """',
+      ...multilineBody,
+      '"""',
+      '',
+      '[tui]',
+      'animations = false',
+    ]);
+    const expectedConfig = insertBeforeTable(originalConfig, DEFAULT_NATIVE_STATUS_LINE);
+    writeProjectConfig(projectRoot, originalConfig);
+
+    const savedConfig = ensureReadyWithoutSetup(projectRoot);
+
+    expect(savedConfig).toBe(expectedConfig);
+  }, 15_000);
+
+  for (const { name, lines, expected } of [
+    {
+      name: 'table header',
+      lines: ['["hello\\u0020world"]', 'value = 1'],
+      expected: (config: string) => `${config}\n[tui]\n${DEFAULT_NATIVE_STATUS_LINE}\n`,
+    },
+    {
+      name: 'nested table header',
+      lines: ['[mcp_servers."my\\u0020server"]', 'command = "node"'],
+      expected: (config: string) => `${config}\n[tui]\n${DEFAULT_NATIVE_STATUS_LINE}\n`,
+    },
+    {
+      name: 'root key',
+      lines: ['"hello\\u0020world" = 1'],
+      expected: (config: string) => `${config}\n[tui]\n${DEFAULT_NATIVE_STATUS_LINE}\n`,
+    },
+    {
+      name: 'root dotted tui key',
+      lines: ['tui."theme\\u002dvariant" = "dark"'],
+      expected: (config: string) => insertBeforeTable(config, `tui.${DEFAULT_NATIVE_STATUS_LINE}`),
+    },
+    {
+      name: 'tui table key',
+      lines: ['', '[tui]', '"theme\\u002dvariant" = "dark"'],
+      expected: (config: string) => insertBeforeTable(config, DEFAULT_NATIVE_STATUS_LINE),
+    },
+    {
+      name: 'inline tui table key',
+      lines: ['tui = { "theme\\u002dvariant" = "dark" }'],
+      expected: (config: string) =>
+        config.replace(
+          'tui = { "theme\\u002dvariant" = "dark" }',
+          `tui = { "theme\\u002dvariant" = "dark", ${DEFAULT_NATIVE_STATUS_LINE} }`
+        ),
+    },
+  ] as const) {
+    it(`preserves an unrelated escaped basic quoted ${name} while seeding status`, () => {
+      const originalConfig = projectConfig(lines);
+      writeProjectConfig(projectRoot, originalConfig);
+
+      const savedConfig = ensureReadyWithoutSetup(projectRoot);
+
+      expect(savedConfig).toBe(expected(originalConfig));
+    });
+  }
+
+  for (const { name, declaration } of [
+    {
+      name: 'status line alias',
+      declaration: 'tui."\\u0073tatus_line" = []',
+    },
+    {
+      name: 'invalid escape',
+      declaration: 'tui."theme\\q" = "dark"',
+    },
+  ]) {
+    it(`fails closed for a root dotted tui key with an escaped ${name}`, () => {
+      const originalConfig = projectConfig([declaration]);
+      const configPath = writeProjectConfig(projectRoot, originalConfig);
+      let setupCalls = 0;
+
+      const result = ensureOmxProjectReady(
+        projectRoot,
+        readyDeps(() => {
+          setupCalls += 1;
+        })
+      );
+      const savedConfig = readFileSync(configPath, 'utf8');
+
+      expect(result.success).toBe(false);
+      expect(result.attempted).toBe(false);
+      expect(setupCalls).toBe(0);
+      expect(savedConfig).toBe(originalConfig);
+      expect(savedConfig).not.toContain('status_line = [');
+    });
+  }
+
+  for (const { name, table } of [
+    { name: 'table', table: '["t\\u0075i"]' },
+    { name: 'nested table path', table: '["t\\u0075i".theme]' },
+  ]) {
+    it(`fails closed for an escaped basic quoted tui ${name} alias`, () => {
+      const originalConfig = projectConfig([table, 'animations = false']);
+      const configPath = writeProjectConfig(projectRoot, originalConfig);
+      let setupCalls = 0;
+
+      const result = ensureOmxProjectReady(
+        projectRoot,
+        readyDeps(() => {
+          setupCalls += 1;
+        })
+      );
+      const savedConfig = readFileSync(configPath, 'utf8');
+
+      expect(result.success).toBe(false);
+      expect(result.attempted).toBe(false);
+      expect(setupCalls).toBe(0);
+      expect(savedConfig).toBe(originalConfig);
+      expect(savedConfig).not.toContain('status_line = [');
+    });
+  }
+
+  it('seeds a native status line inside an existing root tui inline table', () => {
+    const originalConfig = projectConfig(['tui = { animations = false }']);
+    const expectedConfig = originalConfig.replace(
+      'tui = { animations = false }',
+      `tui = { animations = false, ${DEFAULT_NATIVE_STATUS_LINE} }`
+    );
+    writeProjectConfig(projectRoot, originalConfig);
+    let setupCalls = 0;
+    const deps = readyDeps(() => {
+      setupCalls += 1;
+    });
+
+    const firstResult = ensureOmxProjectReady(projectRoot, deps);
+    const configAfterFirstEnsure = readFileSync(projectConfigPath(projectRoot), 'utf8');
+    const secondResult = ensureOmxProjectReady(projectRoot, deps);
+    const configAfterSecondEnsure = readFileSync(projectConfigPath(projectRoot), 'utf8');
+
+    for (const result of [firstResult, secondResult]) {
+      expect(result.success).toBe(true);
+      expect(result.attempted).toBe(false);
+    }
+    expect(setupCalls).toBe(0);
+    expect(configAfterFirstEnsure).toBe(expectedConfig);
+    expect(configAfterSecondEnsure).toBe(expectedConfig);
+    expect(configAfterSecondEnsure.match(/^tui[ \t]*=/gm)).toHaveLength(1);
+  });
+
+  it('fails closed for an inline tui table with a dotted status line key', () => {
+    const originalConfig = projectConfig(['tui = { status_line.mode = "compact" }']);
+    const configPath = writeProjectConfig(projectRoot, originalConfig);
+    let setupCalls = 0;
+
+    const result = ensureOmxProjectReady(
+      projectRoot,
+      readyDeps(() => {
+        setupCalls += 1;
+      })
+    );
+    const savedConfig = readFileSync(configPath, 'utf8');
+
+    expect(result.success).toBe(false);
+    expect(result.attempted).toBe(false);
+    expect(setupCalls).toBe(0);
+    expect(savedConfig).toBe(originalConfig);
+    expect(savedConfig).not.toContain('status_line = [');
+  });
+
+  it('fails closed for an inline tui table with an escaped basic quoted status line key', () => {
+    const originalConfig = projectConfig(['tui = { "\\u0073tatus_line" = [] }']);
+    const configPath = writeProjectConfig(projectRoot, originalConfig);
+    let setupCalls = 0;
+
+    const result = ensureOmxProjectReady(
+      projectRoot,
+      readyDeps(() => {
+        setupCalls += 1;
+      })
+    );
+    const savedConfig = readFileSync(configPath, 'utf8');
+
+    expect(result.success).toBe(false);
+    expect(result.attempted).toBe(false);
+    expect(setupCalls).toBe(0);
+    expect(savedConfig).toBe(originalConfig);
+    expect(savedConfig).not.toContain('status_line = [');
+  });
+
+  it('inserts the native status line inside an existing tui section', () => {
+    const originalConfig = projectConfig([
+      '',
+      '[tui]',
+      'animations = false',
+      '# preserve this tui preference',
+    ]);
+    const expectedConfig = insertBeforeTable(originalConfig, DEFAULT_NATIVE_STATUS_LINE);
+    writeProjectConfig(projectRoot, originalConfig);
+
+    const savedConfig = ensureReadyWithoutSetup(projectRoot);
+    const tuiStart = savedConfig.indexOf('[tui]');
+    const statusLine = savedConfig.indexOf(DEFAULT_NATIVE_STATUS_LINE);
+    const nextSection = savedConfig.indexOf('[mcp_servers.omx_state]');
+
+    expect(savedConfig).toBe(expectedConfig);
+    expect(savedConfig.match(/^\[tui\]$/gm)).toHaveLength(1);
+    expect(tuiStart).toBeLessThan(statusLine);
+    expect(statusLine).toBeLessThan(nextSection);
+  });
+
+  it('inserts a dotted native status line before the first table and remains idempotent', () => {
+    const originalConfig = projectConfig([
+      'tui.animations = false',
+      '# preserve this root preference',
+    ]);
+    const declaration = `tui.${DEFAULT_NATIVE_STATUS_LINE}`;
+    const expectedConfig = insertBeforeTable(originalConfig, declaration);
+    writeProjectConfig(projectRoot, originalConfig);
+
+    const configAfterFirstEnsure = ensureReadyWithoutSetup(projectRoot);
+    const configAfterSecondEnsure = ensureReadyWithoutSetup(projectRoot);
+
+    expect(configAfterFirstEnsure).toBe(expectedConfig);
+    expect(configAfterSecondEnsure).toBe(expectedConfig);
+    expect(configAfterSecondEnsure.match(/^tui\.status_line[ \t]*=/gm)).toHaveLength(1);
+    expect(configAfterSecondEnsure.indexOf(declaration)).toBeLessThan(
+      configAfterSecondEnsure.indexOf('[mcp_servers.omx_state]')
+    );
+  });
+
+  it('inserts the native status line before the next table in a CRLF config', () => {
+    const originalConfig = projectConfig(['', '[tui]', 'animations=false'], '\r\n');
+    const expectedConfig = insertBeforeTable(originalConfig, DEFAULT_NATIVE_STATUS_LINE, '\r\n');
+    writeProjectConfig(projectRoot, originalConfig);
+
+    expect(ensureReadyWithoutSetup(projectRoot)).toBe(expectedConfig);
+  });
+
+  for (const kind of ['symlink', 'hardlink'] as const) {
+    it(`fails closed without changing an external config reached by ${kind}`, () => {
+      const caseRoot = join(projectRoot, kind);
+      const outsideConfig = `${projectRoot}-${kind}-outside.toml`;
+      const outsideContent = projectConfig([]);
+      const configPath = writeProjectConfig(caseRoot, outsideContent);
+      writeFileSync(outsideConfig, outsideContent);
+      rmSync(configPath);
+      if (kind === 'symlink') symlinkSync(outsideConfig, configPath);
+      else linkSync(outsideConfig, configPath);
+
+      try {
+        const result = ensureOmxProjectReady(caseRoot, readyDeps());
+
+        expect(result.success).toBe(false);
+        expect(result.attempted).toBe(false);
+        expect(result.error).toContain('.codex/config.toml');
+        expect(result.error).toContain('safely');
+        expect(readFileSync(outsideConfig, 'utf8')).toBe(outsideContent);
+      } finally {
+        rmSync(outsideConfig, { force: true });
+      }
+    });
+  }
+
+  it('fails closed before setup when the .codex directory is an external symlink', () => {
+    const outsideCodexDir = `${projectRoot}-outside-codex`;
+    const codexDir = join(projectRoot, '.codex');
+    let setupCalls = 0;
+
+    try {
+      writeCompleteProject(projectRoot);
+      rmSync(codexDir, { recursive: true, force: true });
+      mkdirSync(outsideCodexDir);
+      writeFileSync(join(outsideCodexDir, 'sentinel'), 'unchanged');
+      symlinkSync(outsideCodexDir, codexDir, 'dir');
+
+      const result = ensureOmxProjectReady(
+        projectRoot,
+        readyDeps(() => {
+          setupCalls += 1;
+        })
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.attempted).toBe(false);
+      expect(setupCalls).toBe(0);
+      expect(result.error).toContain('.codex/config.toml');
+      expect(result.error).toContain('safely');
+      expect(readdirSync(outsideCodexDir)).toEqual(['sentinel']);
+    } finally {
+      rmSync(outsideCodexDir, { recursive: true, force: true });
+    }
+  });
+
   it('does not report success when setup exits but required surfaces remain missing', () => {
     const result = ensureOmxProjectReady(projectRoot, readyDeps());
 
     expect(result.attempted).toBe(true);
     expect(result.success).toBe(false);
     expect(result.assessment.status).toBe('partial');
-    expect(result.error).toContain('setup remains incomplete');
+    expect(result.error).toContain('setup completed without .codex/config.toml');
   });
 
   it('reports setup execution failures without claiming readiness', () => {
@@ -753,5 +1352,32 @@ process.exit(2);
     expect(result.success).toBe(false);
     expect(result.assessment.status).toBe('partial');
     expect(result.error).toContain('setup exploded');
+  });
+
+  it('preserves setup and secondary cleanup failures in the structured result', () => {
+    const result = ensureOmxProjectReady(
+      projectRoot,
+      readyDeps(() => {
+        writeCompleteProject(projectRoot);
+        const configPath = projectConfigPath(projectRoot);
+        writeFileSync(
+          configPath,
+          `${readFileSync(configPath, 'utf8')}# OMX-owned Codex hook trust state\n[hooks.state."stale"]\ntrusted_hash = "sha256:stale"\n# End OMX-owned Codex hook trust state\n`
+        );
+        setProjectConfigRewriteHookForTests((phase, descriptor) => {
+          if (phase !== 'after-write') return;
+          closeSync(descriptor);
+          throw new Error('injected cleanup descriptor loss');
+        });
+        throw new Error('setup exploded');
+      })
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.attempted).toBe(true);
+    expect(result.error).toContain('setup exploded');
+    expect(result.error).toContain('Project config cleanup also failed');
+    expect(result.error).toContain('rollback could not be verified');
+    expect(result.error).toContain('repair .codex/config.toml manually');
   });
 });
