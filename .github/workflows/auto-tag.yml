@@ -193,11 +193,3 @@ jobs:
           else
             echo "Milestone $milestone_title has $open_issues open issues — skip close (will require manual close)"
           fi
-
-      - name: Delete merged release branch
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
-          BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: |
-          echo "Deleting branch: $BRANCH"
-          git push origin --delete "$BRANCH" || echo "⚠ Branch $BRANCH already deleted or not found"

@@ -74,6 +74,14 @@ Claude Code v2.1.208 reports an Agent tool configuration error when `tools:` res
 Claude Code v2.1.210 fixes unmatched positional placeholders such as `$1` and `$2` being silently stripped from a skill or command body: they are now preserved verbatim. Compatibility skills must handle an absent argument explicitly with default text, an `$ARGUMENTS` guard, or `argument-hint` instead of depending on silent removal. This provider-owned prompt-expansion behavior does not change Codex/OMX skill parsing or native dispatch.
 -->
 
+<!-- DETAIL: Claude Code v2.1.214 Hook Path Compatibility
+Claude Code v2.1.214 narrows a single-segment `dir/**` hook `if:` condition to `<cwd>/dir`; use `**/dir/**` when a Claude compatibility hook must match that directory at any depth. The provider-owned matcher change does not alter Codex/OMX hook routing or native path semantics.
+-->
+
+<!-- DETAIL: Claude Code v2.1.212 Agent Permission Inheritance Compatibility
+Claude Code v2.1.212 deprecated and ignores the Agent/Task `mode` parameter; a subagent now inherits the parent session permission mode by default. Compatibility guidance may retain the field for older Claude releases, but unattended behavior on v2.1.212+ is controlled by the parent session. This provider-owned inheritance does not add a `mode` argument to native Codex/OMX `spawn_agent` or change its active permission policy.
+-->
+
 ### Optional Frontmatter
 
 Key native optional fields: `model_reasoning_effort`, `skills`, `soul`, `isolation`,
@@ -226,7 +234,7 @@ hooks:
 
 ## Permission Mode Guidance
 
-> Canonical owner: R010 “Delegated Permission Ownership”. Native Codex `spawn_agent` has no `mode`; Claude compatibility Agent calls pass `mode: "bypassPermissions"` only when that session uses bypass permissions.
+> Canonical owner: R010 “Delegated Permission Ownership”. Native Codex `spawn_agent` has no `mode`. Claude compatibility Agent calls before v2.1.212 pass `mode: "bypassPermissions"` only when that session uses bypass permissions; v2.1.212+ ignores the field and inherits the parent session mode.
 
 | Mode | Behavior |
 |------|----------|
@@ -238,11 +246,13 @@ hooks:
 | `auto` | AI decides safety |
 
 <!-- DETAIL: Permission Mode Guidance (reasoning)
-When spawning agents via the Agent tool, CC applies a default `mode` of `acceptEdits` if not explicitly specified. To maintain consistent permission behavior:
+Before Claude Code v2.1.212, the Agent tool applies a default `mode` of `acceptEdits` if the caller does not specify one. For those older clients:
 
 1. **Agent frontmatter `permissionMode`**: Declares the agent's intended permission level. CC respects this when the agent is spawned via Agent tool.
-2. **Agent tool `mode` parameter**: Overrides frontmatter at spawn time. Routing skills should pass this explicitly.
+2. **Agent tool `mode` parameter**: Overrides frontmatter at spawn time. Routing skills should pass this explicitly when supporting pre-v2.1.212 clients.
 3. **Recommendation**: For agents that modify files, set `permissionMode: bypassPermissions` in frontmatter if the project uses `bypassPermissions` mode.
+
+Claude Code v2.1.212+ deprecates and ignores the Agent/Task `mode` field; the subagent inherits the parent session permission mode. Diagnose unattended prompts from the parent session rather than the ignored per-call field.
 
 Claude Code v2.1.200+ displays `default` permission mode as `Manual` in CLI help and IDE surfaces, and accepts `--permission-mode manual` / `"defaultMode": "manual"` alongside `default` with the same behavior. This is a Claude compatibility label change only; Codex/OMX approval policy and sandbox state remain controlled by the current Codex runtime.
 -->

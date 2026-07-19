@@ -2,7 +2,47 @@
 
 This guide records Claude Code release-note impact that affects the Claude compatibility template. The Codex-native runtime still uses `.codex/**` and OMX as the primary surface.
 
-The v2.1.202-v2.1.210 entries below are **provider-owned** external behavior and require **no local runtime implementation**. Codex/OMX remains the active runtime; the compatibility notes only keep packaged Claude templates and operator expectations accurate. The parent-package meanings were reviewed from oh-my-customcode commits [`a406854e`](https://github.com/baekenough/oh-my-customcode/commit/a406854e052e), [`2329bced`](https://github.com/baekenough/oh-my-customcode/commit/2329bcede), and [`aa185c36`](https://github.com/baekenough/oh-my-customcode/commit/aa185c369a9208ede60f6d8304b5ac2ac90f71ff).
+The v2.1.202-v2.1.214 entries below are **provider-owned** external behavior and require **no local runtime implementation**. Codex/OMX remains the active runtime; the compatibility notes only keep packaged Claude templates and operator expectations accurate. The parent-package meanings were reviewed from oh-my-customcode commits [`a406854e`](https://github.com/baekenough/oh-my-customcode/commit/a406854e052e), [`2329bced`](https://github.com/baekenough/oh-my-customcode/commit/2329bcede), [`aa185c36`](https://github.com/baekenough/oh-my-customcode/commit/aa185c369a9208ede60f6d8304b5ac2ac90f71ff), [`66adb8e`](https://github.com/baekenough/oh-my-customcode/commit/66adb8e), [`b396e43`](https://github.com/baekenough/oh-my-customcode/commit/b396e43), [`e138929`](https://github.com/baekenough/oh-my-customcode/commit/e138929), and [`8ec0cc9`](https://github.com/baekenough/oh-my-customcode/commit/8ec0cc9).
+
+## v2.1.214
+
+Reviewed: 2026-07-19.
+
+Source: [official release](https://github.com/anthropics/claude-code/releases/tag/v2.1.214), tag commit [`07dcb0e13580b21174ff1bf6a7e1d5ead3b61d60`](https://github.com/anthropics/claude-code/commit/07dcb0e13580b21174ff1bf6a7e1d5ead3b61d60); parent oh-my-customcode v1.1.23; Codex port issue #1688.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Single-segment `dir/**` hook `if:` conditions and allow rules now match only `<cwd>/dir`; `**/dir/**` is required for any-depth matching, while `deny` and `ask` remain any-depth | Claude compatibility templates can no longer assume the same depth semantics for allow versus deny/ask rules. | Record in R002/R006; preserve Codex/OMX native matcher and sandbox behavior. |
+| A hook exit code 2 blocks as documented even when stdout JSON fails schema validation | Claude hard-block hooks no longer lose enforcement because their structured output is malformed. | Record in R021; keep local Codex/OMX advisory-first and fail-closed semantics unchanged. |
+
+These are provider-owned Claude changes and do not implement or alter Codex/OMX runtime behavior.
+
+## v2.1.212
+
+Reviewed: 2026-07-19.
+
+Source: [official release](https://github.com/anthropics/claude-code/releases/tag/v2.1.212), tag commit [`67f390c9a0b1440d369aebe2ff6a5023db35bf8e`](https://github.com/anthropics/claude-code/commit/67f390c9a0b1440d369aebe2ff6a5023db35bf8e); parent oh-my-customcode v1.1.23; Codex port issue #1688.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| MCP calls longer than two minutes move to the background by default, configurable with `CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS` | Long Claude MCP operations should not be mischaracterized as hangs when the provider transitions them. | Record in R005; keep active Codex/OMX MCP scheduling and terminal-result verification native. |
+| Agent/Task `mode` is deprecated and ignored; subagents inherit the parent session permission mode | Claude compatibility guidance that relied on per-call permission overrides becomes stale on new clients. | Record in R002/R006/R010; retain old-version compatibility but do not add a native Codex `mode` parameter. |
+| A `continue:false` hook halt survives tool failure or mid-stream completion and hook infrastructure errors are not reported as user rejection | Claude hook decisions are less likely to disappear or create phantom user blocks. | Record in R021; keep Codex/OMX enforcement policy unchanged. |
+
+These are provider-owned Claude changes and do not implement or alter Codex/OMX runtime behavior.
+
+## v2.1.211
+
+Reviewed: 2026-07-19.
+
+Source: [official release](https://github.com/anthropics/claude-code/releases/tag/v2.1.211), tag commit [`c39cb0f14bfe8bb519bae5bfc55add6867c5e2ab`](https://github.com/anthropics/claude-code/commit/c39cb0f14bfe8bb519bae5bfc55add6867c5e2ab); parent oh-my-customcode v1.1.23; Codex port issue #1688.
+
+| Change | Impact on oh-my-customcodex | Action |
+|--------|------------------------------|--------|
+| Background agent reporting waits for real completion instead of fabricating a result and reports still-running status | One Claude background agent false-completion mode is removed, but delegated prose is still not ground truth. | Record in R020; preserve Codex/OMX repository, test, registry, and API readback. |
+| Auto mode no longer overrides a PreToolUse hook's `ask` decision for unsandboxed Bash | Claude compatibility enforcement keeps `ask` as the minimum prompt floor. | Record in R021; do not map Claude Auto mode onto the Codex/OMX approval policy. |
+
+These are provider-owned Claude changes and do not implement or alter Codex/OMX runtime behavior.
 
 ## v2.1.210
 

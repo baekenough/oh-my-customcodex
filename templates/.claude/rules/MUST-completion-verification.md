@@ -213,6 +213,10 @@ Origin: upstream #1443. The intent is to prevent incomplete R017/deep-verify evi
 
 > **Claude Code v2.1.200+ compatibility**: subagents that hit a rate limit before emitting any output now return a clean failure instead of an empty result. This removes one silent-empty failure mode, but the R020 rule is unchanged: do not accept delegated completion without deterministic repository, test, validation, registry, or API evidence.
 
+<!-- DETAIL: Claude Code v2.1.211 Background Agent Completion Compatibility
+Claude Code v2.1.211 improves background agent reporting so the provider exposes still-running status and waits for real completion instead of fabricating results. That reduces one provider false-completion mode, but it does not replace Codex/OMX ground-truth checks: inspect repository state, tests, validation scripts, registries, and APIs before accepting delegated completion.
+-->
+
 ## Common False Completion Patterns — 7 anti-patterns including "Command executed" without exit code check, "Waiting for manual publish" when CI auto-publishes. See full table via Read tool.
 
 <!-- DETAIL: Common False Completion Patterns
@@ -305,6 +309,18 @@ A CI publish/deploy step that logs an error has not necessarily failed. The step
 | GitHub Release | `gh release view <tag>` exists and is not draft |
 | Docker/registry image | image tag or manifest exists |
 | Run outcome | `gh run view <id> --json jobs` conclusions, not one step log line |
+
+## CI Job Conclusion vs Actual Execution
+
+A GitHub Actions job conclusion of `success` does not prove that its expensive verification steps ran. In this repository's conservative documentation-only fast path, `.github/workflows/ci.yml` can classify a change as `full_ci=false`, execute only the `Report documentation-only fast path` step in required jobs, and still report those jobs as successful.
+
+Before characterizing a required job as fully executed, inspect its duration and step log. Distinguish a normal multi-minute run from the short fast-path notice, and state which path actually ran.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Treat conclusion=success as proof that the full job executed | Verify duration and whether the `Report documentation-only fast path` step log ran, then describe full-run versus fast-skip accurately |
+
+This applies R020's "actual outcome ≠ attempt" rule to CI job interpretation. Cross-reference the publish-artifact ground-truth check above and R023's verification ladder.
 
 ## State-Change Claim → Live System Verification
 

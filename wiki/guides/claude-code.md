@@ -202,6 +202,15 @@ docs/superpowers/plans/*
 
 The Codex port does not currently ignore `docs/superpowers/plans/`, so nested plan documents remain trackable here. If a future ignore rule reintroduces the parent pattern, add explicit subdirectory re-includes first.
 
+### v2.1.211-v2.1.214 (2026-07-15 through 2026-07-18)
+
+Source: official Claude Code releases and Codex port #1688.
+
+- v2.1.211 waits for real background agent completion instead of fabricating results and preserves a PreToolUse `ask` floor.
+- v2.1.212 adds MCP auto-background with `CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS`, makes delegated `mode` provider-owned and ignored, inherits the parent permission mode, and preserves `continue:false` hook halts.
+- v2.1.214 narrows `dir/**` for allow/hook matching, keeps `deny` and `ask` any-depth, and restores exit-code-2 blocking for invalid hook JSON.
+- Codex/OMX remains the active runtime; these compatibility records do not add native behavior.
+
 ## Relationships
 
 - **Used by agents**: [[mgr-claude-code-bible]]
