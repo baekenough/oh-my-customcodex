@@ -816,6 +816,39 @@ describe('shell-reserved-var-advisor.sh', () => {
     expect(result.stderr).toBe('');
   });
 
+  it('ignores reserved names in quoted heredocs and ordinary quoted search literals', async () => {
+    const command = [
+      "node <<'NODE'",
+      'const path = process.argv[2];',
+      'const argv = ["--json"];',
+      'NODE',
+      "rg 'status=' transcript.txt",
+    ].join('\n');
+    const result = await runHookScript(SHELL_RESERVED_VAR_ADVISOR_SCRIPT, makeBashInput(command));
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).not.toContain('reserved shell variable assignment');
+  });
+
+  it('still inspects quoted scripts passed to a nested shell', async () => {
+    const result = await runHookScript(
+      SHELL_RESERVED_VAR_ADVISOR_SCRIPT,
+      makeBashInput("zsh -c 'status=1'")
+    );
+
+    expect(result.stderr).toContain('reserved shell variable assignment');
+  });
+
+  it.each([
+    "bash <<'SH'\nstatus=1\nSH",
+    "cat <<'SH' | zsh\npath=/tmp/output\nSH",
+    "FOO=bar bash <<'SH'\nargv=--json\nSH",
+  ])('still inspects executable quoted shell heredocs (%s)', async (command) => {
+    const result = await runHookScript(SHELL_RESERVED_VAR_ADVISOR_SCRIPT, makeBashInput(command));
+
+    expect(result.stderr).toContain('reserved shell variable assignment');
+  });
+
   it('has valid bash syntax', async () => {
     const result = await bashSyntaxCheck(SHELL_RESERVED_VAR_ADVISOR_SCRIPT);
     expect(result.exitCode).toBe(0);
@@ -869,6 +902,54 @@ describe('destructive-git-guard.sh', () => {
     const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input);
     expect(result.exitCode).toBe(0);
     expect(result.stderr).not.toContain('WARNING');
+  });
+
+  it('does not warn for destructive phrases in heredoc data or quoted search literals', async () => {
+    const command = [
+      "python3 <<'PY'",
+      "needles = ['git restore .', 'git reset --hard']",
+      'PY',
+      "rg 'git branch -D' transcript.txt",
+    ].join('\n');
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, makeBashInput(command));
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).not.toContain('WARNING');
+  });
+
+  it('still warns for destructive commands passed to a nested shell', async () => {
+    const result = await runHookScript(
+      DESTRUCTIVE_GIT_GUARD_SCRIPT,
+      makeBashInput("bash -lc 'git reset --hard HEAD'")
+    );
+
+    expect(result.stderr).toContain('WARNING');
+    expect(result.stderr).toContain('git reset --hard');
+  });
+
+  it.each([
+    "bash <<'SH'\ngit reset --hard HEAD\nSH",
+    "cat <<'SH' | sh\ngit reset --hard HEAD\nSH",
+    "FOO=bar bash <<'SH'\ngit reset --hard HEAD\nSH",
+    "env -i FOO=bar bash <<'SH'\ngit reset --hard HEAD\nSH",
+  ])('still warns for destructive commands in executable shell heredocs (%s)', async (command) => {
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, makeBashInput(command));
+
+    expect(result.stderr).toContain('WARNING');
+    expect(result.stderr).toContain('git reset --hard');
+  });
+
+  it('resumes inspection after a tab-stripped quoted data heredoc closes', async () => {
+    const command = [
+      "python3 <<-'PY'",
+      "\tneedle = 'git reset --hard'",
+      '\tPY',
+      'git reset --hard HEAD',
+    ].join('\n');
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, makeBashInput(command));
+
+    expect(result.stderr).toContain('WARNING');
+    expect(result.stderr).toContain('git reset --hard');
   });
 
   it('should always pass through stdin to stdout', async () => {

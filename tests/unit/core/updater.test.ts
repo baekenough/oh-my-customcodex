@@ -2211,6 +2211,63 @@ describe('updater', () => {
       expect(result.skippedSource).toBe(true);
     });
 
+    it('bootstraps only the managed registry for a hooks-only source update', async () => {
+      const sourceScripts = join(tempDir, 'templates', '.claude', 'hooks', 'scripts');
+      const trackedScripts = join(tempDir, '.codex', 'hooks', 'scripts');
+      await mkdir(sourceScripts, { recursive: true });
+      await mkdir(trackedScripts, { recursive: true });
+      await writeFile(
+        join(tempDir, 'package.json'),
+        JSON.stringify({ name: 'oh-my-customcodex', version: '1.0.31' }, null, 2)
+      );
+      await createConfig('1.0.31');
+
+      const sourceRegistry = {
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: 'Bash',
+              hooks: [
+                {
+                  type: 'command',
+                  command: 'bash .claude/hooks/scripts/shell-reserved-var-advisor.sh',
+                },
+              ],
+            },
+          ],
+        },
+      };
+      await writeFile(
+        join(tempDir, 'templates', '.claude', 'hooks', 'hooks.json'),
+        JSON.stringify(sourceRegistry, null, 2)
+      );
+
+      const trackedAssets = {
+        'codex-native-advisory.sh': '#!/bin/bash\nprintf wrapper\n',
+        'shell-reserved-var-advisor.sh': '#!/bin/bash\nprintf advisor\n',
+        'inactive-source-hook.sh': '#!/bin/bash\nprintf inactive\n',
+      };
+      for (const [name, content] of Object.entries(trackedAssets)) {
+        await writeFile(join(sourceScripts, name), content);
+        await writeFile(join(trackedScripts, name), content);
+      }
+
+      const result = await update({
+        targetDir: tempDir,
+        components: ['hooks'],
+        forceOverwriteAll: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.skippedSource).toBeUndefined();
+      expect(result.updatedComponents).toEqual(['hooks']);
+      expect(await Bun.file(join(tempDir, '.codex', 'hooks.json')).exists()).toBe(true);
+      expect((await readdir(trackedScripts)).sort()).toEqual(Object.keys(trackedAssets).sort());
+      for (const [name, content] of Object.entries(trackedAssets)) {
+        expect(await readFile(join(trackedScripts, name), 'utf-8')).toBe(content);
+      }
+    });
+
     it('should NOT set skippedSource for normal (non-source) projects', async () => {
       // Write a package.json with a different name
       await writeFile(

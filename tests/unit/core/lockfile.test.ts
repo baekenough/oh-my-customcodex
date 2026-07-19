@@ -652,6 +652,130 @@ describe('lockfile', () => {
       expect(lockfile?.files['.codex/rules/MUST-safety.md']).toBeDefined();
     });
 
+    it('preserves the existing timestamp and bytes when the semantic snapshot is unchanged', async () => {
+      const rulesDir = join(tempDir, '.codex', 'rules');
+      await mkdir(rulesDir, { recursive: true });
+      await writeFile(join(rulesDir, 'MUST-safety.md'), '# Stable safety rule', 'utf-8');
+
+      await generateAndWriteLockfileForDir(tempDir);
+      const first = await readLockfile(tempDir);
+      expect(first).not.toBeNull();
+      if (!first) throw new Error('expected generated lockfile');
+
+      const stableTimestamp = '2000-01-01T00:00:00.000Z';
+      await writeLockfile(tempDir, { ...first, generatedAt: stableTimestamp });
+      const stableBytes = await readFile(join(tempDir, LOCKFILE_NAME), 'utf-8');
+
+      await generateAndWriteLockfileForDir(tempDir);
+
+      expect(await readFile(join(tempDir, LOCKFILE_NAME), 'utf-8')).toBe(stableBytes);
+      expect((await readLockfile(tempDir))?.generatedAt).toBe(stableTimestamp);
+    });
+
+    it('refreshes the timestamp when the semantic snapshot changes', async () => {
+      const rulesDir = join(tempDir, '.codex', 'rules');
+      const ruleFile = join(rulesDir, 'MUST-safety.md');
+      await mkdir(rulesDir, { recursive: true });
+      await writeFile(ruleFile, '# Original safety rule', 'utf-8');
+      await generateAndWriteLockfileForDir(tempDir);
+
+      const first = await readLockfile(tempDir);
+      expect(first).not.toBeNull();
+      if (!first) throw new Error('expected generated lockfile');
+      const staleTimestamp = '2000-01-01T00:00:00.000Z';
+      await writeLockfile(tempDir, { ...first, generatedAt: staleTimestamp });
+      await writeFile(ruleFile, '# Changed safety rule', 'utf-8');
+
+      await generateAndWriteLockfileForDir(tempDir);
+
+      const changed = await readLockfile(tempDir);
+      expect(changed?.generatedAt).not.toBe(staleTimestamp);
+      expect(changed?.files['.codex/rules/MUST-safety.md']?.templateHash).toBe(
+        expectedSha256('# Changed safety rule')
+      );
+    });
+
+    it('does not let an unchanged snapshot bypass canonical lockfile path safety', async () => {
+      const rulesDir = join(tempDir, '.codex', 'rules');
+      await mkdir(rulesDir, { recursive: true });
+      await writeFile(join(rulesDir, 'MUST-safety.md'), '# Stable safety rule', 'utf-8');
+      await generateAndWriteLockfileForDir(tempDir);
+
+      const canonical = join(tempDir, LOCKFILE_NAME);
+      const displaced = join(tempDir, 'displaced-lockfile.json');
+      await rename(canonical, displaced);
+      await symlink(displaced, canonical);
+
+      const result = await generateAndWriteLockfileForDir(tempDir);
+
+      expect(result.fileCount).toBe(0);
+      expect(result.warning).toContain('symbolic link');
+    });
+
+    it('omits machine-local hook metadata from an explicit source snapshot', async () => {
+      const scriptsDir = join(tempDir, '.codex', 'hooks', 'scripts');
+      const compatibilityDir = join(tempDir, '.codex', 'hooks', 'compatibility');
+      await mkdir(scriptsDir, { recursive: true });
+      await mkdir(compatibilityDir, { recursive: true });
+      await writeFile(join(scriptsDir, 'managed.sh'), '#!/bin/bash\n', 'utf-8');
+      await writeFile(join(compatibilityDir, 'conversion.json'), '{"machine":"local"}', 'utf-8');
+      await writeFile(join(tempDir, '.codex', 'hooks.json'), '{"hooks":{}}', 'utf-8');
+
+      await generateAndWriteLockfileForDir(tempDir, { sourceSnapshot: true });
+
+      const lockfile = await readLockfile(tempDir);
+      expect(lockfile?.files['.codex/hooks/scripts/managed.sh']).toBeDefined();
+      expect(lockfile?.files['.codex/hooks/compatibility/conversion.json']).toBeUndefined();
+      expect(lockfile?.files['.codex/hooks.json']).toBeUndefined();
+    });
+
+    it('hashes linked source hook bytes from the candidate worktree', async () => {
+      const linkedWorktree = `${tempDir}-source-snapshot`;
+      const relativeScript = '.codex/hooks/scripts/managed.sh';
+      const mainContent = '#!/bin/bash\nprintf main\n';
+      const candidateContent = '#!/bin/bash\nprintf candidate\n';
+      try {
+        await mkdir(join(tempDir, '.codex', 'hooks', 'scripts'), { recursive: true });
+        await writeFile(join(tempDir, relativeScript), mainContent, 'utf-8');
+        expect(Bun.spawnSync(['git', 'init', '-q'], { cwd: tempDir }).exitCode).toBe(0);
+        expect(Bun.spawnSync(['git', 'add', '.'], { cwd: tempDir }).exitCode).toBe(0);
+        expect(
+          Bun.spawnSync(
+            [
+              'git',
+              '-c',
+              'user.name=Fixture',
+              '-c',
+              'user.email=fixture@example.com',
+              'commit',
+              '-qm',
+              'fixture',
+            ],
+            { cwd: tempDir }
+          ).exitCode
+        ).toBe(0);
+        expect(
+          Bun.spawnSync(['git', 'worktree', 'add', '-qb', 'source-snapshot', linkedWorktree], {
+            cwd: tempDir,
+          }).exitCode
+        ).toBe(0);
+        await writeFile(join(linkedWorktree, relativeScript), candidateContent, 'utf-8');
+
+        await generateAndWriteLockfileForDir(linkedWorktree, { sourceSnapshot: true });
+
+        const entry = (await readLockfile(linkedWorktree))?.files[relativeScript];
+        expect(entry).toEqual({
+          templateHash: expectedSha256(candidateContent),
+          size: Buffer.byteLength(candidateContent),
+          component: 'hooks',
+        });
+        expect(await readFile(join(tempDir, relativeScript), 'utf-8')).toBe(mainContent);
+      } finally {
+        Bun.spawnSync(['git', 'worktree', 'remove', '--force', linkedWorktree], { cwd: tempDir });
+        await rm(linkedWorktree, { recursive: true, force: true });
+      }
+    });
+
     it('returns warning on failure without throwing', async () => {
       // Use a non-existent directory that will cause getPackageRoot to fail
       // Since generateAndWriteLockfileForDir calls getPackageRoot internally,

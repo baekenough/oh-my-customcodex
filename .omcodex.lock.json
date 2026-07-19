@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.30",
-  "generatedAt": "2026-07-18T20:17:11.541Z",
-  "templateVersion": "1.0.30",
+  "generatorVersion": "1.0.31",
+  "generatedAt": "2026-07-19T01:07:26.898Z",
+  "templateVersion": "1.0.31",
   "files": {
     ".codex/rules/SHOULD-interaction.md": {
       "templateHash": "e2690ef49068c522f452b7bc26089687adf98b1039841704dfcac64a6fa8a65b",
@@ -382,284 +382,237 @@
     ".codex/hooks/PARALLEL-GROUPS.md": {
       "templateHash": "c05b2eec0956d14d284cced8e4e4342d871e031183bcf2c005c06c796a9f72ec",
       "size": 9838,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/skill-count-reminder.sh": {
       "templateHash": "b177f7103270c7f636a93109489c9003a829b01c1df575de7dc3e10e96d9b9b1",
       "size": 1455,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/eval-core-batch-save.sh": {
       "templateHash": "e5fb376bbee2e98db859fd4c36b486bb10324876057db838b615678e5d606616",
       "size": 1346,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/plugin-cache-check.sh": {
       "templateHash": "8b8e817d63f972ad35f21bf110fa1738a5ad4ab49378d9bc82803793d7dfe550",
       "size": 1110,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/rule-deletion-guard.sh": {
       "templateHash": "123af252561c798c552763d8728cb6207d346d56ccfa1d8844a721ade4f77d2f",
       "size": 2366,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/stage-blocker.sh": {
       "templateHash": "36dac421a6aad5382cfdc530a6d6f984d126055a24cedca6c030850036993db0",
       "size": 819,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/task-state-precompact.sh": {
       "templateHash": "66e82afe09ce6b5f51fad7c9ed375b91936639aa82befbb8ce9bab5833ab4e97",
       "size": 1921,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/skill-extractor-analyzer.sh": {
       "templateHash": "0339a890c08b0d4208922e7f8542776cd7b8c28d73290e07a62edf28cbc339fc",
       "size": 2455,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/destructive-git-guard.sh": {
-      "templateHash": "9bbbf3342be3a1761fb6815dc9f73604e169bb3c7a727410a6557d9261376e1a",
-      "size": 1884,
-      "component": "hooks",
-      "root": "codex-project"
+      "templateHash": "64ab328c732ed411e15c324aef8cae02172301b1b047e642ff45168d38c3a987",
+      "size": 4882,
+      "component": "hooks"
     },
     ".codex/hooks/scripts/session-reflection.sh": {
       "templateHash": "9d787bd739a4e7834fff7601a71da0704fef39855baa1ba2a259d5fbe19d7909",
       "size": 4502,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/user-prompt-preprocessor.sh": {
       "templateHash": "71a4e7fec6f830c7c12fbb00f8d1469a8dd92805f06495d31afa1a2ef88532cf",
       "size": 843,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/rtk-intercept.sh": {
       "templateHash": "42fca20c7a830c881124702afaeb7931a1a7f8b2ae97cb7c063bfe597d710746",
       "size": 1925,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/agent-mode-guard.sh": {
       "templateHash": "395d34911acabebf2b5fa6696bfdcc7544ac18990028411895d1c30f35df0939",
       "size": 955,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/auto-dev-token-summary.sh": {
       "templateHash": "0c2ab04344f1320752bda46b7b71b472b6860a4b5453ca04c56239eccfe1b9c7",
       "size": 2117,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/omcustom-auto-update.sh": {
       "templateHash": "842bda2ac6d6a7196aa4224120597208f7f261fe335ee0f28864278d76886acf",
       "size": 5661,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/stale-todo-scanner.sh": {
       "templateHash": "9b93972c6768beb499bd0346b778159f8b835d59819957f9905ae1c97853770e",
       "size": 2499,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/playwright-compress.sh": {
       "templateHash": "78e0ec2edbf99765e0295c3ba2c403c7180252e966315b3b64cd30bf06bdcd89",
       "size": 2275,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/shell-reserved-var-advisor.sh": {
-      "templateHash": "ca85e1f86f5bb6aa36b9e28050b65a1fcfb4eecba29ce49d0efe0f846cfe0538",
-      "size": 2170,
-      "component": "hooks",
-      "root": "codex-project"
+      "templateHash": "2eb101947dbaafd7c750d4100c7a0f67b19b7960c35acb782d7b543daec5d45f",
+      "size": 5586,
+      "component": "hooks"
     },
     ".codex/hooks/scripts/secret-filter.sh": {
       "templateHash": "5d758803ac55fa301407a4ccaef984b6989b5c8f576e6e35e4848f7a70c3752a",
       "size": 2929,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/model-escalation-advisor.sh": {
       "templateHash": "0465abb9dab95c7eb65c620e6afc403e2ebfd154499d131736eadb8e16f3255d",
       "size": 6417,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/auto-dev-token-tracker.sh": {
       "templateHash": "ce6202a56d3e7b98cb088c7a6f5b6f6041a4c1d27c6ff268a10294841e98ecd4",
       "size": 1864,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/schema-validator.sh": {
       "templateHash": "8cb0c28f2e04053dc814c02d705d4a0072f9803d45919a6ad26ea7a95942c71e",
       "size": 3571,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/git-delegation-guard.sh": {
       "templateHash": "58a130aeb99015da0dd7cceb9eebadd66879989e99561f3cf080ce0d4b52f295",
       "size": 2179,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/r007-r008-drift-advisor.sh": {
       "templateHash": "a1d080856e2b794b9fc445fb53dde284180a8d0f75202888624e8428f358b904",
       "size": 3466,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/session-autofix-prompt.sh": {
       "templateHash": "7ca102c5cdf080d2c4f620dfcf3652e352ef8938794614b9bae3390085d64fd2",
       "size": 1048,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/agent-teams-advisor.sh": {
       "templateHash": "7158beafb3e96be9a23ddcab56a9a36d76e25a6440c4ee64b5c1f5e3bb15510a",
       "size": 3273,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/stuck-detector.sh": {
       "templateHash": "9f9d6701f53f2a2b8bb2ed426919565ed6eff27b1445075f272416a3f303f040",
       "size": 7499,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/claude-sensitive-path-guard.sh": {
       "templateHash": "8ca1c106e572394304421707388f5c467ce1c6564cc551b5dbbd7b68e4509908",
       "size": 1576,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/agent-start-recorder.sh": {
       "templateHash": "c295f845f304bd9442a33171bbede5cfef498339deca9bb0aa9bb9e62f666a3a",
       "size": 1124,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/file-change-validator.sh": {
       "templateHash": "4f1c684462f85df16781df816ea91c94537135e318da0c6fa9b6a530dde9752f",
       "size": 1224,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/session-env-check.sh": {
       "templateHash": "c558a08acacc0cd02bbd1788abeae11356bb3d9f7f227318688c3ad1847fb523",
       "size": 9455,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/feedback-collector.sh": {
       "templateHash": "6aa91c12d34af434cc46fabfbcfc079225dabfe66ebc112f5cccc20925ec6fb9",
       "size": 3050,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/stop-console-audit.sh": {
       "templateHash": "68f1273583a0aadd8fd838cba74b7b898cab4d8a236e7ee04439e32c62011e01",
       "size": 1525,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/omcodex-auto-update.sh": {
       "templateHash": "7d31d22cef56581e7164eda502db40ce82014bd0512b965afe1835d5f4ac31f4",
       "size": 221,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/task-outcome-recorder.sh": {
       "templateHash": "a3bbf099926763e65c6c92ed54afc39b6e0379a433bab6457dbd5823b2f5d0ee",
       "size": 4930,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/codex-native-advisory.sh": {
-      "templateHash": "68ded5b09f8b947cb5f2322f14ba35f1cdef422be0f0e9e175e69326f81316eb",
-      "size": 8308,
-      "component": "hooks",
-      "root": "codex-project"
+      "templateHash": "aba6fb527204444f6fa09050172862a27f65e022593efc6349927e98fd0fae3d",
+      "size": 11690,
+      "component": "hooks"
     },
     ".codex/hooks/scripts/agent-capability-precheck.sh": {
       "templateHash": "0d4c4d37db2376cb0001d47e3372593b399c93ba04f4743721f25c4244e09317",
       "size": 3277,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/adaptive-harness-scan.sh": {
       "templateHash": "bf857f4acbba5ff0696014a5ebb999151afe78823d78efd8ed6ba831fbde53a8",
       "size": 1717,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/cwd-change-detector.sh": {
       "templateHash": "359c09190f093bef0784e7f9f7e30ffdf4cd346fedda5b47e1d193150ccb3177",
       "size": 909,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/content-hash-validator.sh": {
       "templateHash": "3ee38fa7952baaf31c70a182c9f54502d0591f908e35d0b740d665e6e6dced5e",
       "size": 2830,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/audit-log.sh": {
       "templateHash": "6f5d394ca2f5b306edf7027f082cd487509e1b17864b9169ec6e155102bea25d",
       "size": 2079,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/context-budget-advisor.sh": {
       "templateHash": "0ef495b3f18fb46bf643a3508954a8fb95aeded558fe7d48b93657431260ef3a",
       "size": 4637,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/stall-detection-advisor.sh": {
       "templateHash": "3c06b7e4c33bc30e13525dd8b9590159144d7ae6390017e491223743569eb175",
       "size": 4671,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/auto-continue-guard.sh": {
       "templateHash": "f31c2cbb33e084c9f92669fdd0cf6d45b086c712ebdb2a5c931e3632104f6362",
       "size": 863,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/cost-cap-advisor.sh": {
       "templateHash": "067276873a9cb1679a46b8ddb451ce427c365c84056dd2ab1f36fb0313a88f32",
       "size": 2656,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/scripts/session-autofix.sh": {
       "templateHash": "5230ad6b2a649a610d75eba3f3a4af07b2aa683913ca95fb28cec10ad1b88500",
       "size": 5336,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/hooks/hooks.json": {
       "templateHash": "d949e19d393538bdb668fb784b711e237d12e3307fd36d093813142d053e7a5e",
       "size": 29341,
-      "component": "hooks",
-      "root": "codex-project"
+      "component": "hooks"
     },
     ".codex/contexts/ecomode.md": {
       "templateHash": "a2f169389b77eeed98294f9f32315542f704ea9588d012e6190980ed4c313ca5",
