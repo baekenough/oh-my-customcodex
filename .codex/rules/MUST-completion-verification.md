@@ -121,6 +121,37 @@ Before invoking or registering generated workflow code, run a Tier-1 sanity pass
 
 This check is mandatory for workflow scripts that will run automation, mutate GitHub state, or gate a release.
 
+## Exact-Worktree Verification Guard
+
+An exact-SHA completion claim requires the post-merge install and test commands
+to execute in the same compound shell that enters and validates the intended
+worktree. Creating or printing a worktree path is not execution-context
+evidence. Before the first post-merge install or test command, set `verify_dir`
+and `expected_sha` from direct release evidence, then run:
+
+```bash
+set -euo pipefail
+: "${verify_dir:?}" "${expected_sha:?}"
+verify_dir=$(cd -P -- "$verify_dir" && pwd)
+cd -- "$verify_dir"
+verify_root=$(git rev-parse --show-toplevel)
+actual_sha=$(git rev-parse HEAD)
+test "$PWD" = "$verify_dir"
+test "$verify_root" = "$verify_dir"
+test "$actual_sha" = "$expected_sha"
+printf 'R020_HEAD=%s\nR020_WORKTREE=%s\n' "$actual_sha" "$verify_root"
+bun install --frozen-lockfile
+bun test
+```
+
+Any failed assertion halts before artifact creation. A guard run in one
+subprocess followed by verification in another working directory does not
+satisfy this contract.
+
+This same-shell guard governs post-merge install and test commands only.
+Artifact helper write, validate, and select steps remain separate and must
+satisfy their existing cwd and identity-validation contract.
+
 ## Managed Shell Advisor and Code Mode Results
 
 Before autonomous implementation, release, or R020 command gates, require the exact

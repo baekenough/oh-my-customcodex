@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.34] - 2026-07-19
+
+### Changed
+
+- Require post-merge dependency installation and tests to enter and assert the exact release worktree and merge SHA in one fail-closed shell before execution (#1696).
+
+### Fixed
+
+- Clarify that deep-verify artifact callers omit count markers, while the helper appends exactly one validated marker and rejects caller-supplied markers with a stable error (#1696).
+
 ## [1.0.33] - 2026-07-19
 
 ### Fixed

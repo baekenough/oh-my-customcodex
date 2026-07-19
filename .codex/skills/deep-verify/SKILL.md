@@ -179,8 +179,10 @@ repository/release/SHA artifact rather than relabel old evidence.
 `pass`, `fail`, or `not-run`, so an unexecuted gate cannot be presented as a
 passing gate.
 
-The Markdown body is a human report and includes the helper-owned
-`deep-verify-counts` marker. It cannot replace the structured frontmatter.
+The Markdown body is a human report. The caller-supplied Markdown `body` must not contain any `<!-- deep-verify-counts:... -->` marker.
+The helper appends exactly one count marker from the validated structured findings.
+A caller-supplied structured marker fails closed with `artifact body already contains a structured count marker`.
+The generated marker cannot replace the structured frontmatter.
 Never record credential values, complete environment dumps, or unredacted
 secret-bearing command output.
 
