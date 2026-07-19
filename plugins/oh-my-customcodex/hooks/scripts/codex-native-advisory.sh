@@ -12,6 +12,85 @@ message=""
 command -v jq >/dev/null 2>&1 || exit 0
 printf '%s' "$input" | jq -e 'type == "object"' >/dev/null 2>&1 || exit 0
 
+quoted_heredoc_executes_shell() {
+  local opener="$1"
+  local delimiter="$2"
+  local before_heredoc="${opener%%<<*}"
+  local assignment_prefix="([A-Za-z_][A-Za-z0-9_]*=[^;&|()[:space:]]*[[:space:]]+)*"
+  local shell_prefix="${assignment_prefix}((command|exec)[[:space:]]+)?(env([[:space:]]+-[^;&|()[:space:]]+)*[[:space:]]+${assignment_prefix})?"
+  local direct_shell_pattern="(^|[;&|()])[[:space:]]*${shell_prefix}(bash|sh|zsh)([[:space:]][^;&|()]*)?$"
+  local piped_shell_pattern="<<-?[[:space:]]*([\"'])${delimiter}([\"'])[[:space:]]*\\|[[:space:]]*${shell_prefix}(bash|sh|zsh)([[:space:]]|$)"
+
+  [[ "$before_heredoc" =~ $direct_shell_pattern ]] || [[ "$opener" =~ $piped_shell_pattern ]]
+}
+
+strip_quoted_heredoc_bodies() {
+  local source_text="$1"
+  local delimiter=""
+  local strip_tabs=0
+  local preserve_body=0
+  local heredoc_pattern="<<(-?)[[:space:]]*([\"'])([A-Za-z_][A-Za-z0-9_]*)([\"'])"
+  local line comparison
+
+  while IFS= read -r line || [ -n "$line" ]; do
+    if [ -n "$delimiter" ]; then
+      comparison="$line"
+      if [ "$strip_tabs" -eq 1 ]; then
+        while [[ "$comparison" == $'\t'* ]]; do
+          comparison="${comparison#$'\t'}"
+        done
+      fi
+      if [ "$comparison" = "$delimiter" ]; then
+        printf '%s\n' "$line"
+        delimiter=""
+        strip_tabs=0
+        preserve_body=0
+      elif [ "$preserve_body" -eq 1 ]; then
+        printf '%s\n' "$line"
+      else
+        printf '\n'
+      fi
+      continue
+    fi
+
+    printf '%s\n' "$line"
+    if [[ "$line" =~ $heredoc_pattern ]] &&
+      [ "${BASH_REMATCH[2]}" = "${BASH_REMATCH[4]}" ]; then
+      delimiter="${BASH_REMATCH[3]}"
+      [ "${BASH_REMATCH[1]}" = '-' ] && strip_tabs=1 || strip_tabs=0
+      quoted_heredoc_executes_shell "$line" "$delimiter" && preserve_body=1 || preserve_body=0
+    fi
+  done <<< "$source_text"
+}
+
+strip_quoted_literals() {
+  printf '%s\n' "$1" | sed -E "s/\"[^\"]*\"//g; s/'[^']*'//g"
+}
+
+build_shell_inspection_command() {
+  local source_text="$1"
+  local nested_shell_pattern="(^|.*[;&|[:space:]])(bash|sh|zsh)[[:space:]]+-[A-Za-z]*c[A-Za-z]*[[:space:]]*([\"'])(.*)([\"'])"
+  local eval_pattern="(^|.*[;&|[:space:]])eval[[:space:]]*([\"'])(.*)([\"'])"
+  local trap_pattern="(^|.*[;&|[:space:]])trap[[:space:]]*([\"'])(.*)([\"'])[[:space:]]+EXIT([;&|[:space:]]|$)"
+  local line
+
+  strip_quoted_literals "$source_text"
+  while IFS= read -r line || [ -n "$line" ]; do
+    if [[ "$line" =~ $nested_shell_pattern ]] &&
+      [ "${BASH_REMATCH[3]}" = "${BASH_REMATCH[5]}" ]; then
+      strip_quoted_literals "${BASH_REMATCH[4]}"
+    fi
+    if [[ "$line" =~ $eval_pattern ]] &&
+      [ "${BASH_REMATCH[2]}" = "${BASH_REMATCH[4]}" ]; then
+      strip_quoted_literals "${BASH_REMATCH[3]}"
+    fi
+    if [[ "$line" =~ $trap_pattern ]] &&
+      [ "${BASH_REMATCH[2]}" = "${BASH_REMATCH[4]}" ]; then
+      printf '%s\n' "$line"
+    fi
+  done <<< "$source_text"
+}
+
 append_message() {
   local next="$1"
   if [ -n "$message" ]; then
@@ -40,6 +119,17 @@ emit_message() {
 
 tool_name=$(printf '%s' "$input" | jq -r '.tool_name // .tool // "unknown"' 2>/dev/null)
 tool_command=$(printf '%s' "$input" | jq -r '.tool_input.command // ""' 2>/dev/null)
+heredoc_stripped_command=""
+inspection_command=""
+unquoted_command=""
+shell_inspection_ready=0
+prepare_shell_inspection() {
+  [ "$shell_inspection_ready" -eq 0 ] || return
+  heredoc_stripped_command=$(strip_quoted_heredoc_bodies "$tool_command")
+  inspection_command=$(build_shell_inspection_command "$heredoc_stripped_command")
+  unquoted_command=$(strip_quoted_literals "$heredoc_stripped_command")
+  shell_inspection_ready=1
+}
 apply_patch_text=$(
   printf '%s' "$input" | jq -r '
     .tool_input as $tool_input
@@ -55,8 +145,9 @@ apply_patch_text=$(
 
 case "$handler" in
   destructive-git-guard.sh)
+    prepare_shell_inspection
     pattern=""
-    case "$tool_command" in
+    case "$inspection_command" in
       *"git reset --hard"*) pattern="git reset --hard" ;;
       *"git clean -fd"*|*"git clean -df"*|*"git clean -fxd"*|*"git clean -xdf"*)
         pattern="git clean -fd/-fdx"
@@ -77,15 +168,16 @@ case "$handler" in
     if [ -f "${git_root}/.codex/schemas/tool-inputs.json" ]; then
       case "$tool_name" in
         Bash)
+          prepare_shell_inspection
           [ -n "$tool_command" ] || append_message "[Schema] Bash: command is empty"
-          printf '%s' "$tool_command" | grep -qE 'rm[[:space:]]+-rf[[:space:]]+/[^.]' && append_message "[Schema] Bash: DANGER — recursive delete from root detected"
-          printf '%s' "$tool_command" | grep -qE '^[[:space:]]*sudo[[:space:]]+' && append_message "[Schema] Bash: elevated privilege command detected"
-          printf '%s' "$tool_command" | grep -qE '> /dev/sd' && append_message "[Schema] Bash: direct disk write detected"
-          printf '%s' "$tool_command" | grep -qE 'mkfs\.' && append_message "[Schema] Bash: filesystem format command detected"
-          printf '%s' "$tool_command" | grep -qE 'curl[[:space:]]+.*\|[[:space:]]*(ba)?sh' && append_message "[Schema] Bash: remote code execution pattern (curl | bash) detected"
-          printf '%s' "$tool_command" | grep -qE 'wget[[:space:]]+.*\|[[:space:]]*(ba)?sh' && append_message "[Schema] Bash: remote code execution pattern (wget | sh) detected"
-          printf '%s' "$tool_command" | grep -qE 'eval[[:space:]]+\$\(' && append_message "[Schema] Bash: dynamic code execution (eval) detected"
-          printf '%s' "$tool_command" | grep -qE 'chmod[[:space:]]+777' && append_message "[Schema] Bash: broad permission grant (chmod 777) detected"
+          printf '%s' "$inspection_command" | grep -qE 'rm[[:space:]]+-rf[[:space:]]+/[^.]' && append_message "[Schema] Bash: DANGER — recursive delete from root detected"
+          printf '%s' "$inspection_command" | grep -qE '^[[:space:]]*sudo[[:space:]]+' && append_message "[Schema] Bash: elevated privilege command detected"
+          printf '%s' "$inspection_command" | grep -qE '> /dev/sd' && append_message "[Schema] Bash: direct disk write detected"
+          printf '%s' "$inspection_command" | grep -qE 'mkfs\.' && append_message "[Schema] Bash: filesystem format command detected"
+          printf '%s' "$inspection_command" | grep -qE 'curl[[:space:]]+.*\|[[:space:]]*(ba)?sh' && append_message "[Schema] Bash: remote code execution pattern (curl | bash) detected"
+          printf '%s' "$inspection_command" | grep -qE 'wget[[:space:]]+.*\|[[:space:]]*(ba)?sh' && append_message "[Schema] Bash: remote code execution pattern (wget | sh) detected"
+          printf '%s' "$inspection_command" | grep -qE 'eval[[:space:]]+\$\(' && append_message "[Schema] Bash: dynamic code execution (eval) detected"
+          printf '%s' "$inspection_command" | grep -qE 'chmod[[:space:]]+777' && append_message "[Schema] Bash: broad permission grant (chmod 777) detected"
           ;;
         apply_patch)
           [ -n "$apply_patch_text" ] || append_message "[Schema] apply_patch: input is empty or missing"
@@ -154,18 +246,18 @@ EOF
 
   shell-reserved-var-advisor.sh)
     if [ "$tool_name" = "Bash" ] && [ -n "$tool_command" ]; then
-      if printf '%s\n' "$tool_command" | grep -Eq '(^|[[:space:];&|])(status|path|argv)[[:space:]]*='; then
+      prepare_shell_inspection
+      if printf '%s\n' "$inspection_command" | grep -Eq '(^|[[:space:];&|])(status|path|argv)[[:space:]]*='; then
         append_message '[Hook] Advisory: reserved shell variable assignment detected. Use run_status, cmd_path, or args instead of status, path, or argv.'
       fi
 
-      unquoted_command=$(printf '%s\n' "$tool_command" | sed -E "s/\"[^\"]*\"//g; s/'[^']*'//g")
       if printf '%s\n' "$unquoted_command" | grep -Eq '(^|[;&|[:space:]])gh[[:space:]]+api([[:space:]]+[^;&|[:space:]]+)*[[:space:]]+[^;&|[:space:]]*[?&][^;&|[:space:]]*'; then
         append_message '[Hook] Advisory: quote gh api URLs containing ? or & before execution.'
       fi
       if printf '%s\n' "$unquoted_command" | grep -Eq '(^|[;&|[:space:]])gh[[:space:]]+api([[:space:]][^;&|]*)?[[:space:]]-[fF][[:space:]]+body='; then
         append_message '[Hook] Advisory: stage mutation bodies in reviewed JSON and use gh api --input.'
       fi
-      if printf '%s\n' "$tool_command" | grep -Eq 'trap[[:space:]]+"[^"]*[$][{]?[A-Za-z_][A-Za-z0-9_]*[}]?[^"]*"[[:space:]]+EXIT'; then
+      if printf '%s\n' "$inspection_command" | grep -Eq 'trap[[:space:]]+"[^"]*[$][{]?[A-Za-z_][A-Za-z0-9_]*[}]?[^"]*"[[:space:]]+EXIT'; then
         append_message '[Hook] Advisory: double-quoted EXIT trap expands variables at registration; use a named cleanup function.'
       fi
     fi

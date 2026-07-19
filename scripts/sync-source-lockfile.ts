@@ -1,6 +1,6 @@
 import { generateAndWriteLockfileForDir } from '../src/core/lockfile.js';
 
-const result = await generateAndWriteLockfileForDir(process.cwd());
+const result = await generateAndWriteLockfileForDir(process.cwd(), { sourceSnapshot: true });
 
 if (result.warning) {
   console.error(`sync-source-lockfile: ${result.warning}`);

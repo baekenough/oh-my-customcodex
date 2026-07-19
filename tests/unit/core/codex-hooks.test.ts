@@ -602,6 +602,33 @@ describe('Codex-native hooks', () => {
     );
     expect(destructiveOutput).not.toHaveProperty('additionalContext');
 
+    const destructiveSearchLiteral = await runHandler(
+      findHandler(registry, 'destructive-git-guard.sh').command,
+      cwd,
+      {
+        ...commonPayload(cwd, 'PreToolUse'),
+        tool_name: 'Bash',
+        tool_input: {
+          command: "python3 <<'PY'\nneedle = 'git restore .'\nPY\nrg 'git reset --hard' log.txt",
+        },
+      }
+    );
+    expect(destructiveSearchLiteral).toEqual({ exitCode: 0, stdout: '', stderr: '' });
+
+    const destructiveShellHeredoc = await runHandler(
+      findHandler(registry, 'destructive-git-guard.sh').command,
+      cwd,
+      {
+        ...commonPayload(cwd, 'PreToolUse'),
+        tool_name: 'Bash',
+        tool_input: { command: "FOO=bar bash <<'SH'\ngit reset --hard HEAD\nSH" },
+      }
+    );
+    expect(destructiveShellHeredoc.exitCode).toBe(0);
+    expect(parseAdvisoryOutput(destructiveShellHeredoc.stdout).systemMessage).toContain(
+      'destructive git command detected'
+    );
+
     const shellAdvisory = await runHandler(
       findHandler(registry, 'shell-reserved-var-advisor.sh').command,
       cwd,
@@ -618,6 +645,33 @@ describe('Codex-native hooks', () => {
     const shellOutput = parseAdvisoryOutput(shellAdvisory.stdout);
     expect(shellOutput.systemMessage).toContain('reserved shell variable');
     expect(shellOutput.systemMessage).toContain('quote gh api URLs');
+
+    const shellLiteral = await runHandler(
+      findHandler(registry, 'shell-reserved-var-advisor.sh').command,
+      cwd,
+      {
+        ...commonPayload(cwd, 'PreToolUse'),
+        tool_name: 'Bash',
+        tool_input: {
+          command: "node <<'NODE'\nconst path = process.argv[2];\nNODE\nrg 'status=' log.txt",
+        },
+      }
+    );
+    expect(shellLiteral).toEqual({ exitCode: 0, stdout: '', stderr: '' });
+
+    const shellHeredoc = await runHandler(
+      findHandler(registry, 'shell-reserved-var-advisor.sh').command,
+      cwd,
+      {
+        ...commonPayload(cwd, 'PreToolUse'),
+        tool_name: 'Bash',
+        tool_input: { command: "zsh <<'ZSH'\nstatus=1\nZSH" },
+      }
+    );
+    expect(shellHeredoc.exitCode).toBe(0);
+    expect(parseAdvisoryOutput(shellHeredoc.stdout).systemMessage).toContain(
+      'reserved shell variable'
+    );
 
     // Official Codex normalizes a Code Mode nested tools.exec_command call to
     // this same Bash PreToolUse payload before executing the shell command.
@@ -644,6 +698,20 @@ describe('Codex-native hooks', () => {
     expect(schema.stderr).toBe('');
     expect(parseAdvisoryOutput(schema.stdout).systemMessage).toContain(
       'elevated privilege command detected'
+    );
+
+    const schemaShellHeredoc = await runHandler(
+      findHandler(registry, 'schema-validator.sh').command,
+      cwd,
+      {
+        ...commonPayload(cwd, 'PreToolUse'),
+        tool_name: 'Bash',
+        tool_input: { command: "bash <<'SH'\nrm -rf /tmp/example\nSH" },
+      }
+    );
+    expect(schemaShellHeredoc.exitCode).toBe(0);
+    expect(parseAdvisoryOutput(schemaShellHeredoc.stdout).systemMessage).toContain(
+      'recursive delete from root detected'
     );
 
     const schemaPatch = await runHandler(
@@ -768,6 +836,84 @@ describe('Codex-native hooks', () => {
         tool_input: { command: 'printf safe' },
       });
       expect(result).toEqual({ exitCode: 0, stdout: '', stderr: '' });
+    } finally {
+      await rm(linkedWorktree, { recursive: true, force: true });
+    }
+  });
+
+  it('bootstraps a linked source registry without changing tracked hook assets', async () => {
+    const linkedWorktree = `${tempDir}-source-linked`;
+    const sourceRoot = join(tempDir, 'templates', '.claude', 'hooks');
+    const sourceScripts = join(sourceRoot, 'scripts');
+    const trackedScripts = join(tempDir, '.codex', 'hooks', 'scripts');
+    try {
+      await mkdir(sourceScripts, { recursive: true });
+      await mkdir(trackedScripts, { recursive: true });
+      await writeFile(
+        join(sourceRoot, 'hooks.json'),
+        JSON.stringify({
+          hooks: {
+            PreToolUse: [
+              {
+                matcher: 'Bash',
+                hooks: [
+                  {
+                    type: 'command',
+                    command: 'bash .claude/hooks/scripts/shell-reserved-var-advisor.sh',
+                  },
+                ],
+              },
+            ],
+          },
+        })
+      );
+      const trackedAssets = {
+        'codex-native-advisory.sh': '#!/bin/bash\nprintf wrapper\n',
+        'shell-reserved-var-advisor.sh': '#!/bin/bash\nprintf advisor\n',
+        'inactive-source-hook.sh': '#!/bin/bash\nprintf inactive\n',
+      };
+      for (const [name, content] of Object.entries(trackedAssets)) {
+        await writeFile(join(sourceScripts, name), content);
+        await writeFile(join(trackedScripts, name), content);
+      }
+
+      expect(Bun.spawnSync(['git', 'init', '-q'], { cwd: tempDir }).exitCode).toBe(0);
+      expect(Bun.spawnSync(['git', 'add', '.'], { cwd: tempDir }).exitCode).toBe(0);
+      expect(
+        Bun.spawnSync(
+          [
+            'git',
+            '-c',
+            'user.name=Fixture',
+            '-c',
+            'user.email=fixture@example.com',
+            'commit',
+            '-qm',
+            'fixture',
+          ],
+          { cwd: tempDir }
+        ).exitCode
+      ).toBe(0);
+      expect(
+        Bun.spawnSync(['git', 'worktree', 'add', '-qb', 'source-linked-fixture', linkedWorktree], {
+          cwd: tempDir,
+        }).exitCode
+      ).toBe(0);
+
+      const result = await installNativeCodexHooks(linkedWorktree, {
+        sourceRoot,
+        preserveManagedAssets: true,
+      });
+
+      expect(result.removedStaleManagedPaths).toEqual([]);
+      expect(
+        new TextDecoder().decode(
+          Bun.spawnSync(['git', 'diff', '--name-status'], { cwd: tempDir }).stdout
+        )
+      ).toBe('');
+      expect((await readdir(trackedScripts)).sort()).toEqual(Object.keys(trackedAssets).sort());
+      expect(await Bun.file(join(tempDir, '.codex', 'hooks.json')).exists()).toBe(true);
+      expect(await Bun.file(join(linkedWorktree, '.codex', 'hooks.json')).exists()).toBe(false);
     } finally {
       await rm(linkedWorktree, { recursive: true, force: true });
     }

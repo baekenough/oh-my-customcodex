@@ -71,6 +71,11 @@ omcustomcodex doctor --require-shell-advisor
   `omcustomcodex update --hooks` and rerun the gate. If the managed registry or
   assets differ from the packaged version, review and back up the changes before using
   `omcustomcodex update --hooks --force-overwrite-all`.
+- In this repository's source checkout, the missing-state command is a
+  source-aware registry-only bootstrap: it preserves tracked hook assets even from a
+  linked release worktree. For `assets-modified`, restore the reviewed tracked source
+  instead of force-overwriting it. Never bypass the source guard by calling
+  `installNativeCodexHooks` or another internal installer directly.
 - If Codex reports the advisor inactive, verify hooks are enabled in the user-level
   `$CODEX_HOME/config.toml` with `[features] hooks = true`, then trust the project and
   review `/hooks`. An untrusted linked checkout can appear inactive because runtime

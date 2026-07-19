@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.31] - 2026-07-19
+
+### Changed
+
+- Make managed-advisor recovery source-aware: a hooks-only source update now repairs runtime registry metadata without copying or deleting tracked hook assets, including from linked release worktrees (#1686).
+- Separate release-PR merge readback from remote-ref cleanup, prohibit local branch cleanup in multi-worktree execution, and require a new acyclic verification run after any post-freeze source-mutating command (#1686).
+
+### Fixed
+
+- Preserve source lockfile bytes and `generatedAt` when the semantic snapshot is unchanged, hash linked release-candidate hook bytes instead of the authoritative runtime checkout, and retain canonical-path safety checks (#1686).
+- Exclude data-only quoted heredoc bodies and ordinary quoted search data from shell advisories while continuing to inspect shell-fed heredocs plus executable nested shell, `eval`, and `trap` payloads (#1686).
+
 ## [1.0.30] - 2026-07-19
 
 ### Changed

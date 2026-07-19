@@ -7,6 +7,7 @@ import { constants, promises as fs, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
+import packageJson from '../../package.json';
 import { parseNativeAgentListMetadata } from '../core/agent-compiler.js';
 import { validateCodexHookRegistry } from '../core/codex-hooks.js';
 import { getCodexVersion, installCodex, isCodexInstalled } from '../core/codex-installer.js';
@@ -777,12 +778,24 @@ export async function checkOmx(
  * Machine-oriented readiness gate for the exact project-managed shell advisor.
  * It intentionally emits no hook command, hash, environment, or credential data.
  */
+function isSourceCheckout(targetDir: string): boolean {
+  try {
+    const candidate = JSON.parse(readFileSync(path.join(targetDir, 'package.json'), 'utf-8')) as {
+      name?: unknown;
+    };
+    return candidate.name === packageJson.name;
+  } catch {
+    return false;
+  }
+}
+
 export function checkManagedShellAdvisor(
   targetDir: string = process.cwd(),
   dependencies: ManagedShellAdvisorCheckDependencies = {}
 ): CheckResult {
   const readiness = (dependencies.assess ?? assessManagedShellAdvisorReadiness)(targetDir);
   const name = 'Managed shell advisor';
+  const sourceCheckout = isSourceCheckout(targetDir);
 
   switch (readiness.status) {
     case 'runnable':
@@ -796,24 +809,27 @@ export function checkManagedShellAdvisor(
       return {
         name,
         status: 'fail',
-        message:
-          'Managed shell advisor is missing. Run `omcustomcodex update --hooks`, then rerun this check.',
+        message: sourceCheckout
+          ? 'Managed shell advisor is missing in a source checkout. Run `omcustomcodex update --hooks`; its source-aware registry-only bootstrap preserves tracked hook assets. Do not bypass it with an internal installer. Then rerun this check.'
+          : 'Managed shell advisor is missing. Run `omcustomcodex update --hooks`, then rerun this check.',
         fixable: false,
       };
     case 'assets-modified':
       return {
         name,
         status: 'fail',
-        message:
-          'Managed shell advisor assets differ from the packaged version. Review the intentional modification and back it up; then run `omcustomcodex update --hooks --force-overwrite-all` and rerun this check.',
+        message: sourceCheckout
+          ? 'Managed shell advisor assets differ in a source checkout. Review and restore the tracked source hook assets from the intended branch; do not overwrite them through an internal installer. Then rerun this check.'
+          : 'Managed shell advisor assets differ from the packaged version. Review the intentional modification and back it up; then run `omcustomcodex update --hooks --force-overwrite-all` and rerun this check.',
         fixable: false,
       };
     case 'integrity-failed':
       return {
         name,
         status: 'fail',
-        message:
-          'Managed shell advisor registry differs from the packaged version. Review the modification and back it up; then run `omcustomcodex update --hooks --force-overwrite-all` and rerun this check.',
+        message: sourceCheckout
+          ? 'Managed shell advisor registry differs in a source checkout. Review the runtime registry, then run the source-aware registry-only `omcustomcodex update --hooks`; do not bypass it with an internal installer. Then rerun this check.'
+          : 'Managed shell advisor registry differs from the packaged version. Review the modification and back it up; then run `omcustomcodex update --hooks --force-overwrite-all` and rerun this check.',
         fixable: false,
       };
     case 'inactive':

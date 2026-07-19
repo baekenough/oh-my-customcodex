@@ -216,17 +216,24 @@ steps:
          downstream implementation, verification, release, and R020 command
          launched through Code Mode.
       3. On a reported `missing` state only, run
-         `omcustomcodex update --hooks`, then rerun the exact doctor gate.
-      4. On `integrity-failed` or `assets-modified`, halt for review and back up
-         the existing registry/assets. Only after that reviewed preservation may
+         `omcustomcodex update --hooks`, then rerun the exact doctor gate. In a
+         source checkout this must be the source-aware registry-only bootstrap;
+         it must preserve tracked hook assets.
+      4. In a source checkout, `assets-modified` requires review and restoration
+         of the tracked source assets from the intended branch; `integrity-failed`
+         may use the reviewed registry-only `omcustomcodex update --hooks` path.
+         Never use `--force-overwrite-all` or call an internal hook installer in
+         a source checkout. For a non-source project, halt for review and back up
+         the existing registry/assets; only after that reviewed preservation may
          `omcustomcodex update --hooks --force-overwrite-all` restore packaged
-         bytes; rerun the exact doctor gate afterward.
+         bytes. Rerun the exact doctor gate afterward.
       5. On `inactive`, halt: verify user-level `[features] hooks = true`, then
          verify project trust and review `/hooks` because an untrusted linked
          worktree can also surface as inactive. On `approval-needed`, halt for
          project trust and `/hooks` review. On `unverified`, halt until Codex
          app-server discovery can verify the exact managed chain.
-      6. Never write trust state automatically, auto-approve `/hooks`, accept
+      6. Never call `installNativeCodexHooks` or another internal installer as a
+         remediation bypass. Never write trust state automatically, auto-approve `/hooks`, accept
          generic OMX/plugin hook readiness, add an outer Code Mode source parser,
          add a new exec-command matcher, or widen native tool names.
 
@@ -451,6 +458,9 @@ steps:
          tree to equal both stagedTree and reviewedTree byte-for-byte. Any
          mismatch fails closed.
       5. Permit no tracked source or index mutation after this equality proof.
+         Do not run any source-mutating build, package, sync, or autofix command
+         after the freeze. If another such command is required, halt and start a
+         new acyclic pipeline run that produces a new `reviewedTree`.
 
       Mode payload:
       - `standard`: build the schemaVersion 1 artifact from the same pending
@@ -551,9 +561,19 @@ steps:
          - push only the already-existing exact release branch at verifiedSha,
            open the PR to `develop`, wait for required checks at that exact
            final PR head, and merge only after direct readback proves them green
+         - Merge without `--delete-branch`; remote merge mutation and branch
+           cleanup are separate operations in linked or multi-worktree execution
+         - immediately read the PR back and require `state=MERGED`, a non-empty
+           `mergedAt`, and an exact `mergeCommit.oid` before cleanup
+         - only after that readback, delete the remote release ref with
+           `gh api --method DELETE "repos/${repository}/git/refs/heads/${exactBranch}"`,
+           then query it again and require that the remote ref is absent; an
+           already-absent ref is idempotent only after the merged readback
+         - Never switch, delete, or rename a local branch as part of remote cleanup.
       4. Preserve repository automation ownership:
-         - The Auto Tag workflow owns annotated tag creation, provisional closure
-           of scoped issues and the target milestone, and release-branch deletion.
+         - The Auto Tag workflow owns annotated tag creation and provisional closure
+           of scoped issues and the target milestone. The pipeline owns remote
+           release-ref cleanup after authoritative merged-state readback.
          - The tag-triggered Release workflow owns npm, GitHub Packages, and GitHub Release publication plus live verification.
          - Do not create or push release tags manually.
          - Do not create the GitHub Release manually.

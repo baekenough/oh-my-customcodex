@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -119,5 +119,41 @@ describe('doctor --require-shell-advisor focused gate', () => {
       }),
     });
     expect(runnable.status).toBe('pass');
+  });
+
+  it('detects a source checkout and never recommends mutating tracked hook assets', async () => {
+    await writeFile(
+      join(projectRoot, 'package.json'),
+      JSON.stringify({ name: 'oh-my-customcodex', version: '1.0.31' })
+    );
+
+    const missing = checkManagedShellAdvisor(projectRoot, {
+      assess: () => ({
+        status: 'missing',
+        ready: false,
+        projectRoot,
+        codexProjectRoot: projectRoot,
+        installed: false,
+        discovered: 0,
+      }),
+    });
+    expect(missing.message).toContain('source checkout');
+    expect(missing.message).toContain('registry-only');
+    expect(missing.message).toContain('omcustomcodex update --hooks');
+    expect(missing.message).not.toContain('installNativeCodexHooks');
+
+    const modified = checkManagedShellAdvisor(projectRoot, {
+      assess: () => ({
+        status: 'assets-modified',
+        ready: false,
+        projectRoot,
+        codexProjectRoot: projectRoot,
+        installed: true,
+        discovered: 0,
+      }),
+    });
+    expect(modified.message).toContain('tracked source');
+    expect(modified.message).not.toContain('--force-overwrite-all');
+    expect(modified.message).not.toContain('installNativeCodexHooks');
   });
 });

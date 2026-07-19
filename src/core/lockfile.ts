@@ -11,6 +11,7 @@ import { createHash } from 'node:crypto';
 import { constants, createReadStream } from 'node:fs';
 import { lstat, open, readdir } from 'node:fs/promises';
 import { isAbsolute, join, posix, relative, resolve } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import {
   fileExists,
   getPackageRoot,
@@ -73,6 +74,15 @@ export interface LockfileDiff {
   /** Files in both with same hash */
   unchanged: string[];
 }
+
+export interface GenerateLockfileOptions {
+  /** Hash the requested checkout and exclude machine-local outputs for a tracked source snapshot. */
+  sourceSnapshot?: boolean;
+}
+
+export interface GenerateAndWriteLockfileOptions
+  extends SafeWriteOptions,
+    GenerateLockfileOptions {}
 
 /**
  * Components tracked by the lockfile.
@@ -482,10 +492,14 @@ async function collectFiles(dir: string, projectRoot: string): Promise<string[]>
 export async function generateLockfile(
   targetDir: string,
   generatorVersion: string,
-  templateVersion: string
+  templateVersion: string,
+  options: GenerateLockfileOptions = {}
 ): Promise<Lockfile> {
   const files: Record<string, LockfileEntry> = {};
-  const context = resolveLockfileRootContext(targetDir);
+  const targetRoot = resolveCodexTargetRoot(targetDir);
+  const context = options.sourceSnapshot
+    ? { targetRoot, codexProjectRoot: targetRoot }
+    : resolveLockfileRootContext(targetDir);
 
   for (const [prefix, mappedComponent] of COMPONENT_PATHS) {
     await collectComponentEntries(files, prefix, mappedComponent, context);
@@ -567,7 +581,7 @@ async function collectStandaloneEntry(
  */
 export async function generateAndWriteLockfileForDir(
   targetDir: string,
-  options: SafeWriteOptions = {}
+  options: GenerateAndWriteLockfileOptions = {}
 ): Promise<{ fileCount: number; warning?: string }> {
   try {
     const packageRoot = getPackageRoot();
@@ -577,13 +591,36 @@ export async function generateAndWriteLockfileForDir(
     const { version: generatorVersion } = await readJsonFile<{ version: string }>(
       join(packageRoot, 'package.json')
     );
-    const lockfile = await generateLockfile(targetDir, generatorVersion, manifest.version);
+    const lockfile = await generateLockfile(targetDir, generatorVersion, manifest.version, options);
+    if (options.sourceSnapshot) omitRuntimeHookMetadata(lockfile);
+    const existing = await readLockfile(targetDir);
+    if (existing && lockfileSnapshotsEqual(existing, lockfile)) {
+      lockfile.generatedAt = existing.generatedAt;
+      const canonicalLockfile = join(targetDir, LOCKFILE_NAME);
+      if (await fileExists(canonicalLockfile)) {
+        await inspectSafePath(targetDir, canonicalLockfile, 'file', false);
+        return { fileCount: Object.keys(lockfile.files).length };
+      }
+    }
     await writeLockfile(targetDir, lockfile, options);
     return { fileCount: Object.keys(lockfile.files).length };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return { fileCount: 0, warning: `Lockfile generation failed: ${msg}` };
   }
+}
+
+function omitRuntimeHookMetadata(lockfile: Lockfile): void {
+  delete lockfile.files['.codex/hooks.json'];
+  for (const relativePath of Object.keys(lockfile.files)) {
+    if (relativePath.startsWith('.codex/hooks/compatibility/')) {
+      delete lockfile.files[relativePath];
+    }
+  }
+}
+
+function lockfileSnapshotsEqual(existing: Lockfile, generated: Lockfile): boolean {
+  return isDeepStrictEqual({ ...existing, generatedAt: '' }, { ...generated, generatedAt: '' });
 }
 
 /**

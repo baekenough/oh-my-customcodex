@@ -662,6 +662,31 @@ describe('auto-dev — managed shell and durable verification gates', () => {
     }
   });
 
+  it('separates remote merge from worktree cleanup and bans source mutation after freeze', async () => {
+    const workflows = await Promise.all([
+      readFile(ROOT_AUTO_DEV_WORKFLOW, 'utf8'),
+      readFile(SKILL_AUTO_DEV_WORKFLOW, 'utf8'),
+    ]);
+
+    for (const content of workflows) {
+      const artifactText = requireAutoDevStep(content, 'verification-artifact').prompt ?? '';
+      const releaseText = requireAutoDevStep(content, 'release').prompt ?? '';
+
+      expect(artifactText).toContain('source-mutating build, package, sync, or autofix command');
+      expect(artifactText).toContain('new acyclic pipeline run');
+      expect(releaseText).toContain('Merge without `--delete-branch`');
+      expect(releaseText).not.toMatch(/gh pr merge[^\n]*--delete-branch/);
+      expect(releaseText).toContain('`state=MERGED`');
+      expect(releaseText).toContain('`mergedAt`');
+      expect(releaseText).toContain('`mergeCommit.oid`');
+      expect(releaseText).toContain('gh api --method DELETE');
+      expect(releaseText).toContain('git/refs/heads/');
+      expect(releaseText).toContain('remote ref is absent');
+      expect(releaseText).toContain('Never switch, delete, or rename a local branch');
+      expect(releaseText).not.toContain('release-branch deletion');
+    }
+  });
+
   it('reviews the frozen dirty tree object instead of omitting it behind HEAD', async () => {
     const [deepVerifySkill, root, skill] = await Promise.all([
       readFile(DEEP_VERIFY_SKILL, 'utf8'),

@@ -31,6 +31,7 @@ import {
   prevalidateNativeCodexHooks,
 } from './codex-hooks.js';
 import { installCodex, isCodexInstalled } from './codex-installer.js';
+import { resolveCodexProjectRoot } from './codex-project-root.js';
 import { getConfigCandidatePaths, loadConfig, type OmccConfig, saveConfig } from './config.js';
 import { mergeEntryDoc, wrapInManagedMarkers } from './entry-merger.js';
 import { isProtectedFile } from './file-preservation.js';
@@ -862,23 +863,71 @@ async function regenerateLockfile(
   }
 }
 
-/**
- * Guard against updating the current source project itself.
- * Returns true if the update should be skipped.
- */
-async function shouldSkipSelfUpdate(targetDir: string, result: UpdateResult): Promise<boolean> {
+interface SourceProjectPackage {
+  name?: string;
+  version?: string;
+}
+
+async function readSourceProjectPackage(targetDir: string): Promise<SourceProjectPackage | null> {
   const targetPkgPath = join(targetDir, 'package.json');
-  if (await fileExists(targetPkgPath)) {
-    const targetPkg = await readJsonFile<{ name?: string }>(targetPkgPath);
-    if (targetPkg.name === packageJson.name) {
-      warn('update.self_update_skipped');
-      result.success = true;
-      result.skippedSource = true;
-      result.warnings.push('Skipped: source project cannot update itself');
-      return true;
-    }
+  if (!(await fileExists(targetPkgPath))) return null;
+  const targetPkg = await readJsonFile<SourceProjectPackage>(targetPkgPath);
+  return targetPkg.name === packageJson.name ? targetPkg : null;
+}
+
+function isHooksOnlyUpdate(options: UpdateOptions): boolean {
+  return options.components?.length === 1 && options.components[0] === 'hooks';
+}
+
+async function bootstrapSourceProjectHooks(
+  options: UpdateOptions,
+  result: UpdateResult,
+  targetPkg: SourceProjectPackage
+): Promise<void> {
+  const authoritativeRoot = resolveCodexProjectRoot(options.targetDir);
+  const hookOptions = {
+    sourceRoot: join(authoritativeRoot, 'templates', '.claude', 'hooks'),
+    preserveManagedAssets: true,
+  } as const;
+
+  if (options.dryRun) {
+    await prevalidateNativeCodexHooks(options.targetDir, hookOptions);
+  } else {
+    await installNativeCodexHooks(options.targetDir, hookOptions);
   }
-  return false;
+
+  result.success = true;
+  result.newVersion = targetPkg.version ?? (packageJson.version as string);
+  result.updatedComponents = ['hooks'];
+  if (options.forceOverwriteAll) {
+    result.warnings.push(
+      'Source-checkout hook bootstrap ignored force-overwrite-all and preserved tracked hook assets'
+    );
+  }
+}
+
+/**
+ * Guard against updating the current source project itself. A hooks-only
+ * request is handled as a registry-only bootstrap and never mutates tracked
+ * source assets.
+ */
+async function handleSourceProjectUpdate(
+  options: UpdateOptions,
+  result: UpdateResult
+): Promise<boolean> {
+  const targetPkg = await readSourceProjectPackage(options.targetDir);
+  if (!targetPkg) return false;
+
+  if (isHooksOnlyUpdate(options)) {
+    await bootstrapSourceProjectHooks(options, result, targetPkg);
+    return true;
+  }
+
+  warn('update.self_update_skipped');
+  result.success = true;
+  result.skippedSource = true;
+  result.warnings.push('Skipped: source project cannot update itself');
+  return true;
 }
 
 /**
@@ -1024,14 +1073,17 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     });
     result.previousVersion = config.version;
 
+    // A hooks-only source request is a non-destructive runtime bootstrap and
+    // must remain available even when the checkout version is ahead of the
+    // globally installed CLI.
+    if (await handleSourceProjectUpdate(options, result)) {
+      return result;
+    }
+
     // Guard against version downgrade (#579).
     // If the project's installed version is newer than this CLI's own version,
     // an outdated CLI binary is running. Abort to prevent a downgrade.
     if (preventDowngradeIfNeeded(result)) {
-      return result;
-    }
-
-    if (await shouldSkipSelfUpdate(options.targetDir, result)) {
       return result;
     }
 

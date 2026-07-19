@@ -149,6 +149,11 @@ export interface InstallNativeCodexHooksOptions {
   sourceRoot?: string;
   /** Project-relative managed assets that an updater has proven user-modified. */
   preservePaths?: readonly string[];
+  /**
+   * Write runtime registry metadata without copying or deleting managed assets.
+   * The existing target assets must match the selected source exactly.
+   */
+  preserveManagedAssets?: boolean;
 }
 
 export interface InstallNativeCodexHooksResult {
@@ -964,6 +969,35 @@ async function prevalidateActiveManagedHookAssets(
   }
 }
 
+async function assertPreservedManagedHookAssetsMatch(
+  targetDir: string,
+  activeAssets: ManagedHookAsset[]
+): Promise<void> {
+  for (const asset of activeAssets) {
+    await assertRegularManagedSource(asset);
+    await prevalidateSafeWritePath(asset.targetPath, targetDir);
+    let targetStats: Awaited<ReturnType<typeof fs.lstat>>;
+    try {
+      targetStats = await fs.lstat(asset.targetPath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        throw new Error(`Source-checkout hook asset is missing: ${asset.targetPath}`);
+      }
+      throw error;
+    }
+    if (targetStats.isSymbolicLink() || !targetStats.isFile() || targetStats.nlink !== 1) {
+      throw new Error(`Source-checkout hook asset must be a regular file: ${asset.targetPath}`);
+    }
+    const [sourceContent, targetContent] = await Promise.all([
+      fs.readFile(asset.sourcePath),
+      fs.readFile(asset.targetPath),
+    ]);
+    if (!sourceContent.equals(targetContent)) {
+      throw new Error(`Source-checkout hook asset differs from its template: ${asset.targetPath}`);
+    }
+  }
+}
+
 async function copyActiveManagedHookAssets(
   targetDir: string,
   activeAssets: ManagedHookAsset[],
@@ -986,10 +1020,13 @@ export async function prevalidateNativeCodexHooks(
   options: InstallNativeCodexHooksOptions = {}
 ): Promise<void> {
   const paths = resolveNativeCodexHookPaths(targetDir, options);
-  await prevalidateResolvedNativeCodexHooks(paths);
+  await prevalidateResolvedNativeCodexHooks(paths, options);
 }
 
-async function prevalidateResolvedNativeCodexHooks(paths: NativeCodexHookPaths): Promise<void> {
+async function prevalidateResolvedNativeCodexHooks(
+  paths: NativeCodexHookPaths,
+  options: InstallNativeCodexHooksOptions = {}
+): Promise<void> {
   await prevalidateLinkedDiscoveryAnchor(paths);
   await prevalidateSafeWritePath(paths.registryPath, paths.projectRoot);
   await prevalidateSafeWritePath(paths.compatibilityRegistryPath, paths.projectRoot);
@@ -1004,6 +1041,10 @@ async function prevalidateResolvedNativeCodexHooks(paths: NativeCodexHookPaths):
   const mergedRegistry = mergeCodexHookRegistries(existingRegistry, compilation.registry);
   const retainedScriptNames = getReferencedHookScriptNames(mergedRegistry);
   const activeScriptNames = new Set(activeAssets.map((asset) => asset.name));
+  if (options.preserveManagedAssets) {
+    await assertPreservedManagedHookAssetsMatch(paths.projectRoot, activeAssets);
+    return;
+  }
   await prevalidateActiveManagedHookAssets(paths.projectRoot, activeAssets);
   const staleAssets = await classifyStaleManagedHookAssets(
     paths,
@@ -1029,7 +1070,7 @@ export async function installNativeCodexHooks(
   );
   const source = await readJsonFile<unknown>(paths.sourceRegistryPath);
   const compilation = compileCodexHooks(source, { authoritativeRoot: paths.projectRoot });
-  await prevalidateResolvedNativeCodexHooks(paths);
+  await prevalidateResolvedNativeCodexHooks(paths, options);
   await ensureLinkedDiscoveryAnchor(paths);
   const registryExists = await fileExists(paths.registryPath);
   const existingRegistry = registryExists
@@ -1046,19 +1087,22 @@ export async function installNativeCodexHooks(
   );
   const activeScriptNames = new Set(activeAssets.map((asset) => asset.name));
 
-  await copyActiveManagedHookAssets(
-    paths.projectRoot,
-    activeAssets,
-    !!options.overwrite,
-    preservedPaths
-  );
-  const staleAssets = await classifyStaleManagedHookAssets(
-    paths,
-    activeScriptNames,
-    retainedScriptNames
-  );
-  for (const asset of staleAssets.removable) {
-    await deleteFile(asset.targetPath, paths.projectRoot);
+  let staleAssets: StaleManagedHookAssets = { removable: [], preserved: [] };
+  if (!options.preserveManagedAssets) {
+    await copyActiveManagedHookAssets(
+      paths.projectRoot,
+      activeAssets,
+      !!options.overwrite,
+      preservedPaths
+    );
+    staleAssets = await classifyStaleManagedHookAssets(
+      paths,
+      activeScriptNames,
+      retainedScriptNames
+    );
+    for (const asset of staleAssets.removable) {
+      await deleteFile(asset.targetPath, paths.projectRoot);
+    }
   }
   if (!registryExplicitlyPreserved) {
     await writeJsonFile(paths.registryPath, mergedRegistry, {
