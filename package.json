@@ -68,7 +68,7 @@
     "js-yaml": "^5.2.0",
     "nodemailer": "^9.0.1",
     "typescript": "^6.0.2",
-    "vitepress": "2.0.0-alpha.18"
+    "vitepress": "2.0.0-alpha.19"
   },
   "keywords": [
     "codex",
