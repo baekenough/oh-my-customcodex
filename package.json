@@ -55,7 +55,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.1.0",
-    "@inquirer/prompts": "8.5.2",
+    "@inquirer/prompts": "8.6.0",
     "commander": "^14.0.2",
     "i18next": "^26.0.2",
     "yaml": "^2.8.2"
