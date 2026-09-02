@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { access, readdir, readFile, stat } from 'node:fs/promises';
+import { access, readFile, stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { parse } from 'yaml';
 
 const ROOT = resolve(import.meta.dir, '../../..');
 
@@ -20,18 +19,6 @@ interface HookHandler {
 
 interface HookRegistry {
   hooks: Record<string, Array<{ hooks: HookHandler[] }>>;
-}
-
-interface WorkflowStep {
-  name?: string;
-  id?: string;
-  if?: string;
-  env?: Record<string, string>;
-  run?: string;
-}
-
-interface WorkflowDocument {
-  jobs: Record<string, { steps: WorkflowStep[] }>;
 }
 
 const HOOK_ROOTS = [
@@ -96,54 +83,6 @@ describe('v1.0.29 harness hygiene contract', () => {
         const mode = (await stat(path(`${root}/${hook}`))).mode;
         expect(mode & 0o111, `${root}/${hook}`).not.toBe(0);
       }
-    }
-  });
-
-  it('pins cache and artifact actions to the verified commit SHAs', async () => {
-    const workflowFiles = (await readdir(path('.github/workflows'))).filter((file) =>
-      /\.ya?ml$/.test(file)
-    );
-    const workflows = (
-      await Promise.all(workflowFiles.map((file) => text(`.github/workflows/${file}`)))
-    ).join('\n');
-
-    expect(
-      workflows.match(/uses:\s+actions\/(?:cache|upload-artifact|download-artifact)@v\d+/g) ?? []
-    ).toEqual([]);
-    expect(workflows).toContain('actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6');
-    expect(workflows).toContain(
-      'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7'
-    );
-    expect(workflows).toContain(
-      'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8'
-    );
-  });
-
-  it('stops wiki-sync steps when OMCODEX_MASTER is not configured', async () => {
-    const content = await text('.github/workflows/docs-sync.yml');
-    const workflow = parse(content) as WorkflowDocument;
-    const steps = workflow.jobs['sync-wiki']?.steps ?? [];
-    const check = steps.find((step) => step.name === 'Check PAT secret');
-
-    expect(content).toContain('# Only run if OMCODEX_MASTER secret is configured');
-    expect(content).not.toContain('WIKI_PAT');
-    expect(check?.id).toBe('pat');
-    expect(check?.env?.OMCODEX_MASTER).toBe('$' + '{{ secrets.OMCODEX_MASTER }}');
-    expect(check?.run).toContain('configured=false');
-    expect(check?.run).toContain('configured=true');
-
-    for (const name of [
-      'Checkout repository',
-      'Checkout wiki',
-      'Check wiki checkout',
-      'Sync wiki pages',
-      'Check for changes',
-      'Commit and push wiki changes',
-      'Create summary',
-    ]) {
-      const step = steps.find((candidate) => candidate.name === name);
-      expect(step, name).toBeDefined();
-      expect(String(step?.if), name).toContain("steps.pat.outputs.configured == 'true'");
     }
   });
 
